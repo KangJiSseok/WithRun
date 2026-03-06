@@ -1,0 +1,4 @@
+<?xml version="1.0" encoding="utf-8"?>
+<wearableCapabilities>
+    <capability name="running_health_wear" />
+</wearableCapabilities>
