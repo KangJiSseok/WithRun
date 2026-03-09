@@ -1,7 +1,63 @@
+/* Pretendard 폰트 */
+@import 'pretendard/dist/web/variable/pretendardvariable-dynamic-subset.css';
+
 /* 테일윈드 config */
 @import 'tailwindcss';
 
-/* shadcn 토큰 */
+/* 프로젝트 디자인시스템 토큰 (원천) */
+@import './tokens/color.css';
+@import './tokens/typography.css';
+@import './tokens/spacing.css';
+@import './tokens/radius.css';
+@import './tokens/shadow.css';
+@import './tokens/z-index.css';
+
+/* shadcn 토큰 브리지 — 위 토큰을 shadcn 변수에 매핑 */
 @import './shadcn.css';
 
-/* 프로젝트 디자인시스템 토큰 */
+/*
+ * Tailwind v4 테마 연결
+ * 목적: shadcn CSS 변수(--primary 등)를 Tailwind 유틸리티 클래스(bg-primary 등)에 연결합니다.
+ * Tailwind v4는 @theme inline 없이는 bg-primary, text-card-foreground 등을 알지 못합니다.
+ */
+@theme inline {
+  /* 색상 */
+  --color-background:           hsl(var(--background));
+  --color-foreground:           hsl(var(--foreground));
+  --color-card:                 hsl(var(--card));
+  --color-card-foreground:      hsl(var(--card-foreground));
+  --color-popover:              hsl(var(--popover));
+  --color-popover-foreground:   hsl(var(--popover-foreground));
+  --color-primary:              hsl(var(--primary));
+  --color-primary-foreground:   hsl(var(--primary-foreground));
+  --color-secondary:            hsl(var(--secondary));
+  --color-secondary-foreground: hsl(var(--secondary-foreground));
+  --color-muted:                hsl(var(--muted));
+  --color-muted-foreground:     hsl(var(--muted-foreground));
+  --color-accent:               hsl(var(--accent));
+  --color-accent-foreground:    hsl(var(--accent-foreground));
+  --color-destructive:          hsl(var(--destructive));
+  --color-border:               hsl(var(--border));
+  --color-input:                hsl(var(--input));
+  --color-ring:                 hsl(var(--ring));
+
+  /* 폰트 — Tailwind v4는 --font-sans로 body 기본 폰트를 관리함 */
+  --font-sans: 'Pretendard Variable', sans-serif;
+
+  /* shadcn rounded-* 유틸리티 연결 */
+  --radius-sm: calc(var(--radius) - 4px);
+  --radius-md: var(--radius);
+  --radius-lg: calc(var(--radius) + 4px);
+  --radius-xl: calc(var(--radius) + 8px);
+}
+
+/* 기본 body 스타일 */
+@layer base {
+  * {
+    @apply border-border outline-ring/50;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-family: var(--font-family-base);
+  }
+}

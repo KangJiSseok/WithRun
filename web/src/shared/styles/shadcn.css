@@ -1,0 +1,52 @@
+/*
+ * shadcn Token Bridge
+ * 목적: shadcn 컴포넌트가 참조하는 CSS 변수를 프로젝트 디자인 토큰에 연결합니다.
+ * 사용처: shadcn 컴포넌트 전체 (Button, Input, Dialog, Card 등)
+ * 구조:
+ *   tokens/color.css (원천) → 이 파일에서 shadcn 변수에 매핑 → shadcn 컴포넌트 자동 적용
+ * 주의:
+ *   - 이 파일의 변수를 직접 수정하지 마세요. 색상 원천은 tokens/color.css 에서 관리합니다.
+ *   - shadcn 컴포넌트 내부에서 hsl(var(--primary)) 형태로 사용합니다.
+ */
+
+:root {
+  /* ── 배경 / 전경 ── */
+  --background:            var(--surface-default);   /* 페이지 기본 배경 */
+  --foreground:            var(--text-primary);       /* 기본 텍스트 */
+
+  /* ── 카드 ── */
+  --card:                  var(--surface-default);
+  --card-foreground:       var(--text-primary);
+
+  /* ── 팝오버 · 드롭다운 ── */
+  --popover:               var(--surface-default);
+  --popover-foreground:    var(--text-primary);
+
+  /* ── Primary (브랜드 레드) ── */
+  --primary:               var(--primary-1);          /* 주 버튼 배경 */
+  --primary-foreground:    var(--white);              /* 주 버튼 위 텍스트 */
+
+  /* ── Secondary ── */
+  --secondary:             var(--secondary-6);        /* 보조 버튼 배경 */
+  --secondary-foreground:  var(--secondary-1);        /* 보조 버튼 텍스트 */
+
+  /* ── Muted (비활성 · 배경 흐림) ── */
+  --muted:                 var(--surface-muted);
+  --muted-foreground:      var(--text-secondary);
+
+  /* ── Accent (hover · 강조 배경) ── */
+  --accent:                var(--primary-5);          /* 연한 레드 배경 */
+  --accent-foreground:     var(--primary-1);          /* 강조 배경 위 텍스트 */
+
+  /* ── Destructive (삭제 · 위험) ── */
+  --destructive:           var(--error);
+  --destructive-foreground: var(--white);
+
+  /* ── 테두리 · 인풋 · 포커스 ── */
+  --border:                var(--border-default);
+  --input:                 var(--border-default);
+  --ring:                  var(--border-focus);       /* focus ring */
+
+  /* ── 기본 radius (shadcn 내부 --radius 참조용) ── */
+  --radius:                var(--radius-md);          /* 8px */
+}
