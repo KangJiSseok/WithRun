@@ -1,0 +1,7 @@
+/* 테일윈드 config */
+@import 'tailwindcss';
+
+/* shadcn 토큰 */
+@import './shadcn.css';
+
+/* 프로젝트 디자인시스템 토큰 */
