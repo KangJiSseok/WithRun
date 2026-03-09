@@ -5,7 +5,7 @@
     "useDefineForClassFields": true,
     "lib": ["ES2022", "DOM", "DOM.Iterable"],
     "module": "ESNext",
-    "types": ["vite/client"],
+    "types": ["vite/client", "kakao.maps.d.ts"],
     "skipLibCheck": true,
 
     /* Bundler mode */
@@ -22,7 +22,14 @@
     "noUnusedParameters": true,
     "erasableSyntaxOnly": true,
     "noFallthroughCasesInSwitch": true,
-    "noUncheckedSideEffectImports": true
+    "noUncheckedSideEffectImports": true,
+
+    /* Alias */
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["src/*"],
+      "@bridge": ["../mobile/src/bridge/index.ts"]
+    }
   },
-  "include": ["src"]
+  "include": ["src", "../mobile/src/bridge/index.ts"]
 }
