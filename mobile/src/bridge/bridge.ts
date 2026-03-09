@@ -1,5 +1,6 @@
 import { createWebView, bridge } from '@webview-bridge/react-native'
 
+// 웹 <-> 모바일 간 브릿지 통신 함수
 export const appBridge = bridge({
   async whoRU() {
     return "Hello, I'm native"
