@@ -1,6 +1,7 @@
-import type { AppBridge } from "@bridge";
-import { linkBridge } from "@webview-bridge/web";
+import type { AppBridge } from '@bridge';
+import { linkBridge } from '@webview-bridge/web';
 
-const bridge = linkBridge<AppBridge>()
+// 웹은 모바일에서 작성한 브릿지 클라이언트를 받아서 사용
+const bridge = linkBridge<AppBridge>();
 
-export {bridge}
+export { bridge };
