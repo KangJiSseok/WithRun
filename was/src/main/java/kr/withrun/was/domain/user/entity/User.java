@@ -36,16 +36,16 @@ public class User extends BaseEntity {
     private LocalDate birthDate;
 
     @Enumerated(EnumType.STRING)
-    @Column(name = "gender", nullable = false)
+    @Column(name = "gender", nullable = false, length = 16)
     private Gender gender;
 
-    @Column(name = "height_cm", nullable = false)
+    @Column(name = "height_cm", nullable = false, precision = 5, scale = 2)
     private Double height;
 
-    @Column(name = "weight_kg", nullable = false)
+    @Column(name = "weight_kg", nullable = false, precision = 5, scale = 2)
     private Double weight;
 
-    @Column(name = "is_active")
+    @Column(name = "is_active", nullable = false)
     private Boolean isActive;
 
     @OneToOne(

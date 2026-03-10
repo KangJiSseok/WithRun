@@ -1,4 +1,4 @@
-package kr.withrun.was.domain.course.entity;
+package kr.withrun.was.domain.course.vo;
 
 import lombok.AllArgsConstructor;
 import lombok.NoArgsConstructor;

@@ -12,8 +12,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
-import kr.withrun.was.domain.course.entity.Coordinates;
 import kr.withrun.was.domain.course.entity.Course;
+import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
@@ -36,7 +36,7 @@ public class RunningSession extends BaseEntity {
     @Id
     @Column(name = "running_session_id")
     Long id;
-    
+
     @Column(name = "started_at", nullable = false)
     private LocalDateTime startedAt;
 

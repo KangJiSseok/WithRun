@@ -112,10 +112,10 @@ CREATE TABLE courses (
   end_longitude NUMERIC(9, 6) NOT NULL,
   coordinates JSONB,
   snapshot_image_url TEXT,
-  is_deleted BOOLEAN NOT NULL DEFAULT FALSE,
   promoted_at TIMESTAMPTZ,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+  deleted_at BOOLEAN NOT NULL DEFAULT FALSE,
   CONSTRAINT fk_courses_created_by
     FOREIGN KEY (created_by_user_id)
     REFERENCES users (user_id)

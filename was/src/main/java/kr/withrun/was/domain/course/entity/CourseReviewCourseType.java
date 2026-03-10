@@ -11,13 +11,14 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.NoArgsConstructor;
 
 @Entity
 @Table(name = "course_review_course_types")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CourseReviewCourseType extends Course {
+public class CourseReviewCourseType extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
