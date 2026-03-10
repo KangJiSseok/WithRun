@@ -53,11 +53,7 @@ public class GhostRunningResult extends BaseEntity {
 
     @Column(name = "distance_gap_m", nullable = false)
     private Integer distanceGapM = 0;
-
-    @Column(name = "created_at", nullable = false, updatable = false)
-    private LocalDateTime createdAt;
-
-
+    
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "running_session_id",
