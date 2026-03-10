@@ -15,6 +15,7 @@ import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import kr.withrun.was.domain.device.type.DeviceType;
+import kr.withrun.was.domain.device.type.SyncStatus;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
@@ -33,14 +34,6 @@ public class Device extends BaseEntity {
     @Column(name = "device_sync_states_id")
     private Long id;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @MapsId
-    @JoinColumn(
-            name = "user_id",
-            foreignKey = @ForeignKey(name = "fk_device_sync_states_user")
-    )
-    private User user;
-
     @Enumerated(EnumType.STRING)
     @Column(name = "device_type", length = 16, nullable = false)
     private DeviceType deviceType;
@@ -51,6 +44,24 @@ public class Device extends BaseEntity {
     @Column(name = "last_synced_sampled_at")
     private LocalDateTime lastSyncedSampledAt;
 
+    @Column(name = "sync_token", length = 128)
+    private String syncToken;
+
+    @Enumerated(EnumType.STRING)
+    @Column(name = "sync_status", nullable = false, length = 16)
+    private SyncStatus syncStatus = SyncStatus.IDLE;
+
+    @Column(name = "last_error_message")
+    private String lastErrorMessage;
+
+    @OneToOne(fetch = FetchType.LAZY, optional = false)
+    @MapsId
+    @JoinColumn(
+            name = "user_id",
+            foreignKey = @ForeignKey(name = "fk_device_sync_states_user")
+    )
+    private User user;
+
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "running_session_id",
@@ -58,4 +69,5 @@ public class Device extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_device_sync_states_session")
     )
     private RunningSession runningSession;
+
 }
