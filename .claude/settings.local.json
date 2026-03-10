@@ -1,7 +1,9 @@
 {
   "permissions": {
     "allow": [
-      "Bash(pnpm config:*)"
+      "Bash(pnpm config:*)",
+      "Bash(pnpm expo prebuild:*)",
+      "Bash(./gradlew.bat:*)"
     ]
   }
 }
