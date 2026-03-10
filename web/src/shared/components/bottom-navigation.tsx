@@ -1,7 +1,7 @@
 import { NavLink } from 'react-router-dom';
 import { Calendar, Ghost, Home, Map, Navigation } from 'lucide-react';
 
-const items = [
+const ITEMS = [
     { label: '홈', to: '/home', icon: Home },
     { label: '자유', to: '/free', icon: Navigation },
     { label: '일반', to: '/normal', icon: Map },
@@ -16,7 +16,7 @@ const items = [
 export function BottomNavigation() {
     return (
         <nav className="flex items-center justify-between rounded-3xl px-6 py-4 border px-6 py-4 shadow-sm">
-            {items.map((item) => {
+            {ITEMS.map((item) => {
                 const Icon = item.icon;
 
                 return (
