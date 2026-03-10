@@ -6,7 +6,6 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
-
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
@@ -28,7 +27,7 @@ import java.util.List;
 @Table(name = "user_running_preferences")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class UserRunningPreference extends BaseEntity {
-    
+
     @Id
     @Column(name = "user_id")
     private Long id;
@@ -37,7 +36,7 @@ public class UserRunningPreference extends BaseEntity {
     @Column(name = "preferred_difficulty", nullable = false, length = 16)
     private Difficulty preferredDifficulty;
 
-    @Column(name = "preferred_distance_km", nullable = false, precision = 5, scale = 2)
+    @Column(name = "preferred_distance_km", nullable = false)
     private Double preferredDistanceKm;
 
     @MapsId
