@@ -17,9 +17,6 @@ import java.time.LocalDateTime;
 @EntityListeners(AuditingEntityListener.class)
 @SQLDelete(sql = "UPDATE #{entityName} SET deleted_at = NOW() WHERE id = ?")
 public abstract class BaseEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    private Long id;
 
     @CreatedDate
     @Column(name = "created_at", nullable = false, updatable = false, columnDefinition = "TIMESTAMP")
@@ -38,9 +35,5 @@ public abstract class BaseEntity {
 
     public boolean isDeleted() {
         return deletedAt != null;
-    }
-
-    public Long getId() {
-        return this.id;
     }
 }
