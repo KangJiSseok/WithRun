@@ -13,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
@@ -53,10 +54,10 @@ public class Course extends BaseEntity {
     @Column(name = "start_longitude", nullable = false)
     private Double startLongitude;
 
-    @Column(name = "end_latitude", nullable = false)
+    @Column(name = "end_latitude")
     private Double endLatitude;
 
-    @Column(name = "end_longitude", nullable = false)
+    @Column(name = "end_longitude")
     private Double endLongitude;
 
     @JdbcTypeCode(SqlTypes.JSON)
