@@ -29,6 +29,7 @@ import java.time.LocalDateTime;
 public class Course extends BaseEntity {
 
     @Id
+    @Column(name = "course_id")
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
