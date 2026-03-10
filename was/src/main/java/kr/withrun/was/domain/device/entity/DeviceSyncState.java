@@ -11,8 +11,6 @@ import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
-import jakarta.persistence.MapsId;
-import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import kr.withrun.was.domain.device.type.DeviceType;
 import kr.withrun.was.domain.device.type.SyncStatus;
@@ -27,11 +25,11 @@ import java.time.LocalDateTime;
 @Entity
 @Table(name = "device_sync_states")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class Device extends BaseEntity {
+public class DeviceSyncState extends BaseEntity {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "device_sync_states_id")
+    @Column(name = "device_sync_state_id")
     private Long id;
 
     @Enumerated(EnumType.STRING)
@@ -54,10 +52,10 @@ public class Device extends BaseEntity {
     @Column(name = "last_error_message")
     private String lastErrorMessage;
 
-    @OneToOne(fetch = FetchType.LAZY, optional = false)
-    @MapsId
+    @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "user_id",
+            nullable = false,
             foreignKey = @ForeignKey(name = "fk_device_sync_states_user")
     )
     private User user;
@@ -66,8 +64,8 @@ public class Device extends BaseEntity {
     @JoinColumn(
             name = "running_session_id",
             nullable = false,
-            foreignKey = @ForeignKey(name = "fk_device_sync_states_session")
+            foreignKey = @ForeignKey(name = "fk_device_sync_last_synced_running_session")
     )
-    private RunningSession runningSession;
+    private RunningSession lastSyncedRunningSession;
 
 }

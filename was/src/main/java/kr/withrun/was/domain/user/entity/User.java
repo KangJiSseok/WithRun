@@ -39,10 +39,10 @@ public class User extends BaseEntity {
     @Column(name = "gender", nullable = false, length = 16)
     private Gender gender;
 
-    @Column(name = "height_cm", nullable = false, precision = 5, scale = 2)
+    @Column(name = "height_cm", nullable = false)
     private Double height;
 
-    @Column(name = "weight_kg", nullable = false, precision = 5, scale = 2)
+    @Column(name = "weight_kg", nullable = false)
     private Double weight;
 
     @Column(name = "is_active", nullable = false)

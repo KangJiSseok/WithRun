@@ -6,8 +6,6 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
-import jakarta.persistence.GeneratedValue;
-import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
@@ -24,14 +22,13 @@ import lombok.NoArgsConstructor;
 public class CourseDifficulty extends BaseEntity {
 
     @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
-    @Column(name = "course_difficulty_id")
+    @Column(name = "course_id")
     private Long id;
 
     @Enumerated(EnumType.STRING)
     @Column(name = "difficulty", nullable = false, length = 16)
     private Difficulty difficulty;
-    
+
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @MapsId
     @JoinColumn(

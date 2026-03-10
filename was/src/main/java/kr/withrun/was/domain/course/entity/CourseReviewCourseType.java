@@ -2,6 +2,8 @@ package kr.withrun.was.domain.course.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
@@ -25,6 +27,7 @@ public class CourseReviewCourseType extends BaseEntity {
     @Column(name = "course_review_course_type_id")
     private Long id;
 
+    @Enumerated(EnumType.STRING)
     @Column(name = "course_type")
     private CourseType courseType;
 
