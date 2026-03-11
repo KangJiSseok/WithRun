@@ -165,20 +165,20 @@ class CourseLikeServiceTest {
     @DisplayName("삭제되었거나 없는 코스에는 좋아요를 등록할 수 없다")
     @Test
     void throwsCourseNotFoundWhenCourseIsMissing() {
-        given(courseRepository.findActiveById(1L)).willReturn(Optional.empty());
+        given(courseRepository.findActiveCourse(1L)).willReturn(Optional.empty());
 
         assertThatThrownBy(() -> courseLikeService.likeCourse(1L, 2L))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
 
-        verify(userRepository, never()).findActiveUserById(any());
+        verify(userRepository, never()).findActiveUser(any());
         verify(courseLikeRepository, never()).findByCourseIdAndUserId(eq(1L), eq(2L));
     }
 
     private void givenActiveCourseAndUser(Course course) {
-        given(courseRepository.findActiveById(1L)).willReturn(Optional.of(course));
-        given(userRepository.findActiveUserById(2L)).willReturn(Optional.of(user));
+        given(courseRepository.findActiveCourse(1L)).willReturn(Optional.of(course));
+        given(userRepository.findActiveUser(2L)).willReturn(Optional.of(user));
     }
 
     private Course communityCourse() {

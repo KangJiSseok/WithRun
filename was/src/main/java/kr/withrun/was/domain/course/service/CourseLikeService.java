@@ -49,7 +49,7 @@ public class CourseLikeService {
     }
 
     private Course getCourse(Long courseId) {
-        return courseRepository.findActiveById(courseId)
+        return courseRepository.findActiveCourse(courseId)
                 .orElseThrow(() -> new CustomException(ResponseCode.COURSE_NOT_FOUND));
     }
 
