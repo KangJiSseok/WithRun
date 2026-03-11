@@ -29,9 +29,7 @@ workflow:
 build_was:
   stage: build
   script:
-    - cd "$WAS_DIR"
-    - chmod +x gradlew
-    - ./gradlew clean build -x test
+    - docker run --rm --user "$(id -u):$(id -g)" -v "$CI_PROJECT_DIR:/workspace" -w /workspace/was eclipse-temurin:21-jdk-alpine sh -c "chmod +x gradlew && ./gradlew clean build -x test"
   artifacts:
     paths:
       - was/build/libs/*.jar
@@ -40,9 +38,7 @@ build_was:
 test_was:
   stage: test
   script:
-    - cd "$WAS_DIR"
-    - chmod +x gradlew
-    - ./gradlew test
+    - docker run --rm --user "$(id -u):$(id -g)" -v "$CI_PROJECT_DIR:/workspace" -w /workspace/was eclipse-temurin:21-jdk-alpine sh -c "chmod +x gradlew && ./gradlew test"
 
 docker_push_dev:
   stage: image
