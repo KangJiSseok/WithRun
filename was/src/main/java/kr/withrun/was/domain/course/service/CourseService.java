@@ -22,7 +22,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class NearbyCourseQueryService {
+public class CourseService {
 
     // 목표 거리 허용 오차는 +- 1km로 두고 비슷한 길이의 코스만 후보로 남긴다.
     private static final int TARGET_DISTANCE_TOLERANCE_M = 1000;

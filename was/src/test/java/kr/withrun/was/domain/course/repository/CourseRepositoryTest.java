@@ -2,7 +2,7 @@ package kr.withrun.was.domain.course.repository;
 
 import jakarta.persistence.EntityManager;
 import kr.withrun.was.domain.course.entity.Course;
-import kr.withrun.was.domain.course.repository.query.CourseQueryRepository;
+import kr.withrun.was.domain.course.repository.query.CourseCustomRepository;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.global.config.JpaAuditingConfig;
@@ -44,7 +44,7 @@ class CourseRepositoryTest {
     @DisplayName("삭제되지 않은 코스 조회 메서드는 QueryDSL fragment에 선언되어 있다")
     @Test
     void declaresFindNotDeletedCourseInQueryFragment() {
-        assertThat(courseRepository).isInstanceOf(CourseQueryRepository.class);
+        assertThat(courseRepository).isInstanceOf(CourseCustomRepository.class);
 
         Method method = findMethod("findNotDeletedCourse", Long.class);
 
@@ -107,7 +107,7 @@ class CourseRepositoryTest {
 
     private Method findMethod(String name, Class<?>... parameterTypes) {
         try {
-            return CourseQueryRepository.class.getMethod(name, parameterTypes);
+            return CourseCustomRepository.class.getMethod(name, parameterTypes);
         } catch (NoSuchMethodException exception) {
             throw new AssertionError("Expected method not found: " + name, exception);
         }

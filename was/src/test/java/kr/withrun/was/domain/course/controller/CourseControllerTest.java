@@ -3,7 +3,7 @@ package kr.withrun.was.domain.course.controller;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
-import kr.withrun.was.domain.course.service.NearbyCourseQueryService;
+import kr.withrun.was.domain.course.service.CourseService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.global.common.type.Difficulty;
@@ -29,9 +29,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = CourseQueryController.class, properties = "spring.config.import=")
+@WebMvcTest(controllers = CourseController.class, properties = "spring.config.import=")
 @DisplayName("코스 조회 컨트롤러")
-class CourseQueryControllerTest {
+class CourseControllerTest {
 
     static {
         System.setProperty("spring.cloud.aws.parameterstore.enabled", "false");
@@ -42,7 +42,7 @@ class CourseQueryControllerTest {
     private MockMvc mockMvc;
 
     @MockitoBean
-    private NearbyCourseQueryService nearbyCourseQueryService;
+    private CourseService courseService;
 
     @AfterAll
     static void clearConfigOverrides() {
@@ -60,7 +60,7 @@ class CourseQueryControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()))
                 .andExpect(jsonPath("$.data[0].field").value(missingParameter));
 
-        then(nearbyCourseQueryService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any());
     }
 
     @DisplayName("위도나 경도가 범위를 벗어나면 잘못된 입력 응답을 반환한다")
@@ -78,7 +78,7 @@ class CourseQueryControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()))
                 .andExpect(jsonPath("$.data[0].field").value(parameterName));
 
-        then(nearbyCourseQueryService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any());
     }
 
     @DisplayName("반경이 허용 범위를 벗어나면 잘못된 반경 응답을 반환한다")
@@ -90,7 +90,7 @@ class CourseQueryControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_RADIUS.getCode()));
 
-        then(nearbyCourseQueryService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any());
     }
 
     @DisplayName("반경이 정수가 아니면 잘못된 반경 응답을 반환한다")
@@ -102,7 +102,7 @@ class CourseQueryControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_RADIUS.getCode()));
 
-        then(nearbyCourseQueryService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any());
     }
 
     @DisplayName("목표 거리가 유효하지 않으면 잘못된 목표 거리 응답을 반환한다")
@@ -114,7 +114,7 @@ class CourseQueryControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_TARGET_DISTANCE.getCode()));
 
-        then(nearbyCourseQueryService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any());
     }
 
     @DisplayName("목표 거리가 정수가 아니면 잘못된 목표 거리 응답을 반환한다")
@@ -126,7 +126,7 @@ class CourseQueryControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_TARGET_DISTANCE.getCode()));
 
-        then(nearbyCourseQueryService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any());
     }
 
     @DisplayName("페이지 크기가 유효하지 않으면 잘못된 입력 응답을 반환한다")
@@ -138,7 +138,7 @@ class CourseQueryControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
 
-        then(nearbyCourseQueryService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any());
     }
 
     @DisplayName("서비스가 커서를 거부하면 잘못된 커서 응답을 반환한다")
@@ -146,7 +146,7 @@ class CourseQueryControllerTest {
     @ValueSource(strings = {"%%%", "invalid-cursor"})
     void returnsInvalidCursorWhenServiceRejectsCursor(String invalidCursor) throws Exception {
         NearbyCoursesRequest request = new NearbyCoursesRequest(37.5665, 126.9780, 1000, 10000, null, invalidCursor);
-        given(nearbyCourseQueryService.findNearbyCourses(request))
+        given(courseService.findNearbyCourses(request))
                 .willThrow(new CustomException(ResponseCode.INVALID_CURSOR));
 
         mockMvc.perform(nearbyCoursesRequest("37.5665", "126.9780", "1000", "10000", null, invalidCursor))
@@ -154,7 +154,7 @@ class CourseQueryControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_CURSOR.getCode()));
 
-        then(nearbyCourseQueryService).should().findNearbyCourses(request);
+        then(courseService).should().findNearbyCourses(request);
     }
 
     @DisplayName("주변 코스 응답을 성공 응답 포맷으로 감싼다")
@@ -182,7 +182,7 @@ class CourseQueryControllerTest {
                 "next-cursor",
                 2000
         );
-        given(nearbyCourseQueryService.findNearbyCourses(request)).willReturn(response);
+        given(courseService.findNearbyCourses(request)).willReturn(response);
 
         mockMvc.perform(nearbyCoursesRequest("37.5665", "126.9780", radiusM, "10000", null, "bmV4dA"))
                 .andExpect(status().isOk())
@@ -197,7 +197,7 @@ class CourseQueryControllerTest {
                 .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.data.suggestedNextRadiusM").value(2000));
 
-        then(nearbyCourseQueryService).should().findNearbyCourses(request);
+        then(courseService).should().findNearbyCourses(request);
     }
 
     @DisplayName("페이지 크기 쿼리 파라미터를 요청 DTO에 바인딩한다")
@@ -206,13 +206,13 @@ class CourseQueryControllerTest {
     void bindsPageSizeQueryParameterToRequestDto(String pageSize) throws Exception {
         NearbyCoursesRequest request = new NearbyCoursesRequest(37.5665, 126.9780, 1000, 10000, Integer.parseInt(pageSize), null);
         NearbyCoursesResponse response = new NearbyCoursesResponse(List.of(), false, null, 2000);
-        given(nearbyCourseQueryService.findNearbyCourses(request)).willReturn(response);
+        given(courseService.findNearbyCourses(request)).willReturn(response);
 
         mockMvc.perform(nearbyCoursesRequest("37.5665", "126.9780", "1000", "10000", pageSize, null))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        then(nearbyCourseQueryService).should().findNearbyCourses(request);
+        then(courseService).should().findNearbyCourses(request);
     }
 
     private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder getNearbyCoursesWithout(

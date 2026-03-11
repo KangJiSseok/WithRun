@@ -16,7 +16,7 @@ import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
-public class CourseQueryRepositoryImpl implements CourseQueryRepository {
+public class CourseCustomRepositoryImpl implements CourseCustomRepository {
 
     private final JPAQueryFactory queryFactory;
 
