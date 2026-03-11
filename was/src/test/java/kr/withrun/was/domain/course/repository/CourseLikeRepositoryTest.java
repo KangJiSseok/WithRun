@@ -67,7 +67,6 @@ class CourseLikeRepositoryTest {
         setField(user, "gender", Gender.MALE);
         setField(user, "height", 175.0);
         setField(user, "weight", 65.0);
-        setField(user, "isActive", true);
         setBaseField(user, "createdAt", LocalDateTime.of(2026, 3, 11, (int) createdAtHour, 0));
         entityManager.persist(user);
         return user;

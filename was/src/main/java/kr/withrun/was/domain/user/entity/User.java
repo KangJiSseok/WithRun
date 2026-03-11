@@ -12,6 +12,7 @@ import jakarta.persistence.OneToOne;
 import jakarta.persistence.Table;
 import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.common.entity.BaseEntity;
+import org.hibernate.annotations.SQLDelete;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -21,6 +22,7 @@ import java.time.LocalDate;
 @Getter
 @Entity
 @Table(name = "users")
+@SQLDelete(sql = "UPDATE users SET deleted_at = NOW() WHERE user_id = ?")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
 
@@ -44,9 +46,6 @@ public class User extends BaseEntity {
 
     @Column(name = "weight_kg", nullable = false)
     private Double weight;
-
-    @Column(name = "is_active", nullable = false)
-    private Boolean isActive;
 
     @OneToOne(
             mappedBy = "user",
