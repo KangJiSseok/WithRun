@@ -13,6 +13,7 @@ export function AppRoutes() {
       <Route path="/home" element={<HomePage />} />
       <Route path="/free" element={<FreePage />} />
       <Route path="/freerun" element={<FreeRunningPage />} />
+      <Route path="/free" element={<HomePage />} />
       <Route path="/normal" element={<NormalPage />} />
       <Route path="/competition" element={<CompetitionPage />} />
       <Route path="/calendar" element={<CalendarPage />} />
