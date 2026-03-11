@@ -1,4 +1,4 @@
-package kr.withrun.was.domain.course.repository;
+package kr.withrun.was.domain.course.repository.query;
 
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.withrun.was.domain.course.entity.QCourseLike;
@@ -7,7 +7,7 @@ import org.springframework.stereotype.Repository;
 
 @Repository
 @RequiredArgsConstructor
-public class CourseLikeQueryRepositoryImpl implements CourseLikeQueryRepository {
+public class CourseLikeCustomRepositoryImpl implements CourseLikeCustomRepository {
 
     private final JPAQueryFactory queryFactory;
 
