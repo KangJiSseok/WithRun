@@ -7,7 +7,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/components/shadcn/dialog';
+} from '@/shared/components/dialog';
 
 type GuideStep = {
   title: string;
