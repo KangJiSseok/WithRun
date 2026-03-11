@@ -7,12 +7,16 @@ export default function useWatchBridge(onMessage: (message: string) => void) {
 
     const { WatchBridge } = NativeModules
     if (!WatchBridge) {
-      console.warn('[useWatchBridge] WatchBridge 모듈을 찾을 수 없습니다.')
+      console.warn('[WatchBridge][4] WatchBridge 모듈을 찾을 수 없습니다.')
       return
     }
 
+    console.log('[WatchBridge][4] WatchMessage 리스너 등록')
     const emitter = new NativeEventEmitter(WatchBridge)
-    const subscription = emitter.addListener('WatchMessage', onMessage)
+    const subscription = emitter.addListener('WatchMessage', (message) => {
+      console.log('[WatchBridge][4] WatchMessage 이벤트 수신:', message)
+      onMessage(message)
+    })
 
     return () => subscription.remove()
   }, [onMessage])
