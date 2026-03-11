@@ -1,6 +1,7 @@
 package kr.withrun.was.domain.course.service;
 
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
@@ -14,12 +15,14 @@ import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRo
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.util.HaversineDistanceCalculator;
 import kr.withrun.was.domain.course.util.NearbyCourseCursorCodec;
+import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
@@ -63,6 +66,23 @@ public class CourseService {
         Integer suggestedNextRadiusM = resolveSuggestedNextRadiusM(request.radiusM(), hasMore);
 
         return new NearbyCoursesResponse(pageItems, hasMore, nextCursor, suggestedNextRadiusM);
+    }
+
+    public CourseSurveyResponse findCourseSurveys() {
+        return new CourseSurveyResponse(
+                Arrays.stream(CourseType.values())
+                        .map(courseType -> new CourseSurveyResponse.CourseSurveyListResponse(
+                                courseType.getIndex(),
+                                courseType.getLabel()
+                        ))
+                        .toList(),
+                Arrays.stream(Difficulty.values())
+                        .map(difficulty -> new CourseSurveyResponse.CourseSurveyListResponse(
+                                difficulty.getIndex(),
+                                difficulty.getLabel()
+                        ))
+                        .toList()
+        );
     }
 
     public CourseDetailResponse findCourseDetail(Long courseId) {

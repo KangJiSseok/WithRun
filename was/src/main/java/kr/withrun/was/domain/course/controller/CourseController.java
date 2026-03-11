@@ -2,6 +2,7 @@ package kr.withrun.was.domain.course.controller;
 
 import jakarta.validation.Valid;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.service.CourseService;
@@ -22,6 +23,11 @@ import org.springframework.web.bind.annotation.RestController;
 public class CourseController {
 
     private final CourseService courseService;
+
+    @GetMapping("/surveys")
+    public ResponseEntity<ApiResponse<CourseSurveyResponse>> findCourseSurveys() {
+        return ApiResponse.successEntity(courseService.findCourseSurveys());
+    }
 
     @GetMapping("/{courseId}")
     public ResponseEntity<ApiResponse<CourseDetailResponse>> findCourseDetail(@PathVariable Long courseId) {
