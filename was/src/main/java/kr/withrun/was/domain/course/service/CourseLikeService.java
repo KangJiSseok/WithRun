@@ -49,12 +49,12 @@ public class CourseLikeService {
     }
 
     private Course getCourse(Long courseId) {
-        return courseRepository.findActiveCourse(courseId)
+        return courseRepository.findNotDeletedCourse(courseId)
                 .orElseThrow(() -> new CustomException(ResponseCode.COURSE_NOT_FOUND));
     }
 
     private User getUser(Long userId) {
-        return userRepository.findActiveUser(userId)
+        return userRepository.findNotDeletedUser(userId)
                 .orElseThrow(() -> new CustomException(ResponseCode.USER_NOT_FOUND));
     }
 }

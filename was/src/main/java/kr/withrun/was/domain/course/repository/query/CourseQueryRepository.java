@@ -8,7 +8,7 @@ import java.util.List;
 
 public interface CourseQueryRepository {
 
-    Optional<Course> findActiveCourse(Long courseId);
+    Optional<Course> findNotDeletedCourse(Long courseId);
 
     List<NearbyCourseCandidateRow> findOfficialNearbyCourseCandidates();
 }

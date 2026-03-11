@@ -128,7 +128,7 @@ class CourseBookmarkServiceTest {
     @DisplayName("없는 코스에 북마크를 추가하면 코스 없음 예외를 던진다")
     @Test
     void throwsCourseNotFoundWhenCourseIsMissingOnAdd() {
-        when(courseRepository.findActiveCourse(14L)).thenReturn(Optional.empty());
+        when(courseRepository.findNotDeletedCourse(14L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> courseBookmarkService.addBookmark(14L, 24L))
                 .isInstanceOf(CustomException.class)
@@ -141,7 +141,7 @@ class CourseBookmarkServiceTest {
     void throwsCourseNotFoundWhenCourseIsDeletedOnAdd() {
         Course deletedCourse = course(15L);
         deletedCourse.delete();
-        when(courseRepository.findActiveCourse(deletedCourse.getId())).thenReturn(Optional.of(deletedCourse));
+        when(courseRepository.findNotDeletedCourse(deletedCourse.getId())).thenReturn(Optional.of(deletedCourse));
 
         assertThatThrownBy(() -> courseBookmarkService.addBookmark(deletedCourse.getId(), 25L))
                 .isInstanceOf(CustomException.class)
@@ -153,8 +153,8 @@ class CourseBookmarkServiceTest {
     @Test
     void throwsUserNotFoundWhenUserIsMissingOnRemove() {
         Course course = course(16L);
-        when(courseRepository.findActiveCourse(course.getId())).thenReturn(Optional.of(course));
-        when(userRepository.findActiveUser(26L)).thenReturn(Optional.empty());
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(userRepository.findNotDeletedUser(26L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> courseBookmarkService.removeBookmark(course.getId(), 26L))
                 .isInstanceOf(CustomException.class)
@@ -168,8 +168,8 @@ class CourseBookmarkServiceTest {
         Course course = course(18L);
         User user = userWithoutActiveFlag(28L);
         CourseBookmark savedBookmark = bookmark(38L, course, user, LocalDateTime.of(2026, 3, 11, 7, 0));
-        when(courseRepository.findActiveCourse(course.getId())).thenReturn(Optional.of(course));
-        when(userRepository.findActiveUser(user.getId())).thenReturn(Optional.of(user));
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
         when(courseBookmarkRepository.findBookmark(course.getId(), user.getId())).thenReturn(Optional.empty());
         when(courseBookmarkRepository.save(any(CourseBookmark.class))).thenReturn(savedBookmark);
 
@@ -186,8 +186,8 @@ class CourseBookmarkServiceTest {
         Course course = course(17L);
         User deletedUser = user(27L);
         deletedUser.delete();
-        when(courseRepository.findActiveCourse(course.getId())).thenReturn(Optional.of(course));
-        when(userRepository.findActiveUser(deletedUser.getId())).thenReturn(Optional.of(deletedUser));
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(userRepository.findNotDeletedUser(deletedUser.getId())).thenReturn(Optional.of(deletedUser));
 
         assertThatThrownBy(() -> courseBookmarkService.removeBookmark(course.getId(), deletedUser.getId()))
                 .isInstanceOf(CustomException.class)
@@ -196,8 +196,8 @@ class CourseBookmarkServiceTest {
     }
 
     private void stubCourseAndUser(Course course, User user) {
-        when(courseRepository.findActiveCourse(course.getId())).thenReturn(Optional.of(course));
-        when(userRepository.findActiveUser(user.getId())).thenReturn(Optional.of(user));
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
     }
 
     private Course course(Long id) {

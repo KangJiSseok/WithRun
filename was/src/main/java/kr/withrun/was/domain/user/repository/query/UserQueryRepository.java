@@ -6,5 +6,5 @@ import java.util.Optional;
 
 public interface UserQueryRepository {
 
-    Optional<User> findActiveUser(Long userId);
+    Optional<User> findNotDeletedUser(Long userId);
 }

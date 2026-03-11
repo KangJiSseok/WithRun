@@ -15,7 +15,7 @@ public class UserQueryRepositoryImpl implements UserQueryRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Optional<User> findActiveUser(Long userId) {
+    public Optional<User> findNotDeletedUser(Long userId) {
         QUser user = QUser.user;
 
         return Optional.ofNullable(

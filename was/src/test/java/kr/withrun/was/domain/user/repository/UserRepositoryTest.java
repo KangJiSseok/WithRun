@@ -65,7 +65,7 @@ class UserRepositoryTest {
         entityManager.flush();
         entityManager.clear();
 
-        User foundUser = userRepository.findActiveUser(activeUser.getId())
+        User foundUser = userRepository.findNotDeletedUser(activeUser.getId())
                 .orElseThrow();
 
         assertThat(foundUser.getId()).isEqualTo(activeUser.getId());
@@ -79,7 +79,7 @@ class UserRepositoryTest {
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(userRepository.findActiveUser(deletedUser.getId())).isEmpty();
+        assertThat(userRepository.findNotDeletedUser(deletedUser.getId())).isEmpty();
     }
 
     private User persistUser(String nickname) {

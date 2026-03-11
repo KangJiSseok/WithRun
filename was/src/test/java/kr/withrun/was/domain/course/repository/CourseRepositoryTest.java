@@ -41,32 +41,32 @@ class CourseRepositoryTest {
     @Autowired
     private EntityManager entityManager;
 
-    @DisplayName("활성 코스 조회 메서드는 QueryDSL fragment에 선언되어 있다")
+    @DisplayName("삭제되지 않은 코스 조회 메서드는 QueryDSL fragment에 선언되어 있다")
     @Test
-    void declaresFindActiveCourseInQueryFragment() {
+    void declaresFindNotDeletedCourseInQueryFragment() {
         assertThat(courseRepository).isInstanceOf(CourseQueryRepository.class);
 
-        Method method = findMethod("findActiveCourse", Long.class);
+        Method method = findMethod("findNotDeletedCourse", Long.class);
 
         assertThat(method.getReturnType()).isEqualTo(java.util.Optional.class);
     }
 
-    @DisplayName("삭제되지 않은 코스를 활성 코스로 조회한다")
+    @DisplayName("삭제되지 않은 코스를 조회한다")
     @Test
-    void findsActiveCourse() {
+    void findsNotDeletedCourse() {
         String title = "Active Course";
         persistCourse(title);
         entityManager.flush();
         Long courseId = findCourseIdByTitle(title);
         entityManager.clear();
 
-        Course foundCourse = courseRepository.findActiveCourse(courseId)
+        Course foundCourse = courseRepository.findNotDeletedCourse(courseId)
                 .orElseThrow();
 
         assertThat(readId(foundCourse)).isEqualTo(courseId);
     }
 
-    @DisplayName("삭제된 코스는 활성 코스로 조회하지 않는다")
+    @DisplayName("삭제된 코스는 조회하지 않는다")
     @Test
     void doesNotFindDeletedCourse() {
         String title = "Deleted Course";
@@ -76,7 +76,7 @@ class CourseRepositoryTest {
         Long courseId = findCourseIdByTitle(title);
         entityManager.clear();
 
-        assertThat(courseRepository.findActiveCourse(courseId)).isEmpty();
+        assertThat(courseRepository.findNotDeletedCourse(courseId)).isEmpty();
     }
 
     private Course persistCourse(String title) {

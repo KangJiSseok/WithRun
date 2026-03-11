@@ -21,7 +21,7 @@ public class CourseQueryRepositoryImpl implements CourseQueryRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Optional<Course> findActiveCourse(Long courseId) {
+    public Optional<Course> findNotDeletedCourse(Long courseId) {
         QCourse course = QCourse.course;
 
         return Optional.ofNullable(
