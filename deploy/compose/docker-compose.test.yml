@@ -10,3 +10,10 @@ services:
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
     restart: unless-stopped
+  
+  web:
+    image: ${DOCKERHUB_USERNAME}/withrun-web:dev-latest
+    container_name: withrun-web-test
+    ports:
+      - "81:80"
+    restart: unless-stopped
