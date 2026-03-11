@@ -17,12 +17,15 @@ import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.JdbcTypeCode;
 import org.hibernate.type.SqlTypes;
 
 import java.time.LocalDateTime;
 
+@Getter
 @Entity
 @Table(name = "courses")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -74,5 +77,34 @@ public class Course extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_courses_created_by")
     )
     private User user;
+
+    @Builder
+    private Course(
+            String title,
+            CourseStatus status,
+            Integer distanceM,
+            Integer elevationGainM,
+            String snapshotImageUrl,
+            Double startLatitude,
+            Double startLongitude,
+            Double endLatitude,
+            Double endLongitude,
+            Coordinates coordinates,
+            LocalDateTime promotedAt,
+            User user
+    ) {
+        this.title = title;
+        this.status = status;
+        this.distanceM = distanceM;
+        this.elevationGainM = elevationGainM;
+        this.snapshotImageUrl = snapshotImageUrl;
+        this.startLatitude = startLatitude;
+        this.startLongitude = startLongitude;
+        this.endLatitude = endLatitude;
+        this.endLongitude = endLongitude;
+        this.coordinates = coordinates;
+        this.promotedAt = promotedAt;
+        this.user = user;
+    }
 
 }

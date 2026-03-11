@@ -13,8 +13,11 @@ import jakarta.persistence.Table;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "course_bookmarks")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -38,5 +41,18 @@ public class CourseBookmark extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_course_bookmarks_user")
     )
     private User user;
+
+    @Builder
+    private CourseBookmark(Course course, User user) {
+        this.course = course;
+        this.user = user;
+    }
+
+    public static CourseBookmark create(Course course, User user) {
+        return CourseBookmark.builder()
+                .course(course)
+                .user(user)
+                .build();
+    }
 
 }

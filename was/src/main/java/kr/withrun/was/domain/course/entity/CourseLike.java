@@ -13,8 +13,11 @@ import jakarta.persistence.Table;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "course_likes")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -41,5 +44,20 @@ public class CourseLike extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_course_likes_user")
     )
     private User user;
+
+    @Builder
+    private CourseLike(Boolean isLiked, Course course, User user) {
+        this.isLiked = isLiked;
+        this.course = course;
+        this.user = user;
+    }
+
+    public static CourseLike create(Course course, User user, boolean isLiked) {
+        return CourseLike.builder()
+                .course(course)
+                .user(user)
+                .isLiked(isLiked)
+                .build();
+    }
 
 }
