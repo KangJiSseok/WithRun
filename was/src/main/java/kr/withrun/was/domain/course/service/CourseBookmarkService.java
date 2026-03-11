@@ -52,20 +52,12 @@ public class CourseBookmarkService {
     }
 
     private Course getCourse(Long courseId) {
-        Course course = courseRepository.findNotDeletedCourse(courseId)
+        return courseRepository.findNotDeletedCourse(courseId)
                 .orElseThrow(() -> new CustomException(ResponseCode.COURSE_NOT_FOUND));
-        if (course.isDeleted()) {
-            throw new CustomException(ResponseCode.COURSE_NOT_FOUND);
-        }
-        return course;
     }
 
     private User getUser(Long userId) {
-        User user = userRepository.findNotDeletedUser(userId)
+        return userRepository.findNotDeletedUser(userId)
                 .orElseThrow(() -> new CustomException(ResponseCode.USER_NOT_FOUND));
-        if (user.isDeleted()) {
-            throw new CustomException(ResponseCode.USER_NOT_FOUND);
-        }
-        return user;
     }
 }
