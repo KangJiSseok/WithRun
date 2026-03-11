@@ -27,7 +27,7 @@ public class NearbyCourseQueryService {
     // 목표 거리 허용 오차는 +- 1km로 두고 비슷한 길이의 코스만 후보로 남긴다.
     private static final int TARGET_DISTANCE_TOLERANCE_M = 1000;
     // 한 번에 내려주는 코스 수는 5개로 고정한다.
-    private static final int PAGE_SIZE = 2;
+    private static final int PAGE_SIZE = 5;
     // 반경은 최대 5km까지만 점진적으로 확장한다.
     private static final int MAX_RADIUS_M = 5000;
     private static final int RADIUS_STEP_M = 1000;
