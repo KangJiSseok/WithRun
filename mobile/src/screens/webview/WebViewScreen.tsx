@@ -9,6 +9,7 @@ export default function WebViewScreen() {
 
   // 워치 메시지 수신 → 웹에 CustomEvent 주입
   const handleWatchMessage = useCallback((message: string) => {
+    console.log('[WatchBridge][5] postMessage → 웹으로 전송:', message)
     postMessage('watchMessage', { message })
   }, [])
 
