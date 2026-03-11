@@ -29,6 +29,18 @@ public abstract class BaseEntity {
     @Column(name = "deleted_at", columnDefinition = "TIMESTAMP")
     protected LocalDateTime deletedAt;
 
+    public LocalDateTime getCreatedAt() {
+        return createdAt;
+    }
+
+    public LocalDateTime getUpdatedAt() {
+        return updatedAt;
+    }
+
+    public LocalDateTime getDeletedAt() {
+        return deletedAt;
+    }
+
     public void delete() {
         this.deletedAt = LocalDateTime.now();
     }

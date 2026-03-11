@@ -54,7 +54,7 @@ public class CourseLikeService {
     }
 
     private User getUser(Long userId) {
-        return userRepository.findActiveUserById(userId)
+        return userRepository.findActiveUser(userId)
                 .orElseThrow(() -> new CustomException(ResponseCode.USER_NOT_FOUND));
     }
 }
