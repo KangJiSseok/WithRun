@@ -21,14 +21,18 @@ public class CourseQueryRepositoryImpl implements CourseQueryRepository {
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Optional<Course> findActiveById(Long courseId) {
+    public Optional<Course> findActiveCourse(Long courseId) {
         QCourse course = QCourse.course;
 
-        return Optional.ofNullable(queryFactory
-                .selectFrom(course)
-                .where(course.id.eq(courseId)
-                        .and(course.deletedAt.isNull()))
-                .fetchOne());
+        return Optional.ofNullable(
+                queryFactory
+                        .selectFrom(course)
+                        .where(
+                                course.id.eq(courseId),
+                                course.deletedAt.isNull()
+                        )
+                        .fetchOne()
+        );
     }
 
     @Override
