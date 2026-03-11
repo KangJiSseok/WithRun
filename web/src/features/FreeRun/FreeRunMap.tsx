@@ -1,4 +1,4 @@
-import { useFreeRunMap } from '@/features/FreeRun/hooks/useFreeRunMap';
+import { useFreeRunMap } from '@/hooks/FreeRun/useFreeRunMap';
 
 export function FreeRunMap() {
   const { containerRef } = useFreeRunMap();
