@@ -9,6 +9,10 @@ export const appPostMessageSchema = postMessageSchema({
   watchMessage: {
     validate: (data: unknown) => data as { message: string },
   },
+  gpsLocation: {
+    validate: (data: unknown) =>
+      data as { latitude: number; longitude: number; accuracy: number | null },
+  },
 })
 
 export type AndroidPostMessageSchema = typeof appPostMessageSchema
