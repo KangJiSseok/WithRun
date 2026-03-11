@@ -1,4 +1,11 @@
 spring:
+  config:
+    import: 'aws-parameterstore:/config/withrun/'
+  datasource:
+    url: ${jdbc.url}
+    username: ${jdbc.username}
+    password: ${jdbc.password}
+
   jpa:
     hibernate:
       ddl-auto: update
