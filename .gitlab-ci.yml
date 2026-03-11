@@ -1,0 +1,91 @@
+stages:
+  - build
+  - test
+  - image
+  - deploy
+
+default:
+  tags:
+    - prod
+
+variables:
+  WAS_DIR: "was"
+  TEST_DEPLOY_DIR: "/home/ubuntu/test-app"
+  PROD_DEPLOY_DIR: "/home/ubuntu/prod-app"
+  WAS_IMAGE: "$DOCKERHUB_USERNAME/withrun-was"
+
+workflow:
+  rules:
+    # MR 파이프라인은 dev/main 브랜치 자체에서 올라온 MR만 생성
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+     ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
+
+    # push 파이프라인은 모든 브랜치에서 생성 (태그 제외)
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
+
+    # 그 외는 파이프라인 생성 안 함
+    - when: never
+
+build_was:
+  stage: build
+  script:
+    - cd "$WAS_DIR"
+    - chmod +x gradlew
+    - ./gradlew clean build -x test
+  artifacts:
+    paths:
+      - was/build/libs/*.jar
+    expire_in: 1 day
+
+test_was:
+  stage: test
+  script:
+    - cd "$WAS_DIR"
+    - chmod +x gradlew
+    - ./gradlew test
+
+docker_push_dev:
+  stage: image
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+  script:
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    - docker build -t "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WAS_IMAGE:dev-latest" ./was
+    - docker push "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker push "$WAS_IMAGE:dev-latest"
+
+docker_push_prod:
+  stage: image
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+  script:
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    - docker build -t "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WAS_IMAGE:prod-latest" ./was
+    - docker push "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker push "$WAS_IMAGE:prod-latest"
+
+deploy_test:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+  environment:
+    name: test
+  script:
+    - cp deploy/compose/docker-compose.test.yml "$TEST_DEPLOY_DIR/"
+    - cd "$TEST_DEPLOY_DIR"
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    - docker compose -f docker-compose.test.yml pull
+    - docker compose -f docker-compose.test.yml up -d
+
+deploy_prod:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+  environment:
+    name: production
+  script:
+    - cp deploy/compose/docker-compose.prod.yml "$PROD_DEPLOY_DIR/"
+    - cd "$PROD_DEPLOY_DIR"
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    - docker compose -f docker-compose.prod.yml pull
+    - docker compose -f docker-compose.prod.yml up -d
