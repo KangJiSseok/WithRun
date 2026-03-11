@@ -1,5 +1,118 @@
+# ============================================
+# Root .gitignore - Global patterns
+# ============================================
+
+# --------------------------------------------
+# Dependencies
+# --------------------------------------------
+node_modules/
+.npm/
+.yarn/
+.pnpm-store/
+pnpm-lock.yaml
+package-lock.json
+yarn.lock
+
+# --------------------------------------------
+# Build outputs
+# --------------------------------------------
+dist/
+dist-ssr/
+build/
+out/
+*.tsbuildinfo
+
+# --------------------------------------------
+# Gradle (Android/Kotlin)
+# --------------------------------------------
+.gradle/
+local.properties
+*.hprof
+
+# --------------------------------------------
+# IDE / Editor
+# --------------------------------------------
+.idea/
+.vscode/
+*.iml
+*.iws
+*.ipr
+
+# AI / Tooling
 .opencode/
 .sisyphus/
+.claude/
 _research/
-.idea/
-node_modules/
+
+# --------------------------------------------
+# OS files
+# --------------------------------------------
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# --------------------------------------------
+# Logs
+# --------------------------------------------
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# --------------------------------------------
+# Environment / Secrets
+# --------------------------------------------
+.env
+.env.*
+.env*.local
+*.env
+
+# Credentials
+*.pem
+*.key
+*.jks
+*.p8
+*.p12
+*.keystore
+*.mobileprovision
+credentials.json
+secrets.*
+google-services.json
+GoogleService-Info.plist
+
+# --------------------------------------------
+# Mobile / Native
+# --------------------------------------------
+# Expo
+.expo/
+expo-env.d.ts
+.metro-health-check*
+web-build/
+
+# iOS / Xcode
+*.ipa
+*.xcarchive
+xcuserdata/
+DerivedData/
+Pods/
+*.jsbundle
+
+# Android
+*.apk
+*.aab
+.cxx/
+
+# --------------------------------------------
+# Misc
+# --------------------------------------------
+*.local
+*.orig.*
+*~
+*.swp
+*.swo
+*.suo
+*.ntvs*
+*.njsproj
+*.sln

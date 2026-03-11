@@ -15,9 +15,12 @@ import jakarta.persistence.Table;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 @Table
+@Getter
 @Entity
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CourseTypeMap extends BaseEntity {
@@ -34,8 +37,21 @@ public class CourseTypeMap extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "course_id",
-            foreignKey = @ForeignKey(name = "fk_course_difficulties_course")
+            foreignKey = @ForeignKey(name = "fk_course_type_maps_course")
     )
     private Course course;
+
+    @Builder
+    private CourseTypeMap(CourseType courseType, Course course) {
+        this.courseType = courseType;
+        this.course = course;
+    }
+
+    public static CourseTypeMap create(Course course, CourseType courseType) {
+        return CourseTypeMap.builder()
+                .course(course)
+                .courseType(courseType)
+                .build();
+    }
 
 }

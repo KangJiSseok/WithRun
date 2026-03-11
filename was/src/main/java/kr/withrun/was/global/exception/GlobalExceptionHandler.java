@@ -4,7 +4,9 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 import org.springframework.http.ResponseEntity;
+import org.springframework.validation.BindException;
 import org.springframework.validation.BindingResult;
+import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -36,12 +38,25 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ApiResponse<List<ValidationError>>> handleValidationException(
             MethodArgumentNotValidException e) {
 
-        List<ValidationError> errors = extractValidationErrors(e.getBindingResult());
-        log.warn("Validation failed: {}", errors);
+        return buildValidationErrorResponse(e.getBindingResult(), "Validation failed");
+    }
+
+    @ExceptionHandler(BindException.class)
+    public ResponseEntity<ApiResponse<List<ValidationError>>> handleBindException(BindException e) {
+        return buildValidationErrorResponse(e.getBindingResult(), "Binding failed");
+    }
+
+    private ResponseEntity<ApiResponse<List<ValidationError>>> buildValidationErrorResponse(
+            BindingResult bindingResult,
+            String logPrefix
+    ) {
+        List<ValidationError> errors = extractValidationErrors(bindingResult);
+        log.warn("{}: {}", logPrefix, errors);
+        ResponseCode responseCode = resolveResponseCode(bindingResult);
 
         return ResponseEntity
-                .badRequest()
-                .body(ApiResponse.fail(ResponseCode.INVALID_INPUT_VALUE, errors));
+                .status(responseCode.getStatus())
+                .body(ApiResponse.fail(responseCode, errors));
     }
 
     /**
@@ -49,6 +64,11 @@ public class GlobalExceptionHandler {
      */
     @ExceptionHandler(Exception.class)
     public ResponseEntity<ApiResponse<Void>> handleUnexpectedException(Exception e) {
+        CustomException customException = findCustomException(e);
+        if (customException != null) {
+            return handleCustomException(customException);
+        }
+
         log.error("Unexpected exception: ", e);
 
         return ResponseEntity
@@ -63,6 +83,47 @@ public class GlobalExceptionHandler {
                         error.getRejectedValue(),
                         error.getDefaultMessage()))
                 .collect(Collectors.toList());
+    }
+
+    private ResponseCode resolveResponseCode(BindingResult bindingResult) {
+        for (FieldError error : bindingResult.getFieldErrors()) {
+            if (isSpecificNumericValidation(error, "radiusM")) {
+                return ResponseCode.INVALID_RADIUS;
+            }
+            if (isSpecificNumericValidation(error, "targetDistanceM")) {
+                return ResponseCode.INVALID_TARGET_DISTANCE;
+            }
+        }
+
+        return ResponseCode.INVALID_INPUT_VALUE;
+    }
+
+    private boolean isSpecificNumericValidation(FieldError error, String fieldName) {
+        if (!fieldName.equals(error.getField())) {
+            return false;
+        }
+
+        Object rejectedValue = error.getRejectedValue();
+        if (rejectedValue == null) {
+            return false;
+        }
+        if (rejectedValue instanceof String stringValue && stringValue.isBlank()) {
+            return false;
+        }
+
+        return true;
+    }
+
+    private CustomException findCustomException(Throwable throwable) {
+        Throwable current = throwable;
+        while (current != null) {
+            if (current instanceof CustomException customException) {
+                return customException;
+            }
+            current = current.getCause();
+        }
+
+        return null;
     }
 
     public record ValidationError(String field, Object rejectedValue, String message) {

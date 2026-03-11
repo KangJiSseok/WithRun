@@ -16,8 +16,11 @@ import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import kr.withrun.was.global.common.type.Difficulty;
 import lombok.AccessLevel;
+import lombok.Builder;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
 
+@Getter
 @Entity
 @Table(name = "course_reviews")
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
@@ -48,5 +51,22 @@ public class CourseReview extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_course_reviews_user")
     )
     private User user;
+
+    @Builder
+    private CourseReview(Integer rating, Difficulty difficulty, Course course, User user) {
+        this.rating = rating;
+        this.difficulty = difficulty;
+        this.course = course;
+        this.user = user;
+    }
+
+    public static CourseReview create(Course course, User user, Integer rating, Difficulty difficulty) {
+        return CourseReview.builder()
+                .course(course)
+                .user(user)
+                .rating(rating)
+                .difficulty(difficulty)
+                .build();
+    }
 
 }
