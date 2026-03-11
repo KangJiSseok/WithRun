@@ -1,13 +1,21 @@
 package kr.withrun.was.domain.course.service;
 
+import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
+import kr.withrun.was.domain.course.entity.Course;
+import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
+import kr.withrun.was.domain.course.repository.CourseLikeRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
+import kr.withrun.was.domain.course.repository.CourseReviewRepository;
+import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.util.HaversineDistanceCalculator;
 import kr.withrun.was.domain.course.util.NearbyCourseCursorCodec;
+import kr.withrun.was.global.exception.CustomException;
+import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -22,7 +30,7 @@ import java.util.stream.Collectors;
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
-public class NearbyCourseQueryService {
+public class CourseService {
 
     // 목표 거리 허용 오차는 +- 1km로 두고 비슷한 길이의 코스만 후보로 남긴다.
     private static final int TARGET_DISTANCE_TOLERANCE_M = 1000;
@@ -33,6 +41,10 @@ public class NearbyCourseQueryService {
     private static final int RADIUS_STEP_M = 1000;
 
     private final CourseRepository courseRepository;
+    private final CourseDifficultyRepository courseDifficultyRepository;
+    private final CourseTypeMapRepository courseTypeMapRepository;
+    private final CourseLikeRepository courseLikeRepository;
+    private final CourseReviewRepository courseReviewRepository;
 
     /**
      * 주변 코스 목록을 커서 기반으로 잘라 반환한다.
@@ -52,6 +64,39 @@ public class NearbyCourseQueryService {
 
         return new NearbyCoursesResponse(pageItems, hasMore, nextCursor, suggestedNextRadiusM);
     }
+
+    public CourseDetailResponse findCourseDetail(Long courseId) {
+        Course course = getCourse(courseId);
+
+        return new CourseDetailResponse(
+                course.getId(),
+                course.getTitle(),
+                course.getStatus(),
+                courseDifficultyRepository.findDifficultyByCourseId(courseId)
+                        .orElse(null),
+                course.getDistanceM(),
+                course.getElevationGainM(),
+                course.getSnapshotImageUrl(),
+                course.getStartLatitude(),
+                course.getStartLongitude(),
+                course.getEndLatitude(),
+                course.getEndLongitude(),
+                course.getCoordinates(),
+                courseTypeMapRepository.findCourseTypesByCourseId(courseId),
+                courseLikeRepository.countByCourseId(courseId),
+                // TODO: 인증에서 userId를 전달받는 방식이 정해지면 isLiked/isBookmarked를 사용자 기준으로 계산하도록 수정해야 한다.
+                false,
+                false,
+                courseReviewRepository.findAverageRatingByCourseId(courseId)
+        );
+    }
+
+    private Course getCourse(Long courseId) {
+        Course course = courseRepository.findNotDeletedCourse(courseId)
+                .orElseThrow(() -> new CustomException(ResponseCode.COURSE_NOT_FOUND));
+        return course;
+    }
+
 
     private int resolvePageSize(Integer pageSize) {
         return pageSize == null ? DEFAULT_PAGE_SIZE : pageSize;

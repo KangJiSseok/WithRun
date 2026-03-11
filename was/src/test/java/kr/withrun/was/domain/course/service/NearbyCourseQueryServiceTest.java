@@ -3,7 +3,11 @@ package kr.withrun.was.domain.course.service;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
+import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
+import kr.withrun.was.domain.course.repository.CourseLikeRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
+import kr.withrun.was.domain.course.repository.CourseReviewRepository;
+import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
@@ -36,11 +40,29 @@ class NearbyCourseQueryServiceTest {
     @Mock
     private CourseRepository courseRepository;
 
-    private NearbyCourseQueryService nearbyCourseQueryService;
+    @Mock
+    private CourseDifficultyRepository courseDifficultyRepository;
+
+    @Mock
+    private CourseTypeMapRepository courseTypeMapRepository;
+
+    @Mock
+    private CourseLikeRepository courseLikeRepository;
+
+    @Mock
+    private CourseReviewRepository courseReviewRepository;
+
+    private CourseService courseService;
 
     @BeforeEach
     void setUp() {
-        nearbyCourseQueryService = new NearbyCourseQueryService(courseRepository);
+        courseService = new CourseService(
+                courseRepository,
+                courseDifficultyRepository,
+                courseTypeMapRepository,
+                courseLikeRepository,
+                courseReviewRepository
+        );
     }
 
     @DisplayName("목표 거리 범위를 벗어난 코스는 제외한다")
@@ -54,7 +76,7 @@ class NearbyCourseQueryServiceTest {
                 candidate(4L, 11001, coordinatesAtUser(), CourseType.TRACK)
         );
 
-        List<NearbyCourseItemResponse> items = nearbyCourseQueryService.findNearbyCourseItems(request);
+        List<NearbyCourseItemResponse> items = courseService.findNearbyCourseItems(request);
 
         assertThat(items)
                 .extracting(NearbyCourseItemResponse::courseId)
@@ -75,7 +97,7 @@ class NearbyCourseQueryServiceTest {
                 )
         );
 
-        List<NearbyCourseItemResponse> items = nearbyCourseQueryService.findNearbyCourseItems(request);
+        List<NearbyCourseItemResponse> items = courseService.findNearbyCourseItems(request);
 
         assertThat(items)
                 .extracting(NearbyCourseItemResponse::courseId)
@@ -99,7 +121,7 @@ class NearbyCourseQueryServiceTest {
                 )
         );
 
-        List<NearbyCourseItemResponse> items = nearbyCourseQueryService.findNearbyCourseItems(request);
+        List<NearbyCourseItemResponse> items = courseService.findNearbyCourseItems(request);
 
         assertThat(items).hasSize(1);
         assertThat(items.get(0).distanceFromUserM()).isZero();
@@ -118,7 +140,7 @@ class NearbyCourseQueryServiceTest {
                 candidate(5L, 10000, coordinates(Arrays.asList((Double) null), Arrays.asList((Double) null)), CourseType.URBAN)
         );
 
-        List<NearbyCourseItemResponse> items = nearbyCourseQueryService.findNearbyCourseItems(request);
+        List<NearbyCourseItemResponse> items = courseService.findNearbyCourseItems(request);
 
         assertThat(items)
                 .extracting(NearbyCourseItemResponse::courseId)
@@ -134,7 +156,7 @@ class NearbyCourseQueryServiceTest {
                 candidate(10L, 10000, coordinatesAtUser(), CourseType.PARK)
         );
 
-        List<NearbyCourseItemResponse> items = nearbyCourseQueryService.findNearbyCourseItems(request);
+        List<NearbyCourseItemResponse> items = courseService.findNearbyCourseItems(request);
 
         assertThat(items)
                 .extracting(NearbyCourseItemResponse::courseId)
@@ -151,7 +173,7 @@ class NearbyCourseQueryServiceTest {
                 candidate(7L, 10000, coordinatesAtUser(), CourseType.PARK)
         );
 
-        List<NearbyCourseItemResponse> items = nearbyCourseQueryService.findNearbyCourseItems(request);
+        List<NearbyCourseItemResponse> items = courseService.findNearbyCourseItems(request);
 
         assertThat(items).hasSize(1);
         assertThat(items.get(0).courseId()).isEqualTo(7L);
@@ -222,7 +244,7 @@ class NearbyCourseQueryServiceTest {
                 candidate(5L, 10000, coordinatesNorthOfUser(600), CourseType.URBAN)
         );
 
-        List<NearbyCourseItemResponse> sortedItems = nearbyCourseQueryService.findNearbyCourseItems(baseRequest);
+        List<NearbyCourseItemResponse> sortedItems = courseService.findNearbyCourseItems(baseRequest);
         NearbyCourseItemResponse cursorItem = sortedItems.get(2);
         NearbyCoursesRequest pagedRequest = new NearbyCoursesRequest(
                 USER_LATITUDE,
@@ -329,7 +351,7 @@ class NearbyCourseQueryServiceTest {
     }
 
     private NearbyCoursesResponse findNearbyCourses(NearbyCoursesRequest request) {
-        return nearbyCourseQueryService.findNearbyCourses(request);
+        return courseService.findNearbyCourses(request);
     }
 
     private NearbyCourseCandidateRow candidate(
