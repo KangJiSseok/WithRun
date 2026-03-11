@@ -13,11 +13,12 @@ variables:
   TEST_DEPLOY_DIR: "/home/ubuntu/test-app"
   PROD_DEPLOY_DIR: "/home/ubuntu/prod-app"
   WAS_IMAGE: "$DOCKERHUB_USERNAME/withrun-was"
+  WEB_IMAGE: "$DOCKERHUB_USERNAME/withrun-web"
 
 workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
-     ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
+      $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "feat-infra/cicd-pipeline"'
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
     - when: never
 
@@ -42,27 +43,27 @@ test_was:
 docker_push_dev:
   stage: image
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "feat-infra/cicd-pipeline"'
   script:
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
     - docker build -t "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WAS_IMAGE:dev-latest" ./was
+    - docker build -t "$WEB_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WEB_IMAGE:dev-latest" ./web
     - docker push "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA"
     - docker push "$WAS_IMAGE:dev-latest"
+    - docker push "$WEB_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker push "$WEB_IMAGE:dev-latest"
 
 docker_push_prod:
   stage: image
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+    - when: never
   script:
-    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-    - docker build -t "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WAS_IMAGE:prod-latest" ./was
-    - docker push "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA"
-    - docker push "$WAS_IMAGE:prod-latest"
+    - echo "skip prod image push"
 
 deploy_test:
   stage: deploy
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "feat-infra/cicd-pipeline"'
   environment:
     name: test
   script:
@@ -70,17 +71,14 @@ deploy_test:
     - cd "$TEST_DEPLOY_DIR"
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
     - docker compose -f docker-compose.test.yml pull
+    - docker compose -f docker-compose.test.yml down --remove-orphans
     - docker compose -f docker-compose.test.yml up -d
 
 deploy_prod:
   stage: deploy
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+    - when: never
   environment:
     name: production
   script:
-    - cp deploy/compose/docker-compose.prod.yml "$PROD_DEPLOY_DIR/"
-    - cd "$PROD_DEPLOY_DIR"
-    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
-    - docker compose -f docker-compose.prod.yml pull
-    - docker compose -f docker-compose.prod.yml up -d
+    - echo "skip prod deploy"
