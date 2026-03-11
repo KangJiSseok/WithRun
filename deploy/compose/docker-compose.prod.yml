@@ -12,8 +12,8 @@ services:
     restart: unless-stopped
 
   web:
-    image: ${DOCKERHUB_USERNAME}/withrun-web:dev-latest
-    container_name: withrun-web-test
+    image: ${DOCKERHUB_USERNAME}/withrun-web:prod-latest
+    container_name: withrun-web-prod
     ports:
       - "80:80"
     restart: unless-stopped
