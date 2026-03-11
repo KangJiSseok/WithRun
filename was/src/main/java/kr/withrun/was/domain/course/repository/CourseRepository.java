@@ -5,4 +5,5 @@ import kr.withrun.was.domain.course.repository.query.CourseQueryRepository;
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CourseRepository extends JpaRepository<Course, Long>, CourseQueryRepository {
+
 }

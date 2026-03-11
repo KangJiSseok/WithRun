@@ -10,8 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import kr.withrun.was.domain.user.entity.User;
-import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,9 +19,15 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "course_likes")
+@Table(
+        name = "course_likes",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_course_likes_course_user",
+                columnNames = {"course_id", "user_id"}
+        )
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CourseLike extends BaseEntity {
+public class CourseLike {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -58,6 +64,14 @@ public class CourseLike extends BaseEntity {
                 .user(user)
                 .isLiked(isLiked)
                 .build();
+    }
+
+    public void activate() {
+        this.isLiked = true;
+    }
+
+    public void deactivate() {
+        this.isLiked = false;
     }
 
 }
