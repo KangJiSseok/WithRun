@@ -1,4 +1,4 @@
-import { FreeRunScreen } from '@/features/FreeRun/components';
+import { FreeRunScreen } from '@/features/FreeRun';
 
 export function FreePage() {
   return <FreeRunScreen />;
