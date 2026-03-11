@@ -16,30 +16,28 @@ variables:
 
 workflow:
   rules:
-    # MR 파이프라인은 dev/main 브랜치 자체에서 올라온 MR만 생성
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
      ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
-
-    # push 파이프라인은 모든 브랜치에서 생성 (태그 제외)
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
-
-    # 그 외는 파이프라인 생성 안 함
     - when: never
-
 
 build_was:
   stage: build
   script:
-    - docker run --rm --user "$(id -u):$(id -g)" -v "$CI_PROJECT_DIR:/workspace" -w /workspace/was eclipse-temurin:21-jdk-alpine sh -c "chmod +x gradlew && ./gradlew clean build -x test"
+    - cd was
+    - chmod +x gradlew
+    - ./gradlew clean build -x test
   artifacts:
     paths:
-      - was/build/libs/*.jar
+      - was/build/
     expire_in: 1 day
 
 test_was:
   stage: test
   script:
-    - docker run --rm --user "$(id -u):$(id -g)" -v "$CI_PROJECT_DIR:/workspace" -w /workspace/was eclipse-temurin:21-jdk-alpine sh -c "chmod +x gradlew && ./gradlew test"
+    - cd was
+    - chmod +x gradlew
+    - ./gradlew test
 
 docker_push_dev:
   stage: image
