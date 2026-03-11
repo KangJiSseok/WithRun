@@ -22,14 +22,14 @@ class NearbyCoursesRequestTest {
     @Test
     void exposesExactRequestComponents() {
         assertThat(componentNamesOf(NearbyCoursesRequest.class))
-                .containsExactly("latitude", "longitude", "radiusM", "targetDistanceM", "cursor");
+                .containsExactly("latitude", "longitude", "radiusM", "targetDistanceM", "pageSize", "cursor");
     }
 
     @DisplayName("선택 커서 없이도 요청을 허용한다")
     @Test
     void acceptsRequestWhenOptionalCursorIsOmitted() {
         Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
-                new NearbyCoursesRequest(37.5665, 126.9780, 3000, 10000, null)
+                new NearbyCoursesRequest(37.5665, 126.9780, 3000, 10000, null, null)
         );
 
         assertThat(violations).isEmpty();
@@ -39,7 +39,7 @@ class NearbyCoursesRequestTest {
     @Test
     void doesNotDecodeOrValidateCursorAtDtoLayer() {
         Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
-                new NearbyCoursesRequest(37.5665, 126.9780, 3000, 10000, "%%%")
+                new NearbyCoursesRequest(37.5665, 126.9780, 3000, 10000, null, "%%%")
         );
 
         assertThat(violations).isEmpty();
@@ -49,7 +49,7 @@ class NearbyCoursesRequestTest {
     @Test
     void rejectsMissingRadiusM() {
         Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
-                new NearbyCoursesRequest(37.5665, 126.9780, null, 10000, null)
+                new NearbyCoursesRequest(37.5665, 126.9780, null, 10000, null, null)
         );
 
         assertOnlyViolationOn(violations, "radiusM");
@@ -60,7 +60,7 @@ class NearbyCoursesRequestTest {
     @ValueSource(ints = {0, 6000})
     void rejectsRadiusMOutsideSupportedRange(int radiusM) {
         Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
-                new NearbyCoursesRequest(37.5665, 126.9780, radiusM, 10000, null)
+                new NearbyCoursesRequest(37.5665, 126.9780, radiusM, 10000, null, null)
         );
 
         assertOnlyViolationOn(violations, "radiusM");
@@ -70,7 +70,7 @@ class NearbyCoursesRequestTest {
     @Test
     void acceptsRadiusMThatIsNotMultipleOf1000WhenItIsWithinRange() {
         Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
-                new NearbyCoursesRequest(37.5665, 126.9780, 1500, 10000, null)
+                new NearbyCoursesRequest(37.5665, 126.9780, 1500, 10000, null, null)
         );
 
         assertThat(violations).isEmpty();
@@ -80,7 +80,7 @@ class NearbyCoursesRequestTest {
     @Test
     void rejectsMissingTargetDistanceM() {
         Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
-                new NearbyCoursesRequest(37.5665, 126.9780, 3000, null, null)
+                new NearbyCoursesRequest(37.5665, 126.9780, 3000, null, null, null)
         );
 
         assertOnlyViolationOn(violations, "targetDistanceM");
@@ -91,7 +91,7 @@ class NearbyCoursesRequestTest {
     @ValueSource(ints = {0, -1})
     void rejectsNonPositiveTargetDistanceM(int targetDistanceM) {
         Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
-                new NearbyCoursesRequest(37.5665, 126.9780, 3000, targetDistanceM, null)
+                new NearbyCoursesRequest(37.5665, 126.9780, 3000, targetDistanceM, null, null)
         );
 
         assertOnlyViolationOn(violations, "targetDistanceM");
@@ -102,7 +102,7 @@ class NearbyCoursesRequestTest {
     @ValueSource(doubles = {-90.1, 90.1})
     void rejectsLatitudeOutsideSupportedRange(double latitude) {
         Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
-                new NearbyCoursesRequest(latitude, 126.9780, 3000, 10000, null)
+                new NearbyCoursesRequest(latitude, 126.9780, 3000, 10000, null, null)
         );
 
         assertOnlyViolationOn(violations, "latitude");
@@ -113,10 +113,41 @@ class NearbyCoursesRequestTest {
     @ValueSource(doubles = {-180.1, 180.1})
     void rejectsLongitudeOutsideSupportedRange(double longitude) {
         Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
-                new NearbyCoursesRequest(37.5665, longitude, 3000, 10000, null)
+                new NearbyCoursesRequest(37.5665, longitude, 3000, 10000, null, null)
         );
 
         assertOnlyViolationOn(violations, "longitude");
+    }
+
+    @DisplayName("페이지 크기가 없으면 기본값 위임을 위해 허용한다")
+    @Test
+    void acceptsMissingPageSize() {
+        Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
+                new NearbyCoursesRequest(37.5665, 126.9780, 3000, 10000, null, null)
+        );
+
+        assertThat(violations).isEmpty();
+    }
+
+    @DisplayName("최대 페이지 크기 10은 허용한다")
+    @Test
+    void acceptsMaximumPageSize() {
+        Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
+                new NearbyCoursesRequest(37.5665, 126.9780, 3000, 10000, 10, null)
+        );
+
+        assertThat(violations).isEmpty();
+    }
+
+    @DisplayName("허용 범위를 벗어난 페이지 크기 값은 거부한다")
+    @ParameterizedTest(name = "pageSize={0}")
+    @ValueSource(ints = {0, -1, 11})
+    void rejectsPageSizeOutsideSupportedRange(int pageSize) {
+        Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
+                new NearbyCoursesRequest(37.5665, 126.9780, 3000, 10000, pageSize, null)
+        );
+
+        assertOnlyViolationOn(violations, "pageSize");
     }
 
     @DisplayName("주변 코스 아이템 응답의 구성 요소를 정확히 노출한다")

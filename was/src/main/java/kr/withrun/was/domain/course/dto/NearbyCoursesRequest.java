@@ -27,6 +27,10 @@ public record NearbyCoursesRequest(
         @Positive
         Integer targetDistanceM,
 
+        @Positive
+        @Max(10)
+        Integer pageSize,
+
         String cursor
 ) {
 }
