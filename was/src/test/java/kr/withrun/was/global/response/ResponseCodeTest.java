@@ -17,6 +17,20 @@ class ResponseCodeTest {
         assertResponseCode(ResponseCode.INVALID_CURSOR, "E008", "잘못된 커서 값입니다.");
     }
 
+    @DisplayName("코스 없음 코드를 Not Found 실패로 노출한다")
+    @Test
+    void exposesCourseNotFoundAsNotFoundFailure() {
+        ApiResponse<Void> response = ApiResponse.fail(ResponseCode.COURSE_NOT_FOUND);
+
+        assertThat(ResponseCode.COURSE_NOT_FOUND.getCode()).isEqualTo("E304");
+        assertThat(ResponseCode.COURSE_NOT_FOUND.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(ResponseCode.COURSE_NOT_FOUND.getMessage()).isEqualTo("코스를 찾을 수 없습니다.");
+        assertThat(ResponseCode.COURSE_NOT_FOUND.isSuccess()).isFalse();
+        assertThat(response.isSuccess()).isFalse();
+        assertThat(response.getCode()).isEqualTo("E304");
+        assertThat(response.getMessage()).isEqualTo("코스를 찾을 수 없습니다.");
+    }
+
     private static void assertResponseCode(ResponseCode responseCode, String code, String message) {
         ApiResponse<Void> response = ApiResponse.fail(responseCode);
 
