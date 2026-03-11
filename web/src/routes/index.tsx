@@ -1,10 +1,10 @@
 import { Route, Routes } from 'react-router-dom';
-import { HomePage } from '@/pages/private/Home';
+import { HomePage } from '@/pages/private/home';
 import { FreePage } from '@/pages/private/FreeRun';
 import { FreeRunningPage } from '@/pages/private/FreeRunning';
-import { NormalPage } from '@/pages/private/Normal';
-import { CompetitionPage } from '@/pages/private/Competition';
-import { CalendarPage } from '@/pages/private/Calendar';
+import { NormalPage } from '@/pages/private/normal';
+import { CompetitionPage } from '@/pages/private/competition';
+import { CalendarPage } from '@/pages/private/calendar';
 
 export function AppRoutes() {
   return (
