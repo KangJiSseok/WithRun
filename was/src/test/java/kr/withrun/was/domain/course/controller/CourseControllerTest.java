@@ -1,11 +1,13 @@
 package kr.withrun.was.domain.course.controller;
 
+import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.service.CourseService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
@@ -26,6 +28,7 @@ import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -198,6 +201,64 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.suggestedNextRadiusM").value(2000));
 
         then(courseService).should().findNearbyCourses(request);
+    }
+
+    @DisplayName("코스 상세 조회 응답을 성공 응답 포맷으로 감싼다")
+    @ParameterizedTest(name = "courseId={0}")
+    @ValueSource(longs = {1L, 25L})
+    void wrapsCourseDetailResponseInSuccessEnvelope(long courseId) throws Exception {
+        CourseDetailResponse response = new CourseDetailResponse(
+                courseId,
+                "Han River",
+                CourseStatus.OFFICIAL,
+                Difficulty.MEDIUM,
+                10000,
+                35,
+                "https://example.com/course.jpg",
+                37.57,
+                126.97,
+                37.58,
+                126.98,
+                new Coordinates(List.of(37.57, 37.58), List.of(126.97, 126.98), List.of(10.0, 12.0)),
+                List.of(CourseType.RIVERSIDE, CourseType.PARK),
+                14L,
+                false,
+                false,
+                4.5
+        );
+        given(courseService.findCourseDetail(courseId)).willReturn(response);
+
+        mockMvc.perform(get("/api/courses/{courseId}", courseId))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
+                .andExpect(jsonPath("$.data.courseId").value(courseId))
+                .andExpect(jsonPath("$.data.title").value("Han River"))
+                .andExpect(jsonPath("$.data.coordinates.latitudes[0]").value(37.57))
+                .andExpect(jsonPath("$.data.coordinates.longitudes[1]").value(126.98))
+                .andExpect(jsonPath("$.data.types[0]").value(CourseType.RIVERSIDE.name()))
+                .andExpect(jsonPath("$.data.likeCount").value(14))
+                .andExpect(jsonPath("$.data.isLiked").value(false))
+                .andExpect(jsonPath("$.data.isBookmarked").value(false))
+                .andExpect(jsonPath("$.data.averageRating").value(4.5));
+
+        then(courseService).should().findCourseDetail(courseId);
+    }
+
+    @DisplayName("없는 코스 상세 조회는 코스 없음 응답을 반환한다")
+    @ParameterizedTest(name = "courseId={0}")
+    @ValueSource(longs = {999L})
+    void returnsCourseNotFoundWhenCourseDetailIsMissing(long courseId) throws Exception {
+        given(courseService.findCourseDetail(courseId))
+                .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
+
+        mockMvc.perform(get("/api/courses/{courseId}", courseId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()));
+
+        then(courseService).should().findCourseDetail(courseId);
     }
 
     @DisplayName("페이지 크기 쿼리 파라미터를 요청 DTO에 바인딩한다")

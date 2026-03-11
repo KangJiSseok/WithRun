@@ -3,7 +3,11 @@ package kr.withrun.was.domain.course.service;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
+import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
+import kr.withrun.was.domain.course.repository.CourseLikeRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
+import kr.withrun.was.domain.course.repository.CourseReviewRepository;
+import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
@@ -36,11 +40,29 @@ class NearbyCourseQueryServiceTest {
     @Mock
     private CourseRepository courseRepository;
 
+    @Mock
+    private CourseDifficultyRepository courseDifficultyRepository;
+
+    @Mock
+    private CourseTypeMapRepository courseTypeMapRepository;
+
+    @Mock
+    private CourseLikeRepository courseLikeRepository;
+
+    @Mock
+    private CourseReviewRepository courseReviewRepository;
+
     private CourseService courseService;
 
     @BeforeEach
     void setUp() {
-        courseService = new CourseService(courseRepository);
+        courseService = new CourseService(
+                courseRepository,
+                courseDifficultyRepository,
+                courseTypeMapRepository,
+                courseLikeRepository,
+                courseReviewRepository
+        );
     }
 
     @DisplayName("목표 거리 범위를 벗어난 코스는 제외한다")
