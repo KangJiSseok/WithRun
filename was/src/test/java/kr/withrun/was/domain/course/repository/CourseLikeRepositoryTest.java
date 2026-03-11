@@ -40,24 +40,24 @@ class CourseLikeRepositoryTest {
     @Autowired
     private EntityManager entityManager;
 
-    @DisplayName("활성 좋아요만 코스별로 집계한다")
+    @DisplayName("코스별 좋아요 row 수를 집계한다")
     @Test
-    void countsOnlyActiveLikedRowsForCourse() {
+    void countsRowsForCourse() {
         User user = saveUser(1L, "runner-a");
         User anotherUser = saveUser(2L, "runner-b");
         Course targetCourse = saveCourse(1L, "target-course");
         Course otherCourse = saveCourse(2L, "other-course");
 
-        saveCourseLike(targetCourse, user, true);
-        saveCourseLike(targetCourse, anotherUser, false);
-        saveCourseLike(targetCourse, saveUser(3L, "runner-c"), false);
-        saveCourseLike(otherCourse, user, true);
+        saveCourseLike(targetCourse, user);
+        saveCourseLike(targetCourse, anotherUser);
+        saveCourseLike(targetCourse, saveUser(3L, "runner-c"));
+        saveCourseLike(otherCourse, user);
         entityManager.flush();
         entityManager.clear();
 
-        long likeCount = courseLikeRepository.countActiveLikedByCourseId(targetCourse.getId());
+        long likeCount = courseLikeRepository.countByCourseId(targetCourse.getId());
 
-        assertThat(likeCount).isEqualTo(1L);
+        assertThat(likeCount).isEqualTo(3L);
     }
 
     private User saveUser(long createdAtHour, String nickname) {
@@ -91,8 +91,8 @@ class CourseLikeRepositoryTest {
         return course;
     }
 
-    private void saveCourseLike(Course course, User user, boolean isLiked) {
-        CourseLike courseLike = CourseLike.create(course, user, isLiked);
+    private void saveCourseLike(Course course, User user) {
+        CourseLike courseLike = CourseLike.create(course, user);
         entityManager.persist(courseLike);
     }
 

@@ -12,14 +12,13 @@ public class CourseLikeCustomRepositoryImpl implements CourseLikeCustomRepositor
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public long countActiveLikedByCourseId(Long courseId) {
+    public long countByCourseId(Long courseId) {
         QCourseLike courseLike = QCourseLike.courseLike;
 
         Long result = queryFactory
                 .select(courseLike.count())
                 .from(courseLike)
-                .where(courseLike.course.id.eq(courseId)
-                        .and(courseLike.isLiked.isTrue()))
+                .where(courseLike.course.id.eq(courseId))
                 .fetchOne();
 
         return result == null ? 0L : result;

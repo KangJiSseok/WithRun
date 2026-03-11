@@ -34,9 +34,6 @@ public class CourseLike {
     @Column(name = "course_like_id")
     private Long id;
 
-    @Column(name = "is_liked")
-    private Boolean isLiked;
-
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "course_id",
@@ -52,26 +49,16 @@ public class CourseLike {
     private User user;
 
     @Builder
-    private CourseLike(Boolean isLiked, Course course, User user) {
-        this.isLiked = isLiked;
+    private CourseLike(Course course, User user) {
         this.course = course;
         this.user = user;
     }
 
-    public static CourseLike create(Course course, User user, boolean isLiked) {
+    public static CourseLike create(Course course, User user) {
         return CourseLike.builder()
                 .course(course)
                 .user(user)
-                .isLiked(isLiked)
                 .build();
-    }
-
-    public void activate() {
-        this.isLiked = true;
-    }
-
-    public void deactivate() {
-        this.isLiked = false;
     }
 
 }

@@ -75,7 +75,7 @@ class CourseEntityFactoryTest {
         CourseDifficulty courseDifficulty = CourseDifficulty.create(course, Difficulty.MEDIUM);
         CourseTypeMap courseTypeMap = CourseTypeMap.create(course, CourseType.PARK);
         CourseBookmark courseBookmark = CourseBookmark.create(course, user);
-        CourseLike courseLike = CourseLike.create(course, user, true);
+        CourseLike courseLike = CourseLike.create(course, user);
         CourseReview courseReview = CourseReview.create(course, user, 5, Difficulty.HARD);
         CourseReviewCourseType reviewCourseType = CourseReviewCourseType.create(courseReview, CourseType.RIVERSIDE);
 
@@ -90,7 +90,6 @@ class CourseEntityFactoryTest {
 
         assertThat(courseLike.getCourse()).isSameAs(course);
         assertThat(courseLike.getUser()).isSameAs(user);
-        assertThat(courseLike.getIsLiked()).isTrue();
 
         assertThat(courseReview.getCourse()).isSameAs(course);
         assertThat(courseReview.getUser()).isSameAs(user);

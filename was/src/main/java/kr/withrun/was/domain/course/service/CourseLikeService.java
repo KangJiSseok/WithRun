@@ -27,10 +27,11 @@ public class CourseLikeService {
         Course course = getCourse(courseId);
         User user = getUser(userId);
 
-        courseLikeRepository.findByCourseIdAndUserId(courseId, userId)
-                .ifPresentOrElse(CourseLike::activate, () -> courseLikeRepository.save(CourseLike.create(course, user, true)));
+        if (courseLikeRepository.findByCourseIdAndUserId(courseId, userId).isEmpty()) {
+            courseLikeRepository.save(CourseLike.create(course, user));
+        }
 
-        long likeCount = courseLikeRepository.countActiveLikedByCourseId(courseId);
+        long likeCount = courseLikeRepository.countByCourseId(courseId);
         course.promoteToOfficialIfEligible(likeCount);
         return new CourseLikeStatusResponse(courseId, true, likeCount, course.getStatus());
     }
@@ -41,9 +42,9 @@ public class CourseLikeService {
         getUser(userId);
 
         courseLikeRepository.findByCourseIdAndUserId(courseId, userId)
-                .ifPresent(CourseLike::deactivate);
+                .ifPresent(courseLikeRepository::delete);
 
-        long likeCount = courseLikeRepository.countActiveLikedByCourseId(courseId);
+        long likeCount = courseLikeRepository.countByCourseId(courseId);
         return new CourseLikeStatusResponse(courseId, false, likeCount, course.getStatus());
     }
 

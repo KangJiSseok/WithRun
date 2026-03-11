@@ -2,7 +2,6 @@ package kr.withrun.was.domain.course.service;
 
 import kr.withrun.was.domain.course.dto.CourseLikeStatusResponse;
 import kr.withrun.was.domain.course.entity.Course;
-import kr.withrun.was.domain.course.entity.CourseLike;
 import kr.withrun.was.domain.course.repository.CourseLikeRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.type.CourseStatus;
@@ -77,49 +76,45 @@ class CourseLikeServiceTest {
         Course course = communityCourse();
         givenActiveCourseAndUser(course);
         given(courseLikeRepository.findByCourseIdAndUserId(1L, 2L)).willReturn(Optional.empty());
-        given(courseLikeRepository.save(any(CourseLike.class))).willAnswer(invocation -> invocation.getArgument(0));
-        given(courseLikeRepository.countActiveLikedByCourseId(1L)).willReturn(1L);
+        given(courseLikeRepository.save(any(kr.withrun.was.domain.course.entity.CourseLike.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(courseLikeRepository.countByCourseId(1L)).willReturn(1L);
 
         CourseLikeStatusResponse response = courseLikeService.likeCourse(1L, 2L);
 
         assertThat(response).isEqualTo(new CourseLikeStatusResponse(1L, true, 1L, CourseStatus.COMMUNITY));
-        verify(courseLikeRepository).save(any(CourseLike.class));
+        verify(courseLikeRepository).save(any(kr.withrun.was.domain.course.entity.CourseLike.class));
     }
 
-    @DisplayName("좋아요가 false인 기존 레코드는 true로 복구하고 기준 수를 넘기면 코스를 공식 코스로 승격한다")
+    @DisplayName("기존 좋아요 row가 있으면 추가 생성 없이 기준 수를 넘기면 코스를 공식 코스로 승격한다")
     @Test
-    void reactivatesExistingLikeAndPromotesCommunityCourse() {
+    void keepsExistingLikeAndPromotesCommunityCourse() {
         Course course = communityCourse();
-        CourseLike courseLike = CourseLike.create(course, user, false);
 
         givenActiveCourseAndUser(course);
-        given(courseLikeRepository.findByCourseIdAndUserId(1L, 2L)).willReturn(Optional.of(courseLike));
-        given(courseLikeRepository.countActiveLikedByCourseId(1L)).willReturn(10L);
+        given(courseLikeRepository.findByCourseIdAndUserId(1L, 2L)).willReturn(Optional.of(mockExistingLike()));
+        given(courseLikeRepository.countByCourseId(1L)).willReturn(10L);
 
         CourseLikeStatusResponse response = courseLikeService.likeCourse(1L, 2L);
 
         assertThat(response).isEqualTo(new CourseLikeStatusResponse(1L, true, 10L, CourseStatus.OFFICIAL));
-        assertThat(courseLike.getIsLiked()).isTrue();
         assertThat(course.getStatus()).isEqualTo(CourseStatus.OFFICIAL);
         assertThat(course.getPromotedAt()).isNotNull();
-        verify(courseLikeRepository, never()).save(any(CourseLike.class));
+        verify(courseLikeRepository, never()).save(any(kr.withrun.was.domain.course.entity.CourseLike.class));
     }
 
     @DisplayName("이미 좋아요 상태여도 추가 레코드 없이 멱등하게 true를 유지한다")
     @Test
     void likeIsIdempotentWhenAlreadyLiked() {
         Course course = communityCourse();
-        CourseLike courseLike = CourseLike.create(course, user, true);
 
         givenActiveCourseAndUser(course);
-        given(courseLikeRepository.findByCourseIdAndUserId(1L, 2L)).willReturn(Optional.of(courseLike));
-        given(courseLikeRepository.countActiveLikedByCourseId(1L)).willReturn(3L);
+        given(courseLikeRepository.findByCourseIdAndUserId(1L, 2L)).willReturn(Optional.of(mockExistingLike()));
+        given(courseLikeRepository.countByCourseId(1L)).willReturn(3L);
 
         CourseLikeStatusResponse response = courseLikeService.likeCourse(1L, 2L);
 
         assertThat(response).isEqualTo(new CourseLikeStatusResponse(1L, true, 3L, CourseStatus.COMMUNITY));
-        assertThat(courseLike.getIsLiked()).isTrue();
-        verify(courseLikeRepository, never()).save(any(CourseLike.class));
+        verify(courseLikeRepository, never()).save(any(kr.withrun.was.domain.course.entity.CourseLike.class));
     }
 
     @DisplayName("좋아요 이력이 없으면 취소 요청에도 레코드를 만들지 않고 멱등하게 false를 반환한다")
@@ -128,17 +123,17 @@ class CourseLikeServiceTest {
         Course course = communityCourse();
         givenActiveCourseAndUser(course);
         given(courseLikeRepository.findByCourseIdAndUserId(1L, 2L)).willReturn(Optional.empty());
-        given(courseLikeRepository.countActiveLikedByCourseId(1L)).willReturn(0L);
+        given(courseLikeRepository.countByCourseId(1L)).willReturn(0L);
 
         CourseLikeStatusResponse response = courseLikeService.unlikeCourse(1L, 2L);
 
         assertThat(response).isEqualTo(new CourseLikeStatusResponse(1L, false, 0L, CourseStatus.COMMUNITY));
-        verify(courseLikeRepository, never()).save(any(CourseLike.class));
+        verify(courseLikeRepository, never()).save(any(kr.withrun.was.domain.course.entity.CourseLike.class));
     }
 
-    @DisplayName("좋아요 취소는 활성 좋아요를 false로 바꾸되 공식 코스를 강등하지 않는다")
+    @DisplayName("좋아요 취소는 기존 좋아요 row를 삭제하되 공식 코스를 강등하지 않는다")
     @Test
-    void deactivatesLikeWithoutDemotingOfficialCourse() {
+    void deletesLikeWithoutDemotingOfficialCourse() {
         LocalDateTime promotedAt = LocalDateTime.of(2026, 3, 11, 18, 0);
         Course course = Course.builder()
                 .title("Official Course")
@@ -153,18 +148,18 @@ class CourseLikeServiceTest {
                 .coordinates(null)
                 .promotedAt(promotedAt)
                 .build();
-        CourseLike courseLike = CourseLike.create(course, user, true);
+        kr.withrun.was.domain.course.entity.CourseLike courseLike = mockExistingLike();
 
         givenActiveCourseAndUser(course);
         given(courseLikeRepository.findByCourseIdAndUserId(1L, 2L)).willReturn(Optional.of(courseLike));
-        given(courseLikeRepository.countActiveLikedByCourseId(1L)).willReturn(9L);
+        given(courseLikeRepository.countByCourseId(1L)).willReturn(9L);
 
         CourseLikeStatusResponse response = courseLikeService.unlikeCourse(1L, 2L);
 
         assertThat(response).isEqualTo(new CourseLikeStatusResponse(1L, false, 9L, CourseStatus.OFFICIAL));
-        assertThat(courseLike.getIsLiked()).isFalse();
         assertThat(course.getStatus()).isEqualTo(CourseStatus.OFFICIAL);
         assertThat(course.getPromotedAt()).isEqualTo(promotedAt);
+        verify(courseLikeRepository).delete(courseLike);
     }
 
     @DisplayName("삭제되었거나 없는 코스에는 좋아요를 등록할 수 없다")
@@ -199,5 +194,9 @@ class CourseLikeServiceTest {
                 .endLongitude(127.1)
                 .coordinates(null)
                 .build();
+    }
+
+    private kr.withrun.was.domain.course.entity.CourseLike mockExistingLike() {
+        return org.mockito.Mockito.mock(kr.withrun.was.domain.course.entity.CourseLike.class);
     }
 }
