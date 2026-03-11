@@ -25,52 +25,48 @@ export function useFreeRunMap() {
     if (!containerRef.current) return;
 
     const container = containerRef.current;
+    // watchPosition ID를 useEffect 스코프에 선언해야 cleanup에서 접근 가능
+    let watchId: number;
 
-    // 콜백 (카카오 SDK 준비되면 콜백 실행)
     kakao.maps.load(() => {
-      // 1. 서울 좌표 지도 생성
+      // 1. 서울 좌표로 지도 생성
       const kakaoCenter = new kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
-      // 2. mapRef에 저장
-      mapRef.current = new kakao.maps.Map(container, {
-        center: kakaoCenter,
-        level: 3,
-      });
-      // 3. 서울 좌표에 마커 찍기
+      mapRef.current = new kakao.maps.Map(container, { center: kakaoCenter, level: 3 });
       markerRef.current = new kakao.maps.Marker({ position: kakaoCenter });
-      // 4. markerRef에 저장
       markerRef.current.setMap(mapRef.current);
-      // 5. GPS에게 비동기 요청 (지금 내 위치 알려주기)
-      // [FreeRunScreen 시작화면용] 1회만 위치 가져옴 - 현재 위치 확인용
-      // navigator.geolocation.getCurrentPosition(
-      //   // coords: getCurrentPosition의 콜백 함수가 받는 GPS응답 객체
-      //   // 브라우저가 GPS로 위치를 측정하면, 결과를 coords 객체에 담아서 콜백으로 넘김
-      //   // (구조분해한 것)
-      //   ({ coords }) => {
-      //     const latLng = new kakao.maps.LatLng(coords.latitude, coords.longitude);
-      //     mapRef.current?.setCenter(latLng);
-      //     markerRef.current?.setPosition(latLng);
-      //   },
-      //   // 실패 : 서울 그대로 유지 (아무것도 안함)
-      //   () => {},
-      //   { enableHighAccuracy: true },
-      // );
 
-      // [RunScreen 러닝화면용] 위치 변화 감지 - 이동할 때마다 지도/마커 업데이트
-      // 페이지 벗어날 때 clearWatch로 반드시 해제해야 함 (배터리 소모 방지)
-      const watchId = navigator.geolocation.watchPosition(
-        ({ coords }) => {
-          const latLng = new kakao.maps.LatLng(coords.latitude, coords.longitude);
-          mapRef.current?.setCenter(latLng);
-          markerRef.current?.setPosition(latLng);
-        },
+      const moveToLocation = (coords: GeolocationCoordinates) => {
+        const latLng = new kakao.maps.LatLng(coords.latitude, coords.longitude);
+        mapRef.current?.setCenter(latLng);
+        markerRef.current?.setPosition(latLng);
+      };
+
+      // 2. 캐시된 위치 즉시 사용 (30초 이내) → 재방문 시 서울로 튀는 현상 방지
+      // enableHighAccuracy: false → WiFi/기지국 기반이라 빠르게 응답
+      // [자유 화면을 30초 이내로 재방문: 서울 표시 -> getCurrentPosition(캐시 있음 -> 즉시)
+      // -> 떠난 시점 위치로 이동 -> watchPosition(실시간 GPS 추적 시작)
+      // -> 현재 이동 위치로 업데이트]
+      navigator.geolocation.getCurrentPosition(
+        ({ coords }) => moveToLocation(coords),
         () => {},
-        // GPS 칩 사용 (배터리 소모량이 많지만, 정확도 높아서 좋음)
-        // false로 설정하면 WiFi/기지국 기반이라 오차가 큼
-        { enableHighAccuracy: true },
+        { enableHighAccuracy: false, maximumAge: 30000 },
       );
 
-      return () => navigator.geolocation.clearWatch(watchId);
+      // 3. 정확한 GPS 위치로 업데이트 + 이동 추적
+      // enableHighAccuracy: true → GPS 칩 사용 (정확하지만 응답이 느림)
+      watchId = navigator.geolocation.watchPosition(
+        ({ coords }) => moveToLocation(coords),
+        () => {},
+        { enableHighAccuracy: true },
+      );
     });
+
+    // 페이지 벗어날 때 반드시 해제 (배터리 소모 방지)
+    // useEffect의 return이어야 React가 cleanup을 실행함
+    // [다른 탭으로 이동: useEffect cleanup 실행 → watchPosition 해제 → GPS 추적 중단]
+    return () => {
+      if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
+    };
   }, []);
 
   // 내부 훅인 mapRef, markerRef를 제외한 containerRef은
