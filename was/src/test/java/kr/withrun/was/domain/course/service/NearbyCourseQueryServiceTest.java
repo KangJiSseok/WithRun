@@ -46,7 +46,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("목표 거리 범위를 벗어난 코스는 제외한다")
     @Test
     void filtersCoursesOutsideTargetDistanceWindow() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null);
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null, null);
         stubCandidates(
                 candidate(2L, 9000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(1L, 11000, coordinatesAtUser(), CourseType.PARK),
@@ -64,7 +64,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("요청 반경을 벗어난 코스는 제외한다")
     @Test
     void filtersCoursesOutsideRequestedRadius() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null);
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(
@@ -86,7 +86,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("모든 좌표 쌍 중 최소 거리를 계산한다")
     @Test
     void calculatesMinimumDistanceUsingAllCoordinatePairs() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null);
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null, null);
         stubCandidates(
                 candidate(
                         1L,
@@ -109,7 +109,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("잘못되었거나 비어 있는 좌표는 제외한다")
     @Test
     void excludesMalformedOrEmptyCoordinates() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null);
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(2L, 10000, null, CourseType.PARK),
@@ -128,7 +128,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("거리가 같은 코스는 코스 ID 순으로 정렬한다")
     @Test
     void sortsSameDistanceByCourseId() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null);
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null, null);
         stubCandidates(
                 candidate(20L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(10L, 10000, coordinatesAtUser(), CourseType.PARK)
@@ -144,7 +144,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("코스별로 리포지토리 행의 코스 타입을 합친다")
     @Test
     void aggregatesCourseTypesAcrossRepositoryRowsPerCourse() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null);
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null, null);
         stubCandidates(
                 candidate(7L, 10000, coordinatesAtUser(), CourseType.PARK),
                 candidate(7L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
@@ -159,10 +159,10 @@ class NearbyCourseQueryServiceTest {
                 .containsExactly(CourseType.RIVERSIDE, CourseType.PARK);
     }
 
-    @DisplayName("결과가 더 남아 있으면 처음 5개 항목과 다음 커서를 반환한다")
+    @DisplayName("페이지 크기가 없으면 기본값 3개와 다음 커서를 반환한다")
     @Test
-    void returnsFirstFiveItemsAndNextCursorWhenMoreResultsRemain() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null);
+    void returnsFirstThreeItemsAndNextCursorWhenPageSizeIsMissing() {
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null, null);
         stubCandidates(
                 candidate(15L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(12L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
@@ -176,16 +176,44 @@ class NearbyCourseQueryServiceTest {
 
         assertThat(response.items())
                 .extracting(NearbyCourseItemResponse::courseId)
-                .containsExactly(10L, 11L, 12L, 13L, 14L);
+                .containsExactly(10L, 11L, 12L);
         assertThat(response.hasMore()).isTrue();
-        assertThat(response.nextCursor()).isEqualTo(NearbyCourseCursorCodec.encode(0, 14L));
+        assertThat(response.nextCursor()).isEqualTo(NearbyCourseCursorCodec.encode(0, 12L));
+        assertThat(response.suggestedNextRadiusM()).isNull();
+    }
+
+    @DisplayName("페이지 크기를 요청하면 해당 개수만큼 항목과 다음 커서를 반환한다")
+    @Test
+    void returnsRequestedItemCountWhenPageSizeIsProvided() {
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, 10, null);
+        stubCandidates(
+                candidate(15L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
+                candidate(12L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
+                candidate(14L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
+                candidate(11L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
+                candidate(10L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
+                candidate(13L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
+                candidate(16L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
+                candidate(17L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
+                candidate(18L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
+                candidate(19L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
+                candidate(20L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE)
+        );
+
+        NearbyCoursesResponse response = findNearbyCourses(request);
+
+        assertThat(response.items())
+                .extracting(NearbyCourseItemResponse::courseId)
+                .containsExactly(10L, 11L, 12L, 13L, 14L, 15L, 16L, 17L, 18L, 19L);
+        assertThat(response.hasMore()).isTrue();
+        assertThat(response.nextCursor()).isEqualTo(NearbyCourseCursorCodec.encode(0, 19L));
         assertThat(response.suggestedNextRadiusM()).isNull();
     }
 
     @DisplayName("커서 튜플 다음 항목부터 엄격하게 이어서 조회한다")
     @Test
     void resumesStrictlyAfterCursorTuple() {
-        NearbyCoursesRequest baseRequest = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null);
+        NearbyCoursesRequest baseRequest = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(2L, 10000, coordinatesAtUser(), CourseType.PARK),
@@ -201,6 +229,7 @@ class NearbyCourseQueryServiceTest {
                 USER_LONGITUDE,
                 1000,
                 10000,
+                null,
                 NearbyCourseCursorCodec.encode(cursorItem.distanceFromUserM(), cursorItem.courseId())
         );
 
@@ -216,7 +245,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("커서를 해석할 수 없으면 잘못된 커서 예외를 던진다")
     @Test
     void throwsInvalidCursorWhenCursorCannotBeDecoded() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, "%%%");
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null, "%%%");
         stubCandidates();
 
         assertThatThrownBy(() -> findNearbyCourses(request))
@@ -228,7 +257,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("현재 반경이 최대 반경 전에 소진되면 다음 반경을 제안한다")
     @Test
     void suggestsNextRadiusWhenCurrentRadiusIsExhaustedBeforeMaxRadius() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null);
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(2L, 10000, coordinatesNorthOfUser(900), CourseType.PARK)
@@ -247,7 +276,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("임의의 반경 입력에서도 다음 반경을 제안한다")
     @Test
     void suggestsNextRadiusFromArbitraryRadiusInput() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1500, 10000, null);
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1500, 10000, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(2L, 10000, coordinatesNorthOfUser(1400), CourseType.PARK)
@@ -266,7 +295,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("제안하는 다음 반경은 최대 반경을 넘지 않는다")
     @Test
     void capsSuggestedNextRadiusAtMaximumRadius() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 4500, 10000, null);
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 4500, 10000, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(2L, 10000, coordinatesNorthOfUser(4400), CourseType.PARK)
@@ -282,7 +311,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("최대 반경에서는 제안하는 다음 반경을 null로 유지한다")
     @Test
     void keepsSuggestedNextRadiusNullAtMaximumRadius() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null);
+        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(2L, 10000, coordinatesNorthOfUser(900), CourseType.PARK)

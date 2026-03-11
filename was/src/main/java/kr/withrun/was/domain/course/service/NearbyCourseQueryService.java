@@ -26,8 +26,8 @@ public class NearbyCourseQueryService {
 
     // 목표 거리 허용 오차는 +- 1km로 두고 비슷한 길이의 코스만 후보로 남긴다.
     private static final int TARGET_DISTANCE_TOLERANCE_M = 1000;
-    // 한 번에 내려주는 코스 수는 5개로 고정한다.
-    private static final int PAGE_SIZE = 5;
+    // 요청 페이지 크기가 없으면 기본으로 3개를 내려준다.
+    private static final int DEFAULT_PAGE_SIZE = 3;
     // 반경은 최대 5km까지만 점진적으로 확장한다.
     private static final int MAX_RADIUS_M = 5000;
     private static final int RADIUS_STEP_M = 1000;
@@ -41,15 +41,20 @@ public class NearbyCourseQueryService {
      * 다음 페이지가 없으면 클라이언트가 탐색 범위를 넓힐 수 있도록 다음 추천 반경도 함께 내려준다.
      */
     public NearbyCoursesResponse findNearbyCourses(NearbyCoursesRequest request) {
+        int pageSize = resolvePageSize(request.pageSize());
         List<NearbyCourseItemResponse> sortedItems = findNearbyCourseItems(request);
         int startIndex = resolveStartIndex(sortedItems, request.cursor());
         List<NearbyCourseItemResponse> remainingItems = sortedItems.subList(startIndex, sortedItems.size());
-        boolean hasMore = remainingItems.size() > PAGE_SIZE;
-        List<NearbyCourseItemResponse> pageItems = List.copyOf(remainingItems.subList(0, Math.min(PAGE_SIZE, remainingItems.size())));
+        boolean hasMore = remainingItems.size() > pageSize;
+        List<NearbyCourseItemResponse> pageItems = List.copyOf(remainingItems.subList(0, Math.min(pageSize, remainingItems.size())));
         String nextCursor = hasMore ? toCursor(pageItems.get(pageItems.size() - 1)) : null;
         Integer suggestedNextRadiusM = resolveSuggestedNextRadiusM(request.radiusM(), hasMore);
 
         return new NearbyCoursesResponse(pageItems, hasMore, nextCursor, suggestedNextRadiusM);
+    }
+
+    private int resolvePageSize(Integer pageSize) {
+        return pageSize == null ? DEFAULT_PAGE_SIZE : pageSize;
     }
 
     /**
