@@ -10,8 +10,8 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import kr.withrun.was.domain.user.entity.User;
-import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.Builder;
 import lombok.Getter;
@@ -19,17 +19,20 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "course_likes")
+@Table(
+        name = "course_likes",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_course_likes_course_user",
+                columnNames = {"course_id", "user_id"}
+        )
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CourseLike extends BaseEntity {
+public class CourseLike {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "course_like_id")
     private Long id;
-
-    @Column(name = "is_liked")
-    private Boolean isLiked;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -46,17 +49,15 @@ public class CourseLike extends BaseEntity {
     private User user;
 
     @Builder
-    private CourseLike(Boolean isLiked, Course course, User user) {
-        this.isLiked = isLiked;
+    private CourseLike(Course course, User user) {
         this.course = course;
         this.user = user;
     }
 
-    public static CourseLike create(Course course, User user, boolean isLiked) {
+    public static CourseLike create(Course course, User user) {
         return CourseLike.builder()
                 .course(course)
                 .user(user)
-                .isLiked(isLiked)
                 .build();
     }
 

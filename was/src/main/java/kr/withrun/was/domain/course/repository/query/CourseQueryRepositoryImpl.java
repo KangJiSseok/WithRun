@@ -2,6 +2,7 @@ package kr.withrun.was.domain.course.repository.query;
 
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.QCourse;
 import kr.withrun.was.domain.course.entity.QCourseDifficulty;
 import kr.withrun.was.domain.course.entity.QCourseTypeMap;
@@ -11,12 +12,24 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
 public class CourseQueryRepositoryImpl implements CourseQueryRepository {
 
     private final JPAQueryFactory queryFactory;
+
+    @Override
+    public Optional<Course> findActiveById(Long courseId) {
+        QCourse course = QCourse.course;
+
+        return Optional.ofNullable(queryFactory
+                .selectFrom(course)
+                .where(course.id.eq(courseId)
+                        .and(course.deletedAt.isNull()))
+                .fetchOne());
+    }
 
     @Override
     public List<NearbyCourseCandidateRow> findOfficialNearbyCourseCandidates() {

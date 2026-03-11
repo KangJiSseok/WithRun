@@ -107,4 +107,15 @@ public class Course extends BaseEntity {
         this.user = user;
     }
 
+    public void promoteToOfficialIfEligible(long likeCount) {
+        if (status != CourseStatus.COMMUNITY || likeCount < 10) {
+            return;
+        }
+
+        this.status = CourseStatus.OFFICIAL;
+        if (this.promotedAt == null) {
+            this.promotedAt = LocalDateTime.now();
+        }
+    }
+
 }
