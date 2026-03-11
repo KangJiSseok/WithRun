@@ -23,6 +23,15 @@ public enum ResponseCode {
     ENTITY_NOT_FOUND("E003", HttpStatus.NOT_FOUND, "리소스를 찾을 수 없습니다.", false),
     INTERNAL_SERVER_ERROR("E004", HttpStatus.INTERNAL_SERVER_ERROR, "서버 내부 오류가 발생했습니다.", false),
     INVALID_TYPE_VALUE("E005", HttpStatus.BAD_REQUEST, "잘못된 타입입니다.", false),
+    INVALID_RADIUS("E006", HttpStatus.BAD_REQUEST, "잘못된 반경 값입니다.", false),
+    INVALID_TARGET_DISTANCE("E007", HttpStatus.BAD_REQUEST, "잘못된 목표 거리 값입니다.", false),
+    INVALID_CURSOR("E008", HttpStatus.BAD_REQUEST, "잘못된 커서 값입니다.", false),
+
+    // Course Error
+    INVALID_COURSE_COORDINATES_FORMAT("E300", HttpStatus.BAD_REQUEST, "코스 좌표 형식이 올바르지 않습니다.", false),
+    INVALID_COURSE_COORDINATES_LENGTH("E301", HttpStatus.BAD_REQUEST, "코스 좌표 목록 길이가 올바르지 않습니다.", false),
+    INVALID_COURSE_COORDINATE_VALUE("E302", HttpStatus.BAD_REQUEST, "코스 좌표 값이 올바르지 않습니다.", false),
+    MISSING_COURSE_COORDINATE_ELEVATION("E303", HttpStatus.BAD_REQUEST, "코스 좌표의 고도 정보가 필요합니다.", false),
 
     // Auth Error
     UNAUTHORIZED("E100", HttpStatus.UNAUTHORIZED, "인증이 필요합니다.", false),
