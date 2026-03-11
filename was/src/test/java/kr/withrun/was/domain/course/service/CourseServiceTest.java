@@ -1,6 +1,7 @@
 package kr.withrun.was.domain.course.service;
 
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseLikeRepository;
@@ -83,6 +84,26 @@ class CourseServiceTest {
         assertThat(response.isLiked()).isFalse();
         assertThat(response.isBookmarked()).isFalse();
         assertThat(response.averageRating()).isEqualTo(4.5);
+    }
+
+    @DisplayName("코스 조회용 enum 목록을 index와 label로 반환한다")
+    @Test
+    void returnsCourseLookups() {
+        CourseSurveyResponse response = courseService.findCourseSurveys();
+
+        assertThat(response.courseTypes()).containsExactly(
+                new CourseSurveyResponse.CourseSurveyListResponse(1, "RIVERSIDE"),
+                new CourseSurveyResponse.CourseSurveyListResponse(2, "PARK"),
+                new CourseSurveyResponse.CourseSurveyListResponse(3, "MOUNTAIN_TRAIL"),
+                new CourseSurveyResponse.CourseSurveyListResponse(4, "TRACK"),
+                new CourseSurveyResponse.CourseSurveyListResponse(5, "URBAN"),
+                new CourseSurveyResponse.CourseSurveyListResponse(6, "OTHER")
+        );
+        assertThat(response.difficulties()).containsExactly(
+                new CourseSurveyResponse.CourseSurveyListResponse(1, "EASY"),
+                new CourseSurveyResponse.CourseSurveyListResponse(2, "MEDIUM"),
+                new CourseSurveyResponse.CourseSurveyListResponse(3, "HARD")
+        );
     }
 
     @DisplayName("없는 코스 상세 조회는 코스 없음 예외를 던진다")

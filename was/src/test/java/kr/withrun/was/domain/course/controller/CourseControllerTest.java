@@ -1,6 +1,7 @@
 package kr.withrun.was.domain.course.controller;
 
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
@@ -13,6 +14,7 @@ import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -195,12 +197,41 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.items[0].courseId").value(1L))
                 .andExpect(jsonPath("$.data.items[0].title").value("Han River"))
                 .andExpect(jsonPath("$.data.items[0].status").value(CourseStatus.OFFICIAL.name()))
+                .andExpect(jsonPath("$.data.items[0].difficulty").value(Difficulty.MEDIUM.name()))
                 .andExpect(jsonPath("$.data.items[0].courseTypes[0]").value(CourseType.RIVERSIDE.name()))
                 .andExpect(jsonPath("$.data.hasMore").value(true))
                 .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.data.suggestedNextRadiusM").value(2000));
 
         then(courseService).should().findNearbyCourses(request);
+    }
+
+    @DisplayName("코스 lookup 응답을 성공 응답 포맷으로 감싼다")
+    @Test
+    void wrapsCourseLookupsResponseInSuccessEnvelope() throws Exception {
+        CourseSurveyResponse response = new CourseSurveyResponse(
+                List.of(
+                        new CourseSurveyResponse.CourseSurveyListResponse(1, "RIVERSIDE"),
+                        new CourseSurveyResponse.CourseSurveyListResponse(2, "PARK")
+                ),
+                List.of(
+                        new CourseSurveyResponse.CourseSurveyListResponse(1, "EASY"),
+                        new CourseSurveyResponse.CourseSurveyListResponse(2, "MEDIUM")
+                )
+        );
+        given(courseService.findCourseSurveys()).willReturn(response);
+
+        mockMvc.perform(get("/api/courses/lookups"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
+                .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
+                .andExpect(jsonPath("$.data.courseTypes[0].index").value(1))
+                .andExpect(jsonPath("$.data.courseTypes[0].label").value("RIVERSIDE"))
+                .andExpect(jsonPath("$.data.difficulties[0].index").value(1))
+                .andExpect(jsonPath("$.data.difficulties[0].label").value("EASY"));
+
+        then(courseService).should().findCourseSurveys();
     }
 
     @DisplayName("코스 상세 조회 응답을 성공 응답 포맷으로 감싼다")
@@ -235,6 +266,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
                 .andExpect(jsonPath("$.data.courseId").value(courseId))
                 .andExpect(jsonPath("$.data.title").value("Han River"))
+                .andExpect(jsonPath("$.data.difficulty").value(Difficulty.MEDIUM.name()))
                 .andExpect(jsonPath("$.data.coordinates.latitudes[0]").value(37.57))
                 .andExpect(jsonPath("$.data.coordinates.longitudes[1]").value(126.98))
                 .andExpect(jsonPath("$.data.types[0]").value(CourseType.RIVERSIDE.name()))
