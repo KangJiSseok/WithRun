@@ -26,6 +26,7 @@ workflow:
     # 그 외는 파이프라인 생성 안 함
     - when: never
 
+
 build_was:
   stage: build
   script:
