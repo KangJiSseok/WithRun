@@ -49,7 +49,21 @@
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 4px);
   --radius-xl: calc(var(--radius) + 8px);
+
 }
+
+/* z-index 유틸리티 클래스
+ * @utility: Tailwind v4에서 커스텀 유틸리티를 등록하는 공식 방법
+ * z-index.css의 :root CSS 변수를 참조해 className="z-tooltip" 형태로 사용
+ */
+@utility z-base     { z-index: var(--z-base); }
+@utility z-raised   { z-index: var(--z-raised); }
+@utility z-dropdown { z-index: var(--z-dropdown); }
+@utility z-sticky   { z-index: var(--z-sticky); }
+@utility z-overlay  { z-index: var(--z-overlay); }
+@utility z-modal    { z-index: var(--z-modal); }
+@utility z-toast    { z-index: var(--z-toast); }
+@utility z-tooltip  { z-index: var(--z-tooltip); }
 
 /* 기본 body 스타일 */
 @layer base {
