@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 
 import { Button } from '@/shared/components/shadcn/button';
 import {
@@ -28,11 +28,9 @@ export function RunningGuideModal({
   const [currentStep, setCurrentStep] = useState(0);
   const touchStartX = useRef<number | null>(null);
 
-  useEffect(() => {
-    if (isOpen) {
-      setCurrentStep(0);
-    }
-  }, [isOpen]);
+  if (!isOpen) {
+    return null;
+  }
 
   function handlePrevious() {
     setCurrentStep((prev) => Math.max(prev - 1, 0));
