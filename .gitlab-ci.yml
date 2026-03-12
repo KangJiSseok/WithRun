@@ -33,6 +33,11 @@ build_was:
       - was/build/
     expire_in: 1 day
 
+build_web:
+  stage: build
+  script:
+    - docker build --target build -t web-build:test -f web/Dockerfile .
+    
 test_was:
   stage: test
   script:
