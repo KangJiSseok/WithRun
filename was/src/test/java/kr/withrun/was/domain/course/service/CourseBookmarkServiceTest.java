@@ -141,7 +141,7 @@ class CourseBookmarkServiceTest {
     void throwsCourseNotFoundWhenCourseIsDeletedOnAdd() {
         Course deletedCourse = course(15L);
         deletedCourse.delete();
-        when(courseRepository.findNotDeletedCourse(deletedCourse.getId())).thenReturn(Optional.of(deletedCourse));
+        when(courseRepository.findNotDeletedCourse(deletedCourse.getId())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> courseBookmarkService.addBookmark(deletedCourse.getId(), 25L))
                 .isInstanceOf(CustomException.class)
@@ -187,7 +187,7 @@ class CourseBookmarkServiceTest {
         User deletedUser = user(27L);
         deletedUser.delete();
         when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
-        when(userRepository.findNotDeletedUser(deletedUser.getId())).thenReturn(Optional.of(deletedUser));
+        when(userRepository.findNotDeletedUser(deletedUser.getId())).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> courseBookmarkService.removeBookmark(course.getId(), deletedUser.getId()))
                 .isInstanceOf(CustomException.class)
