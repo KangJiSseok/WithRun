@@ -23,6 +23,10 @@ export function useFreeRunning() {
 
     startTimeRef.current = Date.now();
 
+    // 현재: setInterval로 가짜 계산
+    // 추후 변경: GPS 좌표 수신 -> 실제 distance/pace 계산
+    //      워치 BLE 연동 -> heartRate 실시간 수신
+    //      매 1km 통과 시 kmSplits에 페이스 push
     const interval = setInterval(() => {
       if (startTimeRef.current === null) return;
       const totalElapsedSec = Math.floor(
