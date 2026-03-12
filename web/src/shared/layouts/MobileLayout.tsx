@@ -8,7 +8,7 @@ type MobileLayoutProps = {
 };
 
 // 하단 네비게이션바를 숨길 경로 목록
-const HIDE_NAV_ROUTES = ['/freerun'];
+const HIDE_NAV_ROUTES = ['/freerun', '/freerun-result'];
 
 export function MobileLayout({ children }: MobileLayoutProps) {
   const { pathname } = useLocation();
