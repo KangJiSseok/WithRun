@@ -7,6 +7,8 @@ WORKDIR /app/web
 RUN pnpm install --frozen-lockfile
 
 WORKDIR /app
+RUN ln -s /app/web/node_modules /app/node_modules
+
 COPY web ./web
 COPY mobile/src/bridge ./mobile/src/bridge
 
