@@ -1,15 +1,14 @@
 import { useEffect, useState } from 'react'
+import { bridge } from '@/bridge'
 
 export default function useWatchMessage() {
   const [lastMessage, setLastMessage] = useState<string | null>(null)
 
   useEffect(() => {
-    const handler = (e: CustomEvent<string>) => {
-      setLastMessage(e.detail)
-    }
-
-    window.addEventListener('watchMessage', handler as EventListener)
-    return () => window.removeEventListener('watchMessage', handler as EventListener)
+    const unsubscribe = bridge.addEventListener('watchMessage', ({ message }) => {
+      setLastMessage(message)
+    })
+    return unsubscribe
   }, [])
 
   return { lastMessage }
