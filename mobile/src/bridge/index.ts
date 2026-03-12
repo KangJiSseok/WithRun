@@ -1,2 +1,2 @@
-export { WebView, appBridge } from './bridge'
-export type { AppBridge } from './bridge'
+export { WebView, appBridge, postMessage } from './bridge'
+export type { AppBridge, AndroidPostMessageSchema } from './bridge'
