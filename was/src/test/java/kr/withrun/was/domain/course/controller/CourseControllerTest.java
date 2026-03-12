@@ -206,9 +206,9 @@ class CourseControllerTest {
         then(courseService).should().findNearbyCourses(request);
     }
 
-    @DisplayName("코스 lookup 응답을 성공 응답 포맷으로 감싼다")
+    @DisplayName("코스 설문 응답을 성공 응답 포맷으로 감싼다")
     @Test
-    void wrapsCourseLookupsResponseInSuccessEnvelope() throws Exception {
+    void wrapsCourseSurveysResponseInSuccessEnvelope() throws Exception {
         CourseSurveyResponse response = new CourseSurveyResponse(
                 List.of(
                         new CourseSurveyResponse.CourseSurveyListResponse(1, "RIVERSIDE"),
@@ -221,7 +221,7 @@ class CourseControllerTest {
         );
         given(courseService.findCourseSurveys()).willReturn(response);
 
-        mockMvc.perform(get("/api/courses/lookups"))
+        mockMvc.perform(get("/api/courses/surveys"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))

@@ -8,9 +8,11 @@ import org.springframework.boot.test.context.SpringBootTest;
         properties = {
                 "spring.config.import=",
                 "spring.cloud.aws.parameterstore.enabled=false",
-                "jdbc.url=jdbc:h2:mem:testdb;MODE=MySQL;DB_CLOSE_DELAY=-1;DB_CLOSE_ON_EXIT=FALSE",
-                "jdbc.username=sa",
-                "jdbc.password="
+                "spring.datasource.url=jdbc:h2:mem:testdb;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE;INIT=CREATE DOMAIN IF NOT EXISTS JSONB AS JSON",
+                "spring.datasource.driver-class-name=org.h2.Driver",
+                "spring.datasource.username=sa",
+                "spring.datasource.password=",
+                "spring.jpa.hibernate.ddl-auto=create-drop"
         }
 )
 @DisplayName("WAS 애플리케이션")
