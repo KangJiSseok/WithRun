@@ -47,7 +47,7 @@ docker_push_dev:
   script:
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
     - docker build -t "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WAS_IMAGE:dev-latest" ./was
-    - docker build -t "$WEB_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WEB_IMAGE:dev-latest" ./web
+    - docker build -f web/Dockerfile -t "$WEB_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WEB_IMAGE:dev-latest" .
     - docker push "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA"
     - docker push "$WAS_IMAGE:dev-latest"
     - docker push "$WEB_IMAGE:$CI_COMMIT_SHORT_SHA"
