@@ -1,1 +1,1 @@
-export {bridge} from './bridge'
+export { bridge } from './bridge'
