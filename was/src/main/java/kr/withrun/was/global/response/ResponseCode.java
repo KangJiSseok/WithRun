@@ -1,9 +1,7 @@
 package kr.withrun.was.global.response;
 
-import lombok.Getter;
 import org.springframework.http.HttpStatus;
 
-@Getter
 public enum ResponseCode {
 
     // ========== Success ==========
@@ -35,8 +33,11 @@ public enum ResponseCode {
     COURSE_NOT_FOUND("E304", HttpStatus.NOT_FOUND, "코스를 찾을 수 없습니다.", false),
 
     // Running Error
-    RUNNING_SESSION_NOT_FOUND("E400", HttpStatus.NOT_FOUND, "러닝 세션을 찾을 수 없습니다.", false),
-    RUNNING_SESSION_ALREADY_COMPLETED("E401", HttpStatus.CONFLICT, "이미 종료된 러닝 세션입니다.", false),
+    INVALID_RUNNING_MODE("E400", HttpStatus.BAD_REQUEST, "잘못된 러닝 모드입니다.", false),
+    GHOST_TARGET_NOT_FOUND("E401", HttpStatus.NOT_FOUND, "고스트 대상 러닝 세션을 찾을 수 없습니다.", false),
+    INVALID_GHOST_TARGET("E402", HttpStatus.BAD_REQUEST, "유효하지 않은 고스트 대상 러닝 세션입니다.", false),
+    RUNNING_SESSION_NOT_FOUND("E403", HttpStatus.NOT_FOUND, "러닝 세션을 찾을 수 없습니다.", false),
+    RUNNING_SESSION_ALREADY_COMPLETED("E404", HttpStatus.CONFLICT, "이미 종료된 러닝 세션입니다.", false),
 
     // Auth Error
     UNAUTHORIZED("E100", HttpStatus.UNAUTHORIZED, "인증이 필요합니다.", false),
@@ -59,5 +60,21 @@ public enum ResponseCode {
         this.status = status;
         this.message = message;
         this.success = success;
+    }
+
+    public String getCode() {
+        return code;
+    }
+
+    public HttpStatus getStatus() {
+        return status;
+    }
+
+    public String getMessage() {
+        return message;
+    }
+
+    public boolean isSuccess() {
+        return success;
     }
 }
