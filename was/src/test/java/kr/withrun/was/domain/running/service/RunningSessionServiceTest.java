@@ -1,65 +1,301 @@
 package kr.withrun.was.domain.running.service;
 
+import kr.withrun.was.domain.course.entity.Course;
+import kr.withrun.was.domain.course.repository.CourseRepository;
+import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
+import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.repository.RunningSessionRepository;
 import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.domain.user.entity.User;
+import kr.withrun.was.domain.user.repository.UserRepository;
+import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Field;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
+import static kr.withrun.was.domain.running.type.RunningMode.COURSE;
+import static kr.withrun.was.domain.running.type.RunningMode.FREE;
+import static kr.withrun.was.domain.running.type.RunningMode.GHOST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.BDDMockito.given;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
+import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("러닝 세션 서비스")
 class RunningSessionServiceTest {
 
+    private static final LocalDateTime STARTED_AT = LocalDateTime.of(2026, 3, 12, 6, 30);
+
     @Mock
     private RunningSessionRepository runningSessionRepository;
+
+    @Mock
+    private UserRepository userRepository;
+
+    @Mock
+    private CourseRepository courseRepository;
 
     private RunningSessionService runningSessionService;
 
     @BeforeEach
     void setUp() {
-        runningSessionService = new RunningSessionService(runningSessionRepository);
+        runningSessionService = new RunningSessionService(
+                runningSessionRepository,
+                userRepository,
+                courseRepository
+        );
     }
 
     @DisplayName("서비스는 클래스 기본 readOnly와 쓰기 메서드 트랜잭션을 함께 사용한다")
     @Test
     void usesReadOnlyAtClassLevelAndWritableMethods() throws NoSuchMethodException {
         Transactional classTransactional = RunningSessionService.class.getAnnotation(Transactional.class);
+        Transactional createTransactional = RunningSessionService.class
+                .getDeclaredMethod("createRunningSession", CreateRunningSessionRequest.class)
+                .getAnnotation(Transactional.class);
         Transactional completeTransactional = RunningSessionService.class
                 .getDeclaredMethod("completeRunningSession", Long.class, UpdateRunningSessionRequest.class)
                 .getAnnotation(Transactional.class);
 
         assertThat(classTransactional).isNotNull();
         assertThat(classTransactional.readOnly()).isTrue();
+        assertThat(createTransactional).isNotNull();
+        assertThat(createTransactional.readOnly()).isFalse();
         assertThat(completeTransactional).isNotNull();
         assertThat(completeTransactional.readOnly()).isFalse();
+    }
+
+    @DisplayName("FREE 모드는 코스와 고스트 대상 없이 세션을 생성한다")
+    @Test
+    void createsFreeRunningSessionWithoutCourseOrGhostTarget() {
+        User user = user(1L);
+        stubUser(user);
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 901L));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(1L, FREE, null, null, STARTED_AT, 30.0, 176.0)
+        );
+
+        ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
+        verify(runningSessionRepository, times(1)).save(sessionCaptor.capture());
+        RunningSession savedSession = sessionCaptor.getValue();
+
+        assertThat(savedSession.getUser()).isEqualTo(user);
+        assertThat(savedSession.getCourse()).isNull();
+        assertThat(savedSession.getGhostTargetRunningSession()).isNull();
+        assertThat(savedSession.getMode()).isEqualTo(FREE);
+        assertThat(savedSession.getStartedAt()).isEqualTo(STARTED_AT);
+        assertThat(savedSession.getDistanceM()).isZero();
+        assertThat(savedSession.getCaloriesKcal()).isZero();
+        assertThat(savedSession.getIsCompleted()).isFalse();
+
+        assertThat(response.runningSessionId()).isEqualTo(901L);
+        assertThat(response.mode()).isEqualTo(FREE);
+        assertThat(response.courseId()).isNull();
+        assertThat(response.ghostTargetRunningSessionId()).isNull();
+        assertThat(response.distanceM()).isZero();
+        assertThat(response.caloriesKcal()).isZero();
+        assertThat(response.isCompleted()).isFalse();
+
+        verifyNoInteractions(courseRepository);
+    }
+
+    @DisplayName("COURSE 모드는 공식 코스로 세션을 생성한다")
+    @Test
+    void createsCourseRunningSessionWithOfficialCourse() {
+        User user = user(2L);
+        Course course = course(300L, CourseStatus.OFFICIAL);
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 902L));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(2L, COURSE, 300L, null, STARTED_AT, 30.0, 176.0)
+        );
+
+        ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
+        verify(runningSessionRepository, times(1)).save(sessionCaptor.capture());
+        RunningSession savedSession = sessionCaptor.getValue();
+
+        assertThat(savedSession.getCourse()).isEqualTo(course);
+        assertThat(savedSession.getGhostTargetRunningSession()).isNull();
+        assertThat(savedSession.getMode()).isEqualTo(COURSE);
+        assertThat(response.runningSessionId()).isEqualTo(902L);
+        assertThat(response.mode()).isEqualTo(COURSE);
+        assertThat(response.courseId()).isEqualTo(300L);
+        assertThat(response.ghostTargetRunningSessionId()).isNull();
+        assertThat(response.distanceM()).isZero();
+        assertThat(response.caloriesKcal()).isZero();
+        assertThat(response.isCompleted()).isFalse();
+    }
+
+    @DisplayName("GHOST 모드는 공식 코스와 완료된 고스트 대상으로 세션을 생성한다")
+    @Test
+    void createsGhostRunningSessionWithEligibleGhostTarget() {
+        User user = user(3L);
+        Course course = course(301L, CourseStatus.OFFICIAL);
+        RunningSession ghostTarget = completedRunningSession(44L);
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(ghostTarget.getId()))
+                .thenReturn(Optional.of(ghostTarget));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 903L));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(3L, GHOST, 301L, 44L, STARTED_AT, 30.0, 176.0)
+        );
+
+        ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
+        verify(runningSessionRepository, times(1)).save(sessionCaptor.capture());
+        RunningSession savedSession = sessionCaptor.getValue();
+
+        assertThat(savedSession.getCourse()).isEqualTo(course);
+        assertThat(savedSession.getGhostTargetRunningSession()).isEqualTo(ghostTarget);
+        assertThat(savedSession.getMode()).isEqualTo(GHOST);
+        assertThat(savedSession.getIsPublic()).isTrue();
+        assertThat(response.runningSessionId()).isEqualTo(903L);
+        assertThat(response.mode()).isEqualTo(GHOST);
+        assertThat(response.courseId()).isEqualTo(301L);
+        assertThat(response.ghostTargetRunningSessionId()).isEqualTo(44L);
+        assertThat(response.distanceM()).isZero();
+        assertThat(response.caloriesKcal()).isZero();
+        assertThat(response.isCompleted()).isFalse();
+    }
+
+    @DisplayName("없는 사용자는 USER_NOT_FOUND 예외를 던진다")
+    @Test
+    void throwsUserNotFoundWhenUserDoesNotExist() {
+        when(userRepository.findNotDeletedUser(10L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(10L, FREE, null, null, STARTED_AT, 30.0, 176.0)
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.USER_NOT_FOUND);
+    }
+
+    @DisplayName("COURSE 모드에서 courseId가 없으면 잘못된 입력 예외를 던진다")
+    @Test
+    void throwsInvalidInputValueWhenCourseModeHasNoCourseId() {
+        stubUser(user(11L));
+
+        assertThatThrownBy(() -> runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(11L, COURSE, null, null, STARTED_AT, 30.0, 176.0)
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
+
+        verify(runningSessionRepository, never()).save(any(RunningSession.class));
+    }
+
+    @DisplayName("COURSE 모드에서 공식 코스가 아니면 COURSE_NOT_FOUND 예외를 던진다")
+    @Test
+    void throwsCourseNotFoundWhenCourseIsNotOfficial() {
+        User user = user(12L);
+        Course communityCourse = course(302L, CourseStatus.COMMUNITY);
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(communityCourse.getId())).thenReturn(Optional.of(communityCourse));
+
+        assertThatThrownBy(() -> runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(12L, COURSE, 302L, null, STARTED_AT, 30.0, 176.0)
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
+
+        verify(runningSessionRepository, never()).save(any(RunningSession.class));
+    }
+
+    @DisplayName("GHOST 모드에서 고스트 대상 ID가 없으면 잘못된 입력 예외를 던진다")
+    @Test
+    void throwsInvalidInputValueWhenGhostModeHasNoGhostTargetId() {
+        User user = user(13L);
+        Course course = course(303L, CourseStatus.OFFICIAL);
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(13L, GHOST, 303L, null, STARTED_AT, 30.0, 176.0)
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
+
+        verify(runningSessionRepository, never()).save(any(RunningSession.class));
+    }
+
+    @DisplayName("GHOST 모드에서 고스트 대상을 찾지 못하면 GHOST_TARGET_NOT_FOUND 예외를 던진다")
+    @Test
+    void throwsGhostTargetNotFoundWhenGhostTargetDoesNotExist() {
+        User user = user(14L);
+        Course course = course(304L, CourseStatus.OFFICIAL);
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(55L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(14L, GHOST, 304L, 55L, STARTED_AT, 30.0, 176.0)
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.GHOST_TARGET_NOT_FOUND);
+
+        verify(runningSessionRepository, never()).save(any(RunningSession.class));
+    }
+
+    @DisplayName("GHOST 모드에서 완료되지 않은 고스트 대상은 INVALID_GHOST_TARGET 예외를 던진다")
+    @Test
+    void throwsInvalidGhostTargetWhenGhostTargetIsNotCompleted() {
+        User user = user(15L);
+        Course course = course(305L, CourseStatus.OFFICIAL);
+        RunningSession incompleteGhostTarget = runningSession(56L, false);
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(incompleteGhostTarget.getId()))
+                .thenReturn(Optional.of(incompleteGhostTarget));
+
+        assertThatThrownBy(() -> runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(15L, GHOST, 305L, 56L, STARTED_AT, 30.0, 176.0)
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.INVALID_GHOST_TARGET);
+
+        verify(runningSessionRepository, never()).save(any(RunningSession.class));
     }
 
     @DisplayName("종료 요청이 유효하면 세션을 완료 상태로 확정한다")
     @Test
     void completesRunningSessionWhenRequestIsValid() {
-        RunningSession runningSession = runningSession(1L, 1L, false, LocalDateTime.of(2026, 3, 12, 6, 30, 0));
-        UpdateRunningSessionRequest request = validRequest(1L, "2026-03-12T07:12:00");
-        given(runningSessionRepository.findNotDeletedRunningSession(1L)).willReturn(Optional.of(runningSession));
+        RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
+        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
         UpdateRunningSessionResponse response = runningSessionService.completeRunningSession(1L, request);
 
@@ -95,9 +331,9 @@ class RunningSessionServiceTest {
     @DisplayName("세션 소유 사용자와 요청 사용자 ID가 다르면 세션 없음으로 처리한다")
     @Test
     void treatsDifferentUserAsRunningSessionNotFound() {
-        RunningSession runningSession = runningSession(1L, 2L, false, LocalDateTime.of(2026, 3, 12, 6, 30, 0));
-        UpdateRunningSessionRequest request = validRequest(1L, "2026-03-12T07:12:00");
-        given(runningSessionRepository.findNotDeletedRunningSession(1L)).willReturn(Optional.of(runningSession));
+        RunningSession runningSession = runningSession(1L, 2L, false, STARTED_AT);
+        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
         assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
                 .isInstanceOf(CustomException.class)
@@ -108,9 +344,9 @@ class RunningSessionServiceTest {
     @DisplayName("이미 종료된 세션은 중복 종료를 거부한다")
     @Test
     void rejectsAlreadyCompletedRunningSession() {
-        RunningSession runningSession = runningSession(1L, 1L, true, LocalDateTime.of(2026, 3, 12, 6, 30, 0));
-        UpdateRunningSessionRequest request = validRequest(1L, "2026-03-12T07:12:00");
-        given(runningSessionRepository.findNotDeletedRunningSession(1L)).willReturn(Optional.of(runningSession));
+        RunningSession runningSession = runningSession(1L, 1L, true, STARTED_AT);
+        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
         assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
                 .isInstanceOf(CustomException.class)
@@ -121,8 +357,8 @@ class RunningSessionServiceTest {
     @DisplayName("존재하지 않는 세션은 종료할 수 없다")
     @Test
     void throwsRunningSessionNotFoundWhenSessionDoesNotExist() {
-        UpdateRunningSessionRequest request = validRequest(1L, "2026-03-12T07:12:00");
-        given(runningSessionRepository.findNotDeletedRunningSession(1L)).willReturn(Optional.empty());
+        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
                 .isInstanceOf(CustomException.class)
@@ -133,9 +369,9 @@ class RunningSessionServiceTest {
     @DisplayName("종료 시각이 시작 시각보다 빨라도 현재 요청 값을 그대로 반영한다")
     @Test
     void appliesEndedAtEvenWhenItIsBeforeStartedAt() {
-        RunningSession runningSession = runningSession(1L, 1L, false, LocalDateTime.of(2026, 3, 12, 6, 30, 0));
-        UpdateRunningSessionRequest request = validRequest(1L, "2026-03-12T06:20:00");
-        given(runningSessionRepository.findNotDeletedRunningSession(1L)).willReturn(Optional.of(runningSession));
+        RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
+        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T06:20:00");
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
         UpdateRunningSessionResponse response = runningSessionService.completeRunningSession(1L, request);
 
@@ -144,36 +380,71 @@ class RunningSessionServiceTest {
         assertThat(runningSession.getIsCompleted()).isTrue();
     }
 
-    private RunningSession runningSession(Long id, Long userId, boolean isCompleted, LocalDateTime startedAt) {
-        RunningSession runningSession = instantiateRunningSession();
-        User user = org.mockito.Mockito.mock(User.class);
-        given(user.getId()).willReturn(userId);
+    private void stubUser(User user) {
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+    }
 
-        ReflectionTestUtils.setField(runningSession, "id", id);
-        ReflectionTestUtils.setField(runningSession, "startedAt", startedAt);
-        ReflectionTestUtils.setField(runningSession, "distanceM", 0);
-        ReflectionTestUtils.setField(runningSession, "caloriesKcal", 0);
-        ReflectionTestUtils.setField(runningSession, "elevationGainM", 0);
-        ReflectionTestUtils.setField(runningSession, "startLatitude", 37.5);
-        ReflectionTestUtils.setField(runningSession, "startLongitude", 127.0);
-        ReflectionTestUtils.setField(runningSession, "isPublic", false);
-        ReflectionTestUtils.setField(runningSession, "isCompleted", isCompleted);
-        ReflectionTestUtils.setField(runningSession, "user", user);
-        ReflectionTestUtils.setField(runningSession, "mode", RunningMode.FREE);
+    private RunningSession persist(RunningSession runningSession, Long id) {
+        setField(runningSession, "id", id);
         return runningSession;
     }
 
-    private RunningSession instantiateRunningSession() {
-        try {
-            var constructor = RunningSession.class.getDeclaredConstructor();
-            constructor.setAccessible(true);
-            return constructor.newInstance();
-        } catch (ReflectiveOperationException exception) {
-            throw new IllegalStateException(exception);
-        }
+    private Course course(Long id, CourseStatus status) {
+        Course course = Course.builder()
+                .title("Course " + id)
+                .status(status)
+                .distanceM(5000)
+                .elevationGainM(120)
+                .snapshotImageUrl("snapshot-" + id)
+                .startLatitude(37.5665)
+                .startLongitude(126.9780)
+                .endLatitude(37.5700)
+                .endLongitude(126.9820)
+                .coordinates(new Coordinates(List.of(37.5665), List.of(126.9780), List.of(12.0)))
+                .build();
+        setField(course, "id", id);
+        return course;
     }
 
-    private UpdateRunningSessionRequest validRequest(Long userId, String endedAt) {
+    private User user(Long id) {
+        User user = instantiate(User.class);
+        setField(user, "id", id);
+        setField(user, "nickname", "runner-" + id);
+        setField(user, "birthDate", LocalDate.of(1995, 3, 11));
+        setField(user, "gender", Gender.MALE);
+        setField(user, "height", 175.0);
+        setField(user, "weight", 68.0);
+        return user;
+    }
+
+    private RunningSession completedRunningSession(Long id) {
+        return runningSession(id, true);
+    }
+
+    private RunningSession runningSession(Long id, boolean isCompleted) {
+        RunningSession runningSession = instantiate(RunningSession.class);
+        setField(runningSession, "id", id);
+        setField(runningSession, "isCompleted", isCompleted);
+        return runningSession;
+    }
+
+    private RunningSession runningSession(Long id, Long userId, boolean isCompleted, LocalDateTime startedAt) {
+        RunningSession runningSession = instantiate(RunningSession.class);
+        setField(runningSession, "id", id);
+        setField(runningSession, "startedAt", startedAt);
+        setField(runningSession, "distanceM", 0);
+        setField(runningSession, "caloriesKcal", 0);
+        setField(runningSession, "elevationGainM", 0);
+        setField(runningSession, "startLatitude", 37.5);
+        setField(runningSession, "startLongitude", 127.0);
+        setField(runningSession, "isPublic", false);
+        setField(runningSession, "isCompleted", isCompleted);
+        setField(runningSession, "user", user(userId));
+        setField(runningSession, "mode", RunningMode.FREE);
+        return runningSession;
+    }
+
+    private UpdateRunningSessionRequest validUpdateRequest(Long userId, String endedAt) {
         return new UpdateRunningSessionRequest(
                 userId,
                 LocalDateTime.parse(endedAt),
@@ -186,5 +457,33 @@ class RunningSessionServiceTest {
                 2,
                 3
         );
+    }
+
+    private <T> T instantiate(Class<T> type) {
+        try {
+            Constructor<T> constructor = type.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Failed to instantiate " + type.getSimpleName(), exception);
+        }
+    }
+
+    private void setField(Object target, String fieldName, Object value) {
+        Class<?> currentClass = target.getClass();
+        while (currentClass != null) {
+            try {
+                Field field = currentClass.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(target, value);
+                return;
+            } catch (NoSuchFieldException exception) {
+                currentClass = currentClass.getSuperclass();
+            } catch (IllegalAccessException exception) {
+                throw new IllegalStateException("Failed to set field " + fieldName, exception);
+            }
+        }
+
+        throw new IllegalArgumentException("Field not found: " + fieldName);
     }
 }
