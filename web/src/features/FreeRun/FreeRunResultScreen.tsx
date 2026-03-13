@@ -1,9 +1,11 @@
 import { useState } from 'react';
-import { useNavigate, useLocation } from 'react-router-dom';
+import { useNavigate } from 'react-router-dom';
 import { Award, Home, MapPin, Activity, Timer, Save, Check, UploadCloud } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import { CourseRegisterModal } from './CourseRegisterModal';
 import { CourseShareModal } from './CourseShareModal';
+import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
+import { useGeneratePaceData } from '@/hooks/FreeRun/useGeneratePaceData';
 
 // 회원 시스템 구현 전 임시 mock 유저
 // 추후 변경 시 => auth context에서 실제 유저 정보 받아오기
@@ -13,13 +15,6 @@ const MOCK_USER = { name: '러너' };
 // 추후 변경 시 => state.heartRate로 대체 (min, avg, max 계산해서 저장)
 const MOCK_HEART_RATE = { min: 118, avg: 142, max: 168 };
 
-// 추후 추가 시 => 구간별 페이스, 심박수 추가
-interface RunResultState {
-  time: string;
-  distance: string;
-  pace: string;
-  calories: number;
-}
 
 interface StatItemProps {
   label: string;
@@ -37,30 +32,6 @@ function StatItem({ label, value, unit }: StatItemProps) {
   );
 }
 
-// 구간별 페이스 계산
-// 추후 GPS 연동시 useFreeRunning에서 매 1km 통과 시마다
-// 페이스를 기록해서 kmSplits: { km: number, pace: string }[]와 같은 형태로 관리하는 방식으로
-// 변경 예정 + navigate state에 같이 넘겨야 함. (이건 추후 삭제 예정)
-function generatePaceData(pace: string, distance: string) {
-  const km = Math.max(Math.ceil(parseFloat(distance) || 1), 1);
-  // match: 정규식으로 pace 문자열 파싱
-  const match = pace.match(/(\d+)'(\d+)"/);
-  // baseSeconds: 페이스를 초 단위로 환산 (예: 5'30" -> 330초)
-  // 매칭 성공 시: baseSeconds = parseInt(match[1]) * 60 + parseInt(match[2]) = 330초
-  const baseSeconds = match ? parseInt(match[1]) * 60 + parseInt(match[2]) : 330;
-
-  return Array.from({ length: km }, (_, i) => {
-    const variation = Math.floor((Math.sin(i * 1.5) * 15));
-    const secs = Math.max(baseSeconds + variation, 180);
-    const m = Math.floor(secs / 60);
-    const s = secs % 60;
-    return {
-      km: i + 1,
-      displayPace: `${m}'${String(s).padStart(2, '0')}"`,
-      seconds: secs,
-    };
-  });
-}
 
 export function FreeRunResultScreen() {
   const navigate = useNavigate();
@@ -70,36 +41,18 @@ export function FreeRunResultScreen() {
   const [showRegisterModal, setShowRegisterModal] = useState(false);
   // 공식 코스 등록 폼 모달 상태
   const [showShareModal, setShowShareModal] = useState(false);
-  // useLocation: 현재 URL 정보를 읽는 훅
-  // (URL 외에 navigate로 넘긴 state도 여기서 읽어올 수 있음)
+  // FreeRunningScreen 종료 시점에 useFreeRunResultStore.setResult()로 저장
+  // 백엔드 연동 후: POST /runs → runId 반환 → store.setRunId(runId)
+  //  → 결과 화면에서 GET /runs/:runId → 데이터 표시
 
-  // FreeRunningScreen에서 navigate 시 state를 같이 전송
-  // navigate('/freerun-result', { state: { time, distance, pace, calories } })
+  const result = useFreeRunResultStore((s) => s.result);
 
-  // FreeRunResultScreen에서 그 state를 수신
-  // const location = useLocation();
-  // location.state  // → { time, distance, pace, calories }
+  const time = result?.time ?? '00:00';
+  const distance = result?.distance ?? '0.00';
+  const pace = result?.pace ?? `--'--"`;
+  const calories = result?.calories ?? 0;
 
-  // 페이지 이동 시 브라우저 히스토리 스택에 state를 임시로 붙여서 전달하는 방식
-  // URL에 보이지 않음
-  
-  // 백엔드에서 저장 후 조회 방식
-  // 러닝 종료 → POST /runs (결과 저장) → 서버에서 runId 반환
-        //  → navigate('/freerun-result', { state: { runId } })
-        //  → 결과 화면에서 GET /runs/:runId → 데이터 표시
-
-  // 저장 기록이 남고, 새로고침해도 데이터가 유지되는 방식
-
-  const location = useLocation();
-  const state = location.state as RunResultState | null;
-
-  const time = state?.time ?? '00:00';
-  const distance = state?.distance ?? '0.00';
-  const pace = state?.pace ?? `--'--"`;
-  const calories = state?.calories ?? 0;
-
-  const paceData = generatePaceData(pace, distance);
-  const avgSeconds = paceData.reduce((a, b) => a + b.seconds, 0) / paceData.length;
+  const { paceData, avgSeconds } = useGeneratePaceData(pace, distance);
 
   return (
     <div className="absolute inset-0 bg-[hsl(var(--secondary-1))]">

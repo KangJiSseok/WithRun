@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { Pause, Play, Square } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import { useFreeRunning } from '@/hooks/FreeRun/useFreeRunning';
+import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
 
 // startCard 컴포넌트에 props 전달 시 TypeScript 오류 방지 위해 별도 컴포넌트로 분리
 interface StatCardProps {
@@ -25,6 +26,7 @@ function StatCard({ label, value, unit }: StatCardProps) {
 export function FreeRunningScreen() {
   const navigate = useNavigate();
   const { time, distance, pace, calories, isPaused, togglePause } = useFreeRunning();
+  const setResult = useFreeRunResultStore((s) => s.setResult);
 
   return (
     <div className="absolute inset-0 bg-secondary-foreground flex flex-col items-center justify-between px-6 py-12">
@@ -82,7 +84,10 @@ export function FreeRunningScreen() {
 
         {/* 종료 버튼 — 일시정지 시 오른쪽으로 슬라이드 */}
         <button
-          onClick={() => navigate('/freerun-result', { state: { time, distance, pace, calories } })}
+          onClick={() => {
+            setResult({ time, distance, pace, calories });
+            navigate('/freerun-result');
+          }}
           className={cn(
             'absolute w-14 h-14 rounded-full bg-[hsl(var(--secondary-3))] flex items-center justify-center text-[hsl(var(--text-inverse))] transition-all duration-300',
             isPaused
