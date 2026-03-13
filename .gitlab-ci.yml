@@ -16,13 +16,6 @@ variables:
   WEB_IMAGE: "$DOCKERHUB_USERNAME/withrun-web"
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
 
-cache:
-  key: "$CI_COMMIT_REF_SLUG"
-  paths:
-    - .gradle/wrapper
-    - .gradle/caches
-    - was/.gradle
-
 workflow:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
@@ -36,10 +29,6 @@ build_was:
     - cd was
     - chmod +x gradlew
     - ./gradlew clean build -x test
-  artifacts:
-    paths:
-      - was/build/
-    expire_in: 1 day
 
 build_web:
   stage: build
@@ -101,6 +90,8 @@ deploy_prod:
     name: production
   script:
     - cp deploy/compose/docker-compose.prod.yml "$PROD_DEPLOY_DIR/"
+    - mkdir -p "$PROD_DEPLOY_DIR/nginx"
+    - cp deploy/nginx/default.conf "$PROD_DEPLOY_DIR/nginx/"
     - cd "$PROD_DEPLOY_DIR"
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
     - docker compose -f docker-compose.prod.yml pull
