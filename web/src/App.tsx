@@ -1,12 +1,8 @@
-import { AppRoutes } from '@/routes';
-import { MobileLayout } from './shared/layouts/MobileLayout';
+import { RouterProvider } from 'react-router-dom';
+import { router } from './routes/routes';
 
 function App() {
-  return (
-    <MobileLayout>
-      <AppRoutes />
-    </MobileLayout>
-  );
+  return <RouterProvider router={router} />;
 }
 
 export default App;
