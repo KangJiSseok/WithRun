@@ -184,7 +184,7 @@
 - 핵심 컬럼:
   - `running_session_id`: PK
   - `user_id`: 세션 소유 사용자 FK
-  - `course_id`: 코스 러닝용 FK, nullable
+  - `course_id`: `COURSE`, `GHOST` 모드용 FK, nullable
   - `mode`: `FREE`, `COURSE`, `GHOST`
   - `ghost_target_running_session_id`: 고스트 타깃 세션 FK, nullable
   - `started_at`, `ended_at`, `duration_sec`
@@ -204,6 +204,8 @@
   - `chk_running_sessions_ghost_mode`
   - `chk_running_sessions_visibility_for_ghost`
   - `chk_running_sessions_completed_state`
+- 비고:
+  - `COURSE`와 `GHOST`는 `courses.status = OFFICIAL`인 코스만 사용할 수 있으며, 이 교차 테이블 규칙은 WAS 애플리케이션 검증으로 강제합니다.
 
 ### running_session_splits
 

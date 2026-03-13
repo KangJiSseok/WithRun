@@ -49,7 +49,7 @@ public class RunningSession extends BaseEntity {
     private Integer durationSec;
 
     @Column(name = "distance_m", nullable = false)
-    private Integer distanceM = 0;
+    private Integer distanceM;
 
     @Column(name = "avg_speed_mps")
     private Double avgSpeedMps;
@@ -58,10 +58,10 @@ public class RunningSession extends BaseEntity {
     private Integer avgPaceSecPerKm;
 
     @Column(name = "calories_kcal", nullable = false)
-    private Integer caloriesKcal = 0;
+    private Integer caloriesKcal;
 
     @Column(name = "elevation_gain_m", nullable = false)
-    private Integer elevationGainM = 0;
+    private Integer elevationGainM;
 
     @Column(name = "snapshot_image_url")
     private String snapshotImageUrl;
@@ -83,10 +83,10 @@ public class RunningSession extends BaseEntity {
     private Coordinates coordinates;
 
     @Column(name = "is_public", nullable = false)
-    private Boolean isPublic = false;
+    private Boolean isPublic;
 
     @Column(name = "is_completed", nullable = false)
-    private Boolean isCompleted = false;
+    private Boolean isCompleted;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -113,6 +113,31 @@ public class RunningSession extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_running_sessions_ghost_target_running_session")
     )
     private RunningSession ghostTargetRunningSession;
+
+    public static RunningSession start(
+            User user,
+            RunningMode mode,
+            Course course,
+            RunningSession ghostTargetRunningSession,
+            LocalDateTime startedAt,
+            Double startLatitude,
+            Double startLongitude
+    ) {
+        RunningSession runningSession = new RunningSession();
+        runningSession.user = user;
+        runningSession.mode = mode;
+        runningSession.course = course;
+        runningSession.ghostTargetRunningSession = ghostTargetRunningSession;
+        runningSession.startedAt = startedAt;
+        runningSession.distanceM = 0;
+        runningSession.caloriesKcal = 0;
+        runningSession.elevationGainM = 0;
+        runningSession.isPublic = mode == RunningMode.GHOST;
+        runningSession.isCompleted = false;
+        runningSession.startLatitude = startLatitude;
+        runningSession.startLongitude = startLongitude;
+        return runningSession;
+    }
 
     public void complete(
             LocalDateTime endedAt,
