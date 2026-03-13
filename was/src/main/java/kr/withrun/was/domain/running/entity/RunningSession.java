@@ -17,6 +17,8 @@ import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
+import kr.withrun.was.global.exception.CustomException;
+import kr.withrun.was.global.response.ResponseCode;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
@@ -111,5 +113,40 @@ public class RunningSession extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_running_sessions_ghost_target_running_session")
     )
     private RunningSession ghostTargetRunningSession;
+
+    public void complete(
+            LocalDateTime endedAt,
+            Integer distanceM,
+            Integer caloriesKcal,
+            Double endLatitude,
+            Double endLongitude,
+            Double avgSpeedMps,
+            Integer durationSec,
+            Integer avgPaceSecPerKm,
+            Integer elevationGainM
+    ) {
+        this.endedAt = endedAt;
+        this.distanceM = distanceM;
+        this.caloriesKcal = caloriesKcal;
+        this.endLatitude = endLatitude;
+        this.endLongitude = endLongitude;
+        this.avgSpeedMps = avgSpeedMps;
+        this.durationSec = durationSec;
+        this.avgPaceSecPerKm = avgPaceSecPerKm;
+        this.elevationGainM = elevationGainM;
+        this.isCompleted = true;
+    }
+
+    public void validateOwner(Long userId) {
+        if (!this.user.getId().equals(userId)) {
+            throw new CustomException(ResponseCode.RUNNING_SESSION_NOT_FOUND);
+        }
+    }
+
+    public void validateCompletable() {
+        if (Boolean.TRUE.equals(this.isCompleted)) {
+            throw new CustomException(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED);
+        }
+    }
 
 }

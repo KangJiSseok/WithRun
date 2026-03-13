@@ -34,6 +34,10 @@ public enum ResponseCode {
     MISSING_COURSE_COORDINATE_ELEVATION("E303", HttpStatus.BAD_REQUEST, "코스 좌표의 고도 정보가 필요합니다.", false),
     COURSE_NOT_FOUND("E304", HttpStatus.NOT_FOUND, "코스를 찾을 수 없습니다.", false),
 
+    // Running Error
+    RUNNING_SESSION_NOT_FOUND("E400", HttpStatus.NOT_FOUND, "러닝 세션을 찾을 수 없습니다.", false),
+    RUNNING_SESSION_ALREADY_COMPLETED("E401", HttpStatus.CONFLICT, "이미 종료된 러닝 세션입니다.", false),
+
     // Auth Error
     UNAUTHORIZED("E100", HttpStatus.UNAUTHORIZED, "인증이 필요합니다.", false),
     TOKEN_EXPIRED("E101", HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다.", false),
