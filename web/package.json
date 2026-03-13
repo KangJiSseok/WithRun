@@ -27,7 +27,8 @@
     "react-router-dom": "^7.13.1",
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
-    "three": "^0.183.2"
+    "three": "^0.183.2",
+    "zustand": "^5.0.11"
   },
   "devDependencies": {
     "@eslint/js": "^9.39.1",
@@ -36,6 +37,7 @@
     "@types/react-dom": "^19.2.3",
     "@types/three": "^0.183.1",
     "@vitejs/plugin-react": "^5.1.1",
+    "@webview-bridge/react-native": "^1.7.9",
     "babel-plugin-react-compiler": "^1.0.0",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
@@ -44,7 +46,6 @@
     "kakao.maps.d.ts": "^0.1.40",
     "typescript": "~5.9.3",
     "typescript-eslint": "^8.48.0",
-    "vite": "^7.3.1",
-    "@webview-bridge/react-native": "^1.7.9"
+    "vite": "^7.3.1"
   }
 }
