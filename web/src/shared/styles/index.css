@@ -22,24 +22,24 @@
  */
 @theme inline {
   /* 색상 */
-  --color-background:           hsl(var(--background));
-  --color-foreground:           hsl(var(--foreground));
-  --color-card:                 hsl(var(--card));
-  --color-card-foreground:      hsl(var(--card-foreground));
-  --color-popover:              hsl(var(--popover));
-  --color-popover-foreground:   hsl(var(--popover-foreground));
-  --color-primary:              hsl(var(--primary));
-  --color-primary-foreground:   hsl(var(--primary-foreground));
-  --color-secondary:            hsl(var(--secondary));
+  --color-background: hsl(var(--background));
+  --color-foreground: hsl(var(--foreground));
+  --color-card: hsl(var(--card));
+  --color-card-foreground: hsl(var(--card-foreground));
+  --color-popover: hsl(var(--popover));
+  --color-popover-foreground: hsl(var(--popover-foreground));
+  --color-primary: hsl(var(--primary));
+  --color-primary-foreground: hsl(var(--primary-foreground));
+  --color-secondary: hsl(var(--secondary));
   --color-secondary-foreground: hsl(var(--secondary-foreground));
-  --color-muted:                hsl(var(--muted));
-  --color-muted-foreground:     hsl(var(--muted-foreground));
-  --color-accent:               hsl(var(--accent));
-  --color-accent-foreground:    hsl(var(--accent-foreground));
-  --color-destructive:          hsl(var(--destructive));
-  --color-border:               hsl(var(--border));
-  --color-input:                hsl(var(--input));
-  --color-ring:                 hsl(var(--ring));
+  --color-muted: hsl(var(--muted));
+  --color-muted-foreground: hsl(var(--muted-foreground));
+  --color-accent: hsl(var(--accent));
+  --color-accent-foreground: hsl(var(--accent-foreground));
+  --color-destructive: hsl(var(--destructive));
+  --color-border: hsl(var(--border));
+  --color-input: hsl(var(--input));
+  --color-ring: hsl(var(--ring));
 
   /* 폰트 — Tailwind v4는 --font-sans로 body 기본 폰트를 관리함 */
   --font-sans: 'Pretendard Variable', sans-serif;
@@ -49,21 +49,43 @@
   --radius-md: var(--radius);
   --radius-lg: calc(var(--radius) + 4px);
   --radius-xl: calc(var(--radius) + 8px);
-
 }
 
 /* z-index 유틸리티 클래스
  * @utility: Tailwind v4에서 커스텀 유틸리티를 등록하는 공식 방법
  * z-index.css의 :root CSS 변수를 참조해 className="z-tooltip" 형태로 사용
  */
-@utility z-base     { z-index: var(--z-base); }
-@utility z-raised   { z-index: var(--z-raised); }
-@utility z-dropdown { z-index: var(--z-dropdown); }
-@utility z-sticky   { z-index: var(--z-sticky); }
-@utility z-overlay  { z-index: var(--z-overlay); }
-@utility z-modal    { z-index: var(--z-modal); }
-@utility z-toast    { z-index: var(--z-toast); }
-@utility z-tooltip  { z-index: var(--z-tooltip); }
+@utility z-base {
+  z-index: var(--z-base);
+}
+@utility z-raised {
+  z-index: var(--z-raised);
+}
+@utility z-dropdown {
+  z-index: var(--z-dropdown);
+}
+@utility z-sticky {
+  z-index: var(--z-sticky);
+}
+@utility z-overlay {
+  z-index: var(--z-overlay);
+}
+@utility z-modal {
+  z-index: var(--z-modal);
+}
+@utility z-toast {
+  z-index: var(--z-toast);
+}
+@utility z-tooltip {
+  z-index: var(--z-tooltip);
+}
+
+/* 글래스모피즘 유틸리티 클래스 */
+@utility glass {
+  background-color: rgb(255 255 255 / 0.6);
+  backdrop-filter: blur(12px) saturate(180%);
+  -webkit-backdrop-filter: blur(12px) saturate(180%);
+}
 
 /* 기본 body 스타일 */
 @layer base {
