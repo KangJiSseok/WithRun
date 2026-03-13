@@ -31,11 +31,39 @@ class ResponseCodeTest {
         assertThat(response.getMessage()).isEqualTo("코스를 찾을 수 없습니다.");
     }
 
+    @DisplayName("러닝 세션 오류 코드를 기대한 상태와 메시지로 노출한다")
+    @Test
+    void exposesRunningSessionErrorCodes() {
+        assertNotFoundResponseCode(ResponseCode.RUNNING_SESSION_NOT_FOUND, "E400", "러닝 세션을 찾을 수 없습니다.");
+
+        ApiResponse<Void> conflictResponse = ApiResponse.fail(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED);
+
+        assertThat(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED.getCode()).isEqualTo("E401");
+        assertThat(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED.getStatus()).isEqualTo(HttpStatus.CONFLICT);
+        assertThat(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED.getMessage()).isEqualTo("이미 종료된 러닝 세션입니다.");
+        assertThat(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED.isSuccess()).isFalse();
+        assertThat(conflictResponse.isSuccess()).isFalse();
+        assertThat(conflictResponse.getCode()).isEqualTo("E401");
+        assertThat(conflictResponse.getMessage()).isEqualTo("이미 종료된 러닝 세션입니다.");
+    }
+
     private static void assertResponseCode(ResponseCode responseCode, String code, String message) {
         ApiResponse<Void> response = ApiResponse.fail(responseCode);
 
         assertThat(responseCode.getCode()).isEqualTo(code);
         assertThat(responseCode.getStatus()).isEqualTo(HttpStatus.BAD_REQUEST);
+        assertThat(responseCode.getMessage()).isEqualTo(message);
+        assertThat(responseCode.isSuccess()).isFalse();
+        assertThat(response.isSuccess()).isFalse();
+        assertThat(response.getCode()).isEqualTo(code);
+        assertThat(response.getMessage()).isEqualTo(message);
+    }
+
+    private static void assertNotFoundResponseCode(ResponseCode responseCode, String code, String message) {
+        ApiResponse<Void> response = ApiResponse.fail(responseCode);
+
+        assertThat(responseCode.getCode()).isEqualTo(code);
+        assertThat(responseCode.getStatus()).isEqualTo(HttpStatus.NOT_FOUND);
         assertThat(responseCode.getMessage()).isEqualTo(message);
         assertThat(responseCode.isSuccess()).isFalse();
         assertThat(response.isSuccess()).isFalse();
