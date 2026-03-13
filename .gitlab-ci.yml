@@ -101,6 +101,8 @@ deploy_prod:
     name: production
   script:
     - cp deploy/compose/docker-compose.prod.yml "$PROD_DEPLOY_DIR/"
+    - mkdir -p "$PROD_DEPLOY_DIR/nginx"
+    - cp deploy/nginx/default.conf "$PROD_DEPLOY_DIR/nginx/"
     - cd "$PROD_DEPLOY_DIR"
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
     - docker compose -f docker-compose.prod.yml pull

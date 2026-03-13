@@ -17,4 +17,5 @@ RUN pnpm build
 
 FROM nginx:alpine
 COPY --from=build /app/web/dist /usr/share/nginx/html
+COPY web/nginx.conf /etc/nginx/conf.d/default.conf  # ← 추가
 EXPOSE 80
