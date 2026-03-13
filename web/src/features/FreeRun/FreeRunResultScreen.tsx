@@ -2,7 +2,6 @@ import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Award, Home, MapPin, Activity, Timer, Save, Check, UploadCloud } from 'lucide-react';
 import { cn } from '@/shared/utils';
-import { CourseRegisterModal } from './CourseRegisterModal';
 import { CourseShareModal } from './CourseShareModal';
 import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
 import { useGeneratePaceData } from '@/hooks/FreeRun/useGeneratePaceData';
@@ -37,9 +36,7 @@ export function FreeRunResultScreen() {
   const navigate = useNavigate();
   // 코스 저장 상태 (추후 API 연동 시 POST /courses 호출로 교체)
   const [isSaved, setIsSaved] = useState(false);
-  // 공식 코스 등록 모달 상태
-  const [showRegisterModal, setShowRegisterModal] = useState(false);
-  // 공식 코스 등록 폼 모달 상태
+  // 공식 코스 등록 Drawer 상태
   const [showShareModal, setShowShareModal] = useState(false);
   // FreeRunningScreen 종료 시점에 useFreeRunResultStore.setResult()로 저장
   // 백엔드 연동 후: POST /runs → runId 반환 → store.setRunId(runId)
@@ -56,7 +53,7 @@ export function FreeRunResultScreen() {
 
   return (
     <div className="absolute inset-0 bg-[hsl(var(--secondary-1))]">
-    <div className="absolute inset-0 flex flex-col overflow-y-auto">
+    <div className="result-scroll-container absolute inset-0 flex flex-col overflow-y-auto">
       {/* 헤더 */}
       <div className="flex flex-col items-center pt-10 pb-6 px-6">
         <div className="p-4 rounded-full bg-primary/20 border border-primary/30 mb-4">
@@ -169,13 +166,12 @@ export function FreeRunResultScreen() {
         
         {/* 공식 코스 등록 버튼 */}
         <button
-          onClick={() => setShowRegisterModal(true)}
+          onClick={() => setShowShareModal(true)}
           className="w-full py-4 rounded-2xl bg-primary/20 border border-primary/30 text-primary body-b flex items-center justify-center gap-2"
         >
           <UploadCloud size={18} />
           공식 코스 등록
         </button>
-
 
         {/* 홈으로 버튼 */}
         <button
@@ -188,14 +184,6 @@ export function FreeRunResultScreen() {
       </div>
     </div>
 
-      <CourseRegisterModal
-        isOpen={showRegisterModal}
-        onClose={() => setShowRegisterModal(false)}
-        onConfirm={() => {
-          setShowRegisterModal(false);
-          setShowShareModal(true);
-        }}
-      />
       <CourseShareModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
