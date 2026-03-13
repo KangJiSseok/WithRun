@@ -168,6 +168,7 @@ CREATE TABLE course_type_map (
 );
 
 -- Running session summary data for free/course/ghost runs.
+-- COURSE and GHOST must reference courses.status = 'OFFICIAL'; the cross-table status rule is enforced in WAS validation.
 CREATE TABLE running_sessions (
   running_session_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   user_id BIGINT NOT NULL,
@@ -222,15 +223,15 @@ CREATE TABLE running_sessions (
   CONSTRAINT chk_running_sessions_elevation
     CHECK (elevation_gain_m >= 0),
   CONSTRAINT chk_running_sessions_start_lat
-    CHECK (start_latitude BETWEEN -90 AND 90),
+    CHECK (start_latitude start_latitude BETWEEN -90 AND 90),
   CONSTRAINT chk_running_sessions_start_lng
-    CHECK (start_longitude BETWEEN -180 AND 180),
+    CHECK (start_longitude start_longitude BETWEEN -180 AND 180),
   CONSTRAINT chk_running_sessions_end_lat
     CHECK (end_latitude IS NULL OR end_latitude BETWEEN -90 AND 90),
   CONSTRAINT chk_running_sessions_end_lng
     CHECK (end_longitude IS NULL OR end_longitude BETWEEN -180 AND 180),
   CONSTRAINT chk_running_sessions_course_mode
-    CHECK ((mode = 'COURSE' AND course_id IS NOT NULL) OR mode <> 'COURSE'),
+    CHECK ((mode IN ('COURSE', 'GHOST') AND course_id IS NOT NULL) OR mode NOT IN ('COURSE', 'GHOST')),
   CONSTRAINT chk_running_sessions_ghost_mode
     CHECK ((mode = 'GHOST' AND ghost_target_running_session_id IS NOT NULL) OR mode <> 'GHOST'),
   CONSTRAINT chk_running_sessions_visibility_for_ghost
