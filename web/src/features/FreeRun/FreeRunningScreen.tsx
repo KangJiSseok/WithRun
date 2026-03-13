@@ -82,7 +82,7 @@ export function FreeRunningScreen() {
 
         {/* 종료 버튼 — 일시정지 시 오른쪽으로 슬라이드 */}
         <button
-          onClick={() => navigate('/freerun-result')}
+          onClick={() => navigate('/freerun-result', { state: { time, distance, pace, calories } })}
           className={cn(
             'absolute w-14 h-14 rounded-full bg-[hsl(var(--secondary-3))] flex items-center justify-center text-[hsl(var(--text-inverse))] transition-all duration-300',
             isPaused
