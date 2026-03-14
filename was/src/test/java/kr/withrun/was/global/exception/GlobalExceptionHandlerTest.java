@@ -5,6 +5,7 @@ import kr.withrun.was.global.response.ResponseCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -72,6 +73,28 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getStatusCode()).isEqualTo(ResponseCode.MISSING_COURSE_COORDINATE_ELEVATION.getStatus());
         assertThat(response.getBody()).isNotNull();
         assertThat(response.getBody().getCode()).isEqualTo(ResponseCode.MISSING_COURSE_COORDINATE_ELEVATION.getCode());
+    }
+
+    @DisplayName("요청 파라미터 숫자 변환 오류가 발생하면 잘못된 입력 응답을 반환한다")
+    @Test
+    void returnsInvalidInputValueForMethodArgumentTypeMismatch() {
+        MethodArgumentTypeMismatchException exception = new MethodArgumentTypeMismatchException(
+                "abc",
+                Integer.class,
+                "size",
+                null,
+                new NumberFormatException("For input string: abc")
+        );
+
+        ResponseEntity<ApiResponse<List<GlobalExceptionHandler.ValidationError>>> response =
+                globalExceptionHandler.handleMethodArgumentTypeMismatchException(exception);
+
+        assertThat(response.getStatusCode()).isEqualTo(ResponseCode.INVALID_INPUT_VALUE.getStatus());
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo(ResponseCode.INVALID_INPUT_VALUE.getCode());
+        assertThat(response.getBody().getData()).hasSize(1);
+        assertThat(response.getBody().getData().getFirst().field()).isEqualTo("size");
+        assertThat(response.getBody().getData().getFirst().rejectedValue()).isEqualTo("abc");
     }
 
     private BindException bindExceptionWith(FieldError fieldError) {

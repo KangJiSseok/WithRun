@@ -1,5 +1,6 @@
 package kr.withrun.was.global.exception;
 
+import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -10,6 +11,8 @@ import org.springframework.validation.FieldError;
 import org.springframework.web.bind.MethodArgumentNotValidException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
+import org.springframework.web.method.annotation.HandlerMethodValidationException;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.ResponseCode;
@@ -44,6 +47,27 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(BindException.class)
     public ResponseEntity<ApiResponse<List<ValidationError>>> handleBindException(BindException e) {
         return buildValidationErrorResponse(e.getBindingResult(), "Binding failed");
+    }
+
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ApiResponse<List<ValidationError>>> handleMethodArgumentTypeMismatchException(
+            MethodArgumentTypeMismatchException e
+    ) {
+        ValidationError error = new ValidationError(e.getName(), e.getValue(), e.getMessage());
+        log.warn("Method argument type mismatch: {}", error);
+
+        return ResponseEntity
+                .status(ResponseCode.INVALID_INPUT_VALUE.getStatus())
+                .body(ApiResponse.fail(ResponseCode.INVALID_INPUT_VALUE, List.of(error)));
+    }
+
+    @ExceptionHandler({HandlerMethodValidationException.class, ConstraintViolationException.class})
+    public ResponseEntity<ApiResponse<Void>> handleMethodValidationException(Exception e) {
+        log.warn("Method validation failed: {}", e.getMessage());
+
+        return ResponseEntity
+                .status(ResponseCode.INVALID_INPUT_VALUE.getStatus())
+                .body(ApiResponse.fail(ResponseCode.INVALID_INPUT_VALUE));
     }
 
     private ResponseEntity<ApiResponse<List<ValidationError>>> buildValidationErrorResponse(
