@@ -1,0 +1,103 @@
+stages:
+  - build
+  - test
+  - image
+  - deploy
+
+default:
+  tags:
+    - prod
+
+variables:
+  WAS_DIR: "was"
+  TEST_DEPLOY_DIR: "/home/ubuntu/test-app"
+  PROD_DEPLOY_DIR: "/home/ubuntu/prod-app"
+  WAS_IMAGE: "$DOCKERHUB_USERNAME/withrun-was"
+  WEB_IMAGE: "$DOCKERHUB_USERNAME/withrun-web"
+  GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
+
+workflow:
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "merge_request_event" &&
+     ($CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "dev" || $CI_MERGE_REQUEST_TARGET_BRANCH_NAME == "main")'
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH'
+    - when: never
+
+build_was:
+  stage: build
+  script:
+    - cd was
+    - chmod +x gradlew
+    - ./gradlew clean build -x test
+  artifacts:
+    paths:
+      - was/build/libs/
+    expire_in: 1 day
+
+build_web:
+  stage: build
+  script:
+    - docker build -f web/Dockerfile -t web-build:test .
+
+test_was:
+  stage: test
+  script:
+    - cd was
+    - chmod +x gradlew
+    - ./gradlew test
+
+docker_push_dev:
+  stage: image
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+  script:
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    - docker build -t "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WAS_IMAGE:dev-latest" ./was
+    - docker build -f web/Dockerfile -t "$WEB_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WEB_IMAGE:dev-latest" .
+    - docker push "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker push "$WAS_IMAGE:dev-latest"
+    - docker push "$WEB_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker push "$WEB_IMAGE:dev-latest"
+
+docker_push_prod:
+  stage: image
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+  script:
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    - docker build -t "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WAS_IMAGE:prod-latest" ./was
+    - docker build -f web/Dockerfile -t "$WEB_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WEB_IMAGE:prod-latest" .
+    - docker push "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker push "$WAS_IMAGE:prod-latest"
+    - docker push "$WEB_IMAGE:$CI_COMMIT_SHORT_SHA"
+    - docker push "$WEB_IMAGE:prod-latest"
+
+deploy_test:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+  environment:
+    name: test
+  script:
+    - cp deploy/compose/docker-compose.test.yml "$TEST_DEPLOY_DIR/"
+    - cd "$TEST_DEPLOY_DIR"
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    - docker compose -f docker-compose.test.yml pull
+    - docker compose -f docker-compose.test.yml down --remove-orphans
+    - docker compose -f docker-compose.test.yml up -d
+
+deploy_prod:
+  stage: deploy
+  rules:
+    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "main"'
+  environment:
+    name: production
+  script:
+    - cp deploy/compose/docker-compose.prod.yml "$PROD_DEPLOY_DIR/"
+    - mkdir -p "$PROD_DEPLOY_DIR/nginx"
+    - cp deploy/nginx/default.conf "$PROD_DEPLOY_DIR/nginx/"
+    - cd "$PROD_DEPLOY_DIR"
+    - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
+    - docker compose -f docker-compose.prod.yml pull
+    - docker compose -f docker-compose.prod.yml down --remove-orphans
+    - docker compose -f docker-compose.prod.yml up -d
