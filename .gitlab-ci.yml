@@ -29,6 +29,10 @@ build_was:
     - cd was
     - chmod +x gradlew
     - ./gradlew clean build -x test
+  artifacts:
+    paths:
+      - was/build/libs/
+    expire_in: 1 day
 
 build_web:
   stage: build
