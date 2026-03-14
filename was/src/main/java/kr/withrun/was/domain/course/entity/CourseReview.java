@@ -12,6 +12,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import kr.withrun.was.global.common.type.Difficulty;
@@ -22,7 +23,13 @@ import lombok.NoArgsConstructor;
 
 @Getter
 @Entity
-@Table(name = "course_reviews")
+@Table(
+        name = "course_reviews",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_course_reviews_course_user",
+                columnNames = {"course_id", "user_id"}
+        )
+)
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class CourseReview extends BaseEntity {
 

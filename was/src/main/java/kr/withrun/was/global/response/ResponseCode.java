@@ -31,6 +31,7 @@ public enum ResponseCode {
     INVALID_COURSE_COORDINATE_VALUE("E302", HttpStatus.BAD_REQUEST, "코스 좌표 값이 올바르지 않습니다.", false),
     MISSING_COURSE_COORDINATE_ELEVATION("E303", HttpStatus.BAD_REQUEST, "코스 좌표의 고도 정보가 필요합니다.", false),
     COURSE_NOT_FOUND("E304", HttpStatus.NOT_FOUND, "코스를 찾을 수 없습니다.", false),
+    REVIEW_ALREADY_EXISTS("E305", HttpStatus.CONFLICT, "이미 리뷰를 작성한 코스입니다.", false),
 
     // Running Error
     INVALID_RUNNING_MODE("E400", HttpStatus.BAD_REQUEST, "잘못된 러닝 모드입니다.", false),

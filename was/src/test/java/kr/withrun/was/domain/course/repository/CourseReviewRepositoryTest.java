@@ -13,6 +13,7 @@ import kr.withrun.was.global.config.JpaAuditingConfig;
 import kr.withrun.was.global.config.QuerydslConfig;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
@@ -23,6 +24,7 @@ import java.time.LocalDate;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 @DataJpaTest(properties = {
         "spring.config.import=",
@@ -74,6 +76,66 @@ class CourseReviewRepositoryTest {
         entityManager.clear();
 
         assertThat(courseReviewRepository.findAverageRatingByCourseId(course.getId())).isEqualTo(4.0);
+    }
+
+    @DisplayName("리뷰 중복 여부 조회는 삭제된 리뷰도 포함한다")
+    @Test
+    void includesDeletedReviewsInDuplicateCheck() {
+        assertThat(courseReviewRepository).isInstanceOf(CourseReviewCustomRepository.class);
+
+        Course course = saveCourse("duplicate-check-course");
+        User user = saveUser("runner-e");
+        CourseReview deletedReview = CourseReview.create(course, user, 3, Difficulty.MEDIUM);
+        deletedReview.delete();
+        entityManager.persist(deletedReview);
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(courseReviewRepository.existsByCourseIdAndUserId(course.getId(), user.getId()))
+                .isTrue();
+    }
+
+    @DisplayName("삭제된 리뷰가 있어도 같은 사용자와 코스로 새 리뷰를 다시 저장할 수 없다")
+    @Test
+    void preventsSavingReviewHistoryAgainAfterDelete() {
+        Course course = saveCourse("review-history-course");
+        User user = saveUser("runner-history");
+        CourseReview deletedReview = CourseReview.create(course, user, 3, Difficulty.MEDIUM);
+        deletedReview.delete();
+        courseReviewRepository.saveAndFlush(deletedReview);
+
+        CourseReview rewrittenReview = CourseReview.create(course, user, 5, Difficulty.HARD);
+
+        assertThatThrownBy(() -> courseReviewRepository.saveAndFlush(rewrittenReview))
+                .isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @DisplayName("활성 리뷰 중복 여부 조회는 커스텀 QueryDSL fragment에 정의된다")
+    @Test
+    void declaresDuplicateCheckInCustomRepositoryFragment() throws NoSuchMethodException {
+        assertThat(CourseReviewCustomRepository.class.getMethod(
+                "existsByCourseIdAndUserId",
+                Long.class,
+                Long.class
+        )).isNotNull();
+    }
+
+    @DisplayName("새 리뷰가 저장되면 평균 평점 조회에 즉시 반영된다")
+    @Test
+    void reflectsNewReviewInAverageRatingImmediately() {
+        Course course = saveCourse("updated-average-course");
+        User firstUser = saveUser("runner-f");
+        User secondUser = saveUser("runner-g");
+        entityManager.persist(CourseReview.create(course, firstUser, 4, Difficulty.MEDIUM));
+        entityManager.flush();
+
+        assertThat(courseReviewRepository.findAverageRatingByCourseId(course.getId())).isEqualTo(4.0);
+
+        entityManager.persist(CourseReview.create(course, secondUser, 2, Difficulty.EASY));
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(courseReviewRepository.findAverageRatingByCourseId(course.getId())).isEqualTo(3.0);
     }
 
     private Course saveCourse(String title) {
