@@ -1,11 +1,18 @@
 package kr.withrun.was.domain.course.service;
 
+import kr.withrun.was.domain.course.dto.BookmarkedCourseItemResponse;
+import kr.withrun.was.domain.course.dto.BookmarkedCoursesRequest;
+import kr.withrun.was.domain.course.dto.BookmarkedCoursesResponse;
 import kr.withrun.was.domain.course.dto.CourseBookmarkAddResponse;
 import kr.withrun.was.domain.course.dto.CourseBookmarkRemoveResponse;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseBookmark;
 import kr.withrun.was.domain.course.repository.CourseBookmarkRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
+import kr.withrun.was.domain.course.repository.query.dto.BookmarkedCourseRow;
+import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.util.BookmarkedCourseCursorCodec;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.exception.CustomException;
@@ -13,6 +20,13 @@ import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.time.LocalDateTime;
+import java.util.EnumSet;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
 
 @Service
 @Transactional(readOnly = true)
@@ -44,6 +58,79 @@ public class CourseBookmarkService {
                     return new CourseBookmarkRemoveResponse(courseId, false);
                 })
                 .orElseGet(() -> new CourseBookmarkRemoveResponse(courseId, false));
+    }
+
+    public BookmarkedCoursesResponse findBookmarkedCourses(BookmarkedCoursesRequest request) {
+        getUser(request.userId());
+
+        List<BookmarkedCourseRow> rows = fetchBookmarkedCourseRows(request);
+        List<BookmarkedCourseItemResponse> items =  groupBookmarkedCourseItems(rows);
+        int pageSize = request.size();
+        boolean hasMore = items.size() > pageSize;
+        List<BookmarkedCourseItemResponse> pagedItems = hasMore
+                ? List.copyOf(items.subList(0, pageSize))
+                : List.copyOf(items);
+        String nextCursor = hasMore ? toCursor(pagedItems.getLast()) : null;
+
+        return new BookmarkedCoursesResponse(pagedItems, hasMore, nextCursor);
+    }
+
+    private List<BookmarkedCourseRow> fetchBookmarkedCourseRows(BookmarkedCoursesRequest request) {
+        BookmarkedCourseCursorCodec.CursorPayload payload = request.cursor() == null
+                ? null
+                : BookmarkedCourseCursorCodec.decode(request.cursor());
+
+        return courseBookmarkRepository.findBookmarkedCourseRows(
+                request.userId(),
+                payload == null ? null : payload.bookmarkedAt(),
+                payload == null ? null : payload.bookmarkId(),
+                request.size()
+        );
+    }
+
+    private List<BookmarkedCourseItemResponse> groupBookmarkedCourseItems(List<BookmarkedCourseRow> rows) {
+        Map<Long, List<BookmarkedCourseRow>> rowsByBookmarkId = rows.stream()
+                .collect(Collectors.groupingBy(
+                        BookmarkedCourseRow::bookmarkId,
+                        LinkedHashMap::new,
+                        Collectors.toList()
+                ));
+
+        return rowsByBookmarkId.values().stream()
+                .map(this::toBookmarkedCourseItem)
+                .toList();
+    }
+
+    private BookmarkedCourseItemResponse toBookmarkedCourseItem(List<BookmarkedCourseRow> rows) {
+        BookmarkedCourseRow representative = rows.getFirst();
+        return new BookmarkedCourseItemResponse(
+                representative.bookmarkId(),
+                representative.bookmarkedAt(),
+                representative.courseId(),
+                representative.title(),
+                representative.status(),
+                representative.distanceM(),
+                representative.elevationGainM(),
+                representative.difficulty(),
+                mergeCourseTypes(rows),
+                representative.snapshotImageUrl(),
+                true,
+                representative.status() == CourseStatus.OFFICIAL
+        );
+    }
+
+    private List<CourseType> mergeCourseTypes(List<BookmarkedCourseRow> rows) {
+        EnumSet<CourseType> courseTypes = EnumSet.noneOf(CourseType.class);
+        for (BookmarkedCourseRow row : rows) {
+            if (row.courseType() != null) {
+                courseTypes.add(row.courseType());
+            }
+        }
+        return List.copyOf(courseTypes);
+    }
+
+    private String toCursor(BookmarkedCourseItemResponse item) {
+        return BookmarkedCourseCursorCodec.encode(item.bookmarkedAt(), item.bookmarkId());
     }
 
     private CourseBookmarkAddResponse saveBookmark(Course course, User user) {
