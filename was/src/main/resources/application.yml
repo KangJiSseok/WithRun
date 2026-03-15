@@ -1,3 +1,4 @@
+# ▼ spring 항목을 하나로 합쳤습니다!
 spring:
   config:
     # AWS Parameter Store에서 공통 설정을 읽어옵니다.
@@ -17,6 +18,7 @@ spring:
         format_sql: true
     show-sql: true
 
+  # ▼ 아래 있던 security 내용을 이쪽으로 끌어올렸습니다.
   security:
     oauth2:
       client:
