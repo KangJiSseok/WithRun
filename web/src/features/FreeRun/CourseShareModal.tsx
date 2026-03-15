@@ -1,10 +1,15 @@
 // 공식 코스 등록 폼 Drawer (바텀 시트)
-// absolute 포지셔닝으로 MobileLayout 프레임 안에서 렌더링
-// slide-up 애니메이션 적용
+// shadcn Drawer (vaul) 사용 - 스와이프 제스처 및 스크롤 잠금 처리
 // 추후 API 연동 시 handleSubmit에서 POST /courses 호출로 교체
 
 import { useEffect, useState } from 'react';
 import { Button } from '@/shared/components/shadcn/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/shared/components/shadcn/drawer';
 import { cn } from '@/shared/utils';
 
 type CourseShareModalProps = {
@@ -24,7 +29,7 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
   const [surface, setSurface] = useState<string>('포장도로');
   const [courseTypes, setCourseTypes] = useState<string[]>([]);
 
-  // Drawer가 열린 동안 결과화면 스크롤 잠금
+  // vaul은 body 스크롤을 잠그지만, 실제 스크롤 컨테이너가 내부 div이므로 별도 처리
   useEffect(() => {
     const scrollContainer = document.querySelector<HTMLElement>('.result-scroll-container');
     if (!scrollContainer) return;
@@ -44,37 +49,32 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
     );
   }
 
-  // 추후 API 연동 시 POST /courses 호출로 교체
+  // 추후 API 연동 시 교체:
+  // 1. import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
+  // 2. const setCourseId = useFreeRunResultStore((s) => s.setCourseId);
+  // 3. async function handleSubmit() {
+  //      const res = await axiosClient.post('/api/courses', {
+  //        title: courseTitle,
+  //        difficulty,
+  //        surface,
+  //        courseTypes,
+  //      });
+  //      setCourseId(res.data.data.courseId); // store에 저장 → 결과 화면 좋아요 버튼 API 연결
+  //      onClose();
+  //    }
   function handleSubmit() {
     onClose();
   }
 
-  if (!isOpen) return null;
 
   return (
-    <div
-      className="absolute inset-0 z-modal bg-black/50"
-      onClick={onClose}
-    >
-      <div
-        className={cn(
-          'absolute bottom-0 left-0 right-0',
-          'flex flex-col rounded-t-3xl',
-          'bg-[hsl(var(--secondary-2))] border-t border-[hsl(var(--secondary-3))]',
-          'max-h-[90%]',
-          'animate-slide-up',
-        )}
-        onClick={(e) => e.stopPropagation()}
+    <Drawer open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
+      <DrawerContent
+        className="bg-[hsl(var(--secondary-2))] border-t border-[hsl(var(--secondary-3))] max-h-[90dvh]"
       >
-        {/* Drawer 핸들 */}
-        <div className="flex justify-center pt-3 pb-1 shrink-0">
-          <div className="w-10 h-1.5 rounded-full bg-[hsl(var(--secondary-4))]" />
-        </div>
-
-        {/* 헤더 */}
-        <div className="px-6 pt-2 pb-0 shrink-0">
-          <h3 className="h3-b text-[hsl(var(--text-inverse))]">공식 코스 등록</h3>
-        </div>
+        <DrawerHeader className="text-left px-6 pt-4 pb-0">
+          <DrawerTitle className="h3-b text-[hsl(var(--text-inverse))]">공식 코스 등록</DrawerTitle>
+        </DrawerHeader>
 
         <div className="overflow-y-auto px-6 pb-8 pt-4 space-y-[var(--space-5)]">
           {/* 코스 제목 */}
@@ -161,7 +161,7 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
             커뮤니티에 업로드
           </Button>
         </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
