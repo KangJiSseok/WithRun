@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 import kr.withrun.was.domain.course.dto.BookmarkedCourseItemResponse;
 import kr.withrun.was.domain.course.dto.BookmarkedCoursesRequest;
@@ -37,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = CourseBookmarkController.class, properties = "spring.config.import=")
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("코스 북마크 컨트롤러")
 class CourseBookmarkControllerTest {
 

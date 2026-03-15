@@ -23,6 +23,7 @@ import static org.mockito.BDDMockito.then;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 @WebMvcTest(
         controllers = CourseReviewController.class,
@@ -31,6 +32,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
                 "spring.config.import="
         }
 )
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("코스 리뷰 컨트롤러")
 class CourseReviewControllerTest {
 

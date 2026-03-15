@@ -44,8 +44,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 @WebMvcTest(controllers = RunningSessionController.class, properties = "spring.config.import=")
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("러닝 세션 컨트롤러")
 class RunningSessionControllerTest {
 

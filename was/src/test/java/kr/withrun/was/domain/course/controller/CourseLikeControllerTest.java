@@ -19,8 +19,10 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 @WebMvcTest(controllers = CourseLikeController.class, properties = "spring.config.import=")
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("코스 좋아요 컨트롤러")
 class CourseLikeControllerTest {
 
