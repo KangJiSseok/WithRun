@@ -37,9 +37,7 @@ build_was:
 build_web:
   stage: build
   script:
-    - cd web
-    - pnpm install --frozen-lockfile
-    - pnpm build
+    - docker build --progress=plain -f web/Dockerfile -t web-build:test .
 
 test_was:
   stage: test
