@@ -1,13 +1,8 @@
 import { Bookmark, Filter, MapPin, Search, User } from 'lucide-react';
 import { useEffect, useState } from 'react';
 
-import {
-  RunningCourseCard,
-  type RunningCourse,
-  type RunningCourseTab,
-  type RunningFilterState,
-  RunningFilterModal,
-} from '@/features/NormalRun';
+import { RunningCourseCard, type RunningCourse, type RunningCourseTab } from './RunningCourseCard';
+import { RunningFilterModal, type RunningFilterState } from './RunningFilterModal';
 import { RunningGuideModal } from '@/shared/components/RunningGuideModal';
 import { Button } from '@/shared/components/shadcn/button';
 import { Input } from '@/shared/components/shadcn/input';
