@@ -2,11 +2,16 @@ package kr.withrun.was.domain.running.controller;
 
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
+import kr.withrun.was.domain.running.dto.AllRunningSessionItemResponse;
+import kr.withrun.was.domain.running.dto.AllRunningSessionsRequest;
+import kr.withrun.was.domain.running.dto.AllRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
+import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
+import kr.withrun.was.domain.user.type.TimeSlot;
 import org.hamcrest.Matchers;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
@@ -21,9 +26,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static kr.withrun.was.domain.running.type.RunningMode.COURSE;
 import static kr.withrun.was.domain.running.type.RunningMode.GHOST;
+import static kr.withrun.was.domain.running.type.RunningMode.FREE;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -303,6 +310,139 @@ class RunningSessionControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+    }
+
+    @DisplayName("러닝 세션 히스토리 조회 응답을 성공 응답 포맷으로 감싼다")
+    @Test
+    void wrapsRunningSessionHistoryResponseInSuccessEnvelope() throws Exception {
+        long userId = 20L;
+        AllRunningSessionsRequest request = new AllRunningSessionsRequest(userId, 2, "previous-cursor");
+        AllRunningSessionsResponse response = new AllRunningSessionsResponse(
+                List.of(
+                        new AllRunningSessionItemResponse(
+                                120L,
+                                7200,
+                                2100,
+                                430,
+                                "https://cdn.withrun.app/snapshots/120.png",
+                                42,
+                                true,
+                                GHOST,
+                                GhostResultStatus.WIN,
+                                TimeSlot.EVENING
+                        ),
+                        new AllRunningSessionItemResponse(
+                                119L,
+                                5000,
+                                null,
+                                300,
+                                null,
+                                18,
+                                false,
+                                FREE,
+                                null,
+                                TimeSlot.MORNING
+                        )
+                ),
+                true,
+                "next-cursor"
+        );
+        given(runningSessionService.findAllRunningSessions(request)).willReturn(response);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/running-sessions/history/{userId}/all", userId)
+                        .queryParam("pageSize", "2")
+                        .queryParam("cursor", "previous-cursor"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
+                .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
+                .andExpect(jsonPath("$.data.items[0].runningSessionId").value(120L))
+                .andExpect(jsonPath("$.data.items[0].distanceM").value(7200))
+                .andExpect(jsonPath("$.data.items[0].durationSec").value(2100))
+                .andExpect(jsonPath("$.data.items[0].caloriesKcal").value(430))
+                .andExpect(jsonPath("$.data.items[0].snapshotImageUrl").value("https://cdn.withrun.app/snapshots/120.png"))
+                .andExpect(jsonPath("$.data.items[0].elevationGainM").value(42))
+                .andExpect(jsonPath("$.data.items[0].isCompleted").value(true))
+                .andExpect(jsonPath("$.data.items[0].runningMode").value(GHOST.name()))
+                .andExpect(jsonPath("$.data.items[0].ghostResultStatus").value(GhostResultStatus.WIN.name()))
+                .andExpect(jsonPath("$.data.items[0].timeSlot").value(TimeSlot.EVENING.name()))
+                .andExpect(jsonPath("$.data.items[1].runningMode").value(FREE.name()))
+                .andExpect(jsonPath("$.data.items[1].ghostResultStatus").value(Matchers.nullValue()))
+                .andExpect(jsonPath("$.data.hasMore").value(true))
+                .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"));
+
+        then(runningSessionService).should().findAllRunningSessions(request);
+    }
+
+    @DisplayName("pageSize를 생략하면 기본값 10으로 러닝 세션 히스토리를 조회한다")
+    @Test
+    void usesDefaultPageSizeWhenRunningSessionHistoryPageSizeIsOmitted() throws Exception {
+        AllRunningSessionsRequest request = new AllRunningSessionsRequest(20L, 10, null);
+        AllRunningSessionsResponse response = new AllRunningSessionsResponse(List.of(), false, null);
+        given(runningSessionService.findAllRunningSessions(request)).willReturn(response);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/running-sessions/history/{userId}/all", 20L))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()));
+
+        then(runningSessionService).should().findAllRunningSessions(request);
+    }
+
+    @DisplayName("pageSize가 빈 문자열이면 기본값 10으로 러닝 세션 히스토리를 조회한다")
+    @Test
+    void usesDefaultPageSizeWhenRunningSessionHistoryPageSizeIsBlank() throws Exception {
+        AllRunningSessionsRequest request = new AllRunningSessionsRequest(20L, 10, null);
+        AllRunningSessionsResponse response = new AllRunningSessionsResponse(List.of(), false, null);
+        given(runningSessionService.findAllRunningSessions(request)).willReturn(response);
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/running-sessions/history/{userId}/all", 20L)
+                        .queryParam("pageSize", ""))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()));
+
+        then(runningSessionService).should().findAllRunningSessions(request);
+    }
+
+    @DisplayName("pageSize가 유효하지 않으면 잘못된 입력 응답을 반환한다")
+    @ParameterizedTest(name = "pageSize={0}")
+    @ValueSource(strings = {"0", "-1", "51", "abc", "1.5"})
+    void returnsInvalidInputWhenRunningSessionHistoryPageSizeIsInvalid(String invalidPageSize) throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/running-sessions/history/{userId}/all", 20L)
+                        .queryParam("pageSize", invalidPageSize))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+
+        then(runningSessionService).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("userId가 유효하지 않으면 잘못된 입력 응답을 반환한다")
+    @Test
+    void returnsInvalidInputWhenRunningSessionHistoryUserIdIsInvalid() throws Exception {
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/running-sessions/history/{userId}/all", 0L))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+
+        then(runningSessionService).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("서비스가 커서를 거부하면 잘못된 커서 응답을 반환한다")
+    @Test
+    void returnsInvalidCursorWhenRunningSessionHistoryServiceRejectsCursor() throws Exception {
+        AllRunningSessionsRequest request = new AllRunningSessionsRequest(20L, 10, "%%%");
+        given(runningSessionService.findAllRunningSessions(request))
+                .willThrow(new CustomException(ResponseCode.INVALID_CURSOR));
+
+        mockMvc.perform(org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get("/api/running-sessions/history/{userId}/all", 20L)
+                        .queryParam("cursor", "%%%"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_CURSOR.getCode()));
+
+        then(runningSessionService).should().findAllRunningSessions(request);
     }
 
     private static CreateRunningSessionRequest validCreateRequest() {

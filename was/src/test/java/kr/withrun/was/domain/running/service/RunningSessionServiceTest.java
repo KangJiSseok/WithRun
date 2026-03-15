@@ -6,19 +6,28 @@ import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
+import kr.withrun.was.domain.running.dto.AllRunningSessionItemResponse;
+import kr.withrun.was.domain.running.dto.AllRunningSessionsRequest;
+import kr.withrun.was.domain.running.dto.AllRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.repository.RunningSessionRepository;
+import kr.withrun.was.domain.running.repository.query.dto.RunningSessionHistoryRow;
+import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.util.RunningSessionHistoryCursorCodec;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.domain.user.type.Gender;
+import kr.withrun.was.domain.user.type.TimeSlot;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
@@ -184,6 +193,162 @@ class RunningSessionServiceTest {
         assertThat(response.distanceM()).isZero();
         assertThat(response.caloriesKcal()).isZero();
         assertThat(response.isCompleted()).isFalse();
+    }
+
+    @DisplayName("첫 페이지 러닝 세션 목록을 반환하고 다음 커서를 생성한다")
+    @Test
+    void returnsFirstPageOfRunningSessionsWithNextCursor() {
+        User user = user(40L);
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(runningSessionRepository.findRunningSessionHistoryRows(user.getId(), null, null, 1))
+                .thenReturn(List.of(
+                        historyRow(
+                                120L,
+                                LocalDateTime.of(2026, 3, 15, 19, 30),
+                                7200,
+                                2100,
+                                430,
+                                "https://cdn.withrun.app/snapshots/120.png",
+                                42,
+                                true,
+                                RunningMode.GHOST,
+                                GhostResultStatus.WIN
+                        ),
+                        historyRow(
+                                119L,
+                                LocalDateTime.of(2026, 3, 15, 6, 30),
+                                5000,
+                                null,
+                                300,
+                                null,
+                                18,
+                                false,
+                                RunningMode.FREE,
+                                null
+                        )
+                ));
+
+        AllRunningSessionsResponse response = runningSessionService.findAllRunningSessions(
+                new AllRunningSessionsRequest(user.getId(), 1, null)
+        );
+
+        assertThat(response.items()).hasSize(1);
+        AllRunningSessionItemResponse item = response.items().getFirst();
+        assertThat(item.runningSessionId()).isEqualTo(120L);
+        assertThat(item.distanceM()).isEqualTo(7200);
+        assertThat(item.durationSec()).isEqualTo(2100);
+        assertThat(item.caloriesKcal()).isEqualTo(430);
+        assertThat(item.snapshotImageUrl()).isEqualTo("https://cdn.withrun.app/snapshots/120.png");
+        assertThat(item.elevationGainM()).isEqualTo(42);
+        assertThat(item.isCompleted()).isTrue();
+        assertThat(item.runningMode()).isEqualTo(RunningMode.GHOST);
+        assertThat(item.ghostResultStatus()).isEqualTo(GhostResultStatus.WIN);
+        assertThat(item.timeSlot()).isEqualTo(TimeSlot.EVENING);
+        assertThat(response.hasMore()).isTrue();
+        assertThat(response.nextCursor()).isEqualTo(
+                RunningSessionHistoryCursorCodec.encode(LocalDateTime.of(2026, 3, 15, 19, 30), 120L)
+        );
+    }
+
+    @DisplayName("커서를 넘기면 이후 러닝 세션 목록만 반환한다")
+    @Test
+    void returnsRunningSessionsAfterCursor() {
+        User user = user(41L);
+        LocalDateTime cursorStartedAt = LocalDateTime.of(2026, 3, 15, 19, 30);
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(runningSessionRepository.findRunningSessionHistoryRows(user.getId(), cursorStartedAt, 120L, 5))
+                .thenReturn(List.of(
+                        historyRow(
+                                118L,
+                                LocalDateTime.of(2026, 3, 15, 13, 0),
+                                6400,
+                                1800,
+                                390,
+                                "snapshot-118",
+                                27,
+                                true,
+                                RunningMode.COURSE,
+                                null
+                        )
+                ));
+
+        AllRunningSessionsResponse response = runningSessionService.findAllRunningSessions(
+                new AllRunningSessionsRequest(
+                        user.getId(),
+                        5,
+                        RunningSessionHistoryCursorCodec.encode(cursorStartedAt, 120L)
+                )
+        );
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().runningSessionId()).isEqualTo(118L);
+        assertThat(response.items().getFirst().timeSlot()).isEqualTo(TimeSlot.AFTERNOON);
+        assertThat(response.items().getFirst().runningMode()).isEqualTo(RunningMode.COURSE);
+        assertThat(response.items().getFirst().ghostResultStatus()).isNull();
+        assertThat(response.hasMore()).isFalse();
+        assertThat(response.nextCursor()).isNull();
+    }
+
+    @DisplayName("잘못된 커서는 INVALID_CURSOR 예외를 던진다")
+    @Test
+    void throwsInvalidCursorWhenHistoryCursorIsMalformed() {
+        User user = user(42L);
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> runningSessionService.findAllRunningSessions(
+                new AllRunningSessionsRequest(user.getId(), 10, "%%%")
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.INVALID_CURSOR);
+    }
+
+    @DisplayName("없는 사용자가 러닝 세션 목록을 조회하면 사용자 없음 예외를 던진다")
+    @Test
+    void throwsUserNotFoundWhenUserIsMissingOnHistoryList() {
+        when(userRepository.findNotDeletedUser(43L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> runningSessionService.findAllRunningSessions(
+                new AllRunningSessionsRequest(43L, 10, null)
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.USER_NOT_FOUND);
+    }
+
+    @DisplayName("startedAt 경계값에 따라 시간대를 계산한다")
+    @ParameterizedTest(name = "{0} -> {1}")
+    @CsvSource({
+            "2026-03-15T05:59:59,DAWN",
+            "2026-03-15T06:00:00,MORNING",
+            "2026-03-15T12:00:00,AFTERNOON",
+            "2026-03-15T18:00:00,EVENING"
+    })
+    void derivesTimeSlotFromStartedAtBoundaries(String startedAtText, TimeSlot expectedTimeSlot) {
+        User user = user(44L);
+        LocalDateTime startedAt = LocalDateTime.parse(startedAtText);
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(runningSessionRepository.findRunningSessionHistoryRows(user.getId(), null, null, 10))
+                .thenReturn(List.of(
+                        historyRow(
+                                121L,
+                                startedAt,
+                                3000,
+                                1200,
+                                200,
+                                null,
+                                15,
+                                true,
+                                RunningMode.FREE,
+                                null
+                        )
+                ));
+
+        AllRunningSessionsResponse response = runningSessionService.findAllRunningSessions(
+                new AllRunningSessionsRequest(user.getId(), 10, null)
+        );
+
+        assertThat(response.items().getFirst().timeSlot()).isEqualTo(expectedTimeSlot);
     }
 
     @DisplayName("없는 사용자는 USER_NOT_FOUND 예외를 던진다")
@@ -456,6 +621,32 @@ class RunningSessionServiceTest {
                 2520,
                 2,
                 3
+        );
+    }
+
+    private RunningSessionHistoryRow historyRow(
+            Long runningSessionId,
+            LocalDateTime startedAt,
+            Integer distanceM,
+            Integer durationSec,
+            Integer caloriesKcal,
+            String snapshotImageUrl,
+            Integer elevationGainM,
+            Boolean isCompleted,
+            RunningMode runningMode,
+            GhostResultStatus ghostResultStatus
+    ) {
+        return new RunningSessionHistoryRow(
+                runningSessionId,
+                startedAt,
+                distanceM,
+                durationSec,
+                caloriesKcal,
+                snapshotImageUrl,
+                elevationGainM,
+                isCompleted,
+                runningMode,
+                ghostResultStatus
         );
     }
 
