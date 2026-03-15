@@ -1,3 +1,3 @@
-export * from './RunningCourseCard';
 export * from './RunningFilterModal';
 export * from './NormalRunScreen';
+export * from './NormalRunDetailScreen';
