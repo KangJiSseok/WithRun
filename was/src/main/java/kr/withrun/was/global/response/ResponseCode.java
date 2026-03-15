@@ -54,6 +54,16 @@ public enum ResponseCode {
     RUNNING_SESSION_NOT_COMPLETED("E405", HttpStatus.CONFLICT, "완료되지 않은 러닝 세션입니다.", false),
     GHOST_RUNNING_RESULT_NOT_FOUND("E406", HttpStatus.NOT_FOUND, "고스트 러닝 결과를 찾을 수 없습니다.", false),
 
+    // Auth Error
+    UNAUTHORIZED("E100", HttpStatus.UNAUTHORIZED, "인증이 필요합니다.", false),
+    TOKEN_EXPIRED("E101", HttpStatus.UNAUTHORIZED, "토큰이 만료되었습니다.", false),
+    TOKEN_INVALID("E102", HttpStatus.UNAUTHORIZED, "유효하지 않은 토큰입니다.", false),
+    ACCESS_DENIED("E103", HttpStatus.FORBIDDEN, "접근 권한이 없습니다.", false),
+LOGIN_CODE_INVALID("E104", HttpStatus.UNAUTHORIZED, "로그인 코드가 유효하지 않습니다.", false),
+LOGIN_CODE_EXPIRED("E105", HttpStatus.UNAUTHORIZED, "로그인 코드가 만료되었습니다.", false),
+SIGNUP_SESSION_NOT_FOUND("E106", HttpStatus.UNAUTHORIZED, "가입 세션이 없습니다.", false),
+SOCIAL_PROFILE_INVALID("E107", HttpStatus.UNAUTHORIZED, "소셜 프로필 정보가 올바르지 않습니다.", false),
+
     // File Error
     S3_BUCKET_NOT_CONFIGURED("E500", HttpStatus.INTERNAL_SERVER_ERROR, "S3 버킷 설정이 필요합니다.", false),
     S3_UPLOAD_FAILED("E501", HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다.", false);

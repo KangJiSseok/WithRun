@@ -1,7 +1,10 @@
 spring:
   config:
-    import: 'aws-parameterstore:/config/withrun/'
+    # AWS Parameter Store에서 공통 설정을 읽어옵니다.
+    import: "aws-parameterstore:/config/withrun/"
+
   datasource:
+    # DB 접속 정보
     url: ${jdbc.url}
     username: ${jdbc.username}
     password: ${jdbc.password}
@@ -14,16 +17,48 @@ spring:
         format_sql: true
     show-sql: true
 
+  security:
+    oauth2:
+      client:
+        registration:
+          # Google OAuth 클라이언트 설정
+          google:
+            client-id: ${google.oauth.client-id}
+            client-secret: ${google.oauth.client-secret}
+            scope:
+              - openid
+              - profile
+              - email
+
 cloud:
   aws:
     region:
       static: ap-northeast-2
 
-app:
-  s3:
-    bucket: ${s3.bucket:}
-
 logging:
   level:
     org.hibernate.SQL: debug
     org.hibernate.orm.jdbc.bind: trace
+
+server:
+  servlet:
+    session:
+      cookie:
+        # OAuth state 저장 등에 사용하는 세션 쿠키 설정
+        name: WITHRUNSESSION
+        http-only: true
+        same-site: lax
+
+app:
+  s3:
+    # 업로드 파일을 저장할 S3 버킷
+    bucket: ${s3.bucket:}
+
+  auth:
+    # 로그인 성공 후 웹 프론트로 복귀할 기본 주소
+    frontend-base-url: ${app.auth.frontend-base-url:http://localhost:5173}
+    # 모바일 WebView/딥링크 복귀에 사용할 기본 주소
+    mobile-deep-link-base: ${app.auth.mobile-deep-link-base:withrun://auth/callback}
+    # CORS 허용 대상 프론트 주소
+    allowed-origins:
+      - http://localhost:5173
