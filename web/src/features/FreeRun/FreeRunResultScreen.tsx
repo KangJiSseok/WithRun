@@ -1,10 +1,11 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Award, Home, MapPin, Activity, Timer, Save, Check, UploadCloud } from 'lucide-react';
+import { Award, Home, MapPin, Activity, Timer, Save, Check, UploadCloud, Heart } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import { CourseShareModal } from './CourseShareModal';
 import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
 import { useGeneratePaceData } from '@/hooks/FreeRun/useGeneratePaceData';
+import { likeCourse } from '@/shared/apis/FreeRun/courseApi';
 
 // 회원 시스템 구현 전 임시 mock 유저
 // 추후 변경 시 => auth context에서 실제 유저 정보 받아오기
@@ -36,6 +37,17 @@ export function FreeRunResultScreen() {
   const navigate = useNavigate();
   // 코스 저장 상태 (추후 API 연동 시 POST /courses 호출로 교체)
   const [isSaved, setIsSaved] = useState(false);
+  const [isLiked, setIsLiked] = useState(false);
+
+  // courseId가 있을 때만 API 호출, 없으면 로컬 토글만 (코스 등록 전 상태)
+  async function handleLike() {
+    if (courseId) {
+      const res = await likeCourse(courseId);
+      setIsLiked(res.isLiked);
+    } else {
+      setIsLiked((prev) => !prev);
+    }
+  }
   // 공식 코스 등록 Drawer 상태
   const [showShareModal, setShowShareModal] = useState(false);
   // FreeRunningScreen 종료 시점에 useFreeRunResultStore.setResult()로 저장
@@ -43,6 +55,7 @@ export function FreeRunResultScreen() {
   //  → 결과 화면에서 GET /runs/:runId → 데이터 표시
 
   const result = useFreeRunResultStore((s) => s.result);
+  const courseId = useFreeRunResultStore((s) => s.courseId);
 
   const time = result?.time ?? '00:00';
   const distance = result?.distance ?? '0.00';
@@ -55,12 +68,21 @@ export function FreeRunResultScreen() {
     <div className="absolute inset-0 bg-[hsl(var(--secondary-1))]">
     <div className="result-scroll-container absolute inset-0 flex flex-col overflow-y-auto">
       {/* 헤더 */}
-      <div className="flex flex-col items-center pt-10 pb-6 px-6">
+      <div className="relative flex flex-col items-center pt-10 pb-6 px-6">
+        {/* 좋아요 버튼 (추후 API 연동 시 POST /runs/:runId/like 호출로 교체) */}
+        <button
+          onClick={handleLike}
+          className="absolute top-10 right-6 p-2"
+        >
+          <Heart
+            size={26}
+            className={cn(isLiked ? 'fill-red-400 text-red-400' : 'text-[hsl(var(--secondary-5))]')}
+          />
+        </button>
         <div className="p-4 rounded-full bg-primary/20 border border-primary/30 mb-4">
           <Award size={40} className="text-primary" />
         </div>
         <h1 className="h2-b text-[hsl(var(--text-inverse))] mb-1">수고하셨습니다, {MOCK_USER.name}님!</h1>
-
       </div>
 
       {/* 지도 영역 (코스 경로 표시 - GPS 연동 예정) */}
