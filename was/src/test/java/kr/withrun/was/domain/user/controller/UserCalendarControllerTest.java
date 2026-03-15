@@ -1,5 +1,6 @@
 package kr.withrun.was.domain.user.controller;
 
+import kr.withrun.was.domain.user.dto.UserCalendarMonthlyResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
 import kr.withrun.was.domain.user.service.UserCalendarService;
 import kr.withrun.was.global.exception.CustomException;
@@ -13,9 +14,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.mockito.Mockito.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -39,6 +42,129 @@ class UserCalendarControllerTest {
     static void clearConfigOverrides() {
         System.clearProperty("spring.cloud.aws.parameterstore.enabled");
         System.clearProperty("spring.config.import");
+    }
+
+    @DisplayName("월별 캘린더 응답을 성공 응답 포맷으로 감싼다")
+    @Test
+    void wrapsMonthlyCalendarResponseInSuccessEnvelope() throws Exception {
+        long userId = 30L;
+        int year = 2026;
+        int month = 3;
+        UserCalendarMonthlyResponse response = new UserCalendarMonthlyResponse(
+                year,
+                month,
+                4,
+                23000,
+                1280,
+                1,
+                2,
+                1,
+                List.of(
+                        new UserCalendarMonthlyResponse.DailySummary(
+                                LocalDate.of(2026, 3, 8),
+                                12000,
+                                4200,
+                                640,
+                                1,
+                                1,
+                                1
+                        )
+                )
+        );
+        given(userCalendarService.findMonthlyCalendar(userId, year, month)).willReturn(response);
+
+        mockMvc.perform(get("/api/calendars/{userId}", userId)
+                        .queryParam("year", String.valueOf(year))
+                        .queryParam("month", String.valueOf(month)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
+                .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
+                .andExpect(jsonPath("$.data.year").value(year))
+                .andExpect(jsonPath("$.data.month").value(month))
+                .andExpect(jsonPath("$.data.monthlyRunCount").value(4))
+                .andExpect(jsonPath("$.data.monthlyDistanceM").value(23000))
+                .andExpect(jsonPath("$.data.monthlyCaloriesKcal").value(1280))
+                .andExpect(jsonPath("$.data.monthlyCourseRunCount").value(1))
+                .andExpect(jsonPath("$.data.monthlyFreeRunCount").value(2))
+                .andExpect(jsonPath("$.data.monthlyGhostRunCount").value(1))
+                .andExpect(jsonPath("$.data.dailySummaries[0].calendarDate").value("2026-03-08"))
+                .andExpect(jsonPath("$.data.dailySummaries[0].dailyDistanceM").value(12000))
+                .andExpect(jsonPath("$.data.dailySummaries[0].dailyDurationSec").value(4200))
+                .andExpect(jsonPath("$.data.dailySummaries[0].dailyCaloriesKcal").value(640))
+                .andExpect(jsonPath("$.data.dailySummaries[0].dailyCourseRunCount").value(1))
+                .andExpect(jsonPath("$.data.dailySummaries[0].dailyFreeRunCount").value(1))
+                .andExpect(jsonPath("$.data.dailySummaries[0].dailyGhostRunCount").value(1));
+
+        then(userCalendarService).should().findMonthlyCalendar(userId, year, month);
+    }
+
+    @DisplayName("월 파라미터가 범위를 벗어나면 잘못된 입력 응답을 반환한다")
+    @Test
+    void returnsInvalidInputWhenMonthIsOutOfRange() throws Exception {
+        mockMvc.perform(get("/api/calendars/{userId}", 30L)
+                        .queryParam("year", "2026")
+                        .queryParam("month", "13"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+
+        then(userCalendarService).should(never()).findMonthlyCalendar(30L, 2026, 13);
+    }
+
+    @DisplayName("연도 파라미터가 없으면 잘못된 입력 응답을 반환한다")
+    @Test
+    void returnsInvalidInputWhenYearIsMissing() throws Exception {
+        mockMvc.perform(get("/api/calendars/{userId}", 30L)
+                        .queryParam("month", "3"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+
+        then(userCalendarService).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("월 파라미터가 없으면 잘못된 입력 응답을 반환한다")
+    @Test
+    void returnsInvalidInputWhenMonthIsMissing() throws Exception {
+        mockMvc.perform(get("/api/calendars/{userId}", 30L)
+                        .queryParam("year", "2026"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+
+        then(userCalendarService).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("연도 파라미터가 허용 범위를 넘으면 잘못된 입력 응답을 반환한다")
+    @Test
+    void returnsInvalidInputWhenYearIsOutOfRange() throws Exception {
+        mockMvc.perform(get("/api/calendars/{userId}", 30L)
+                        .queryParam("year", "1000000000")
+                        .queryParam("month", "3"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+
+        then(userCalendarService).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("월별 캘린더에서 없는 사용자를 조회하면 사용자 없음 응답을 반환한다")
+    @Test
+    void returnsUserNotFoundWhenMonthlyCalendarUserIsMissing() throws Exception {
+        long userId = 999L;
+        given(userCalendarService.findMonthlyCalendar(userId, 2026, 3))
+                .willThrow(new CustomException(ResponseCode.USER_NOT_FOUND));
+
+        mockMvc.perform(get("/api/calendars/{userId}", userId)
+                        .queryParam("year", "2026")
+                        .queryParam("month", "3"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.USER_NOT_FOUND.getCode()))
+                .andExpect(jsonPath("$.message").value(ResponseCode.USER_NOT_FOUND.getMessage()));
+
+        then(userCalendarService).should().findMonthlyCalendar(userId, 2026, 3);
     }
 
     @DisplayName("캘린더 요약 응답을 성공 응답 포맷으로 감싼다")

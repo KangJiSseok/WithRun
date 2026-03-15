@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.entity.UserCalendar;
 import kr.withrun.was.domain.user.repository.query.UserCalendarCustomRepository;
+import kr.withrun.was.domain.user.repository.query.dto.UserCalendarDailySummaryRow;
 import kr.withrun.was.domain.user.repository.query.dto.UserCalendarSummaryRow;
 import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.config.JpaAuditingConfig;
@@ -91,6 +92,35 @@ class UserCalendarRepositoryTest {
                 LocalDate.of(2026, 3, 13),
                 LocalDate.of(2026, 3, 10),
                 LocalDate.of(2026, 3, 9)
+        );
+    }
+
+    @DisplayName("특정 월의 날짜별 러닝 요약을 오래된 날짜 순으로 조회한다")
+    @Test
+    void findsDailySummariesForMonth() {
+        User user = persistUser("monthly-runner");
+        persistCalendar(user, LocalDate.of(2026, 3, 8), 12000, 1, 1, 1, false);
+        persistCalendar(user, LocalDate.of(2026, 3, 15), 8000, 0, 2, 0, false);
+        persistCalendar(user, LocalDate.of(2026, 2, 28), 5000, 1, 0, 0, false);
+
+        User anotherUser = persistUser("another-runner");
+        persistCalendar(anotherUser, LocalDate.of(2026, 3, 8), 9999, 9, 9, 9, false);
+
+        UserCalendar deletedCalendar = persistCalendar(user, LocalDate.of(2026, 3, 20), 7000, 1, 0, 0, false);
+        deletedCalendar.delete();
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<UserCalendarDailySummaryRow> summaries = userCalendarRepository.findDailySummaries(
+                user.getId(),
+                LocalDate.of(2026, 3, 1),
+                LocalDate.of(2026, 3, 31)
+        );
+
+        assertThat(summaries).containsExactly(
+                new UserCalendarDailySummaryRow(LocalDate.of(2026, 3, 8), 12000, 1800, 350, 1, 1, 1),
+                new UserCalendarDailySummaryRow(LocalDate.of(2026, 3, 15), 8000, 1800, 350, 0, 2, 0)
         );
     }
 
