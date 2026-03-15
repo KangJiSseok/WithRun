@@ -1,12 +1,12 @@
 import { RotateCcw, X } from 'lucide-react';
 
 import {
-  Dialog,
-  DialogContent,
-  DialogFooter,
-  DialogHeader,
-  DialogTitle,
-} from '@/shared/components/shadcn/dialog';
+  Drawer,
+  DrawerContent,
+  DrawerFooter,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/shared/components/shadcn/drawer';
 import { Button } from '@/shared/components/shadcn/button';
 
 const PURPOSE_OPTIONS = [
@@ -87,14 +87,11 @@ export function RunningFilterModal({
   onChange,
 }: RunningFilterModalProps) {
   return (
-    <Dialog open={isOpen} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DialogContent
-        showCloseButton={false}
-        className="max-h-[85vh] w-[calc(100%-1.5rem)] max-w-[375px] rounded-[28px] border-[hsl(var(--border-default)/0.1)] bg-[hsl(var(--surface-default))] p-6"
-      >
-        <DialogHeader className="gap-3 text-left">
+    <Drawer open={isOpen} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
+      <DrawerContent className="border-[hsl(var(--border-default)/0.1)] bg-[hsl(var(--surface-default))] px-6 pb-6 z-modal">
+        <DrawerHeader className="gap-3 px-0 text-left">
           <div className="flex items-center justify-between">
-            <DialogTitle className="h3-b">상세 필터</DialogTitle>
+            <DrawerTitle className="h3-b">상세 필터</DrawerTitle>
             <div className="flex items-center gap-2">
               <Button
                 type="button"
@@ -117,7 +114,7 @@ export function RunningFilterModal({
               </Button>
             </div>
           </div>
-        </DialogHeader>
+        </DrawerHeader>
 
         <div className="flex max-h-[55vh] flex-col gap-6 overflow-y-auto">
           {FILTER_CATEGORIES.map((category) => (
@@ -155,7 +152,7 @@ export function RunningFilterModal({
           ))}
         </div>
 
-        <DialogFooter className="flex-row gap-3">
+        <DrawerFooter className="flex-row gap-3 px-0 pt-6">
           <Button
             type="button"
             variant="outline"
@@ -167,8 +164,8 @@ export function RunningFilterModal({
           <Button type="button" onClick={onApply} className="flex-1">
             필터 적용
           </Button>
-        </DialogFooter>
-      </DialogContent>
-    </Dialog>
+        </DrawerFooter>
+      </DrawerContent>
+    </Drawer>
   );
 }
