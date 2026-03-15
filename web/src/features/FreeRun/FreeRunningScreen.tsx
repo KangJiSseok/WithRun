@@ -27,6 +27,7 @@ export function FreeRunningScreen() {
   const navigate = useNavigate();
   const { time, distance, pace, calories, isPaused, togglePause } = useFreeRunning();
   const setResult = useFreeRunResultStore((s) => s.setResult);
+  // 추후 API 연동 시 추가: const setCourseId = useFreeRunResultStore((s) => s.setCourseId);
 
   return (
     <div className="absolute inset-0 bg-secondary-foreground flex flex-col items-center justify-between px-6 py-12">
@@ -84,7 +85,11 @@ export function FreeRunningScreen() {
 
         {/* 종료 버튼 — 일시정지 시 오른쪽으로 슬라이드 */}
         <button
-          onClick={() => {
+          onClick={async () => {
+            // 추후 API 연동 시 교체:
+            // const res = await axiosClient.post('/api/runs', { time, distance, pace, calories });
+            // setResult({ time, distance, pace, calories });
+            // setCourseId(res.data.data.courseId); // 자동 생성된 courseId 저장
             setResult({ time, distance, pace, calories });
             navigate('/freerun-result');
           }}

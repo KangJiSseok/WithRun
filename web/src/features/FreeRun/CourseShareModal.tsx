@@ -1,11 +1,15 @@
-// 공식 코스 등록 폼 모달 (바텀 시트 형태)
-// absolute 포지셔닝으로 MobileLayout 프레임 안에서 렌더링
-// CourseRegisterModal에서 '코스 등록하기' 클릭 시 열림
+// 공식 코스 등록 폼 Drawer (바텀 시트)
+// shadcn Drawer (vaul) 사용 - 스와이프 제스처 및 스크롤 잠금 처리
 // 추후 API 연동 시 handleSubmit에서 POST /courses 호출로 교체
 
 import { useState } from 'react';
-import { X } from 'lucide-react';
 import { Button } from '@/shared/components/shadcn/button';
+import {
+  Drawer,
+  DrawerContent,
+  DrawerHeader,
+  DrawerTitle,
+} from '@/shared/components/shadcn/drawer';
 import { cn } from '@/shared/utils';
 
 type CourseShareModalProps = {
@@ -31,35 +35,34 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
     );
   }
 
-  // 추후 API 연동 시 POST /courses 호출로 교체
+  // 추후 API 연동 시 교체:
+  // 1. import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
+  // 2. const setCourseId = useFreeRunResultStore((s) => s.setCourseId);
+  // 3. async function handleSubmit() {
+  //      const res = await axiosClient.post('/api/courses', {
+  //        title: courseTitle,
+  //        difficulty,
+  //        surface,
+  //        courseTypes,
+  //      });
+  //      setCourseId(res.data.data.courseId); // store에 저장 → 결과 화면 좋아요 버튼 API 연결
+  //      onClose();
+  //    }
   function handleSubmit() {
     onClose();
   }
 
-  if (!isOpen) return null;
 
   return (
-    // absolute inset-0: 외부 컨테이너 (MobileLayout 프레임 안)
-    <div
-      className="absolute inset-0 z-modal bg-black/50"
-      onClick={onClose}
-    >
-      <div
-        className="absolute bottom-0 left-0 right-0 flex flex-col gap-[var(--space-5)] rounded-t-3xl bg-[hsl(var(--secondary-2))] border-t border-[hsl(var(--secondary-3))] p-[var(--space-6)] max-h-[90%] overflow-y-auto"
-        onClick={(e) => e.stopPropagation()}
+    <Drawer open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
+      <DrawerContent
+        className="bg-[hsl(var(--secondary-2))] border-t border-[hsl(var(--secondary-3))] max-h-[90dvh]"
       >
-        {/* 헤더 */}
-        <div className="flex items-center justify-between">
-          <h3 className="h3-b text-[hsl(var(--text-inverse))]">공식 코스 등록</h3>
-          <button
-            onClick={onClose}
-            className="p-2 text-[hsl(var(--secondary-5))] hover:text-[hsl(var(--text-inverse))] transition-colors"
-          >
-            <X size={20} />
-          </button>
-        </div>
+        <DrawerHeader className="text-left px-6 pt-4 pb-0">
+          <DrawerTitle className="h3-b text-[hsl(var(--text-inverse))]">공식 코스 등록</DrawerTitle>
+        </DrawerHeader>
 
-        <div className="space-y-[var(--space-5)]">
+        <div className="overflow-y-auto px-6 pb-8 pt-4 space-y-[var(--space-5)]">
           {/* 코스 제목 */}
           <div className="space-y-[var(--space-2)]">
             <label className="caption-b text-[hsl(var(--text-inverse))]">코스 제목</label>
@@ -144,7 +147,7 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
             커뮤니티에 업로드
           </Button>
         </div>
-      </div>
-    </div>
+      </DrawerContent>
+    </Drawer>
   );
 }
