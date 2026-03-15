@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { FreeRunScreen } from '@/features/FreeRun';
-import { RunningGuideModal } from '@/shared/components/running-guide-modal';
+import { RunningGuideModal } from '@/shared/components/RunningGuideModal';
 
 export function FreePage() {
   const [showGuide, setShowGuide] = useState(false);
@@ -26,7 +26,8 @@ export function FreePage() {
         steps={[
           {
             title: '자유 러닝',
-            content: '코스 제한 없이 원하는 곳 어디서든 자유롭게 달릴 수 있습니다.',
+            content:
+              '코스 제한 없이 원하는 곳 어디서든 자유롭게 달릴 수 있습니다.',
           },
           {
             title: '러닝 시작',
@@ -34,7 +35,8 @@ export function FreePage() {
           },
           {
             title: '러닝 분석',
-            content: '러닝이 끝나면 페이스, 소모 칼로리, 고도 등 상세한 데이터를 분석해드립니다.',
+            content:
+              '러닝이 끝나면 페이스, 소모 칼로리, 고도 등 상세한 데이터를 분석해드립니다.',
           },
         ]}
       />

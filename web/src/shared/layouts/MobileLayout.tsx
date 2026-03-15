@@ -1,6 +1,5 @@
 import { Outlet, useLocation } from 'react-router-dom';
-
-import { BottomNavigation } from '@/shared/components/bottom-navigation';
+import { BottomNavigation } from '../components';
 
 // 하단 네비게이션바를 숨길 경로 목록
 const HIDE_NAV_ROUTES = ['/freerun', '/freerun-result'];
