@@ -2,7 +2,7 @@
 // shadcn Drawer (vaul) 사용 - 스와이프 제스처 및 스크롤 잠금 처리
 // 추후 API 연동 시 handleSubmit에서 POST /courses 호출로 교체
 
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Button } from '@/shared/components/shadcn/button';
 import {
   Drawer,
@@ -28,20 +28,6 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
   const [difficulty, setDifficulty] = useState<string>('보통');
   const [surface, setSurface] = useState<string>('포장도로');
   const [courseTypes, setCourseTypes] = useState<string[]>([]);
-
-  // vaul은 body 스크롤을 잠그지만, 실제 스크롤 컨테이너가 내부 div이므로 별도 처리
-  useEffect(() => {
-    const scrollContainer = document.querySelector<HTMLElement>('.result-scroll-container');
-    if (!scrollContainer) return;
-    if (isOpen) {
-      scrollContainer.style.overflow = 'hidden';
-    } else {
-      scrollContainer.style.overflow = '';
-    }
-    return () => {
-      scrollContainer.style.overflow = '';
-    };
-  }, [isOpen]);
 
   function toggleCourseType(type: string) {
     setCourseTypes((prev) =>

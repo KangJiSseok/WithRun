@@ -66,7 +66,7 @@ export function FreeRunResultScreen() {
 
   return (
     <div className="absolute inset-0 bg-[hsl(var(--secondary-1))]">
-    <div className="result-scroll-container absolute inset-0 flex flex-col overflow-y-auto">
+    <div className={cn('absolute inset-0 flex flex-col', showShareModal ? 'overflow-hidden' : 'overflow-y-auto')}>
       {/* 헤더 */}
       <div className="relative flex flex-col items-center pt-10 pb-6 px-6">
         {/* 좋아요 버튼 (추후 API 연동 시 POST /runs/:runId/like 호출로 교체) */}
