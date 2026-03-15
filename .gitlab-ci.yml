@@ -37,7 +37,10 @@ build_was:
 build_web:
   stage: build
   script:
-    - docker build -f web/Dockerfile -t web-build:test .
+    - cd web
+    - corepack enable
+    - pnpm install --frozen-lockfile
+    - pnpm build
 
 test_was:
   stage: test
