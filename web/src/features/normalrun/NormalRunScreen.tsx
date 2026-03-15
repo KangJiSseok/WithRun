@@ -8,7 +8,7 @@ import {
   type RunningFilterState,
   RunningFilterModal,
 } from '@/features/NormalRun';
-import { RunningGuideModal } from '@/shared/components/running-guide-modal';
+import { RunningGuideModal } from '@/shared/components/RunningGuideModal';
 import { Button } from '@/shared/components/shadcn/button';
 import { Input } from '@/shared/components/shadcn/input';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/shadcn/tabs';
@@ -135,6 +135,8 @@ export function NormalRunScreen() {
     setShowGuide(false);
   }
 
+  // 코스 북마크 등록 함수
+  // TODO : API 연결 로직으로 바꿔야함(지금은 UI만 변경되도록 만들어짐)
   function handleToggleSave(courseId: number) {
     setSavedCourses((prev) => {
       const next = new Set(prev);
@@ -149,6 +151,7 @@ export function NormalRunScreen() {
     });
   }
 
+  // 코스 필터 변경시 사용할 함수
   function handleFilterChange(key: keyof RunningFilterState, value: string) {
     if (key === 'purpose') {
       setFilters((prev) => ({ ...prev, purpose: value }));
@@ -303,8 +306,10 @@ export function NormalRunScreen() {
           </Tabs>
         </header>
 
+        {/* 필터된 코스 렌더링 섹션 */}
         <section className="flex flex-col gap-[var(--space-4)]">
           {filteredCourses.map((course) => (
+            // 러닝 코스 카드 UI
             <RunningCourseCard
               key={course.id}
               course={course}
@@ -313,6 +318,7 @@ export function NormalRunScreen() {
             />
           ))}
 
+          {/* 필터된 코스 카드 없을시 폴백 UI */}
           {filteredCourses.length === 0 ? (
             <div className="flex h-40 flex-col items-center justify-center rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-[var(--space-5)] text-center">
               <p className="body-l-b text-[hsl(var(--text-primary))]">
@@ -326,6 +332,7 @@ export function NormalRunScreen() {
         </section>
       </div>
 
+      {/* 러닝 서비스 가이드 모달 */}
       <RunningGuideModal
         isOpen={showGuide}
         onClose={handleCloseGuide}
@@ -348,6 +355,8 @@ export function NormalRunScreen() {
         ]}
       />
 
+      {/* 일반 러닝 필터 Drawer */}
+      {/* TODO : Drawer로 리팩토링 하기 */}
       <RunningFilterModal
         isOpen={showFilterModal}
         values={filters}

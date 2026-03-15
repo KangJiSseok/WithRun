@@ -6,7 +6,7 @@ import {
   DialogFooter,
   DialogHeader,
   DialogTitle,
-} from '@/shared/components/dialog';
+} from '@/shared/components/shadcn/dialog';
 import { Button } from '@/shared/components/shadcn/button';
 
 const PURPOSE_OPTIONS = [
@@ -18,7 +18,14 @@ const PURPOSE_OPTIONS = [
 ];
 
 const DISTANCE_OPTIONS = ['전체', '5km 미만', '5km - 10km', '10km 이상'];
-const COURSE_TYPE_OPTIONS = ['전체', '도심', '공원', '한강변', '산/둘레길', '트랙'];
+const COURSE_TYPE_OPTIONS = [
+  '전체',
+  '도심',
+  '공원',
+  '한강변',
+  '산/둘레길',
+  '트랙',
+];
 const DIFFICULTY_OPTIONS = ['전체', '쉬움', '보통', '어려움'];
 
 export type RunningFilterState = {
