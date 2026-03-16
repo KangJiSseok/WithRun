@@ -14,6 +14,7 @@ import jakarta.persistence.UniqueConstraint;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -72,4 +73,63 @@ public class RunningGpsSample extends BaseEntity {
 
     @Column(name = "bearing_deg")
     private Double bearingDeg;
+
+    @Builder
+    private RunningGpsSample (
+            Double bearingDeg,
+            Double accuracyM,
+            Double altitudeM,
+            Double longitude,
+            Double latitude,
+            User user,
+            RunningSession runningSession,
+            LocalDateTime sampledAt,
+            Long id
+    ) {
+        this.bearingDeg = bearingDeg;
+        this.accuracyM = accuracyM;
+        this.altitudeM = altitudeM;
+        this.longitude = longitude;
+        this.latitude = latitude;
+        this.user = user;
+        this.runningSession = runningSession;
+        this.sampledAt = sampledAt;
+        this.id = id;
+    }
+
+    /**
+     * 러닝 세션 중 수집된 GPS 정보를 기반으로 엔티티를 생성하는
+     * 정적 팩토리 메서드
+     *
+     * @param bearingDeg 진행 방향 (degree)
+     * @param accuracyM 위치 정확도 (미터)
+     * @param altitudeM 고도 (미터)
+     * @param longitude 경도 (소수)
+     * @param latitude 위도 (소수)
+     * @param user
+     * @param runningSession
+     * @param sampledAt GPS 로그 수집 시간
+     * @return
+     */
+    public static RunningGpsSample create (
+            User user,
+            RunningSession runningSession,
+            Double bearingDeg,
+            Double accuracyM,
+            Double altitudeM,
+            Double longitude,
+            Double latitude,
+            LocalDateTime sampledAt
+    ) {
+        return RunningGpsSample.builder()
+                .bearingDeg(bearingDeg)
+                .accuracyM(accuracyM)
+                .altitudeM(altitudeM)
+                .longitude(longitude)
+                .latitude(latitude)
+                .user(user)
+                .runningSession(runningSession)
+                .sampledAt(sampledAt)
+                .build();
+    }
 }
