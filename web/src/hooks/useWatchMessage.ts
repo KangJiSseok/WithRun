@@ -1,15 +1,16 @@
 import { useEffect, useState } from 'react'
 import { bridge } from '@/bridge'
+import type { WatchHealthData } from '@bridge'
 
 export default function useWatchMessage() {
-  const [lastMessage, setLastMessage] = useState<string | null>(null)
+  const [watchData, setWatchData] = useState<WatchHealthData | null>(null)
 
   useEffect(() => {
-    const unsubscribe = bridge.addEventListener('watchMessage', ({ message }) => {
-      setLastMessage(message)
+    const unsubscribe = bridge.addEventListener('watchHealthData', (data) => {
+      setWatchData(data)
     })
     return unsubscribe
   }, [])
 
-  return { lastMessage }
+  return { watchData }
 }
