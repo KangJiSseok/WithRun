@@ -5,24 +5,19 @@
 ## 설계 기준
 
 - 기준 소스: `was/src/main/java/kr/withrun/was/domain/**`의 현재 Entity / Enum 구조
-- 공통 감사 컬럼: 기본적으로 Entity 테이블은 `BaseEntity` 기준으로 `created_at`, `updated_at`, `deleted_at`를 가지며, `course_ghost_leaderboard`는 요청사항에 맞춰 `created_at`만 둡니다.
+- 공통 감사 컬럼: `BaseEntity`를 상속한 Entity 테이블은 `created_at`, `updated_at`, `deleted_at`를 가집니다. `BaseEntity`를 상속하지 않는 테이블은 Entity에 명시적으로 선언된 컬럼만 둡니다.
 - 시간 타입: Entity가 `LocalDateTime` / `BaseEntity`의 `TIMESTAMP` 정의를 사용하므로 스키마도 `TIMESTAMP` 기준으로 맞췄습니다.
 - Enum 저장 정책: Enum 컬럼은 모두 `VARCHAR`에 저장하며, 값은 현재 Java Enum 상수명 그대로 대문자 문자열을 사용합니다.
 - 테이블 네이밍: 명시적 `@Table(name = ...)`는 그대로 따르고, `CourseTypeMap`은 Spring Boot/Hibernate 기본 snake_case 규칙을 따라 `course_type_map`으로 정리했습니다.
 - 테이블 정리: 현재 Entity에 없는 `user_preference_surfaces`, `course_surface_maps`는 이번 스키마에서 제거했습니다.
 - 현재 schema source에는 서버 측 동기화 체크포인트 전용 테이블을 두지 않습니다.
 
-## 공통 컬럼
+## 감사 컬럼 규칙
 
-모든 테이블은 아래 공통 컬럼을 가집니다.
-
-- `created_at`: 생성 시각, `TIMESTAMP NOT NULL DEFAULT NOW()`
-- `updated_at`: 최종 수정 시각, `TIMESTAMP NOT NULL DEFAULT NOW()`
-- `deleted_at`: 소프트 삭제 시각, `TIMESTAMP`
-
-예외:
-
-- `course_ghost_leaderboard`: `created_at`만 사용
+- `BaseEntity` 상속 테이블: `created_at`, `updated_at`, `deleted_at`
+- `course_bookmarks`: Entity가 `created_at`만 직접 선언
+- `course_likes`: 감사 컬럼 없음
+- `course_ghost_leaderboard`: 현재 `was` Entity와 별개로 정의된 DB 테이블이며 `created_at`만 사용
 
 ## Enum 컬럼 값
 
@@ -112,7 +107,7 @@
   - `user_id`: `user_running_preferences.user_id` FK
   - `purpose`: `DIET`, `HEALTH_MAINTENANCE`, `RACE_PREPARATION`, `ENDURANCE_IMPROVEMENT`
 - 주요 제약:
-  - `fk_user_preference_purposes_user_running_preference` (`ON DELETE CASCADE`)
+  - `fk_user_preference_purpose_user_running_preference` (`ON DELETE CASCADE`)
   - `uq_user_preference_purposes_user_purpose`
   - `chk_user_preference_purposes_purpose`
 
@@ -124,7 +119,7 @@
   - `user_id`: `user_running_preferences.user_id` FK
   - `course_type`: `RIVERSIDE`, `PARK`, `MOUNTAIN_TRAIL`, `TRACK`, `URBAN`, `OTHER`
 - 주요 제약:
-  - `fk_user_preference_course_types_user_running_preference` (`ON DELETE CASCADE`)
+  - `fk_user_preference_course_type_user_running_preference` (`ON DELETE CASCADE`)
   - `uq_user_preference_course_types_user_type`
   - `chk_user_preference_course_types_course_type`
 
@@ -136,7 +131,7 @@
   - `user_id`: `user_running_preferences.user_id` FK
   - `time_slot`: `DAWN`, `MORNING`, `AFTERNOON`, `EVENING`
 - 주요 제약:
-  - `fk_user_preference_time_slots_user_running_preference` (`ON DELETE CASCADE`)
+  - `fk_user_preference_time_slot_user_running_preference` (`ON DELETE CASCADE`)
   - `uq_user_preference_time_slots_user_slot`
   - `chk_user_preference_time_slots_time_slot`
 
@@ -178,7 +173,7 @@
   - `course_id`: `courses.course_id` FK
   - `course_type`: `RIVERSIDE`, `PARK`, `MOUNTAIN_TRAIL`, `TRACK`, `URBAN`, `OTHER`
 - 주요 제약:
-  - `fk_course_type_map_course` (`ON DELETE CASCADE`)
+  - `fk_course_type_maps_course` (`ON DELETE CASCADE`)
   - `uq_course_type_map_course_type`
   - `chk_course_type_map_course_type`
 
@@ -322,6 +317,8 @@
   - `course_like_id`: PK
   - `course_id`, `user_id`: 코스/사용자 FK
   - `is_liked`: 좋아요 여부
+- 감사 컬럼:
+  - 없음 (`CourseLike` Entity는 `BaseEntity`를 상속하지 않음)
 - 주요 제약:
   - `fk_course_likes_course`, `fk_course_likes_user` (둘 다 `ON DELETE CASCADE`)
   - `uq_course_likes_course_user`
@@ -332,6 +329,9 @@
 - 핵심 컬럼:
   - `course_bookmark_id`: PK
   - `course_id`, `user_id`: 코스/사용자 FK
+  - `created_at`: 생성 시각
+- 감사 컬럼:
+  - `created_at`만 사용 (`CourseBookmark` Entity가 직접 선언)
 - 주요 제약:
   - `fk_course_bookmarks_course`, `fk_course_bookmarks_user` (둘 다 `ON DELETE CASCADE`)
   - `uq_course_bookmarks_course_user`
@@ -358,7 +358,7 @@
   - `course_review_id`: `course_reviews.course_review_id` FK
   - `course_type`: `RIVERSIDE`, `PARK`, `MOUNTAIN_TRAIL`, `TRACK`, `URBAN`, `OTHER`
 - 주요 제약:
-  - `fk_course_review_course_types_course_review` (`ON DELETE CASCADE`)
+  - `fk_course_reviews_course_types_review` (`ON DELETE CASCADE`)
   - `uq_course_review_course_types_review_type`
   - `chk_course_review_course_types_course_type`
 

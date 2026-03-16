@@ -60,7 +60,7 @@ CREATE TABLE user_preference_purposes (
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
-  CONSTRAINT fk_user_preference_purposes_user_running_preference
+  CONSTRAINT fk_user_preference_purpose_user_running_preference
     FOREIGN KEY (user_id)
     REFERENCES user_running_preferences (user_id)
     ON DELETE CASCADE,
@@ -77,7 +77,7 @@ CREATE TABLE user_preference_course_types (
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
-  CONSTRAINT fk_user_preference_course_types_user_running_preference
+  CONSTRAINT fk_user_preference_course_type_user_running_preference
     FOREIGN KEY (user_id)
     REFERENCES user_running_preferences (user_id)
     ON DELETE CASCADE,
@@ -94,7 +94,7 @@ CREATE TABLE user_preference_time_slots (
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
-  CONSTRAINT fk_user_preference_time_slots_user_running_preference
+  CONSTRAINT fk_user_preference_time_slot_user_running_preference
     FOREIGN KEY (user_id)
     REFERENCES user_running_preferences (user_id)
     ON DELETE CASCADE,
@@ -158,7 +158,7 @@ CREATE TABLE course_type_map (
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
-  CONSTRAINT fk_course_type_map_course
+  CONSTRAINT fk_course_type_maps_course
     FOREIGN KEY (course_id)
     REFERENCES courses (course_id)
     ON DELETE CASCADE,
@@ -396,9 +396,6 @@ CREATE TABLE course_likes (
   course_id BIGINT NOT NULL,
   user_id BIGINT NOT NULL,
   is_liked BOOLEAN NOT NULL DEFAULT TRUE,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMP,
   CONSTRAINT fk_course_likes_course
     FOREIGN KEY (course_id)
     REFERENCES courses (course_id)
@@ -416,8 +413,6 @@ CREATE TABLE course_bookmarks (
   course_id BIGINT NOT NULL,
   user_id BIGINT NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMP,
   CONSTRAINT fk_course_bookmarks_course
     FOREIGN KEY (course_id)
     REFERENCES courses (course_id)
@@ -461,7 +456,7 @@ CREATE TABLE course_review_course_types (
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
-  CONSTRAINT fk_course_review_course_types_course_review
+  CONSTRAINT fk_course_reviews_course_types_review
     FOREIGN KEY (course_review_id)
     REFERENCES course_reviews (course_review_id)
     ON DELETE CASCADE,
