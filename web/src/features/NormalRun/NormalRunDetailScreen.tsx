@@ -1,6 +1,6 @@
 import { ArrowLeft, MapPin } from 'lucide-react';
-import { useRef, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useEffect, useRef, useState } from 'react';
+import { useNavigate, useParams } from 'react-router-dom';
 
 import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
@@ -13,8 +13,15 @@ type NormalRunDetailScreenProps = {
 
 export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
   const navigate = useNavigate();
+  const { courseId } = useParams();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isAtStartPoint] = useState(false);
+  const [isAtStartPoint, setIsAtStartPoint] = useState(false);
+
+  // TODO: 실제 GPS 출발지 도착 감지 로직으로 교체
+  useEffect(() => {
+    const timer = setTimeout(() => setIsAtStartPoint(true), 2000);
+    return () => clearTimeout(timer);
+  }, []);
 
   useKakaoMap(containerRef);
 
@@ -91,6 +98,7 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
         <Button
           type="button"
           disabled={!isAtStartPoint}
+          onClick={() => navigate(`/normal/${courseId}/running`)}
           className="h-14 w-full rounded-[var(--radius-xl)] body-l-b"
         >
           러닝 시작

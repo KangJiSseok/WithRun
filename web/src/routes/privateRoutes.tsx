@@ -8,6 +8,7 @@ import { FreeRunResultPage } from '@/pages/private/FreeRunResult';
 import { HomePage } from '@/pages/private/home';
 import { NormalRunPage } from '@/pages/private/NormalRun';
 import { NormalRunDetailPage } from '@/pages/private/NormalRunDetail';
+import { NormalRunningPage } from '@/pages/private/NormalRunning';
 import { FullscreenLayout } from '@/shared/layouts/FullscreenLayout';
 import { MainLayout } from '@/shared/layouts/MainLayout';
 
@@ -29,6 +30,7 @@ export const privateRoutes: RouteObject[] = [
       { path: '/freerun', element: <FreeRunningPage /> },
       { path: '/freerun-result', element: <FreeRunResultPage /> },
       { path: '/normal/:courseId', element: <NormalRunDetailPage /> },
+      { path: '/normal/:courseId/running', element: <NormalRunningPage /> },
     ],
   },
 ];
