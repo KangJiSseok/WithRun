@@ -1,9 +1,10 @@
 // 월별 통계 요약
 // 러닝 횟수, 총 거리 (km), 소모 칼로리
+// data가 null이면 카드 틀은 유지하고 값만 '--' 로 표시
 interface MonthlySummaryProps {
-  runCount: number;
-  distanceM: number;
-  caloriesKcal: number;
+  runCount: number | null;
+  distanceM: number | null;
+  caloriesKcal: number | null;
 }
 
 interface StatCardProps {
@@ -23,14 +24,14 @@ function StatCard({ label, value, unit }: StatCardProps) {
 }
 
 export function MonthlySummary({ runCount, distanceM, caloriesKcal }: MonthlySummaryProps) {
-  // 소수점 둘째자리까지 표시
-  const distanceKm = (distanceM / 1000).toFixed(2);
+  // 소수점 둘째자리까지 표시 / 데이터 없으면 '--'
+  const distanceKm = distanceM !== null ? (distanceM / 1000).toFixed(2) : '--';
 
   return (
     <div className="flex gap-[var(--space-3)]">
-      <StatCard label="러닝 횟수" value={String(runCount)} unit="회" />
+      <StatCard label="러닝 횟수" value={runCount !== null ? String(runCount) : '--'} unit="회" />
       <StatCard label="총 거리" value={distanceKm} unit="km" />
-      <StatCard label="소모 칼로리" value={String(caloriesKcal)} unit="kcal" />
+      <StatCard label="소모 칼로리" value={caloriesKcal !== null ? String(caloriesKcal) : '--'} unit="kcal" />
     </div>
   );
 }

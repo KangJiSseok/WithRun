@@ -23,18 +23,40 @@ export function useCalendar() {
   const [isLoading, setIsLoading] = useState(false);
   // 선택한 날짜 (요일 별 운동 여부 및 내용 확인 가능)
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
+  // 달력 그리드 표시 여부 (토글 버튼으로 제어)
+  const [showCalendar, setShowCalendar] = useState(false);
 
   const isCurrentMonth =
     year === today.getFullYear() && month === today.getMonth() + 1;
 
   // 마운트 시 1번 + year 또는 month 바뀔 때마다 effect 다시 실행
+
+  // useEffect의 콜백은 cleanup 함수 또는 undefined 반환해야 하는데,
+  // async 함수는 Promise를 항상 반환하므로, useEffect 콜백 자체를 async로 만들 수는 없음.
+  // (useEffect가 Promise를 cleanup 함수로 오해할 수 있기 때문)
+  // 따라서 내부의 별도 async 함수를 선언하고 즉시 호출
+  
+  // 이전 방식: Promise 체이닝 (effect 본문에서 동기 setState 호출)
+  // => effect 콜백 본문에서 동기적으로 setIsLoading(true) 호출 -> React가
+  // 렌더링 중에 상태 변경을 감지해 cascading render 경고 발생할 수 있음
+  // 현재 방식: async 함수 내부로 이동 -> 비동기 컨텍스트에서 호출되므로 경고 방지
   useEffect(() => {
-    setIsLoading(true);
-    fetchCalendar(year, month)
-      .then(setData)
-      .catch(() => setData(null))
-      // 성공, 실패 상관없이 로딩 끝 처리
-      .finally(() => setIsLoading(false));
+    // setIsLoading(true)를 async 함수 안으로 이동
+    // -> effect 본문에서 동기 setState 호출 시 캐스케이딩 렌더 경고 방지
+    async function load() {
+      setIsLoading(true);
+      try {
+        const result = await fetchCalendar(year, month);
+        setData(result);
+      } catch {
+        setData(null);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+    // 호출만 하고, await는 하지 않음
+    // => Promise를 useEffect에 반환하지 않음
+    load();
   }, [year, month]);
 
   function goPrev() {
@@ -64,13 +86,18 @@ export function useCalendar() {
     data?.dailySummaries.map((s) => s.calendarDate) ?? [],
   );
 
-  // selectedSummary
-  // 1. 날짜 미선택: null
-  // 2. 날짜 선택 했는데, 기록이 없음: null
-  // 3. 날짜 선택 + 기록 있음 (DailySummary 객체)
-  const selectedSummary: DailySummary | null = selectedDate
-    ? (data?.dailySummaries.find((s) => s.calendarDate === selectedDate) ?? null)
-    : null;
+  // selectedSummaries
+  // 1. 날짜 미선택: []
+  // 2. 날짜 선택 했는데 기록 없음: []
+  // 3. 날짜 선택 + 기록 있음: 해당 날짜의 모든 DailySummary 배열 (같은 날 여러 운동 가능)
+  // null -> [] 변경 이유
+  // 1. 미선택과 선택했으나 기록이 없음을 구분
+  // selectedDate === null => selectedSummaries는 [] (날짜 선택 안 했으니 기록 없음)
+  // selectedSummaries.length === 0 => 날짜 선택했는데 기록 없음
+  // 2. .map() 호출 안정성 (null이면 selectedSummaries.map() 하면 런타임 에러 발생)
+  const selectedSummaries: DailySummary[] = selectedDate
+    ? (data?.dailySummaries.filter((s) => s.calendarDate === selectedDate) ?? [])
+    : [];
 
   return {
     year,
@@ -79,11 +106,13 @@ export function useCalendar() {
     isLoading,
     selectedDate,
     setSelectedDate,
-    selectedSummary,
+    selectedSummaries,
     activeDates,
     isCurrentMonth,
     goPrev,
     goNext,
     today,
+    showCalendar,
+    setShowCalendar,
   };
 }
