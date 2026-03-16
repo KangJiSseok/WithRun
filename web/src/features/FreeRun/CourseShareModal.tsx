@@ -1,6 +1,6 @@
 // 공식 코스 등록 폼 Drawer (바텀 시트)
 // shadcn Drawer (vaul) 사용 - 스와이프 제스처 및 스크롤 잠금 처리
-// 추후 API 연동 시 handleSubmit에서 POST /courses 호출로 교체
+// Drawer가 열릴 때 GET /api/courses/surveys로 코스 타입·난이도 선택지를 조회해 렌더링
 
 import { useState } from 'react';
 import { Button } from '@/shared/components/shadcn/button';
@@ -11,27 +11,50 @@ import {
   DrawerTitle,
 } from '@/shared/components/shadcn/drawer';
 import { cn } from '@/shared/utils';
+import { useCourseSurveys } from '@/hooks/FreeRun/useCourseSurveys';
 
 type CourseShareModalProps = {
   isOpen: boolean;
   onClose: () => void;
 };
 
-const DIFFICULTY_OPTIONS = ['쉬움', '보통', '어려움'] as const;
-const SURFACE_OPTIONS = ['포장도로', '비포장도로', '복합'] as const;
-const COURSE_TYPE_OPTIONS = ['한강변', '공원', '산·둘레길', '트랙', '도심', '기타'] as const;
+// 서버 enum 라벨 -> 화면 표시 한국어 매핑
+const COURSE_TYPE_LABEL: Record<string, string> = {
+  RIVERSIDE: '강변',
+  PARK: '공원',
+  MOUNTAIN_TRAIL: '산·둘레길',
+  TRACK: '트랙',
+  URBAN: '도심',
+  OTHER: '기타',
+};
+
+const DIFFICULTY_LABEL: Record<string, string> = {
+  EASY: '쉬움',
+  MEDIUM: '보통',
+  HARD: '어려움',
+};
 
 export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
   const [courseTitle, setCourseTitle] = useState(
     `나의 러닝 ${new Date().toLocaleDateString()}`,
   );
-  const [difficulty, setDifficulty] = useState<string>('보통');
-  const [surface, setSurface] = useState<string>('포장도로');
+  // 사용자가 명시적으로 선택한 난이도 (null = 미선택, API 기본값 사용)
+  const [difficultyOverride, setDifficultyOverride] = useState<string | null>(null);
+  // 선택된 코스 타입 목록 (서버 enum 값, 복수 선택 가능)
   const [courseTypes, setCourseTypes] = useState<string[]>([]);
+  // isOpen: Drawer가 열렸는지 여부를 전달
+  // 훅 내부에서 isOpen이 true가 될 때 GET /courses/surveys API 호출
+  // surveyData - API 응답 (courseTypes, difficulties 배열)
+  // isLoading - 로딩 중 여부 (로딩 중일 때 "로딩 중..." 표시)
+  const { surveyData, isLoading } = useCourseSurveys(isOpen);
 
-  function toggleCourseType(type: string) {
+  // 사용자가 선택한 값이 있으면 그 값, 없으면 API 첫 번째 항목을 기본값으로 사용
+  const difficulty = difficultyOverride ?? surveyData?.difficulties[0]?.label ?? '';
+
+  // 코스 타입 다중 선택 토글 함수
+  function toggleCourseType(label: string) {
     setCourseTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+      prev.includes(label) ? prev.filter((t) => t !== label) : [...prev, label],
     );
   }
 
@@ -42,7 +65,6 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
   //      const res = await axiosClient.post('/api/courses', {
   //        title: courseTitle,
   //        difficulty,
-  //        surface,
   //        courseTypes,
   //      });
   //      setCourseId(res.data.data.courseId); // store에 저장 → 결과 화면 좋아요 버튼 API 연결
@@ -51,7 +73,6 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
   function handleSubmit() {
     onClose();
   }
-
 
   return (
     <Drawer open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
@@ -73,71 +94,60 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
             />
           </div>
 
-          {/* 난이도 */}
-          <div className="space-y-[var(--space-2)]">
-            <label className="caption-b text-[hsl(var(--text-inverse))]">난이도</label>
-            <div className="flex gap-2">
-              {DIFFICULTY_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setDifficulty(option)}
-                  className={cn(
-                    'flex-1 py-2 rounded-xl caption-m transition-colors border',
-                    difficulty === option
-                      ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
-                      : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
-                  )}
-                >
-                  {option}
-                </button>
-              ))}
+          {isLoading && (
+            <div className="flex justify-center py-4">
+              <span className="body-r text-[hsl(var(--secondary-5))]">로딩 중...</span>
             </div>
-          </div>
+          )}
 
-          {/* 노면 */}
-          <div className="space-y-[var(--space-2)]">
-            <label className="caption-b text-[hsl(var(--text-inverse))]">노면</label>
-            <div className="flex gap-2">
-              {SURFACE_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => setSurface(option)}
-                  className={cn(
-                    'flex-1 py-2 rounded-xl caption-m transition-colors border',
-                    surface === option
-                      ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
-                      : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
-                  )}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
+          {!isLoading && surveyData && (
+            <>
+              {/* 난이도 */}
+              <div className="space-y-[var(--space-2)]">
+                <label className="caption-b text-[hsl(var(--text-inverse))]">난이도</label>
+                <div className="flex gap-2">
+                  {surveyData.difficulties.map(({ label }) => (
+                    <button
+                      key={label}
+                      onClick={() => setDifficultyOverride(label)}
+                      className={cn(
+                        'flex-1 py-2 rounded-xl caption-m transition-colors border',
+                        difficulty === label
+                          ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
+                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
+                      )}
+                    >
+                      {DIFFICULTY_LABEL[label] ?? label}
+                    </button>
+                  ))}
+                </div>
+              </div>
 
-          {/* 코스 타입 */}
-          <div className="space-y-[var(--space-2)]">
-            <label className="caption-b text-[hsl(var(--text-inverse))]">
-              코스 타입{' '}
-              <span className="caption-r text-[hsl(var(--secondary-5))]">(중복 가능)</span>
-            </label>
-            <div className="flex flex-wrap gap-2">
-              {COURSE_TYPE_OPTIONS.map((option) => (
-                <button
-                  key={option}
-                  onClick={() => toggleCourseType(option)}
-                  className={cn(
-                    'px-3 py-2 rounded-xl caption-m transition-colors border',
-                    courseTypes.includes(option)
-                      ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
-                      : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
-                  )}
-                >
-                  {option}
-                </button>
-              ))}
-            </div>
-          </div>
+              {/* 코스 타입 */}
+              <div className="space-y-[var(--space-2)]">
+                <label className="caption-b text-[hsl(var(--text-inverse))]">
+                  코스 타입{' '}
+                  <span className="caption-r text-[hsl(var(--secondary-5))]">(중복 가능)</span>
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {surveyData.courseTypes.map(({ label }) => (
+                    <button
+                      key={label}
+                      onClick={() => toggleCourseType(label)}
+                      className={cn(
+                        'px-3 py-2 rounded-xl caption-m transition-colors border',
+                        courseTypes.includes(label)
+                          ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
+                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
+                      )}
+                    >
+                      {COURSE_TYPE_LABEL[label] ?? label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
 
           {/* 업로드 버튼 */}
           <Button
