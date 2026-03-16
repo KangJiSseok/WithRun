@@ -1,8 +1,10 @@
 package kr.withrun.was.domain.user.service;
 
+import kr.withrun.was.domain.user.dto.UserCalendarMonthlyResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
 import kr.withrun.was.domain.user.repository.UserCalendarRepository;
 import kr.withrun.was.domain.user.repository.UserRepository;
+import kr.withrun.was.domain.user.repository.query.dto.UserCalendarDailySummaryRow;
 import kr.withrun.was.domain.user.repository.query.dto.UserCalendarSummaryRow;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
@@ -10,7 +12,9 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.DateTimeException;
 import java.time.LocalDate;
+import java.time.YearMonth;
 import java.util.List;
 
 @Service
@@ -20,6 +24,27 @@ public class UserCalendarService {
 
     private final UserRepository userRepository;
     private final UserCalendarRepository userCalendarRepository;
+
+    public UserCalendarMonthlyResponse findMonthlyCalendar(Long userId, Integer year, Integer month) {
+        getUser(userId);
+
+        YearMonth yearMonth;
+        try {
+            yearMonth = YearMonth.of(year, month);
+        } catch (DateTimeException exception) {
+            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+        }
+        List<UserCalendarDailySummaryRow> dailySummaryRows = userCalendarRepository.findDailySummaries(
+                userId,
+                yearMonth.atDay(1),
+                yearMonth.atEndOfMonth()
+        );
+        List<UserCalendarMonthlyResponse.DailySummary> dailySummaries = dailySummaryRows.stream()
+                .map(UserCalendarMonthlyResponse.DailySummary::from)
+                .toList();
+
+        return UserCalendarMonthlyResponse.from(year, month, dailySummaries);
+    }
 
     public UserCalendarSummaryResponse findSummary(Long userId) {
         getUser(userId);

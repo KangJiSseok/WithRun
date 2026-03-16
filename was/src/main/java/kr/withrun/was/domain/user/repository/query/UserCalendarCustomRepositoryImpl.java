@@ -5,6 +5,7 @@ import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.withrun.was.domain.user.entity.QUser;
 import kr.withrun.was.domain.user.entity.QUserCalendar;
+import kr.withrun.was.domain.user.repository.query.dto.UserCalendarDailySummaryRow;
 import kr.withrun.was.domain.user.repository.query.dto.UserCalendarSummaryRow;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
@@ -22,9 +23,7 @@ public class UserCalendarCustomRepositoryImpl implements UserCalendarCustomRepos
     public UserCalendarSummaryRow findSummaryRow(Long userId) {
         QUser user = QUser.user;
         QUserCalendar userCalendar = QUserCalendar.userCalendar;
-        NumberExpression<Integer> runCountExpression = userCalendar.courseRunCount
-                .add(userCalendar.freeRunCount)
-                .add(userCalendar.ghostRunCount);
+        NumberExpression<Integer> runCountExpression = getRunCountExpression(userCalendar);
 
         UserCalendarSummaryRow summaryRow = queryFactory
                 .select(Projections.constructor(
@@ -52,10 +51,39 @@ public class UserCalendarCustomRepositoryImpl implements UserCalendarCustomRepos
     }
 
     @Override
+    public List<UserCalendarDailySummaryRow> findDailySummaries(Long userId, LocalDate startDate, LocalDate endDate) {
+        QUser user = QUser.user;
+        QUserCalendar userCalendar = QUserCalendar.userCalendar;
+
+        return queryFactory
+                .select(Projections.constructor(
+                        UserCalendarDailySummaryRow.class,
+                        userCalendar.calendarDate,
+                        userCalendar.totalDistanceM,
+                        userCalendar.totalDurationSec,
+                        userCalendar.totalCaloriesKcal,
+                        userCalendar.courseRunCount,
+                        userCalendar.freeRunCount,
+                        userCalendar.ghostRunCount
+                ))
+                .from(userCalendar)
+                .join(userCalendar.user, user)
+                .where(
+                        user.id.eq(userId),
+                        user.deletedAt.isNull(),
+                        userCalendar.deletedAt.isNull(),
+                        userCalendar.calendarDate.goe(startDate),
+                        userCalendar.calendarDate.loe(endDate)
+                )
+                .orderBy(userCalendar.calendarDate.asc())
+                .fetch();
+    }
+
+    @Override
     public List<LocalDate> findRunningDates(Long userId) {
         QUser user = QUser.user;
         QUserCalendar userCalendar = QUserCalendar.userCalendar;
-        NumberExpression<Integer> runCountExpression = getIntegerNumberExpression(userCalendar);
+        NumberExpression<Integer> runCountExpression = getRunCountExpression(userCalendar);
 
         return queryFactory
                 .select(userCalendar.calendarDate)
@@ -71,11 +99,9 @@ public class UserCalendarCustomRepositoryImpl implements UserCalendarCustomRepos
                 .fetch();
     }
 
-    private static NumberExpression<Integer> getIntegerNumberExpression(QUserCalendar userCalendar) {
-        NumberExpression<Integer> runCountExpression =
-                userCalendar.courseRunCount
-                        .add(userCalendar.freeRunCount)
-                        .add(userCalendar.ghostRunCount);
-        return runCountExpression;
+    private static NumberExpression<Integer> getRunCountExpression(QUserCalendar userCalendar) {
+        return userCalendar.courseRunCount
+                .add(userCalendar.freeRunCount)
+                .add(userCalendar.ghostRunCount);
     }
 }

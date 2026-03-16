@@ -1,9 +1,11 @@
 package kr.withrun.was.domain.user.service;
 
+import kr.withrun.was.domain.user.dto.UserCalendarMonthlyResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserCalendarRepository;
 import kr.withrun.was.domain.user.repository.UserRepository;
+import kr.withrun.was.domain.user.repository.query.dto.UserCalendarDailySummaryRow;
 import kr.withrun.was.domain.user.repository.query.dto.UserCalendarSummaryRow;
 import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.exception.CustomException;
@@ -42,6 +44,88 @@ class UserCalendarServiceTest {
     @BeforeEach
     void setUp() {
         userCalendarService = new UserCalendarService(userRepository, userCalendarRepository);
+    }
+
+    @DisplayName("월별 캘린더 요약과 날짜별 러닝 합계를 함께 반환한다")
+    @Test
+    void returnsMonthlyCalendarWithAggregatedTotals() {
+        User user = user(13L);
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(userCalendarRepository.findDailySummaries(
+                user.getId(),
+                LocalDate.of(2026, 3, 1),
+                LocalDate.of(2026, 3, 31)
+        )).thenReturn(List.of(
+                new UserCalendarDailySummaryRow(LocalDate.of(2026, 3, 8), 12000, 4200, 640, 1, 1, 1),
+                new UserCalendarDailySummaryRow(LocalDate.of(2026, 3, 15), 8000, 2400, 410, 0, 2, 0)
+        ));
+
+        UserCalendarMonthlyResponse response = userCalendarService.findMonthlyCalendar(user.getId(), 2026, 3);
+
+        assertThat(response.year()).isEqualTo(2026);
+        assertThat(response.month()).isEqualTo(3);
+        assertThat(response.monthlyRunCount()).isEqualTo(5);
+        assertThat(response.monthlyDistanceM()).isEqualTo(20000);
+        assertThat(response.monthlyCaloriesKcal()).isEqualTo(1050);
+        assertThat(response.monthlyCourseRunCount()).isEqualTo(1);
+        assertThat(response.monthlyFreeRunCount()).isEqualTo(3);
+        assertThat(response.monthlyGhostRunCount()).isEqualTo(1);
+        assertThat(response.dailySummaries()).containsExactly(
+                new UserCalendarMonthlyResponse.DailySummary(
+                        LocalDate.of(2026, 3, 8),
+                        12000,
+                        4200,
+                        640,
+                        1,
+                        1,
+                        1
+                ),
+                new UserCalendarMonthlyResponse.DailySummary(
+                        LocalDate.of(2026, 3, 15),
+                        8000,
+                        2400,
+                        410,
+                        0,
+                        2,
+                        0
+                )
+        );
+    }
+
+    @DisplayName("월별 캘린더 데이터가 없어도 0 합계와 빈 목록을 반환한다")
+    @Test
+    void returnsZeroMonthlyCalendarWhenUserHasNoCalendarsInMonth() {
+        User user = user(14L);
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(userCalendarRepository.findDailySummaries(
+                user.getId(),
+                LocalDate.of(2026, 4, 1),
+                LocalDate.of(2026, 4, 30)
+        )).thenReturn(List.of());
+
+        UserCalendarMonthlyResponse response = userCalendarService.findMonthlyCalendar(user.getId(), 2026, 4);
+
+        assertThat(response.year()).isEqualTo(2026);
+        assertThat(response.month()).isEqualTo(4);
+        assertThat(response.monthlyRunCount()).isZero();
+        assertThat(response.monthlyDistanceM()).isZero();
+        assertThat(response.monthlyCaloriesKcal()).isZero();
+        assertThat(response.monthlyCourseRunCount()).isZero();
+        assertThat(response.monthlyFreeRunCount()).isZero();
+        assertThat(response.monthlyGhostRunCount()).isZero();
+        assertThat(response.dailySummaries()).isEmpty();
+    }
+
+    @DisplayName("연도가 java.time 허용 범위를 벗어나면 잘못된 입력 예외를 던진다")
+    @Test
+    void throwsInvalidInputWhenYearIsOutOfSupportedRange() {
+        User user = user(15L);
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> userCalendarService.findMonthlyCalendar(user.getId(), 1_000_000_000, 3))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
     }
 
     @DisplayName("전체 누적 요약과 현재/최장 스트릭을 함께 반환한다")
