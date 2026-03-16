@@ -3,6 +3,7 @@ import {
   bridge,
   postMessageSchema,
 } from '@webview-bridge/react-native'
+import { GpsLocation, WatchHealthData } from './hooks'
 
 // android <-> RN 간 브릿지 통신 함수
 export const appPostMessageSchema = postMessageSchema({
@@ -10,8 +11,10 @@ export const appPostMessageSchema = postMessageSchema({
     validate: (data: unknown) => data as { message: string },
   },
   gpsLocation: {
-    validate: (data: unknown) =>
-      data as { latitude: number; longitude: number; accuracy: number | null },
+    validate: (data: unknown) => data as GpsLocation,
+  },
+  watchHealthData: {
+    validate: (data: unknown) => data as WatchHealthData,
   },
 })
 
@@ -22,9 +25,6 @@ export const appBridge = bridge({
   async whoRU() {
     return "Hello, I'm native"
   },
-  async aPlusB(a: number, b: number) {
-    return a + b
-  },
 })
 
 // 브릿지 타입(웹 공유용)
@@ -34,5 +34,5 @@ export type AppBridge = typeof appBridge
 export const { WebView, postMessage } = createWebView({
   bridge: appBridge,
   postMessageSchema: appPostMessageSchema,
-  debug: true, // Enable console.log visibility in the native WebView
+  debug: __DEV__,
 })

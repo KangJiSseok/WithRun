@@ -1,13 +1,15 @@
 import { useEffect } from 'react'
 import * as Location from 'expo-location'
 
-type GpsLocation = {
+export type GpsLocation = {
   latitude: number
   longitude: number
   accuracy: number | null
+  altitude: number | null
+  heading: number | null
 }
 
-export default function useGpsLocation(onLocation: (location: GpsLocation) => void) {
+export function useGpsLocation(onLocation: (location: GpsLocation) => void) {
   useEffect(() => {
     let subscription: Location.LocationSubscription | null = null
 
@@ -22,12 +24,18 @@ export default function useGpsLocation(onLocation: (location: GpsLocation) => vo
         {
           accuracy: Location.Accuracy.High,
           timeInterval: 1000,
-          distanceInterval: 1,
         },
         (location) => {
-          const { latitude, longitude, accuracy } = location.coords
-          onLocation({ latitude, longitude, accuracy })
-        },
+          const { latitude, longitude, accuracy, altitude, heading, speed } =
+            location.coords
+          onLocation({
+            latitude,
+            longitude,
+            accuracy,
+            altitude,
+            heading,
+          })
+        }
       )
     }
 
