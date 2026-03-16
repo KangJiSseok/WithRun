@@ -6,14 +6,21 @@ import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
+import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
+import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
+import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.repository.RunningSessionRepository;
+import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
+import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.domain.user.type.Gender;
+import kr.withrun.was.global.common.type.TimeSlot;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -378,6 +385,91 @@ class RunningSessionServiceTest {
         assertThat(response.endedAt()).isEqualTo(LocalDateTime.of(2026, 3, 12, 6, 20, 0));
         assertThat(runningSession.getEndedAt()).isEqualTo(LocalDateTime.of(2026, 3, 12, 6, 20, 0));
         assertThat(runningSession.getIsCompleted()).isTrue();
+    }
+
+    @DisplayName("과거 러닝 세션 페이지를 커서와 시간대로 조립한다")
+    @Test
+    void returnsPastRunningSessionsWithCursorAndTimeSlot() {
+        User user = user(7L);
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(runningSessionRepository.findPastRunningSessionHistoryRows(
+                user.getId(),
+                null,
+                null,
+                null,
+                null,
+                1
+        )).thenReturn(List.of(
+                new PastRunningSessionHistoryRow(
+                        121L,
+                        LocalDateTime.of(2026, 3, 16, 18, 30),
+                        7000,
+                        2100,
+                        420,
+                        "https://cdn.withrun.app/snapshots/121.png",
+                        40,
+                        true,
+                        RunningMode.GHOST,
+                        GhostResultStatus.WIN
+                ),
+                new PastRunningSessionHistoryRow(
+                        120L,
+                        LocalDateTime.of(2026, 3, 15, 5, 45),
+                        5000,
+                        null,
+                        310,
+                        null,
+                        15,
+                        false,
+                        RunningMode.FREE,
+                        null
+                )
+        ));
+
+        PastRunningSessionsResponse response = runningSessionService.findPastRunningSessions(
+                new PastRunningSessionsRequest(user.getId(), null, null, null, 1, null)
+        );
+
+        assertThat(response.items()).containsExactly(
+                new PastRunningSessionItemResponse(
+                        121L,
+                        LocalDateTime.of(2026, 3, 16, 18, 30),
+                        7000,
+                        2100,
+                        420,
+                        "https://cdn.withrun.app/snapshots/121.png",
+                        40,
+                        true,
+                        RunningMode.GHOST,
+                        GhostResultStatus.WIN,
+                        TimeSlot.EVENING
+                )
+        );
+        assertThat(response.hasMore()).isTrue();
+        assertThat(response.nextCursor()).isNotBlank();
+    }
+
+    @DisplayName("서비스는 별도 객체가 계산한 날짜 범위를 리포지토리에 전달한다")
+    @Test
+    void passesExtractedDateRangeToRepository() {
+        User user = user(7L);
+        PastRunningSessionsRequest request = new PastRunningSessionsRequest(user.getId(), 2026, 3, 16, 10, null);
+        RunningSessionDateRange range = RunningSessionDateRange.of(request.year(), request.month(), request.day());
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(runningSessionRepository.findPastRunningSessionHistoryRows(
+                user.getId(),
+                range.startInclusive(),
+                range.endExclusive(),
+                null,
+                null,
+                10
+        )).thenReturn(List.of());
+
+        PastRunningSessionsResponse response = runningSessionService.findPastRunningSessions(request);
+
+        assertThat(response.items()).isEmpty();
+        assertThat(response.hasMore()).isFalse();
+        assertThat(response.nextCursor()).isNull();
     }
 
     private void stubUser(User user) {
