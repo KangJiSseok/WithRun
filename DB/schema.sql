@@ -167,7 +167,7 @@ CREATE TABLE course_type_map (
     CHECK (course_type IN ('RIVERSIDE', 'PARK', 'MOUNTAIN_TRAIL', 'TRACK', 'URBAN', 'OTHER'))
 );
 
--- Running session summary data for free/course/ghost runs.
+-- Running session summary/read-model data for free/course/ghost runs.
 -- COURSE and GHOST must reference courses.status = 'OFFICIAL'; the cross-table status rule is enforced in WAS validation.
 CREATE TABLE running_sessions (
   running_session_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
@@ -240,7 +240,7 @@ CREATE TABLE running_sessions (
     CHECK ((is_completed AND ended_at IS NOT NULL) OR (NOT is_completed))
 );
 
--- Per-kilometer split details captured during a running session.
+-- Per-kilometer split read-model details captured during a running session.
 CREATE TABLE running_session_splits (
   running_session_split_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   running_session_id BIGINT NOT NULL,
@@ -266,7 +266,9 @@ CREATE TABLE running_session_splits (
   CONSTRAINT chk_running_session_splits_elevation CHECK (elevation_gain_m >= 0)
 );
 
--- 5-second cadence biometrics and performance samples.
+-- Append-only 1-second biometrics and performance samples.
+-- Hot path: recent 10-minute reads scoped by (running_session_id, sampled_at).
+-- Current schema source does not add a dedicated server-side sync checkpoint table.
 CREATE TABLE running_health_samples (
   running_health_sample_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   running_session_id BIGINT NOT NULL,
@@ -302,7 +304,9 @@ CREATE TABLE running_health_samples (
   CONSTRAINT chk_running_health_samples_cadence CHECK (cadence_spm IS NULL OR cadence_spm >= 0)
 );
 
--- 5-second cadence GPS coordinate samples.
+-- Append-only 1-second GPS coordinate samples.
+-- Hot path: recent 10-minute reads scoped by (running_session_id, sampled_at).
+-- Current schema source does not add a dedicated server-side sync checkpoint table.
 CREATE TABLE running_gps_samples (
   running_gps_sample_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   running_session_id BIGINT NOT NULL,
@@ -468,33 +472,4 @@ CREATE TABLE user_calendars (
   CONSTRAINT chk_user_calendars_course_count CHECK (course_run_count >= 0),
   CONSTRAINT chk_user_calendars_free_count CHECK (free_run_count >= 0),
   CONSTRAINT chk_user_calendars_ghost_count CHECK (ghost_run_count >= 0)
-);
-
--- Sync checkpoint state for watch/phone/web device links.
-CREATE TABLE device_sync_states (
-  device_sync_state_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
-  user_id BIGINT NOT NULL,
-  device_type VARCHAR(16) NOT NULL,
-  device_identifier VARCHAR(128) NOT NULL,
-  last_synced_sampled_at TIMESTAMP,
-  running_session_id BIGINT NOT NULL,
-  sync_token VARCHAR(128),
-  sync_status VARCHAR(16) NOT NULL DEFAULT 'IDLE',
-  last_error_message TEXT,
-  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMP,
-  CONSTRAINT fk_device_sync_states_user
-    FOREIGN KEY (user_id)
-    REFERENCES users (user_id)
-    ON DELETE CASCADE,
-  CONSTRAINT fk_device_sync_states_running_session
-    FOREIGN KEY (running_session_id)
-    REFERENCES running_sessions (running_session_id)
-    ON DELETE RESTRICT,
-  CONSTRAINT uq_device_sync_states_user_device UNIQUE (user_id, device_type, device_identifier),
-  CONSTRAINT chk_device_sync_states_device_type
-    CHECK (device_type IN ('WATCH', 'PHONE', 'WEB')),
-  CONSTRAINT chk_device_sync_states_status
-    CHECK (sync_status IN ('IDLE', 'SYNCING', 'ERROR'))
 );

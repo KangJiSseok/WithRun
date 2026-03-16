@@ -10,6 +10,7 @@
 - Enum 저장 정책: Enum 컬럼은 모두 `VARCHAR`에 저장하며, 값은 현재 Java Enum 상수명 그대로 대문자 문자열을 사용합니다.
 - 테이블 네이밍: 명시적 `@Table(name = ...)`는 그대로 따르고, `CourseTypeMap`은 Spring Boot/Hibernate 기본 snake_case 규칙을 따라 `course_type_map`으로 정리했습니다.
 - 테이블 정리: 현재 Entity에 없는 `user_preference_surfaces`, `course_surface_maps`는 이번 스키마에서 제거했습니다.
+- 현재 schema source에는 서버 측 동기화 체크포인트 전용 테이블을 두지 않습니다.
 
 ## 공통 컬럼
 
@@ -30,8 +31,6 @@
 - `mode`: `FREE`, `COURSE`, `GHOST`
 - `source_device`: `WATCH`, `PHONE`
 - `result_status`: `WIN`, `LOSE`, `DRAW`, `INCOMPLETE`
-- `device_type`: `WATCH`, `PHONE`, `WEB`
-- `sync_status`: `IDLE`, `SYNCING`, `ERROR`
 
 ## 관계 모델 요약
 
@@ -47,7 +46,6 @@
 - 코스 타입 매핑: `course_type_map`
 - 리뷰 다중 선택 매핑: `course_review_course_types`
 - 사용자 집계: `user_calendars`
-- 디바이스 동기화 상태: `device_sync_states`
 
 ### 러닝 세션 관계
 
@@ -206,6 +204,7 @@
   - `chk_running_sessions_completed_state`
 - 비고:
   - `COURSE`와 `GHOST`는 `courses.status = OFFICIAL`인 코스만 사용할 수 있으며, 이 교차 테이블 규칙은 WAS 애플리케이션 검증으로 강제합니다.
+  - `running_sessions`는 raw sample의 부모이면서 세션 결과를 담는 summary/read model입니다.
 
 ### running_session_splits
 
@@ -226,10 +225,12 @@
   - `chk_running_session_splits_pace`
   - `chk_running_session_splits_avg_heart_rate`
   - `chk_running_session_splits_elevation`
+- 비고:
+  - `running_session_splits`는 raw telemetry를 직접 대체하지 않고, 구간 단위 요약을 담는 summary/read model입니다.
 
 ### running_health_samples
 
-- 목적: 세션별 생체/주행 샘플 시계열 데이터
+- 목적: 세션별 raw health/주행 telemetry 저장
 - 핵심 컬럼:
   - `running_health_sample_id`: PK
   - `running_session_id`: 세션 FK
@@ -243,10 +244,18 @@
   - `uq_running_health_samples_session_time`
   - `chk_running_health_samples_source_device`
   - 심박/속도/페이스/거리/칼로리/케이던스 체크
+- 비고:
+  - `append-only` raw telemetry table로 사용합니다.
+  - `1초 주기` 샘플 저장을 전제로 합니다.
+  - 핵심 read path는 `특정 running_session_id의 최근 10분 조회`입니다.
+  - 기본 hot path index는 기존 UNIQUE `(running_session_id, sampled_at)`를 우선 활용합니다.
+  - 동일 키의 별도 `DESC` 인덱스는 기본값으로 두지 않습니다.
+  - 서버 측 동기화 체크포인트 전용 테이블 없이 raw row 저장/조회 기준선을 설명합니다.
+  - `BRIN`, time partitioning, retention 상세값은 운영 이슈가 커질 때 후속 이슈에서 재검토합니다.
 
 ### running_gps_samples
 
-- 목적: 세션별 GPS 샘플 시계열 데이터
+- 목적: 세션별 raw GPS telemetry 저장
 - 핵심 컬럼:
   - `running_gps_sample_id`: PK
   - `running_session_id`: 세션 FK
@@ -258,6 +267,14 @@
   - `fk_running_gps_samples_running_session`, `fk_running_gps_samples_user` (둘 다 `ON DELETE CASCADE`)
   - `uq_running_gps_samples_session_time`
   - 위도/경도/정확도/방향값 범위 체크
+- 비고:
+  - `append-only` raw telemetry table로 사용합니다.
+  - `1초 주기` 샘플 저장을 전제로 합니다.
+  - 핵심 read path는 `특정 running_session_id의 최근 10분 조회`입니다.
+  - 기본 hot path index는 기존 UNIQUE `(running_session_id, sampled_at)`를 우선 활용합니다.
+  - 동일 키의 별도 `DESC` 인덱스는 기본값으로 두지 않습니다.
+  - 서버 측 동기화 체크포인트 전용 테이블 없이 raw row 저장/조회 기준선을 설명합니다.
+  - `BRIN`, time partitioning, retention 상세값은 운영 이슈가 커질 때 후속 이슈에서 재검토합니다.
 
 ### ghost_running_results
 
@@ -338,23 +355,3 @@
   - `fk_user_calendars_user` (`ON DELETE CASCADE`)
   - `uq_user_calendars_user_date`
   - 거리/시간/칼로리/횟수 음수 방지 체크
-
-### device_sync_states
-
-- 목적: 사용자별 디바이스 동기화 상태 저장
-- 핵심 컬럼:
-  - `device_sync_state_id`: PK
-  - `user_id`: 사용자 FK
-  - `device_type`: `WATCH`, `PHONE`, `WEB`
-  - `device_identifier`: 디바이스 식별자
-  - `last_synced_sampled_at`: 마지막 샘플 시각
-  - `running_session_id`: 마지막 동기화 기준 세션 FK
-  - `sync_token`: 증분 동기화 토큰
-  - `sync_status`: `IDLE`, `SYNCING`, `ERROR`
-  - `last_error_message`: 최근 오류 메시지
-- 주요 제약:
-  - `fk_device_sync_states_user` (`ON DELETE CASCADE`)
-  - `fk_device_sync_states_running_session` (`ON DELETE RESTRICT`)
-  - `uq_device_sync_states_user_device`
-  - `chk_device_sync_states_device_type`
-  - `chk_device_sync_states_status`
