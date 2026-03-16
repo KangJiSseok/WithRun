@@ -335,6 +335,30 @@ CREATE TABLE running_gps_samples (
   CONSTRAINT chk_running_gps_samples_bearing CHECK (bearing_deg IS NULL OR (bearing_deg >= 0 AND bearing_deg < 360))
 );
 
+-- Per-course ghost leaderboard rows keyed by user, course, and source session.
+CREATE TABLE course_ghost_leaderboard (
+  course_ghost_leaderboard_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  course_id BIGINT NOT NULL,
+  running_session_id BIGINT NOT NULL,
+  point INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  CONSTRAINT uq_course_ghost_leaderboard_user_course_session UNIQUE (user_id, course_id, running_session_id),
+  CONSTRAINT fk_course_ghost_leaderboard_user
+    FOREIGN KEY (user_id)
+    REFERENCES users (user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_course_ghost_leaderboard_course
+    FOREIGN KEY (course_id)
+    REFERENCES courses (course_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_course_ghost_leaderboard_running_session
+    FOREIGN KEY (running_session_id)
+    REFERENCES running_sessions (running_session_id)
+    ON DELETE CASCADE,
+  CONSTRAINT chk_course_ghost_leaderboard_point CHECK (point >= 0)
+);
+
 -- Result metrics for ghost-mode sessions.
 CREATE TABLE ghost_running_results (
   ghost_running_result_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,

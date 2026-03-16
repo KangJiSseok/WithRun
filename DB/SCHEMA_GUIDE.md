@@ -5,7 +5,7 @@
 ## 설계 기준
 
 - 기준 소스: `was/src/main/java/kr/withrun/was/domain/**`의 현재 Entity / Enum 구조
-- 공통 감사 컬럼: 모든 Entity 테이블은 `BaseEntity` 기준으로 `created_at`, `updated_at`, `deleted_at`를 가집니다.
+- 공통 감사 컬럼: 기본적으로 Entity 테이블은 `BaseEntity` 기준으로 `created_at`, `updated_at`, `deleted_at`를 가지며, `course_ghost_leaderboard`는 요청사항에 맞춰 `created_at`만 둡니다.
 - 시간 타입: Entity가 `LocalDateTime` / `BaseEntity`의 `TIMESTAMP` 정의를 사용하므로 스키마도 `TIMESTAMP` 기준으로 맞췄습니다.
 - Enum 저장 정책: Enum 컬럼은 모두 `VARCHAR`에 저장하며, 값은 현재 Java Enum 상수명 그대로 대문자 문자열을 사용합니다.
 - 테이블 네이밍: 명시적 `@Table(name = ...)`는 그대로 따르고, `CourseTypeMap`은 Spring Boot/Hibernate 기본 snake_case 규칙을 따라 `course_type_map`으로 정리했습니다.
@@ -19,6 +19,10 @@
 - `created_at`: 생성 시각, `TIMESTAMP NOT NULL DEFAULT NOW()`
 - `updated_at`: 최종 수정 시각, `TIMESTAMP NOT NULL DEFAULT NOW()`
 - `deleted_at`: 소프트 삭제 시각, `TIMESTAMP`
+
+예외:
+
+- `course_ghost_leaderboard`: `created_at`만 사용
 
 ## Enum 컬럼 값
 
@@ -45,6 +49,7 @@
 - 사용자 선호 다중 선택: `user_preference_purposes`, `user_preference_course_types`, `user_preference_time_slots`
 - 코스 타입 매핑: `course_type_map`
 - 리뷰 다중 선택 매핑: `course_review_course_types`
+- 고스트 리더보드 매핑: `course_ghost_leaderboard`
 - 사용자 집계: `user_calendars`
 
 ### 러닝 세션 관계
@@ -53,6 +58,7 @@
 - `running_sessions.course_id` -> `courses.course_id`
 - `running_sessions.ghost_target_running_session_id` -> `running_sessions.running_session_id`
 - 샘플 테이블(`running_health_samples`, `running_gps_samples`)은 모두 `running_sessions`를 부모로 둡니다.
+- `course_ghost_leaderboard`는 `users`, `courses`, `running_sessions`를 함께 참조하는 코스별 고스트 점수 보드입니다.
 - `ghost_running_results.running_session_id`는 세션당 1건만 허용됩니다.
 
 ## 테이블 상세
@@ -275,6 +281,21 @@
   - 동일 키의 별도 `DESC` 인덱스는 기본값으로 두지 않습니다.
   - 서버 측 동기화 체크포인트 전용 테이블 없이 raw row 저장/조회 기준선을 설명합니다.
   - `BRIN`, time partitioning, retention 상세값은 운영 이슈가 커질 때 후속 이슈에서 재검토합니다.
+
+### course_ghost_leaderboard
+
+- 목적: 코스별 고스트 경쟁 점수를 사용자/세션 단위로 저장
+- 핵심 컬럼:
+  - `course_ghost_leaderboard_id`: PK
+  - `user_id`: `users.user_id` FK
+  - `course_id`: `courses.course_id` FK
+  - `running_session_id`: `running_sessions.running_session_id` FK
+  - `point`: 리더보드 점수
+  - `created_at`: 생성 시각
+- 주요 제약:
+  - `uq_course_ghost_leaderboard_user_course_session` 유니크 (`user_id`, `course_id`, `running_session_id`)
+  - `fk_course_ghost_leaderboard_user`, `fk_course_ghost_leaderboard_course`, `fk_course_ghost_leaderboard_running_session` (모두 `ON DELETE CASCADE`)
+  - `chk_course_ghost_leaderboard_point`
 
 ### ghost_running_results
 

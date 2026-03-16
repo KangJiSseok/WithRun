@@ -156,6 +156,7 @@
     1. 유저는 다른 사용자의 과거 러닝 기록과 실시간 경쟁한다.
     2. 유저는 자신의 과거 러닝 기록과 경쟁한다. (`courses.status = OFFICIAL`인 코스 기준)
 - 경쟁 결과는 러닝 세션에 기록된다.
+- 코스별 고스트 리더보드는 `course_ghost_leaderboard`에 사용자, 코스, 러닝 세션 기준 점수로 저장된다.
 
 ### 5.2 코스 투표
 
@@ -212,6 +213,7 @@
 - `running_session_splits`: 1km 구간별 summary/read model
 - `running_health_samples`: 1초 주기 raw 생체/주행 telemetry 데이터
 - `running_gps_samples`: 1초 주기 raw GPS telemetry 데이터
+- `course_ghost_leaderboard`: 코스별 고스트 리더보드 점수
 - `ghost_running_results`: 고스트 러닝 결과
 - `user_calendars`: 일일 러닝 통계
 
