@@ -9,6 +9,7 @@ import kr.withrun.was.domain.course.service.CourseService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
@@ -250,7 +251,10 @@ class CourseControllerTest {
                 126.97,
                 37.58,
                 126.98,
-                new Coordinates(List.of(37.57, 37.58), List.of(126.97, 126.98), List.of(10.0, 12.0)),
+                new Coordinates(List.of(
+                        new GeoPoint(37.57, 126.97, 10.0),
+                        new GeoPoint(37.58, 126.98, 12.0)
+                )),
                 List.of(CourseType.RIVERSIDE, CourseType.PARK),
                 14L,
                 false,
@@ -267,8 +271,9 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.courseId").value(courseId))
                 .andExpect(jsonPath("$.data.title").value("Han River"))
                 .andExpect(jsonPath("$.data.difficulty").value(Difficulty.MEDIUM.name()))
-                .andExpect(jsonPath("$.data.coordinates.latitudes[0]").value(37.57))
-                .andExpect(jsonPath("$.data.coordinates.longitudes[1]").value(126.98))
+                .andExpect(jsonPath("$.data.coordinates[0].latitude").value(37.57))
+                .andExpect(jsonPath("$.data.coordinates[1].longitude").value(126.98))
+                .andExpect(jsonPath("$.data.coordinates[0].elevationM").value(10.0))
                 .andExpect(jsonPath("$.data.types[0]").value(CourseType.RIVERSIDE.name()))
                 .andExpect(jsonPath("$.data.likeCount").value(14))
                 .andExpect(jsonPath("$.data.isLiked").value(false))
