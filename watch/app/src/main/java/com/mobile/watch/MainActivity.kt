@@ -20,6 +20,7 @@ import androidx.health.services.client.ExerciseUpdateCallback
 import androidx.health.services.client.HealthServices
 import androidx.health.services.client.data.*
 import androidx.lifecycle.lifecycleScope
+import androidx.wear.ambient.AmbientLifecycleObserver
 import androidx.wear.compose.material.Button
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
@@ -29,10 +30,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.tasks.await
 import org.json.JSONObject
 
-class MainActivity : ComponentActivity() {
+class MainActivity : ComponentActivity(), AmbientLifecycleObserver.AmbientLifecycleCallback {
 
     private val healthClient by lazy { HealthServices.getClient(this) }
     private val exerciseClient by lazy { healthClient.exerciseClient }
+
+    private lateinit var ambientObserver: AmbientLifecycleObserver
+    private var isAmbient by mutableStateOf(false)
 
     // 수집할 운동 데이터 타입 목록
     private val exerciseConfig = ExerciseConfig(
@@ -52,10 +56,15 @@ class MainActivity : ComponentActivity() {
     private val exerciseCallback = object : ExerciseUpdateCallback {
 
         override fun onExerciseUpdateReceived(update: ExerciseUpdate) {
+            Log.d("WatchApp", "운동 업데이트 수신: state=${update.exerciseStateInfo.state}")
             val metrics = update.latestMetrics
 
             // 심박수가 없으면 해당 틱은 전송 스킵
-            val heartRate = metrics.getData(DataType.HEART_RATE_BPM).lastOrNull()?.value ?: return
+            val heartRate = metrics.getData(DataType.HEART_RATE_BPM).lastOrNull()?.value
+            if (heartRate == null) {
+                Log.d("WatchApp", "심박수 없음 - 전송 스킵")
+                return
+            }
 
             val speedMps     = metrics.getData(DataType.SPEED).lastOrNull()?.value ?: 0.0
             val cadenceSpm   = metrics.getData(DataType.STEPS_PER_MINUTE).lastOrNull()?.value?.toInt() ?: 0
@@ -93,19 +102,41 @@ class MainActivity : ComponentActivity() {
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        ambientObserver = AmbientLifecycleObserver(this, this)
+        lifecycle.addObserver(ambientObserver)
         exerciseClient.setUpdateCallback(exerciseCallback)
         setContent {
             WatchApp(
+                isAmbient = isAmbient,
                 onStart = { startExercise() },
                 onStop  = { stopExercise() },
             )
         }
     }
 
+    // AOD 진입
+    override fun onEnterAmbient(ambientDetails: AmbientLifecycleObserver.AmbientDetails) {
+        isAmbient = true
+        Log.d("WatchApp", "AOD 진입")
+    }
+
+    // AOD 종료 (화면 활성화)
+    override fun onExitAmbient() {
+        isAmbient = false
+        Log.d("WatchApp", "AOD 종료")
+    }
+
+    // AOD 주기적 갱신 (1분마다 호출)
+    override fun onUpdateAmbient() {
+        Log.d("WatchApp", "AOD 갱신")
+    }
+
     private fun startExercise() {
         lifecycleScope.launch {
             try {
+                Log.d("WatchApp", "운동 시작 시도")
                 exerciseClient.startExerciseAsync(exerciseConfig).await()
+                Log.d("WatchApp", "운동 시작 성공")
                 showToast("운동 시작")
             } catch (e: Exception) {
                 showToast("시작 실패: ${e.message}")
@@ -129,10 +160,16 @@ class MainActivity : ComponentActivity() {
         lifecycleScope.launch {
             try {
                 val nodes = Wearable.getNodeClient(this@MainActivity).connectedNodes.await()
+                Log.d("WatchApp", "연결된 노드 수: ${nodes.size}")
+                if (nodes.isEmpty()) {
+                    Log.w("WatchApp", "연결된 폰 없음 - 전송 스킵")
+                    return@launch
+                }
                 nodes.forEach { node ->
                     Wearable.getMessageClient(this@MainActivity)
                         .sendMessage(node.id, "/health-data", json.toByteArray())
                         .await()
+                    Log.d("WatchApp", "전송 완료 → ${node.displayName}")
                 }
             } catch (e: Exception) {
                 Log.e("WatchApp", "전송 실패", e)
@@ -146,7 +183,7 @@ class MainActivity : ComponentActivity() {
 }
 
 @Composable
-fun WatchApp(onStart: () -> Unit, onStop: () -> Unit) {
+fun WatchApp(isAmbient: Boolean, onStart: () -> Unit, onStop: () -> Unit) {
     val context = LocalContext.current
     var isRunning by remember { mutableStateOf(false) }
 
@@ -167,26 +204,33 @@ fun WatchApp(onStart: () -> Unit, onStop: () -> Unit) {
             horizontalAlignment = Alignment.CenterHorizontally,
             verticalArrangement = Arrangement.Center,
         ) {
-            Text(text = if (isRunning) "측정 중..." else "대기 중")
-            Spacer(modifier = Modifier.height(10.dp))
-            Button(onClick = {
-                if (isRunning) {
-                    isRunning = false
-                    onStop()
-                } else {
-                    val required = arrayOf(
-                        Manifest.permission.BODY_SENSORS,
-                        Manifest.permission.ACTIVITY_RECOGNITION,
-                    )
-                    if (required.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) {
-                        isRunning = true
-                        onStart()
+            if (isAmbient) {
+                // AOD 화면: 저전력 모드, 흰색 텍스트만 표시
+                Text(text = if (isRunning) "측정 중..." else "대기 중")
+            } else {
+                // 일반 화면
+                Text(text = if (isRunning) "측정 중..." else "대기 중")
+                Spacer(modifier = Modifier.height(10.dp))
+                Button(onClick = {
+                    if (isRunning) {
+                        isRunning = false
+                        onStop()
                     } else {
-                        permissionLauncher.launch(required)
+                        val required = arrayOf(
+                            Manifest.permission.BODY_SENSORS,
+                            Manifest.permission.ACTIVITY_RECOGNITION,
+                            Manifest.permission.ACCESS_FINE_LOCATION,
+                        )
+                        if (required.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) {
+                            isRunning = true
+                            onStart()
+                        } else {
+                            permissionLauncher.launch(required)
+                        }
                     }
+                }) {
+                    Text(text = if (isRunning) "중지" else "시작")
                 }
-            }) {
-                Text(text = if (isRunning) "중지" else "시작")
             }
         }
     }
