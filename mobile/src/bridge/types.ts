@@ -18,10 +18,7 @@ type _BridgeStore<T> = {
 export type WatchHealthData = {
   timestamp: number
   heartRate: number
-  speedMps: number
-  distanceM: number
   caloriesKcal: number
-  altitudeM: number
   cadenceSpm: number
 }
 
@@ -31,6 +28,7 @@ export type GpsLocation = {
   accuracy: number | null
   altitude: number | null
   heading: number | null
+  speedMps: number | null  // GPS Doppler 직접 측정값 (가속도계 추정보다 정확)
 }
 
 // ─── 브릿지 타입 (bridge.ts와 동기화 필요) ───────────────────────

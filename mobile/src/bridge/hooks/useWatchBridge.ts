@@ -1,16 +1,6 @@
 import { useEffect } from 'react'
 import { NativeEventEmitter, NativeModules, Platform } from 'react-native'
 
-export type WatchHealthData = {
-  timestamp: number
-  heartRate: number
-  speedMps: number
-  distanceM: number
-  caloriesKcal: number
-  altitudeM: number
-  cadenceSpm: number
-}
-
 export function useWatchBridge(onMessage: (message: string) => void) {
   useEffect(() => {
     if (Platform.OS !== 'android') return

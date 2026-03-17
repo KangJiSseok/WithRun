@@ -1,13 +1,6 @@
 import { useEffect } from 'react'
 import * as Location from 'expo-location'
-
-export type GpsLocation = {
-  latitude: number
-  longitude: number
-  accuracy: number | null
-  altitude: number | null
-  heading: number | null
-}
+import type { GpsLocation } from '../types'
 
 export function useGpsLocation(onLocation: (location: GpsLocation) => void) {
   useEffect(() => {
@@ -24,12 +17,12 @@ export function useGpsLocation(onLocation: (location: GpsLocation) => void) {
 
       subscription = await Location.watchPositionAsync(
         {
-          accuracy: Location.Accuracy.High,
+          accuracy: Location.Accuracy.BestForNavigation,
           timeInterval: 1000,
-          distanceInterval: 0, // 위치 변화 없어도 1초마다 업데이트
+          distanceInterval: 0,
         },
         (location) => {
-          const { latitude, longitude, accuracy, altitude, heading } =
+          const { latitude, longitude, accuracy, altitude, heading, speed } =
             location.coords
           onLocation({
             latitude,
@@ -37,6 +30,7 @@ export function useGpsLocation(onLocation: (location: GpsLocation) => void) {
             accuracy,
             altitude,
             heading,
+            speedMps: speed,  // GPS Doppler 직접 측정 (가속도계 추정보다 정확)
           })
         }
       )
