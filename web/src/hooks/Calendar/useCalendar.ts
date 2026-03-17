@@ -64,44 +64,49 @@ export function useCalendar() {
   // -> 실패: setHistoryData(null)
   // --> finally: setIsHistoryLoading(false) -> 로딩 스피너 숨김
   useEffect(() => {
+    let cancelled = false;
     async function loadInitial() {
       try {
-        setSummaryData(await fetchCalendarSummary());
+        const summary = await fetchCalendarSummary();
+        if (!cancelled) setSummaryData(summary);
       } catch {
-        setSummaryData(null);
+        if (!cancelled) setSummaryData(null);
       }
-      // 성공 시
+      if (cancelled) return;
       setIsHistoryLoading(true);
       try {
-        setHistoryData(await fetchRunningHistory({}));
+        const history = await fetchRunningHistory({});
+        if (!cancelled) setHistoryData(history);
       } catch {
-        setHistoryData(null);
+        if (!cancelled) setHistoryData(null);
       } finally {
-        // 성공, 실패 모두 실행
-        setIsHistoryLoading(false);
+        if (!cancelled) setIsHistoryLoading(false);
       }
     }
-    // useEffect 콜백 안에서 async 함수를 정의만 하면 실행이 안됨
-    // 여기서 실제 실행
     loadInitial();
+    return () => { cancelled = true; };
   }, []);
 
   // 달력이 닫힐 때 (true → false): summary + 전체 history 재조회
   // [showCalendar] 의존성 배열 (달력 닫힐 때 재조회)
   const prevShowCalendarRef = useRef<boolean | null>(null);
   useEffect(() => {
-    // 이전 값이 true(달력 열려있었음) && 현재 값이 false(달력 닫힘)
-    if (prevShowCalendarRef.current === true && !showCalendar) {
-      // 성공: summaryData에 새 데이터, 실패: summaryData = null
-      fetchCalendarSummary().then(setSummaryData).catch(() => setSummaryData(null));
-      // 달력 닫히면 전체 기록으로 복귀 → params 없이 호출
-      setIsHistoryLoading(true);
-      fetchRunningHistory({})
-        .then(setHistoryData)
-        .catch(() => setHistoryData(null))
-        .finally(() => setIsHistoryLoading(false));
-    }
+    const wasOpen = prevShowCalendarRef.current === true;
     prevShowCalendarRef.current = showCalendar;
+    // 이전 값이 true(달력 열려있었음) && 현재 값이 false(달력 닫힘)
+    if (!wasOpen || showCalendar) return;
+    let cancelled = false;
+    // 성공: summaryData에 새 데이터, 실패: summaryData = null
+    fetchCalendarSummary()
+      .then((data) => { if (!cancelled) setSummaryData(data); })
+      .catch(() => { if (!cancelled) setSummaryData(null); });
+    // 달력 닫히면 전체 기록으로 복귀 → params 없이 호출
+    setIsHistoryLoading(true);
+    fetchRunningHistory({})
+      .then((data) => { if (!cancelled) setHistoryData(data); })
+      .catch(() => { if (!cancelled) setHistoryData(null); })
+      .finally(() => { if (!cancelled) setIsHistoryLoading(false); });
+    return () => { cancelled = true; };
   }, [showCalendar]);
 
   // 달력이 열려있을 때 year/month 변경 시 월별 캘린더 데이터 조회
@@ -129,6 +134,7 @@ export function useCalendar() {
   useEffect(() => {
     // 달력 닫혀있으면 skip (닫힐 때 전체 기록 재조회는 위 effect에서 처리)
     if (!showCalendar) return;
+    let cancelled = false;
     async function loadHistory() {
       setIsHistoryLoading(true);
       try {
@@ -146,14 +152,16 @@ export function useCalendar() {
           params = { year, month };
         }
         const history = await fetchRunningHistory(params);
-        setHistoryData(history);
+        // 이전 요청보다 늦게 도착한 응답은 무시 (race condition 방지)
+        if (!cancelled) setHistoryData(history);
       } catch {
-        setHistoryData(null);
+        if (!cancelled) setHistoryData(null);
       } finally {
-        setIsHistoryLoading(false);
+        if (!cancelled) setIsHistoryLoading(false);
       }
     }
     loadHistory();
+    return () => { cancelled = true; };
   }, [showCalendar, year, month, selectedDate]);
 
   function goPrev() {
