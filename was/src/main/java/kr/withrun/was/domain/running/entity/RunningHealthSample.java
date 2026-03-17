@@ -2,8 +2,6 @@ package kr.withrun.was.domain.running.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
@@ -13,10 +11,10 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import kr.withrun.was.domain.running.type.DeviceSource;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -59,15 +57,8 @@ public class RunningHealthSample extends BaseEntity {
     @Column(name = "calories_kcal")
     private Double caloriesKcal;
 
-    @Column(name = "altitude_m")
-    private Double altitudeM;
-
     @Column(name = "cadence_spm")
     private Short cadenceSpm;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "source_device", nullable = false, length = 32)
-    private DeviceSource sourceDevice;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -85,5 +76,52 @@ public class RunningHealthSample extends BaseEntity {
     )
     private User user;
 
+    @Builder
+    private RunningHealthSample(
+            Long id,
+            LocalDateTime sampledAt,
+            Short heartRate,
+            Double speedMps,
+            Integer paceSecPerKm,
+            Integer distanceM,
+            Double caloriesKcal,
+            Short cadenceSpm,
+            RunningSession runningSession,
+            User user
+    ) {
+        this.id = id;
+        this.sampledAt = sampledAt;
+        this.heartRate = heartRate;
+        this.speedMps = speedMps;
+        this.paceSecPerKm = paceSecPerKm;
+        this.distanceM = distanceM;
+        this.caloriesKcal = caloriesKcal;
+        this.cadenceSpm = cadenceSpm;
+        this.runningSession = runningSession;
+        this.user = user;
+    }
 
+    public static RunningHealthSample create(
+            User user,
+            RunningSession runningSession,
+            Short heartRate,
+            Double speedMps,
+            Integer paceSecPerKm,
+            Integer distanceM,
+            Double caloriesKcal,
+            Short cadenceSpm,
+            LocalDateTime sampledAt
+    ) {
+        return RunningHealthSample.builder()
+                .sampledAt(sampledAt)
+                .heartRate(heartRate)
+                .speedMps(speedMps)
+                .paceSecPerKm(paceSecPerKm)
+                .distanceM(distanceM)
+                .caloriesKcal(caloriesKcal)
+                .cadenceSpm(cadenceSpm)
+                .runningSession(runningSession)
+                .user(user)
+                .build();
+    }
 }
