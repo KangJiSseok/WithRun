@@ -6,27 +6,22 @@ import java.time.LocalDateTime;
 
 public record CreateRunningGpsSampleRequest (
         @NotNull
-        @Positive
-        Long userId,
-
-        @NotNull
-        @Positive
-        Long runningSessionId,
-
-        @NotNull
         Double latitude,
 
         @NotNull
         Double longitude,
 
+        @NotNull
         Double altitudeM,
 
+        @NotNull
         Double accuracyM,
 
+        @NotNull
         Double bearingDeg,
 
         @NotNull
         LocalDateTime sampledAt
-        ) {
+ ) {
 
 }
