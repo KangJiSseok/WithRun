@@ -10,7 +10,7 @@ import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
 import java.util.concurrent.ConcurrentLinkedQueue
 
-class WatchBridgeModule(reactContext: ReactApplicationContext) :
+class WatchBridgeModule(private val reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext),
     MessageClient.OnMessageReceivedListener {
 
