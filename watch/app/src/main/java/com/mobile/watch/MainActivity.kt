@@ -150,17 +150,15 @@ fun WatchApp(isAmbient: Boolean, onStart: () -> Unit, onStop: () -> Unit) {
                 // AOD 화면: 저전력 모드
                 if (isRunning) {
                     Text(text = "${data.heartRate} BPM", fontWeight = FontWeight.Bold, fontSize = 18.sp)
-                    Text(text = "${String.format("%.2f", data.distanceKm)} km", fontSize = 14.sp)
+                    Text(text = "${data.caloriesKcal.toInt()} kcal", fontSize = 14.sp)
                 } else {
                     Text(text = "대기 중")
                 }
             } else {
                 if (isRunning) {
-                    // 워치 전담 데이터: HR / 칼로리 / 케이던스
-                    // 속도·거리는 모바일 GPS가 담당
+                    // 워치 전담 데이터: HR / 칼로리 (케이던스는 모바일 가속도계로 대체)
                     Text(text = "${data.heartRate} BPM", fontWeight = FontWeight.Bold, fontSize = 20.sp)
                     Text(text = "${data.caloriesKcal.toInt()} kcal", fontSize = 14.sp)
-                    Text(text = "${data.cadenceSpm} spm", fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                 } else {
                     Text(text = "대기 중")

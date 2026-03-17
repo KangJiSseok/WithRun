@@ -36,13 +36,12 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class ExerciseService : LifecycleService() {
 
-    // 워치 전담 데이터: HR(PPG + 모션보정), 칼로리(HR 기반 개인화), 케이던스(보폭)
-    // 속도/거리는 모바일 GPS로 대체 (GPS Doppler가 가속도계 추정보다 정확)
+    // 워치 전담 데이터: HR(PPG + 모션보정), 칼로리(HR 기반 개인화)
+    // 속도/거리/케이던스는 모바일(GPS + 가속도계)로 대체
     data class ExerciseData(
         val isActive: Boolean = false,
         val heartRate: Int = 0,
         val caloriesKcal: Double = 0.0,
-        val cadenceSpm: Int = 0,
     )
 
     companion object {
@@ -147,10 +146,8 @@ class ExerciseService : LifecycleService() {
                                ?: current.heartRate
             val caloriesKcal = metrics.getData(DataType.CALORIES_TOTAL)?.total
                                ?: current.caloriesKcal
-            val cadenceSpm   = metrics.getData(DataType.STEPS_PER_MINUTE).lastOrNull()?.value?.toInt()
-                               ?: current.cadenceSpm
 
-            Log.d("ExerciseService", "HR=$heartRate bpm, ${caloriesKcal.toInt()} kcal, $cadenceSpm spm")
+            Log.d("ExerciseService", "HR=$heartRate bpm, ${caloriesKcal.toInt()} kcal")
 
             // 상태만 업데이트 — 실제 전송은 1초 주기 sendJob이 담당
             // heartRate는 SensorManager 직접 리스너가 덮어쓸 수 있으므로 Health Services 값이 있을 때만 반영
@@ -158,7 +155,6 @@ class ExerciseService : LifecycleService() {
                 isActive     = true,
                 heartRate    = if (heartRate > 0) heartRate else _exerciseData.value.heartRate,
                 caloriesKcal = caloriesKcal,
-                cadenceSpm   = cadenceSpm,
             )
         }
 
@@ -293,9 +289,8 @@ class ExerciseService : LifecycleService() {
                         put("timestamp",    beforeMs)
                         put("heartRate",    data.heartRate)
                         put("caloriesKcal", data.caloriesKcal)
-                        put("cadenceSpm",   data.cadenceSpm)
                     }
-                    Log.d("WR_SendLoop", "[$loopCount] HR=${data.heartRate} bpm, ${data.caloriesKcal.toInt()} kcal, ${data.cadenceSpm} spm")
+                    Log.d("WR_SendLoop", "[$loopCount] HR=${data.heartRate} bpm, ${data.caloriesKcal.toInt()} kcal")
                     sendToPhone(json.toString())
                 } else if (data.isActive) {
                     Log.w("WR_SendLoop", "[$loopCount] 최신 데이터 정지 감지 — 전송 스킵 (stale=${staleMs}ms)")
