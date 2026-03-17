@@ -1,0 +1,48 @@
+// 요약 통계 카드 (러닝 횟수, 총 거리)
+// label: "전체 요약" (달력 닫힘) | "월별 요약" (달력 열림)
+// data가 null이면 카드 틀은 유지하고 값만 '--' 로 표시
+interface ActivitySummaryProps {
+  label: string;
+  runCount: number | null;
+  distanceM: number | null;
+}
+
+interface StatCardProps {
+  value: string;
+  unit: string;
+  description: string;
+}
+
+function StatCard({ value, unit, description }: StatCardProps) {
+  return (
+    <div className="flex-1 flex flex-col items-center gap-[var(--space-1)] bg-[hsl(var(--surface-subtle))] rounded-[var(--radius-lg)] py-[var(--space-3)] px-[var(--space-2)]">
+      <div className="flex items-baseline gap-1">
+        <span className="h4-b text-[hsl(var(--text-primary))]">{value}</span>
+        <span className="caption-r text-[hsl(var(--text-secondary))]">{unit}</span>
+      </div>
+      <span className="caption-r text-[hsl(var(--text-secondary))]">{description}</span>
+    </div>
+  );
+}
+
+export function ActivitySummary({ label, runCount, distanceM }: ActivitySummaryProps) {
+  const distanceKm = distanceM !== null ? (distanceM / 1000).toFixed(2) : '--';
+
+  return (
+    <div className="flex flex-col gap-[var(--space-2)]">
+      <p className="body-b text-[hsl(var(--text-primary))]">{label}</p>
+      <div className="flex gap-[var(--space-3)]">
+        <StatCard
+          value={runCount !== null ? String(runCount) : '--'}
+          unit="회"
+          description="러닝 횟수"
+        />
+        <StatCard
+          value={distanceKm}
+          unit="km"
+          description="총 거리"
+        />
+      </div>
+    </div>
+  );
+}
