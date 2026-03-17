@@ -1,18 +1,8 @@
-import { bridge } from '@/bridge';
-import useWatchMessage from '@/hooks/useWatchMessage';
-import type { GpsLocation } from '@bridge';
-import { useEffect, useState } from 'react';
+import { useBridgeDataStore, useWatchMessage } from '@/bridge';
 
 export function HomePage() {
-  const [location, setLocation] = useState<GpsLocation | null>(null);
+  const location = useBridgeDataStore((s) => s.gpsLocation);
   const { watchData } = useWatchMessage();
-
-  useEffect(() => {
-    const unsubscribe = bridge.addEventListener('gpsLocation', (data) => {
-      setLocation(data);
-    });
-    return unsubscribe;
-  }, []);
 
   return (
     <div>
