@@ -25,8 +25,12 @@ function formatDuration(sec: number | null): string {
 function formatPace(distanceM: number, durationSec: number | null): string {
   if (!durationSec || distanceM === 0) return '--';
   const paceSecPerKm = (durationSec / distanceM) * 1000;
-  const paceMin = Math.floor(paceSecPerKm / 60);
-  const paceSec = Math.round(paceSecPerKm % 60);
+  let paceMin = Math.floor(paceSecPerKm / 60);
+  let paceSec = Math.round(paceSecPerKm % 60);
+  if (paceSec === 60) {
+    paceMin += 1;
+    paceSec = 0;
+  }
   return `${paceMin}'${String(paceSec).padStart(2, '0')}"/km`;
 }
 
