@@ -158,6 +158,7 @@ dependencies {
 
     // Wear OS Data Layer (워치 메시지 수신)
     implementation("com.google.android.gms:play-services-wearable:18.2.0")
+    testImplementation("junit:junit:4.13.2")
 
     def isGifEnabled = (findProperty('expo.gif.enabled') ?: "") == "true";
     def isWebpEnabled = (findProperty('expo.webp.enabled') ?: "") == "true";

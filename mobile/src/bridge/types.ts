@@ -16,6 +16,10 @@ type _BridgeStore<T> = {
 // ─── 공유 데이터 타입 ────────────────────────────────────────────
 
 export type WatchHealthData = {
+  kind: 'live' | 'snapshot' | 'catchup'
+  sessionId: string
+  seq: number
+  capturedAt: number
   timestamp: number
   heartRate: number
   speedMps: number

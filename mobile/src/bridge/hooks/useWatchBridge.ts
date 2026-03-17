@@ -1,7 +1,11 @@
 import { useEffect } from 'react'
-import { NativeEventEmitter, NativeModules, Platform } from 'react-native'
+import { AppState, NativeEventEmitter, NativeModules, Platform } from 'react-native'
 
 export type WatchHealthData = {
+  kind: 'live' | 'snapshot' | 'catchup'
+  sessionId: string
+  seq: number
+  capturedAt: number
   timestamp: number
   heartRate: number
   speedMps: number
@@ -23,7 +27,17 @@ export function useWatchBridge(onMessage: (message: string) => void) {
 
     const emitter = new NativeEventEmitter(WatchBridge)
     const subscription = emitter.addListener('WatchMessage', onMessage)
+    WatchBridge.resyncBridge?.()
 
-    return () => subscription.remove()
+    const appStateSubscription = AppState.addEventListener('change', (state) => {
+      if (state === 'active') {
+        WatchBridge.resyncBridge?.()
+      }
+    })
+
+    return () => {
+      subscription.remove()
+      appStateSubscription.remove()
+    }
   }, [onMessage])
 }
