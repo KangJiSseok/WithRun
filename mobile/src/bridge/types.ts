@@ -19,7 +19,6 @@ export type WatchHealthData = {
   timestamp: number
   heartRate: number
   caloriesKcal: number
-  cadenceSpm: number
 }
 
 export type GpsLocation = {
@@ -28,7 +27,8 @@ export type GpsLocation = {
   accuracy: number | null
   altitude: number | null
   heading: number | null
-  speedMps: number | null  // GPS Doppler 직접 측정값 (가속도계 추정보다 정확)
+  speedMps: number | null    // GPS Doppler 직접 측정값 (가속도계 추정보다 정확)
+  cadenceSpm: number | null  // 모바일 가속도계 기반 케이던스 (워치 SPM 대체)
 }
 
 // ─── 브릿지 타입 (bridge.ts와 동기화 필요) ───────────────────────
