@@ -174,4 +174,10 @@ public class RunningSession extends BaseEntity {
         }
     }
 
+    public void validateCourseRegistrable() {
+        if (!Boolean.TRUE.equals(this.isCompleted)) {
+            throw new CustomException(ResponseCode.RUNNING_SESSION_NOT_COMPLETED);
+        }
+    }
+
 }

@@ -1,14 +1,22 @@
 package kr.withrun.was.domain.running.service;
 
 import kr.withrun.was.domain.course.entity.Course;
+import kr.withrun.was.domain.course.entity.CourseDifficulty;
+import kr.withrun.was.domain.course.entity.CourseTypeMap;
+import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
+import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
+import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
+import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.RunningSession;
@@ -21,6 +29,7 @@ import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.common.type.TimeSlot;
+import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -66,6 +75,12 @@ class RunningSessionServiceTest {
     @Mock
     private CourseRepository courseRepository;
 
+    @Mock
+    private CourseDifficultyRepository courseDifficultyRepository;
+
+    @Mock
+    private CourseTypeMapRepository courseTypeMapRepository;
+
     private RunningSessionService runningSessionService;
 
     @BeforeEach
@@ -73,7 +88,9 @@ class RunningSessionServiceTest {
         runningSessionService = new RunningSessionService(
                 runningSessionRepository,
                 userRepository,
-                courseRepository
+                courseRepository,
+                courseDifficultyRepository,
+                courseTypeMapRepository
         );
     }
 
@@ -387,6 +404,117 @@ class RunningSessionServiceTest {
         assertThat(runningSession.getIsCompleted()).isTrue();
     }
 
+    @DisplayName("완료된 러닝 세션을 커뮤니티 코스로 등록한다")
+    @Test
+    void registersCompletedRunningSessionAsCommunityCourse() {
+        RunningSession runningSession = runningSession(81L, 7L, true, STARTED_AT);
+        setField(runningSession, "distanceM", 10000);
+        setField(runningSession, "elevationGainM", 120);
+        setField(runningSession, "snapshotImageUrl", "https://cdn.withrun.app/snapshots/81.png");
+        setField(runningSession, "endLatitude", 37.574501);
+        setField(runningSession, "endLongitude", 126.989001);
+        setField(runningSession, "coordinates", new Coordinates(
+                List.of(37.566501, 37.574501),
+                List.of(126.978001, 126.989001),
+                List.of(0.0, 1.0)
+        ));
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "한강 야간 러닝 10K",
+                "MEDIUM",
+                List.of("RIVERSIDE", "URBAN", "RIVERSIDE"),
+                "https://cdn.example.com/course/snapshot.png"
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(81L)).thenReturn(Optional.of(runningSession));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 501L));
+
+        RegisterRunningSessionCourseResponse response =
+                runningSessionService.registerRunningSessionCourse(81L, request);
+
+        assertThat(response.courseId()).isEqualTo(501L);
+        assertThat(response.title()).isEqualTo("한강 야간 러닝 10K");
+        assertThat(response.status()).isEqualTo(CourseStatus.COMMUNITY);
+        assertThat(response.difficulty()).isEqualTo(Difficulty.MEDIUM);
+        assertThat(response.distanceM()).isEqualTo(10000);
+        assertThat(response.elevationGainM()).isEqualTo(120);
+        assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.example.com/course/snapshot.png");
+        assertThat(response.coordinates()).isEqualTo(new Coordinates(List.of(
+                new GeoPoint(37.566501, 126.978001, 0.0),
+                new GeoPoint(37.574501, 126.989001, 1.0)
+        )));
+
+        ArgumentCaptor<Course> courseCaptor = ArgumentCaptor.forClass(Course.class);
+        verify(courseRepository).save(courseCaptor.capture());
+        Course savedCourse = courseCaptor.getValue();
+        assertThat(savedCourse.getStatus()).isEqualTo(CourseStatus.COMMUNITY);
+        assertThat(savedCourse.getUser()).isEqualTo(runningSession.getUser());
+        assertThat(savedCourse.getCoordinates()).isEqualTo(runningSession.getCoordinates());
+        assertThat(savedCourse.getCoordinates()).isNotSameAs(runningSession.getCoordinates());
+
+        ArgumentCaptor<CourseDifficulty> difficultyCaptor = ArgumentCaptor.forClass(CourseDifficulty.class);
+        verify(courseDifficultyRepository).save(difficultyCaptor.capture());
+        assertThat(difficultyCaptor.getValue().getDifficulty()).isEqualTo(Difficulty.MEDIUM);
+        assertThat(difficultyCaptor.getValue().getCourse()).isEqualTo(savedCourse);
+
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<CourseTypeMap>> courseTypeMapsCaptor = ArgumentCaptor.forClass((Class) List.class);
+        verify(courseTypeMapRepository).saveAll(courseTypeMapsCaptor.capture());
+        List<CourseTypeMap> courseTypeMaps = courseTypeMapsCaptor.getValue();
+        assertThat(courseTypeMaps).hasSize(2);
+        assertThat(courseTypeMaps)
+                .extracting(CourseTypeMap::getCourseType)
+                .containsExactly(CourseType.RIVERSIDE, CourseType.URBAN);
+        assertThat(courseTypeMaps)
+                .extracting(CourseTypeMap::getCourse)
+                .containsOnly(savedCourse);
+    }
+
+    @DisplayName("요청 이미지 URL이 없으면 러닝 세션 스냅샷을 사용한다")
+    @Test
+    void fallsBackToRunningSessionSnapshotWhenRequestSnapshotIsMissing() {
+        RunningSession runningSession = runningSession(82L, 7L, true, STARTED_AT);
+        setField(runningSession, "snapshotImageUrl", "https://cdn.withrun.app/snapshots/82.png");
+        setField(runningSession, "coordinates", new Coordinates(
+                List.of(37.566501),
+                List.of(126.978001),
+                List.of(0.0)
+        ));
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "한강 아침 러닝",
+                "EASY",
+                List.of("RIVERSIDE"),
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(82L)).thenReturn(Optional.of(runningSession));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 502L));
+
+        RegisterRunningSessionCourseResponse response =
+                runningSessionService.registerRunningSessionCourse(82L, request);
+
+        assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.withrun.app/snapshots/82.png");
+    }
+
+    @DisplayName("완료되지 않은 세션은 코스 등록을 거부한다")
+    @Test
+    void rejectsRegisterCourseWhenRunningSessionIsNotCompleted() {
+        RunningSession runningSession = runningSession(83L, 7L, false, STARTED_AT);
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "등록 실패 코스",
+                "MEDIUM",
+                List.of("RIVERSIDE"),
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(83L)).thenReturn(Optional.of(runningSession));
+
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(83L, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.RUNNING_SESSION_NOT_COMPLETED);
+
+        verify(courseRepository, never()).save(any(Course.class));
+        verify(courseDifficultyRepository, never()).save(any(CourseDifficulty.class));
+        verify(courseTypeMapRepository, never()).saveAll(any());
+    }
+
     @DisplayName("과거 러닝 세션 페이지를 커서와 시간대로 조립한다")
     @Test
     void returnsPastRunningSessionsWithCursorAndTimeSlot() {
@@ -479,6 +607,11 @@ class RunningSessionServiceTest {
     private RunningSession persist(RunningSession runningSession, Long id) {
         setField(runningSession, "id", id);
         return runningSession;
+    }
+
+    private Course persistCourse(Course course, Long id) {
+        setField(course, "id", id);
+        return course;
     }
 
     private Course course(Long id, CourseStatus status) {

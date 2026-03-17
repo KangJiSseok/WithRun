@@ -5,11 +5,17 @@ import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
+import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
+import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
+import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.global.common.type.TimeSlot;
+import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.hamcrest.Matchers;
@@ -311,6 +317,79 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
     }
 
+    @DisplayName("러닝 기록 코스 등록 응답을 생성 성공 포맷으로 감싼다")
+    @Test
+    void wrapsRegisterRunningSessionCourseResponseInCreatedEnvelope() throws Exception {
+        long runningSessionId = 901L;
+        RegisterRunningSessionCourseRequest request = validRegisterCourseRequest();
+        RegisterRunningSessionCourseResponse response = new RegisterRunningSessionCourseResponse(
+                101L,
+                "한강 야간 러닝 10K",
+                CourseStatus.COMMUNITY,
+                Difficulty.MEDIUM,
+                10000,
+                120,
+                "https://cdn.example.com/course/snapshot.png",
+                37.566501,
+                126.978001,
+                37.574501,
+                126.989001,
+                new Coordinates(java.util.List.of(
+                        new GeoPoint(37.566501, 126.978001, 0.0),
+                        new GeoPoint(37.574501, 126.989001, 1.0)
+                ))
+        );
+        given(runningSessionService.registerRunningSessionCourse(runningSessionId, request)).willReturn(response);
+
+        mockMvc.perform(post("/api/running-sessions/{runningSessionId}/register-course", runningSessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRegisterCourseRequestBody()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.CREATED.getCode()))
+                .andExpect(jsonPath("$.message").value(ResponseCode.CREATED.getMessage()))
+                .andExpect(jsonPath("$.data.courseId").value(101L))
+                .andExpect(jsonPath("$.data.status").value(CourseStatus.COMMUNITY.name()))
+                .andExpect(jsonPath("$.data.difficulty").value(Difficulty.MEDIUM.name()))
+                .andExpect(jsonPath("$.data.coordinates[0].latitude").value(37.566501))
+                .andExpect(jsonPath("$.data.coordinates[0].elevationM").value(0.0));
+
+        then(runningSessionService).should().registerRunningSessionCourse(runningSessionId, request);
+    }
+
+    @DisplayName("코스 등록 요청에 필수 필드가 없으면 잘못된 입력 응답을 반환한다")
+    @ParameterizedTest(name = "누락된 필드: {0}")
+    @ValueSource(strings = {"title", "difficulty", "courseTypes"})
+    void returnsInvalidInputValueWhenRegisterCourseRequiredFieldIsMissing(String missingField) throws Exception {
+        mockMvc.perform(post("/api/running-sessions/{runningSessionId}/register-course", 901L)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(registerCourseRequestBodyWithout(missingField)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()))
+                .andExpect(jsonPath("$.data[0].field").value(missingField));
+
+        then(runningSessionService).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("완료되지 않은 세션의 코스 등록 요청은 충돌 응답을 반환한다")
+    @Test
+    void returnsConflictWhenRegisterCourseRequestedForIncompleteSession() throws Exception {
+        long runningSessionId = 901L;
+        RegisterRunningSessionCourseRequest request = validRegisterCourseRequest();
+        given(runningSessionService.registerRunningSessionCourse(runningSessionId, request))
+                .willThrow(new CustomException(ResponseCode.RUNNING_SESSION_NOT_COMPLETED));
+
+        mockMvc.perform(post("/api/running-sessions/{runningSessionId}/register-course", runningSessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRegisterCourseRequestBody()))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.RUNNING_SESSION_NOT_COMPLETED.getCode()));
+
+        then(runningSessionService).should().registerRunningSessionCourse(runningSessionId, request);
+    }
+
     @DisplayName("과거 러닝 세션 조회 응답을 성공 응답 포맷으로 감싼다")
     @Test
     void wrapsPastRunningSessionsResponseInSuccessEnvelope() throws Exception {
@@ -549,6 +628,53 @@ class RunningSessionControllerTest {
                   "startLongitude": %s
                 }
                 """.formatted(modeValue, courseIdValue, ghostTargetValue, startedAtValue, startLatitudeValue, startLongitudeValue);
+    }
+
+    private static RegisterRunningSessionCourseRequest validRegisterCourseRequest() {
+        return new RegisterRunningSessionCourseRequest(
+                "한강 야간 러닝 10K",
+                "MEDIUM",
+                java.util.List.of("RIVERSIDE", "URBAN"),
+                "https://cdn.example.com/course/snapshot.png"
+        );
+    }
+
+    private static String validRegisterCourseRequestBody() {
+        return """
+                {
+                  "title": "한강 야간 러닝 10K",
+                  "difficulty": "MEDIUM",
+                  "courseTypes": ["RIVERSIDE", "URBAN"],
+                  "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
+                }
+                """;
+    }
+
+    private static String registerCourseRequestBodyWithout(String missingField) {
+        return switch (missingField) {
+            case "title" -> """
+                    {
+                      "difficulty": "MEDIUM",
+                      "courseTypes": ["RIVERSIDE", "URBAN"],
+                      "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
+                    }
+                    """;
+            case "difficulty" -> """
+                    {
+                      "title": "한강 야간 러닝 10K",
+                      "courseTypes": ["RIVERSIDE", "URBAN"],
+                      "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
+                    }
+                    """;
+            case "courseTypes" -> """
+                    {
+                      "title": "한강 야간 러닝 10K",
+                      "difficulty": "MEDIUM",
+                      "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
+                    }
+                    """;
+            default -> throw new IllegalArgumentException("Unsupported missing field: " + missingField);
+        };
     }
 
     private static String validUpdateRequestJson() {

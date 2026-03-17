@@ -1,13 +1,22 @@
 package kr.withrun.was.domain.running.service;
 
 import kr.withrun.was.domain.course.entity.Course;
+import kr.withrun.was.domain.course.entity.CourseDifficulty;
+import kr.withrun.was.domain.course.entity.CourseTypeMap;
+import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
+import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
+import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
+import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.RunningSession;
@@ -18,12 +27,14 @@ import kr.withrun.was.domain.running.util.PastRunningSessionCursorCodec;
 import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
+import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashSet;
 import java.util.List;
 
 @Service
@@ -34,6 +45,8 @@ public class RunningSessionService {
     private final RunningSessionRepository runningSessionRepository;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
+    private final CourseDifficultyRepository courseDifficultyRepository;
+    private final CourseTypeMapRepository courseTypeMapRepository;
 
     @Transactional
     public CreateRunningSessionResponse createRunningSession(CreateRunningSessionRequest request) {
@@ -74,6 +87,38 @@ public class RunningSessionService {
         );
 
         return UpdateRunningSessionResponse.from(runningSession);
+    }
+
+    @Transactional
+    public RegisterRunningSessionCourseResponse registerRunningSessionCourse(
+            Long runningSessionId,
+            RegisterRunningSessionCourseRequest request
+    ) {
+        RunningSession runningSession = getRunningSession(runningSessionId);
+        runningSession.validateCourseRegistrable();
+        Difficulty difficulty = parseDifficulty(request.difficulty());
+        List<CourseType> courseTypes = parseCourseTypes(request.courseTypes());
+
+        Course course = courseRepository.save(Course.builder()
+                .title(request.title())
+                .status(CourseStatus.COMMUNITY)
+                .distanceM(runningSession.getDistanceM())
+                .elevationGainM(runningSession.getElevationGainM())
+                .snapshotImageUrl(resolveSnapshotImageUrl(request.snapshotImageUrl(), runningSession.getSnapshotImageUrl()))
+                .startLatitude(runningSession.getStartLatitude())
+                .startLongitude(runningSession.getStartLongitude())
+                .endLatitude(runningSession.getEndLatitude())
+                .endLongitude(runningSession.getEndLongitude())
+                .coordinates(copyCoordinates(runningSession.getCoordinates()))
+                .user(runningSession.getUser())
+                .build());
+
+        courseDifficultyRepository.save(CourseDifficulty.create(course, difficulty));
+        courseTypeMapRepository.saveAll(courseTypes.stream()
+                .map(courseType -> CourseTypeMap.create(course, courseType))
+                .toList());
+
+        return RegisterRunningSessionCourseResponse.from(course, difficulty);
     }
 
     public PastRunningSessionsResponse findPastRunningSessions(PastRunningSessionsRequest request) {
@@ -148,6 +193,50 @@ public class RunningSessionService {
         RunningSession runningSession = runningSessionRepository.findByIdAndDeletedAtIsNull(runningSessionId)
                 .orElseThrow(() -> new CustomException(ResponseCode.RUNNING_SESSION_NOT_FOUND));
         return runningSession;
+    }
+
+    private Difficulty parseDifficulty(String rawDifficulty) {
+        try {
+            return Difficulty.valueOf(rawDifficulty);
+        } catch (IllegalArgumentException exception) {
+            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private List<CourseType> parseCourseTypes(List<String> rawCourseTypes) {
+        LinkedHashSet<CourseType> courseTypes = new LinkedHashSet<>();
+        for (String rawCourseType : rawCourseTypes) {
+            courseTypes.add(parseCourseType(rawCourseType));
+        }
+        return List.copyOf(courseTypes);
+    }
+
+    private CourseType parseCourseType(String rawCourseType) {
+        try {
+            return CourseType.valueOf(rawCourseType);
+        } catch (IllegalArgumentException exception) {
+            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private String resolveSnapshotImageUrl(String requestedSnapshotImageUrl, String runningSessionSnapshotImageUrl) {
+        if (requestedSnapshotImageUrl == null || requestedSnapshotImageUrl.isBlank()) {
+            return runningSessionSnapshotImageUrl;
+        }
+        return requestedSnapshotImageUrl;
+    }
+
+    private Coordinates copyCoordinates(Coordinates coordinates) {
+        if (coordinates == null) {
+            return null;
+        }
+
+        List<GeoPoint> copiedPoints = coordinates.values().stream()
+                .map(point -> point == null
+                        ? null
+                        : new GeoPoint(point.latitude(), point.longitude(), point.elevationM()))
+                .toList();
+        return new Coordinates(copiedPoints);
     }
 
     private String toCursor(PastRunningSessionHistoryRow row) {

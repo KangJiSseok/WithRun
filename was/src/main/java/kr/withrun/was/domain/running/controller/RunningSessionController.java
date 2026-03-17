@@ -5,6 +5,8 @@ import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
+import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
+import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
@@ -51,6 +53,14 @@ public class RunningSessionController {
             @Valid @ModelAttribute PastRunningSessionsRequest request
     ) {
         return ApiResponse.successEntity(runningSessionService.findPastRunningSessions(request));
+    }
+
+    @PostMapping("/{runningSessionId}/register-course")
+    public ResponseEntity<ApiResponse<RegisterRunningSessionCourseResponse>> registerRunningSessionCourse(
+            @PathVariable Long runningSessionId,
+            @Valid @RequestBody RegisterRunningSessionCourseRequest request
+    ) {
+        return ApiResponse.successEntity(CREATED, runningSessionService.registerRunningSessionCourse(runningSessionId, request));
     }
 
 }
