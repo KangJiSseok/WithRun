@@ -116,3 +116,4 @@ Pods/
 *.ntvs*
 *.njsproj
 *.sln
+.vercel
