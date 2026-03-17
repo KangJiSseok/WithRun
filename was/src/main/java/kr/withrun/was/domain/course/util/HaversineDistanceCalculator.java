@@ -1,8 +1,8 @@
 package kr.withrun.was.domain.course.util;
 
 import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.course.vo.GeoPoint;
 
-import java.util.List;
 import java.util.OptionalInt;
 
 public final class HaversineDistanceCalculator {
@@ -21,16 +21,18 @@ public final class HaversineDistanceCalculator {
             return OptionalInt.empty();
         }
 
-        List<Double> latitudes = coordinates.latitudes();
-        List<Double> longitudes = coordinates.longitudes();
-        if (latitudes == null || longitudes == null || latitudes.size() != longitudes.size()) {
+        if (coordinates.values().isEmpty()) {
             return OptionalInt.empty();
         }
 
         Integer minimumDistance = null;
-        for (int index = 0; index < latitudes.size(); index++) {
-            Double latitude = latitudes.get(index);
-            Double longitude = longitudes.get(index);
+        for (GeoPoint point : coordinates.values()) {
+            if (point == null) {
+                continue;
+            }
+
+            Double latitude = point.latitude();
+            Double longitude = point.longitude();
             if (latitude == null || longitude == null) {
                 continue;
             }
