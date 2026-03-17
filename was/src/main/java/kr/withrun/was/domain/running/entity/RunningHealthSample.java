@@ -2,8 +2,6 @@ package kr.withrun.was.domain.running.entity;
 
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
-import jakarta.persistence.EnumType;
-import jakarta.persistence.Enumerated;
 import jakarta.persistence.FetchType;
 import jakarta.persistence.ForeignKey;
 import jakarta.persistence.GeneratedValue;
@@ -13,7 +11,6 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
-import kr.withrun.was.domain.running.type.DeviceSource;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
@@ -64,10 +61,6 @@ public class RunningHealthSample extends BaseEntity {
 
     @Column(name = "cadence_spm")
     private Short cadenceSpm;
-
-    @Enumerated(EnumType.STRING)
-    @Column(name = "source_device", nullable = false, length = 32)
-    private DeviceSource sourceDevice;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
