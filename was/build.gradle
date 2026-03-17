@@ -39,6 +39,9 @@ dependencies {
     implementation platform('io.awspring.cloud:spring-cloud-aws-dependencies:3.4.2')
     implementation 'io.awspring.cloud:spring-cloud-aws-starter-parameter-store'
 
+    // AWS S3
+    implementation 'software.amazon.awssdk:s3'
+
     // QueryDSL
     implementation 'com.querydsl:querydsl-jpa:5.1.0:jakarta'
     annotationProcessor 'com.querydsl:querydsl-apt:5.1.0:jakarta'
