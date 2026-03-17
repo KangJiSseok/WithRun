@@ -14,7 +14,7 @@ class WatchBridgeModule(reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext),
     MessageClient.OnMessageReceivedListener {
 
-    private val messageClient by lazy { Wearable.getMessageClient(reactContext) }
+    private val messageClient by lazy { Wearable.getMessageClient(reactContext.applicationContext) }
 
     override fun getName(): String = "WatchBridge"
 
@@ -38,13 +38,28 @@ class WatchBridgeModule(reactContext: ReactApplicationContext) :
     override fun initialize() {
         super.initialize()
         messageClient.addListener(this)
-        Log.d("WatchBridge", "[init] MessageClient 포그라운드 리스너 등록 완료")
+            .addOnSuccessListener {
+                Log.d("WatchBridge", "[init] MessageClient 리스너 등록 성공")
+                // 등록 성공 후 연결된 워치 노드 확인
+                Wearable.getNodeClient(reactContext.applicationContext).connectedNodes
+                    .addOnSuccessListener { nodes ->
+                        Log.d("WatchBridge", "[init] 연결된 워치 노드 수: ${nodes.size} → ${nodes.map { it.displayName }}")
+                    }
+                    .addOnFailureListener { e ->
+                        Log.e("WatchBridge", "[init] 노드 확인 실패: ${e.message}")
+                    }
+            }
+            .addOnFailureListener { e ->
+                Log.e("WatchBridge", "[init] MessageClient 리스너 등록 실패: ${e.message}")
+            }
         // 백그라운드 수신 중 큐에 쌓인 메시지 플러시
         flushPendingMessages()
     }
 
     override fun onCatalystInstanceDestroy() {
         messageClient.removeListener(this)
+            .addOnSuccessListener { Log.d("WatchBridge", "[destroy] MessageClient 리스너 해제 성공") }
+            .addOnFailureListener { e -> Log.e("WatchBridge", "[destroy] MessageClient 리스너 해제 실패: ${e.message}") }
         super.onCatalystInstanceDestroy()
     }
 
