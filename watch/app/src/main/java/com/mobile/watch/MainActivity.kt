@@ -7,6 +7,7 @@ import android.net.Uri
 import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
+import android.util.Log
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -33,6 +34,9 @@ class MainActivity : ComponentActivity(), AmbientLifecycleObserver.AmbientLifecy
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
+        // [Q2 핵심] 이 로그가 절전/화면 꺼짐 후에 찍히면 → 앱이 완전히 재시작된 것 (버튼 초기화 원인)
+        // 찍히지 않으면 → 앱은 살아있고 다른 원인으로 버튼이 초기화됨
+        Log.i("WR_Lifecycle", "MainActivity.onCreate() — 앱 새로 생성됨")
         ambientObserver = AmbientLifecycleObserver(this, this)
         lifecycle.addObserver(ambientObserver)
         requestBatteryOptimizationExemption()
@@ -48,12 +52,14 @@ class MainActivity : ComponentActivity(), AmbientLifecycleObserver.AmbientLifecy
     // AOD 진입
     override fun onEnterAmbient(ambientDetails: AmbientLifecycleObserver.AmbientDetails) {
         isAmbient = true
-        // 포그라운드 서비스가 계속 실행 중이므로 별도 처리 불필요
+        // [Q1 참고] 이 시점 이후 WR_SendLoop 로그의 경과시간이 1500ms 초과하면 Doze 문제
+        Log.i("WR_Lifecycle", "onEnterAmbient — 절전모드 진입, 서비스는 계속 실행 중이어야 함")
     }
 
     // AOD 종료 (화면 활성화)
     override fun onExitAmbient() {
         isAmbient = false
+        Log.i("WR_Lifecycle", "onExitAmbient — 화면 복귀, isActive=${ExerciseService.exerciseData.value.isActive}")
     }
 
     // AOD 주기적 갱신 (1분마다 호출)
