@@ -60,10 +60,10 @@ public class CourseBookmarkService {
                 .orElseGet(() -> new CourseBookmarkRemoveResponse(courseId, false));
     }
 
-    public BookmarkedCoursesResponse findBookmarkedCourses(BookmarkedCoursesRequest request) {
-        getUser(request.userId());
+    public BookmarkedCoursesResponse findBookmarkedCourses(Long userId, BookmarkedCoursesRequest request) {
+        getUser(userId);
 
-        List<BookmarkedCourseRow> rows = fetchBookmarkedCourseRows(request);
+        List<BookmarkedCourseRow> rows = fetchBookmarkedCourseRows(userId, request);
         List<BookmarkedCourseItemResponse> items =  groupBookmarkedCourseItems(rows);
         int pageSize = request.size();
         boolean hasMore = items.size() > pageSize;
@@ -75,13 +75,13 @@ public class CourseBookmarkService {
         return new BookmarkedCoursesResponse(pagedItems, hasMore, nextCursor);
     }
 
-    private List<BookmarkedCourseRow> fetchBookmarkedCourseRows(BookmarkedCoursesRequest request) {
+    private List<BookmarkedCourseRow> fetchBookmarkedCourseRows(Long userId, BookmarkedCoursesRequest request) {
         BookmarkedCourseCursorCodec.CursorPayload payload = request.cursor() == null
                 ? null
                 : BookmarkedCourseCursorCodec.decode(request.cursor());
 
         return courseBookmarkRepository.findBookmarkedCourseRows(
-                request.userId(),
+                userId,
                 payload == null ? null : payload.bookmarkedAt(),
                 payload == null ? null : payload.bookmarkId(),
                 request.size()

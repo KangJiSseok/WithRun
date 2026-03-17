@@ -1,5 +1,6 @@
 package kr.withrun.was.global.exception;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.ConstraintViolationException;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -150,6 +151,16 @@ public class GlobalExceptionHandler {
         return null;
     }
 
-    public record ValidationError(String field, Object rejectedValue, String message) {
+    @Schema(name = "ValidationError", description = "입력값 검증 실패 상세 정보")
+    public record ValidationError(
+            @Schema(description = "검증에 실패한 필드명", example = "radiusM")
+            String field,
+
+            @Schema(description = "거부된 입력값", example = "7000", nullable = true)
+            Object rejectedValue,
+
+            @Schema(description = "검증 실패 사유", example = "must be less than or equal to 5000")
+            String message
+    ) {
     }
 }
