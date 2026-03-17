@@ -5,11 +5,17 @@ import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
+import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
+import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
+import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.repository.RunningSessionRepository;
+import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.util.PastRunningSessionCursorCodec;
+import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.exception.CustomException;
@@ -17,6 +23,8 @@ import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+
+import java.util.List;
 
 @Service
 @Transactional(readOnly = true)
@@ -68,6 +76,35 @@ public class RunningSessionService {
         return UpdateRunningSessionResponse.from(runningSession);
     }
 
+    public PastRunningSessionsResponse findPastRunningSessions(PastRunningSessionsRequest request) {
+        PastRunningSessionCursorCodec.CursorPayload payload = request.cursor() == null
+                ? null
+                : PastRunningSessionCursorCodec.decode(request.cursor());
+
+        RunningSessionDateRange dateRange = RunningSessionDateRange.of(request.year(), request.month(), request.day());
+
+        getUser(request.userId());
+
+        List<PastRunningSessionHistoryRow> rows = runningSessionRepository.findPastRunningSessionHistoryRows(
+                request.userId(),
+                dateRange.startInclusive(),
+                dateRange.endExclusive(),
+                payload == null ? null : payload.startedAt(),
+                payload == null ? null : payload.runningSessionId(),
+                request.pageSize()
+        );
+
+        boolean hasMore = rows.size() > request.pageSize();
+        List<PastRunningSessionHistoryRow> pagedRows = hasMore
+                ? List.copyOf(rows.subList(0, request.pageSize()))
+                : List.copyOf(rows);
+        List<PastRunningSessionItemResponse> items = pagedRows.stream()
+                .map(PastRunningSessionItemResponse::from)
+                .toList();
+        String nextCursor = hasMore ? toCursor(pagedRows.getLast()) : null;
+
+        return new PastRunningSessionsResponse(items, hasMore, nextCursor);
+    }
 
     private User getUser(Long userId) {
         return userRepository.findNotDeletedUser(userId)
@@ -112,4 +149,9 @@ public class RunningSessionService {
                 .orElseThrow(() -> new CustomException(ResponseCode.RUNNING_SESSION_NOT_FOUND));
         return runningSession;
     }
+
+    private String toCursor(PastRunningSessionHistoryRow row) {
+        return PastRunningSessionCursorCodec.encode(row.startedAt(), row.runningSessionId());
+    }
+
 }

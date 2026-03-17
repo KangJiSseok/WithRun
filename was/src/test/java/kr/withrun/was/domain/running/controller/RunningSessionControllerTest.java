@@ -2,9 +2,14 @@ package kr.withrun.was.domain.running.controller;
 
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
+import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
+import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
+import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
+import kr.withrun.was.domain.running.type.GhostResultStatus;
+import kr.withrun.was.global.common.type.TimeSlot;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.hamcrest.Matchers;
@@ -28,6 +33,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -303,6 +309,114 @@ class RunningSessionControllerTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+    }
+
+    @DisplayName("과거 러닝 세션 조회 응답을 성공 응답 포맷으로 감싼다")
+    @Test
+    void wrapsPastRunningSessionsResponseInSuccessEnvelope() throws Exception {
+        PastRunningSessionsRequest request = new PastRunningSessionsRequest(7L, 2026, 3, 16, 10, "cursor-token");
+        PastRunningSessionsResponse response = new PastRunningSessionsResponse(
+                java.util.List.of(
+                        new PastRunningSessionItemResponse(
+                                120L,
+                                LocalDateTime.of(2026, 3, 15, 19, 30),
+                                7200,
+                                2100,
+                                430,
+                                "https://cdn.withrun.app/snapshots/120.png",
+                                42,
+                                true,
+                                GHOST,
+                                GhostResultStatus.WIN,
+                                TimeSlot.EVENING
+                        )
+                ),
+                true,
+                "next-cursor"
+        );
+        given(runningSessionService.findPastRunningSessions(request)).willReturn(response);
+
+        mockMvc.perform(get("/api/running-sessions/history/past")
+                        .queryParam("userId", "7")
+                        .queryParam("year", "2026")
+                        .queryParam("month", "3")
+                        .queryParam("day", "16")
+                        .queryParam("pageSize", "10")
+                        .queryParam("cursor", "cursor-token"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
+                .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
+                .andExpect(jsonPath("$.data.items[0].runningSessionId").value(120L))
+                .andExpect(jsonPath("$.data.items[0].runningMode").value(GHOST.name()))
+                .andExpect(jsonPath("$.data.items[0].ghostResultStatus").value(GhostResultStatus.WIN.name()))
+                .andExpect(jsonPath("$.data.items[0].timeSlot").value(TimeSlot.EVENING.name()))
+                .andExpect(jsonPath("$.data.hasMore").value(true))
+                .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"));
+
+        then(runningSessionService).should().findPastRunningSessions(request);
+    }
+
+    @DisplayName("pageSize가 없으면 기본값 10으로 과거 러닝 세션을 조회한다")
+    @Test
+    void usesDefaultPageSizeWhenPastRunningSessionsPageSizeIsMissing() throws Exception {
+        PastRunningSessionsRequest request = new PastRunningSessionsRequest(7L, null, null, null, 10, null);
+        given(runningSessionService.findPastRunningSessions(request))
+                .willReturn(new PastRunningSessionsResponse(java.util.List.of(), false, null));
+
+        mockMvc.perform(get("/api/running-sessions/history/past")
+                        .queryParam("userId", "7"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items").isArray())
+                .andExpect(jsonPath("$.data.hasMore").value(false));
+
+        then(runningSessionService).should().findPastRunningSessions(request);
+    }
+
+    @DisplayName("userId를 포함한 쿼리 기반 과거 조회 요청을 서비스에 전달한다")
+    @Test
+    void passesQueryUserIdToService() throws Exception {
+        PastRunningSessionsRequest request = new PastRunningSessionsRequest(7L, 2026, 3, null, 10, null);
+        given(runningSessionService.findPastRunningSessions(request))
+                .willReturn(new PastRunningSessionsResponse(java.util.List.of(), false, null));
+
+        mockMvc.perform(get("/api/running-sessions/history/past")
+                        .queryParam("userId", "7")
+                        .queryParam("year", "2026")
+                        .queryParam("month", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        then(runningSessionService).should().findPastRunningSessions(request);
+    }
+
+    @DisplayName("month만 전달된 과거 조회는 잘못된 입력 응답을 반환한다")
+    @Test
+    void returnsBadRequestWhenPastRunningSessionFiltersAreInvalid() throws Exception {
+        mockMvc.perform(get("/api/running-sessions/history/past")
+                        .queryParam("userId", "7")
+                        .queryParam("month", "3"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+
+        then(runningSessionService).shouldHaveNoInteractions();
+    }
+
+    @DisplayName("존재할 수 없는 날짜 조합은 컨트롤러 레벨에서 잘못된 입력 응답을 반환한다")
+    @Test
+    void returnsBadRequestWhenPastRunningSessionDateIsImpossible() throws Exception {
+        mockMvc.perform(get("/api/running-sessions/history/past")
+                        .queryParam("userId", "7")
+                        .queryParam("year", "2026")
+                        .queryParam("month", "2")
+                        .queryParam("day", "30"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+
+        then(runningSessionService).shouldHaveNoInteractions();
     }
 
     private static CreateRunningSessionRequest validCreateRequest() {
