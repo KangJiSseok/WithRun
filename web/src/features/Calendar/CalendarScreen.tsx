@@ -48,11 +48,11 @@ export function CalendarScreen() {
   // - 날짜 선택됨: "3월 9일 활동" (달력 열림/닫힘 모두 유지)
   // - 달력 열림 + 날짜 미선택: "2026년 3월 활동"
   // - 달력 닫힘 + 날짜 미선택: "전체 기록"
-  const historyTitle = selectedDate
-    ? formatDayTitle(selectedDate)
-    : showCalendar
-      ? `${year}년 ${month}월 활동`
-      : '전체 기록';
+  const historyTitle = !showCalendar
+    ? '전체 기록'
+    : selectedDate
+      ? formatDayTitle(selectedDate)
+      : `${year}년 ${month}월 활동`;
 
   return (
     <div className="flex flex-col gap-[var(--space-4)] h-full overflow-y-auto pb-[var(--space-6)]">
