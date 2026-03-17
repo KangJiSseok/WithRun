@@ -74,8 +74,15 @@ dependencies {
     // Activity Compose
     implementation 'androidx.activity:activity-compose:1.9.3'
 
+    // LifecycleService (ExerciseService 백그라운드 서비스 기반)
+    implementation 'androidx.lifecycle:lifecycle-service:2.8.7'
+
     // Wear OS Ambient Mode (AOD)
     implementation 'androidx.wear:wear:1.3.0'
+
+    // OngoingActivity (워치페이스에 운동 중 표시 + 삼성 헬스 플랫폼 세션 유지 시그널)
+    implementation 'androidx.wear:wear-ongoing:1.0.0'
+    implementation 'androidx.core:core-ktx:1.13.1'
 
     // Coroutines (Tasks.await 및 ListenableFuture.await 사용)
     implementation 'org.jetbrains.kotlinx:kotlinx-coroutines-play-services:1.8.1'
