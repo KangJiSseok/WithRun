@@ -51,6 +51,7 @@ public enum ResponseCode {
     INVALID_GHOST_TARGET("E402", HttpStatus.BAD_REQUEST, "유효하지 않은 고스트 대상 러닝 세션입니다.", false),
     RUNNING_SESSION_NOT_FOUND("E403", HttpStatus.NOT_FOUND, "러닝 세션을 찾을 수 없습니다.", false),
     RUNNING_SESSION_ALREADY_COMPLETED("E404", HttpStatus.CONFLICT, "이미 종료된 러닝 세션입니다.", false),
+    RUNNING_SESSION_NOT_COMPLETED("E405", HttpStatus.CONFLICT, "완료되지 않은 러닝 세션입니다.", false),
 
     // File Error
     S3_BUCKET_NOT_CONFIGURED("E500", HttpStatus.INTERNAL_SERVER_ERROR, "S3 버킷 설정이 필요합니다.", false),
