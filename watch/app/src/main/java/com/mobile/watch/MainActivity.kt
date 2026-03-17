@@ -40,6 +40,7 @@ class MainActivity : ComponentActivity(), AmbientLifecycleObserver.AmbientLifecy
         ambientObserver = AmbientLifecycleObserver(this, this)
         lifecycle.addObserver(ambientObserver)
         requestBatteryOptimizationExemption()
+        promptUnrestrictedBattery()
         setContent {
             WatchApp(
                 isAmbient = isAmbient,
@@ -86,6 +87,41 @@ class MainActivity : ComponentActivity(), AmbientLifecycleObserver.AmbientLifecy
             })
         }
     }
+
+    // Samsung Health 콜백 throttling 완화를 위해 배터리 모드 "제한 없음" 설정 유도
+    // 최초 1회만 표시 — 이후 사용자가 직접 설정한 것으로 간주
+    private fun promptUnrestrictedBattery() {
+        val prefs = getSharedPreferences("app_prefs", MODE_PRIVATE)
+        if (prefs.getBoolean("battery_guide_shown", false)) return
+        prefs.edit().putBoolean("battery_guide_shown", true).apply()
+
+        android.app.AlertDialog.Builder(this)
+            .setTitle("배터리 설정 권장")
+            .setMessage(
+                "운동 중 데이터가 끊기지 않으려면 두 곳에서\n" +
+                "'배경 활동 허용'을 ON으로 설정해주세요.\n\n" +
+                "① 이 앱 → 배터리 → 배경 활동 허용\n" +
+                "② Samsung Health → 배터리 → 배경 활동 허용"
+            )
+            .setPositiveButton("이 앱 설정") { _, _ ->
+                openAppSettings(packageName)
+            }
+            .setNeutralButton("Samsung Health 설정") { _, _ ->
+                openAppSettings("com.samsung.android.wear.shealth")
+            }
+            .setNegativeButton("닫기", null)
+            .show()
+    }
+
+    private fun openAppSettings(pkg: String) {
+        try {
+            startActivity(Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS).apply {
+                data = Uri.parse("package:$pkg")
+            })
+        } catch (e: Exception) {
+            Log.w("WR_Battery", "설정 화면 열기 실패: $pkg", e)
+        }
+    }
 }
 
 @Composable
@@ -120,11 +156,11 @@ fun WatchApp(isAmbient: Boolean, onStart: () -> Unit, onStop: () -> Unit) {
                 }
             } else {
                 if (isRunning) {
-                    // 실시간 운동 데이터
+                    // 워치 전담 데이터: HR / 칼로리 / 케이던스
+                    // 속도·거리는 모바일 GPS가 담당
                     Text(text = "${data.heartRate} BPM", fontWeight = FontWeight.Bold, fontSize = 20.sp)
-                    Text(text = "${String.format("%.1f", data.speedKmh)} km/h", fontSize = 14.sp)
-                    Text(text = "${String.format("%.2f", data.distanceKm)} km", fontSize = 14.sp)
                     Text(text = "${data.caloriesKcal.toInt()} kcal", fontSize = 14.sp)
+                    Text(text = "${data.cadenceSpm} spm", fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(8.dp))
                 } else {
                     Text(text = "대기 중")
