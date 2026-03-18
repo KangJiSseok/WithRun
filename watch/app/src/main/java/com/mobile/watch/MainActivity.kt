@@ -1,6 +1,7 @@
 package com.mobile.watch
 
 import android.Manifest
+import android.app.Activity
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.net.Uri
@@ -8,6 +9,7 @@ import android.os.Bundle
 import android.os.PowerManager
 import android.provider.Settings
 import android.util.Log
+import android.view.WindowManager
 import android.widget.Toast
 import androidx.activity.ComponentActivity
 import androidx.activity.compose.rememberLauncherForActivityResult
@@ -129,6 +131,16 @@ fun WatchApp(isAmbient: Boolean, onStart: () -> Unit, onStop: () -> Unit) {
     val context = LocalContext.current
     val data by ExerciseService.exerciseData.collectAsState()
     val isRunning = data.isActive
+
+    // 운동 중엔 화면이 꺼지지 않도록 유지 → 워치 페이스로 자동 이동 방지
+    val activity = context as? Activity
+    LaunchedEffect(isRunning) {
+        if (isRunning) {
+            activity?.window?.addFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        } else {
+            activity?.window?.clearFlags(WindowManager.LayoutParams.FLAG_KEEP_SCREEN_ON)
+        }
+    }
 
     val permissionLauncher = rememberLauncherForActivityResult(
         ActivityResultContracts.RequestMultiplePermissions()

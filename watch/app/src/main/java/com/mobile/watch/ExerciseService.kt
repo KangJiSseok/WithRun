@@ -5,10 +5,6 @@ import android.app.NotificationChannel
 import android.app.NotificationManager
 import android.app.PendingIntent
 import android.content.Intent
-import android.hardware.Sensor
-import android.hardware.SensorEvent
-import android.hardware.SensorEventListener
-import android.hardware.SensorManager
 import android.os.PowerManager
 import android.util.Log
 import androidx.core.app.NotificationCompat
@@ -36,12 +32,17 @@ import java.util.concurrent.atomic.AtomicInteger
 
 class ExerciseService : LifecycleService() {
 
-    // 워치 전담 데이터: HR(PPG + 모션보정), 칼로리(HR 기반 개인화)
-    // 속도/거리/케이던스는 모바일(GPS + 가속도계)로 대체
+    // 워치 전담 데이터
+    // HR: Samsung Health PPG + 모션보정 (모바일 불가)
+    // 칼로리: HR 기반 개인화 누적값
+    // 케이던스: Samsung Health 만보계 기반 SPM (모바일 가속도계보다 정확)
+    // 거리: 만보계 기반 누적거리 (GPS 없이 워치 내부 추정)
     data class ExerciseData(
         val isActive: Boolean = false,
         val heartRate: Int = 0,
         val caloriesKcal: Double = 0.0,
+        val cadenceSpm: Int = 0,
+        val distanceM: Double = 0.0,
     )
 
     companion object {
@@ -70,28 +71,16 @@ class ExerciseService : LifecycleService() {
     // 빠른 연속 재시작 횟수 추적 (Samsung Health가 세션을 반복 거부하는 경우 포기 처리)
     private val consecutiveRestarts = AtomicInteger(0)
 
-    // Health Services 콜백이 절전 중 중단될 때 심박수를 직접 센서에서 읽기 위한 fallback
-    private var sensorManager: SensorManager? = null
-    private val heartRateSensorListener = object : SensorEventListener {
-        override fun onSensorChanged(event: SensorEvent) {
-            val hr = event.values[0].toInt()
-            if (hr > 0 && _exerciseData.value.isActive) {
-                _exerciseData.value = _exerciseData.value.copy(heartRate = hr)
-            }
-        }
-        override fun onAccuracyChanged(sensor: Sensor?, accuracy: Int) {}
-    }
-
     // 프로세스 재시작 후에도 측정 중 여부를 복구하기 위한 영속 저장소
     private val prefs by lazy { getSharedPreferences(PREF_NAME, MODE_PRIVATE) }
 
     private val exerciseConfig = ExerciseConfig(
         exerciseType = ExerciseType.RUNNING,
         dataTypes = setOf(
-            DataType.HEART_RATE_BPM,
-            DataType.CALORIES_TOTAL,
-            DataType.STEPS_PER_MINUTE,
-            // SPEED, DISTANCE_TOTAL 제거 — 모바일 GPS로 대체 (정확도 우세)
+            DataType.HEART_RATE_BPM,        // PPG + 모션보정 심박수
+            DataType.CALORIES_TOTAL,        // HR 기반 누적 칼로리
+            DataType.STEPS_PER_MINUTE,      // 삼성 헬스 케이던스 (모바일 가속도계보다 정확)
+            DataType.DISTANCE_TOTAL,        // 만보계 기반 누적 거리
         ),
         isAutoPauseAndResumeEnabled = false,
         isGpsEnabled = false,
@@ -146,15 +135,19 @@ class ExerciseService : LifecycleService() {
                                ?: current.heartRate
             val caloriesKcal = metrics.getData(DataType.CALORIES_TOTAL)?.total
                                ?: current.caloriesKcal
+            val cadenceSpm   = metrics.getData(DataType.STEPS_PER_MINUTE).lastOrNull()?.value?.toInt()
+                               ?: current.cadenceSpm
+            val distanceM    = metrics.getData(DataType.DISTANCE_TOTAL)?.total
+                               ?: current.distanceM
 
-            Log.d("ExerciseService", "HR=$heartRate bpm, ${caloriesKcal.toInt()} kcal")
+            Log.d("ExerciseService", "HR=$heartRate bpm, ${caloriesKcal.toInt()} kcal, cadence=$cadenceSpm spm, dist=${distanceM.toInt()} m")
 
-            // 상태만 업데이트 — 실제 전송은 1초 주기 sendJob이 담당
-            // heartRate는 SensorManager 직접 리스너가 덮어쓸 수 있으므로 Health Services 값이 있을 때만 반영
             _exerciseData.value = _exerciseData.value.copy(
                 isActive     = true,
-                heartRate    = if (heartRate > 0) heartRate else _exerciseData.value.heartRate,
+                heartRate    = if (heartRate > 0) heartRate else current.heartRate,
                 caloriesKcal = caloriesKcal,
+                cadenceSpm   = cadenceSpm,
+                distanceM    = distanceM,
             )
         }
 
@@ -214,7 +207,6 @@ class ExerciseService : LifecycleService() {
 
     override fun onDestroy() {
         Log.w("WR_Lifecycle", "ExerciseService.onDestroy() — 서비스 종료됨, isActive=${_exerciseData.value.isActive}")
-        sensorManager?.unregisterListener(heartRateSensorListener)
         sendJob?.cancel()
         if (wakeLock?.isHeld == true) wakeLock?.release()
         exerciseClient.clearUpdateCallbackAsync(exerciseCallback)
@@ -231,12 +223,6 @@ class ExerciseService : LifecycleService() {
             Log.i("WR_WakeLock", "WakeLock 획득 시도 — isHeld=${wakeLock?.isHeld}")
             if (wakeLock?.isHeld == false) wakeLock?.acquire()
             Log.i("WR_WakeLock", "WakeLock 획득 완료 — isHeld=${wakeLock?.isHeld}")
-            // Health Services가 절전 중 콜백을 줄일 때 심박수는 SensorManager로 직접 보완
-            sensorManager = getSystemService(SensorManager::class.java)
-            sensorManager?.getDefaultSensor(Sensor.TYPE_HEART_RATE)?.let { sensor ->
-                sensorManager?.registerListener(heartRateSensorListener, sensor, SensorManager.SENSOR_DELAY_NORMAL)
-                Log.d("ExerciseService", "심박수 SensorManager 리스너 등록 완료")
-            }
             startSendLoop()
             lifecycleScope.launch {
                 delay(30_000L)
@@ -262,8 +248,6 @@ class ExerciseService : LifecycleService() {
         } catch (e: Exception) {
             Log.e("ExerciseService", "운동 종료 실패", e)
         } finally {
-            sensorManager?.unregisterListener(heartRateSensorListener)
-            sensorManager = null
             sendJob?.cancel()
             if (wakeLock?.isHeld == true) wakeLock?.release()
             prefs.edit().putBoolean(PREF_IS_ACTIVE, false).apply()
@@ -272,8 +256,8 @@ class ExerciseService : LifecycleService() {
     }
 
     /**
-     * 1초마다 HR/칼로리/케이던스를 폰으로 전송.
-     * 속도/거리는 모바일 GPS가 담당하므로 전송하지 않음.
+     * 1초마다 HR/칼로리/케이던스/거리를 폰으로 전송.
+     * 속도/위치는 모바일 GPS가 담당하므로 전송하지 않음.
      */
     private fun startSendLoop() {
         sendJob?.cancel()
@@ -289,8 +273,10 @@ class ExerciseService : LifecycleService() {
                         put("timestamp",    beforeMs)
                         put("heartRate",    data.heartRate)
                         put("caloriesKcal", data.caloriesKcal)
+                        put("cadenceSpm",   data.cadenceSpm)
+                        put("distanceM",    data.distanceM)
                     }
-                    Log.d("WR_SendLoop", "[$loopCount] HR=${data.heartRate} bpm, ${data.caloriesKcal.toInt()} kcal")
+                    Log.d("WR_SendLoop", "[$loopCount] HR=${data.heartRate} bpm, cadence=${data.cadenceSpm} spm, dist=${data.distanceM.toInt()} m")
                     sendToPhone(json.toString())
                 } else if (data.isActive) {
                     Log.w("WR_SendLoop", "[$loopCount] 최신 데이터 정지 감지 — 전송 스킵 (stale=${staleMs}ms)")
