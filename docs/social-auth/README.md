@@ -11,9 +11,13 @@ WithRun의 Google + Kakao 로그인 구현을 `web + mobile + was` 기준으로 
 - 인증 구조는 `OAuth2 -> WAS 검증 -> JWT/refresh 발급 -> /api/auth/me로 상태 확인`으로 간다.
 - 웹은 `HttpOnly` 쿠키 기반 refresh token 구조를 사용한다.
 - 모바일은 외부 브라우저/Auth Session + 딥링크 복귀 흐름을 사용한다.
+<<<<<<< HEAD
 - v1에서는 `provider + providerUserId` 기준으로만 기존 계정을 식별한다.
 - v1에서는 이메일 기반 중복 계정 차단을 하지 않는다.
 - 이메일 기반 중복 방지 로직은 추후 추가한다.
+=======
+- 같은 이메일의 기존 계정은 자동 링크하지 않는다.
+>>>>>>> 2aa0226 (docs(was): 소셜 로그인 구현 체크리스트 최신화)
 - 온보딩 v1 입력값은 `nickname`, `birthDate`, `gender`, `height`, `weight`만 받는다.
 - `loginCode` / `signupToken` 중간 계층은 도입하지 않는다.
 
@@ -21,6 +25,7 @@ WithRun의 Google + Kakao 로그인 구현을 `web + mobile + was` 기준으로 
 
 - [x] `was`에 [`User`](../../was/src/main/java/kr/withrun/was/domain/user/entity/User.java) 엔티티가 있다.
 - [x] `was`에 [`UserAuthAccount`](../../was/src/main/java/kr/withrun/was/domain/user/entity/UserAuthAccount.java) 엔티티가 있다.
+<<<<<<< HEAD
 - [x] `was`에 [`UserAuthAccountRepository`](../../was/src/main/java/kr/withrun/was/domain/user/repository/UserAuthAccountRepository.java)가 있다.
 - [x] [`SecurityConfig`](../../was/src/main/java/kr/withrun/was/global/config/SecurityConfig.java) 에서 `/oauth2/**`, `/login/oauth2/**`, `/api/auth/**` public 경로가 잡혀 있다.
 - [x] `application.yml`에 Google OAuth 설정과 `app.auth.frontend-base-url`, `app.auth.mobile-deep-link-base`, `app.auth.allowed-origins`가 이미 있다.
@@ -53,6 +58,37 @@ WithRun의 Google + Kakao 로그인 구현을 `web + mobile + was` 기준으로 
   - [x] `web`: `http://localhost:5173`
   - [x] `was`: `http://localhost:8080`
   - [x] `mobile` 딥링크: `withrun://auth/callback`
+=======
+- [x] [`SecurityConfig`](../../was/src/main/java/kr/withrun/was/global/config/SecurityConfig.java) 에서 `/oauth2/**`, `/login/oauth2/**`, `/api/auth/**` public 경로가 잡혀 있다.
+- [x] `application.yml`에 Google OAuth 설정과 `app.auth.frontend-base-url`, `app.auth.mobile-deep-link-base`, `app.auth.allowed-origins`가 이미 있다.
+- [ ] Kakao OAuth 설정은 아직 없다.
+- [ ] `web`은 아직 `localStorage` access token + 401 즉시 `/login` 이동 방식이다.
+- [ ] `mobile` 브리지에는 아직 `startSocialLogin(url)`이 없다.
+- [ ] Google/Kakao OAuth, JWT, refresh, `/api/auth/me` 흐름이 현재 엔티티 구조에 완전히 맞게 정리되어 있는지 확인이 필요하다.
+
+## Step 0. 사전 준비
+
+- [ ] Google OAuth 앱의 redirect URI를 확인한다.
+  - [ ] `http://localhost:8080/login/oauth2/code/google`
+  - [ ] 배포 주소
+- [ ] Kakao Developers에서 Kakao Login을 활성화하고 redirect URI를 등록한다.
+  - [ ] `http://localhost:8080/login/oauth2/code/kakao`
+  - [ ] 배포 주소
+  - [ ] 동의 항목: `profile_nickname`, `profile_image`, `account_email`
+- [ ] AWS Parameter Store 값을 준비한다.
+  - [ ] `google.oauth.client-id`
+  - [ ] `google.oauth.client-secret`
+  - [ ] `kakao.oauth.client-id`
+  - [ ] `kakao.oauth.client-secret`
+  - [ ] `auth.jwt.access-secret`
+  - [ ] `app.auth.frontend-base-url`
+  - [ ] `app.auth.allowed-origins`
+- [ ] `app.auth.mobile-deep-link-base`는 기본값이 이미 있으므로, Step 9 진입 시 최종값만 확정한다.
+- [ ] 개발 기준 URL을 확정한다.
+  - [ ] `web`: `http://localhost:5173`
+  - [ ] `was`: `http://localhost:8080`
+  - [ ] `mobile` 딥링크: `withrun://auth/callback`
+>>>>>>> 2aa0226 (docs(was): 소셜 로그인 구현 체크리스트 최신화)
 
 완료 기준:
 Google/Kakao 콘솔과 Parameter Store 값이 준비되어 있고, 로컬/배포 redirect 주소가 확정되어 있다.
@@ -60,6 +96,7 @@ Google/Kakao 콘솔과 Parameter Store 값이 준비되어 있고, 로컬/배포
 ## Step 1. WAS 엔티티와 인증 기준 정리
 
 - [ ] 기존 인증 로직이 `User`, `UserAuthAccount` 기준으로 동작하는지 점검한다.
+<<<<<<< HEAD
 - [x] `UserAuthAccountRepository`를 만들고 `findByProviderAndProviderUserId(provider, providerUserId)`를 추가한다.
 - [ ] 필요 시 이메일 중복 확인 메서드를 나중에 추가할 수 있게 구조를 열어둔다.
 - [x] `UserRepository`에 닉네임 중복 확인 메서드를 추가한다.
@@ -78,6 +115,31 @@ Google/Kakao 콘솔과 Parameter Store 값이 준비되어 있고, 로컬/배포
   - [ ] `JwtFilter`
   - [ ] `RefreshTokenStore`
   - [ ] `AuthController` / `AuthService`
+=======
+- [ ] `UserAuthAccountRepository`를 만든다.
+  - [ ] `findByProviderAndProviderUserId(provider, providerUserId)`
+  - [ ] 필요 시 이메일 중복 확인 메서드 추가
+- [ ] `UserRepository`를 정리한다.
+- [ ] JWT 생성/검증 로직이 `User` 기준으로 동작하도록 맞춘다.
+- [ ] refresh token 저장 구조를 점검한다.
+- [ ] `User`에 온보딩 완료 여부 필드를 추가한다.
+  - [ ] `profileCompleted` 또는 `onboardedAt`
+- [ ] 현재 `User`의 프로필 필드가 모두 `nullable = false`인지 확인하고, 온보딩 전 사용자 생성 전략을 먼저 정한다.
+  - [ ] `nickname`, `birthDate`, `gender`, `height`, `weight`를 온보딩 전까지 nullable로 둘지 결정
+  - [ ] 또는 임시 프로필 값을 허용할지 결정
+  - [ ] Step 3의 신규 계정 생성은 이 결정 이후에만 진행한다.
+- [ ] `SecurityConfig`의 세션 정책이 `IF_REQUIRED`인지 확인한다.
+  - [ ] OAuth2 로그인 시 CSRF 방지를 위한 state 값 저장에 세션이 필요하다.
+  - [ ] `STATELESS`로 바꾸면 OAuth 로그인이 실패할 수 있다.
+- [ ] 기존 인증 코드에서 `Member` 참조가 남아 있는지 확인한다.
+  - [ ] `JwtProvider`
+  - [ ] `JwtFilter`
+  - [ ] `OAuth2SuccessHandler`
+  - [ ] `CustomOAuth2UserService`
+  - [ ] `SecurityConfig`
+  - [ ] `RefreshTokenStore`
+  - [ ] 기존 Controller / Service 계층
+>>>>>>> 2aa0226 (docs(was): 소셜 로그인 구현 체크리스트 최신화)
 
 완료 기준:
 Google 로그인 기준으로도 `User` + `UserAuthAccount` 구조가 일관되게 사용되고, 이후 Kakao를 붙일 수 있는 상태가 된다.
@@ -92,6 +154,7 @@ Google 로그인 기준으로도 `User` + `UserAuthAccount` 구조가 일관되�
   - [ ] `KakaoOAuth2UserInfo`
   - [ ] `OAuth2UserInfoFactory`
 - [ ] Google은 `sub`, `email`, `picture`를 읽는다.
+<<<<<<< HEAD
 - [ ] Kakao는 `id`를 필수로 읽는다.
 - [ ] Kakao의 `profile_nickname`, `profile_image`는 선택값으로 읽는다.
 - [ ] Kakao의 `account_email`은 현재 필수 전제로 두지 않는다.
@@ -100,6 +163,13 @@ Google 로그인 기준으로도 `User` + `UserAuthAccount` 구조가 일관되�
   - [ ] 같은 `provider + providerUserId`면 기존 로그인
   - [ ] 다른 provider 계정과의 이메일 중복 차단은 아직 하지 않는다
   - [ ] 이메일 기반 중복 방지는 추후 `account_email` 사용 가능 시 추가한다
+=======
+- [ ] Kakao는 `id`, `kakao_account.email`, `kakao_account.profile.profile_image_url`를 읽는다.
+- [ ] `CustomOAuth2UserService`가 provider별 파서를 사용하도록 정리한다.
+- [ ] 이메일 충돌 정책을 구현한다.
+  - [ ] 같은 `provider + providerUserId`면 기존 로그인
+  - [ ] 다른 provider인데 같은 이메일이면 `already_registered`
+>>>>>>> 2aa0226 (docs(was): 소셜 로그인 구현 체크리스트 최신화)
 
 완료 기준:
 브라우저에서 Google과 Kakao 로그인 시작이 모두 가능하고, provider별 사용자 정보가 일관되게 파싱된다.
@@ -117,6 +187,10 @@ Google 로그인 기준으로도 `User` + `UserAuthAccount` 구조가 일관되�
 - [ ] OAuth 실패 핸들러를 정리한다.
   - [ ] `cancelled`
   - [ ] `access_denied`
+<<<<<<< HEAD
+=======
+  - [ ] `already_registered`
+>>>>>>> 2aa0226 (docs(was): 소셜 로그인 구현 체크리스트 최신화)
   - [ ] `server_error`
 - [ ] 웹 redirect 흐름을 정리한다.
   - [ ] 성공 시 `/auth/callback`
@@ -174,6 +248,10 @@ Google/Kakao 로그인 성공 시 토큰 발급까지 이어지고, 실패 시 �
 - [ ] 에러 배너를 둔다.
   - [ ] `cancelled`
   - [ ] `access_denied`
+<<<<<<< HEAD
+=======
+  - [ ] `already_registered`
+>>>>>>> 2aa0226 (docs(was): 소셜 로그인 구현 체크리스트 최신화)
   - [ ] `server_error`
 - [ ] 웹 브라우저에서는 `window.location.assign(...)`으로 OAuth 시작 URL로 이동한다.
 - [ ] WebView 안에서는 `startSocialLogin(url)` 브리지를 호출한다.
@@ -239,8 +317,12 @@ Google/Kakao 로그인 성공 시 토큰 발급까지 이어지고, 실패 시 �
   - [ ] Redis
   - [ ] DB
 - [ ] refresh token hash 저장을 적용한다.
+<<<<<<< HEAD
 - [ ] v1에서는 refresh token rotation을 도입하지 않는다.
 - [ ] 필요 시 안정화 단계에서 rotation 도입을 검토한다.
+=======
+- [ ] rotation 정책을 도입한다.
+>>>>>>> 2aa0226 (docs(was): 소셜 로그인 구현 체크리스트 최신화)
 
 완료 기준:
 서버 재시작, 만료 관리, 로그아웃, 재발급 흐름이 안정적으로 관리된다.
@@ -252,6 +334,10 @@ Google/Kakao 로그인 성공 시 토큰 발급까지 이어지고, 실패 시 �
   - [ ] Kakao 로그인
   - [ ] 기존 사용자 로그인
   - [ ] 신규 사용자 생성
+<<<<<<< HEAD
+=======
+  - [ ] 이메일 충돌
+>>>>>>> 2aa0226 (docs(was): 소셜 로그인 구현 체크리스트 최신화)
   - [ ] 온보딩 API 유효성 검증
   - [ ] reissue
   - [ ] logout 후 refresh 거부
@@ -287,9 +373,15 @@ Google/Kakao 로그인 성공 시 토큰 발급까지 이어지고, 실패 시 �
 - 모바일 WebView에서도 외부 브라우저 + 딥링크 복귀가 된다.
 - 기존 계정은 홈으로 바로 진입한다.
 - 신규 계정은 온보딩 후 홈으로 진입한다.
+<<<<<<< HEAD
 - access token 만료 시 refresh로 복구되고, refresh 만료 시 `/login`으로 돌아간다.
 - `User` + `UserAuthAccount` 구조와 인증 흐름이 일관되게 맞물린다.
 - 이메일 기반 중복 계정 방지는 추후 확장 가능한 구조로 남겨둔다.
+=======
+- 이메일 충돌 계정은 자동 링크되지 않고 로그인 화면 오류로 돌아간다.
+- access token 만료 시 refresh로 복구되고, refresh 만료 시 `/login`으로 돌아간다.
+- `User` + `UserAuthAccount` 구조와 인증 흐름이 일관되게 맞물린다.
+>>>>>>> 2aa0226 (docs(was): 소셜 로그인 구현 체크리스트 최신화)
 
 ## 구현 우선순위
 
