@@ -10,6 +10,7 @@ import kr.withrun.was.domain.course.dto.CourseLikeStatusResponse;
 import kr.withrun.was.domain.course.service.CourseLikeService;
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
+import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
@@ -33,7 +34,11 @@ public class CourseLikeController {
             description = "특정 사용자가 코스에 좋아요를 추가한다. 이미 좋아요가 있어도 최종 상태를 true 로 반환한다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "좋아요 추가 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "좋아요 추가 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CourseLikeStatusApiResponse.class))
+            ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "코스 또는 사용자를 찾을 수 없음",
@@ -55,7 +60,11 @@ public class CourseLikeController {
             description = "특정 사용자의 코스 좋아요를 취소한다. 좋아요가 없어도 최종 상태를 false 로 반환한다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "좋아요 취소 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "좋아요 취소 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CourseLikeStatusApiResponse.class))
+            ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "코스 또는 사용자를 찾을 수 없음",

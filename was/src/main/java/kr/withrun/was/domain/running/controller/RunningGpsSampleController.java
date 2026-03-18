@@ -14,8 +14,8 @@ import kr.withrun.was.domain.running.service.RunningGpsSampleService;
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.ResponseCode;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
+import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -28,10 +28,13 @@ import org.springframework.web.bind.annotation.RestController;
 @Validated
 @RestController
 @RequestMapping("/api/running-sessions")
-@RequiredArgsConstructor
 public class RunningGpsSampleController {
 
     private final RunningGpsSampleService runningGpsSampleService;
+
+    public RunningGpsSampleController(RunningGpsSampleService runningGpsSampleService) {
+        this.runningGpsSampleService = runningGpsSampleService;
+    }
 
     @Operation(
             summary = "GPS 샘플 배치를 저장한다",
@@ -41,7 +44,7 @@ public class RunningGpsSampleController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "201",
                     description = "GPS 샘플 배치 저장 성공",
-                    useReturnTypeSchema = true
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CreateRunningGpsSampleBatchApiResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",

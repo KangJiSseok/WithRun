@@ -14,8 +14,8 @@ import kr.withrun.was.domain.running.service.RunningHealthSampleService;
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.ResponseCode;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
+import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
-import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.*;
@@ -24,10 +24,13 @@ import org.springframework.web.bind.annotation.*;
 @Validated
 @RestController
 @RequestMapping("/api/running-sessions")
-@RequiredArgsConstructor
 public class RunningHealthSampleController {
 
     private final RunningHealthSampleService runningHealthSampleService;
+
+    public RunningHealthSampleController(RunningHealthSampleService runningHealthSampleService) {
+        this.runningHealthSampleService = runningHealthSampleService;
+    }
 
     @Operation(
             summary = "건강 샘플 배치를 저장한다",
@@ -37,7 +40,7 @@ public class RunningHealthSampleController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "201",
                     description = "건강 샘플 배치 저장 성공",
-                    useReturnTypeSchema = true
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CreateRunningHealthSampleBatchApiResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",

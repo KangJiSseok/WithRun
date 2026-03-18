@@ -19,6 +19,7 @@ import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
+import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -49,7 +50,11 @@ public class RunningSessionController {
             description = "사용자와 러닝 모드 기준으로 새로운 러닝 세션을 생성한다. COURSE 모드에서는 courseId 가 필요하고, GHOST 모드에서는 ghostTargetRunningSessionId 가 필요하다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "러닝 세션 생성 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "201",
+                    description = "러닝 세션 생성 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CreateRunningSessionApiResponse.class))
+            ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
                     description = "요청 본문 형식, 좌표 범위, 모드별 필수 필드 또는 고스트 대상 조건이 올바르지 않음",
@@ -77,7 +82,11 @@ public class RunningSessionController {
             description = "진행 중인 러닝 세션을 종료하고 최종 거리, 칼로리, 페이스 등 요약 기록을 확정한다. 이미 종료된 세션은 다시 종료할 수 없다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "러닝 세션 종료 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "러닝 세션 종료 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.UpdateRunningSessionApiResponse.class))
+            ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
                     description = "요청 본문 형식, 좌표 범위 또는 종료 기록 값이 올바르지 않음",
@@ -112,7 +121,11 @@ public class RunningSessionController {
             description = "특정 러닝 세션에 저장된 고스트 러닝 승패 결과와 시간/거리 차이를 조회한다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "고스트 러닝 결과 조회 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "고스트 러닝 결과 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.GhostRunningResultApiResponse.class))
+            ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "고스트 러닝 결과를 찾을 수 없음",
@@ -135,7 +148,7 @@ public class RunningSessionController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "과거 러닝 세션 조회 성공",
-                    useReturnTypeSchema = true
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.PastRunningSessionsApiResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
@@ -163,7 +176,7 @@ public class RunningSessionController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "201",
                     description = "러닝 기록 코스 등록 성공",
-                    useReturnTypeSchema = true
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.RegisterRunningSessionCourseApiResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
