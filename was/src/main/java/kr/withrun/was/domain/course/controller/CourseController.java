@@ -8,6 +8,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
+import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
@@ -85,5 +87,29 @@ public class CourseController {
             @Valid @ParameterObject @ModelAttribute NearbyCoursesRequest request
     ) {
         return ApiResponse.successEntity(courseService.findNearbyCourses(request));
+    }
+
+    @Operation(
+            summary = "코스 리더보드를 조회한다",
+            description = "courseId 쿼리 파라미터 기준으로 리더보드 항목을 조회하고 point 내림차순으로 rank()를 계산해 페이지 단위로 반환한다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "코스 리더보드 조회 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "courseId, page, size 값이 유효하지 않음",
+                    content = @Content(schema = @Schema(implementation = ValidationErrorApiResponseDoc.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "코스를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+            )
+    })
+    @GetMapping("/leaderboards")
+    public ResponseEntity<ApiResponse<CourseLeaderboardResponse>> findCourseLeaderboard(
+            @Valid @ParameterObject @ModelAttribute CourseLeaderboardRequest request
+    ) {
+        return ApiResponse.successEntity(courseService.findCourseLeaderboard(request));
     }
 }

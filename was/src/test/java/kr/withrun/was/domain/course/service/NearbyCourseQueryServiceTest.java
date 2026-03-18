@@ -4,6 +4,7 @@ import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
+import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseLikeRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseReviewRepository;
@@ -52,6 +53,9 @@ class NearbyCourseQueryServiceTest {
     @Mock
     private CourseReviewRepository courseReviewRepository;
 
+    @Mock
+    private CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
+
     private CourseService courseService;
 
     @BeforeEach
@@ -61,7 +65,8 @@ class NearbyCourseQueryServiceTest {
                 courseDifficultyRepository,
                 courseTypeMapRepository,
                 courseLikeRepository,
-                courseReviewRepository
+                courseReviewRepository,
+                courseGhostLeaderboardRepository
         );
     }
 
