@@ -15,6 +15,10 @@ export type CourseItem = {
   difficulty: CourseDifficulty | null;
   courseTypes: CourseType[];
   snapshotImageUrl: string | null;
+  // 아래 3개는 백엔드에서 누락된 필드값이라 임시로 옵셔널 처리함
+  likeCount?: number;
+  isLiked?: boolean;
+  isBookmarked?: boolean;
 };
 
 export type GetNearbyCoursesParams = {

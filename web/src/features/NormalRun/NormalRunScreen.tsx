@@ -9,93 +9,89 @@ import {
 import { RunningGuideModal } from '@/shared/components/RunningGuideModal';
 import { Button } from '@/shared/components/shadcn/button';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/shadcn/tabs';
-import {
-  RunningCourseCard,
-  type RunningCourseTab,
-} from '@/shared/components/RunningCourseCard';
-
-// 임시 목데이터
-import { COURSES, INITIAL_FILTERS } from '@/constants/NormalRun';
+import { RunningCourseCard } from '@/shared/components/RunningCourseCard';
 import RunningCourseSearchBar from '@/shared/components/RunningCourseSearchBar/RunningCourseSearchBar';
+import { useNormalRunCourses } from '@/hooks/NormalRun/useNormalRunCourses';
+import { INITIAL_FILTERS } from '@/constants/NormalRun';
+import type { ActiveCourseTab, CourseDifficulty, CourseType } from '@/apis';
+
+const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
+  EASY: '쉬움',
+  MEDIUM: '보통',
+  HARD: '어려움',
+};
+
+const COURSE_TYPE_LABEL: Record<CourseType, string> = {
+  URBAN: '도심',
+  PARK: '공원',
+  RIVERSIDE: '한강변',
+  MOUNTAIN_TRAIL: '산/둘레길',
+  TRACK: '트랙',
+  OTHER: '기타',
+};
 
 export function NormalRunScreen() {
   const navigate = useNavigate();
-  const [showGuide, setShowGuide] = useState(() => {
-    const hasSeenGuide = localStorage.getItem('running-guide-seen');
+  const { normalRunCourses, isLoading } = useNormalRunCourses();
 
-    return !hasSeenGuide;
+  const [showGuide, setShowGuide] = useState(() => {
+    return !localStorage.getItem('running-guide-seen');
   });
-  const [activeTab, setActiveTab] = useState<RunningCourseTab>('official');
+  const [activeTab, setActiveTab] = useState<ActiveCourseTab>('OFFICIAL');
   const [searchKeyword, setSearchKeyword] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [filters, setFilters] = useState<RunningFilterState>(INITIAL_FILTERS);
-  const [savedCourses, setSavedCourses] = useState<Set<number>>(() => {
-    const saved = localStorage.getItem('saved-running-courses');
+  const [savedCourses, setSavedCourses] = useState<Set<number>>(new Set());
 
-    return saved ? new Set(JSON.parse(saved)) : new Set();
-  });
-
+  // API isBookmarked 값으로 초기 북마크 상태 설정
   useEffect(() => {
-    localStorage.setItem(
-      'saved-running-courses',
-      JSON.stringify(Array.from(savedCourses))
-    );
-  }, [savedCourses]);
+    if (normalRunCourses.length > 0) {
+      setSavedCourses(
+        new Set(
+          normalRunCourses
+            .filter((c) => c.isBookmarked)
+            .map((c) => c.courseId),
+        ),
+      );
+    }
+  }, [normalRunCourses]);
 
   function handleCloseGuide() {
     localStorage.setItem('running-guide-seen', 'true');
     setShowGuide(false);
   }
 
-  // 코스 검색어 변경 함수
   function handleSearchKeyword(value: string) {
     setSearchKeyword(value);
   }
 
-  // 코스 북마크 등록 함수
-  // TODO : API 연결 로직으로 바꿔야함(지금은 UI만 변경되도록 만들어짐)
+  // TODO : 북마크 API 연결 로직으로 바꿔야함(지금은 UI만 변경되도록 만들어짐)
   function handleToggleSave(courseId: number) {
     setSavedCourses((prev) => {
       const next = new Set(prev);
-
       if (next.has(courseId)) {
         next.delete(courseId);
       } else {
         next.add(courseId);
       }
-
       return next;
     });
   }
 
-  // 코스 필터 변경시 사용할 함수
   function handleFilterChange(key: keyof RunningFilterState, value: string) {
-    if (key === 'purpose') {
-      setFilters((prev) => ({ ...prev, purpose: value }));
-      return;
-    }
-
     setFilters((prev) => {
       if (value === '전체') {
-        return {
-          ...prev,
-          [key]: [],
-        };
+        return { ...prev, [key]: [] };
       }
 
-      const filterKey = key as Exclude<keyof RunningFilterState, 'purpose'>;
-      const nextValues = new Set(prev[filterKey]);
-
+      const nextValues = new Set(prev[key]);
       if (nextValues.has(value)) {
         nextValues.delete(value);
       } else {
         nextValues.add(value);
       }
 
-      return {
-        ...prev,
-        [filterKey]: Array.from(nextValues),
-      };
+      return { ...prev, [key]: Array.from(nextValues) };
     });
   }
 
@@ -103,47 +99,32 @@ export function NormalRunScreen() {
     setFilters(INITIAL_FILTERS);
   }
 
-  // 필터링 목 함수(추후 삭제)
-  const filteredCourses = COURSES.filter((course) => {
-    const matchesTab = course.tab === activeTab;
+  const filteredCourses = normalRunCourses.filter((course) => {
+    if (course.status !== activeTab) return false;
+
     const keyword = searchKeyword.trim().toLowerCase();
-    const matchesSearch =
-      keyword === '' || course.title.toLowerCase().includes(keyword);
-    const distance = Number.parseFloat(course.distance);
+    if (keyword && !course.title.toLowerCase().includes(keyword)) return false;
 
-    const matchesPurpose =
-      filters.purpose === '전체' || course.purpose.includes(filters.purpose);
-
-    const matchesDistance =
-      filters.distance.length === 0 ||
-      filters.distance.some((distanceFilter) => {
-        if (distanceFilter === '5km 미만') {
-          return distance < 5;
-        }
-
-        if (distanceFilter === '5km - 10km') {
-          return distance >= 5 && distance <= 10;
-        }
-
-        return distanceFilter === '10km 이상' && distance > 10;
+    if (filters.distance.length > 0) {
+      const distanceKm = course.distanceM / 1000;
+      const matchesDistance = filters.distance.some((f) => {
+        if (f === '5km 미만') return distanceKm < 5;
+        if (f === '5km - 10km') return distanceKm >= 5 && distanceKm <= 10;
+        return f === '10km 이상' && distanceKm > 10;
       });
+      if (!matchesDistance) return false;
+    }
 
-    const matchesCourseType =
-      filters.courseType.length === 0 ||
-      course.courseType.some((type) => filters.courseType.includes(type));
+    if (filters.courseType.length > 0) {
+      const labels = course.courseTypes.map((t) => COURSE_TYPE_LABEL[t]);
+      if (!labels.some((label) => filters.courseType.includes(label))) return false;
+    }
 
-    const matchesDifficulty =
-      filters.difficulty.length === 0 ||
-      filters.difficulty.includes(course.difficulty);
+    if (filters.difficulty.length > 0 && course.difficulty != null) {
+      if (!filters.difficulty.includes(DIFFICULTY_LABEL[course.difficulty])) return false;
+    }
 
-    return (
-      matchesTab &&
-      matchesSearch &&
-      matchesPurpose &&
-      matchesDistance &&
-      matchesCourseType &&
-      matchesDifficulty
-    );
+    return true;
   });
 
   return (
@@ -157,14 +138,11 @@ export function NormalRunScreen() {
             </h1>
           </div>
 
-          {/* 검색창 */}
           <div className="flex items-center gap-[var(--space-3)]">
             <RunningCourseSearchBar
               searchKeyword={searchKeyword}
               handleSearchKeyword={handleSearchKeyword}
             />
-
-            {/* 필터 모달 활성화 버튼 */}
             <Button
               type="button"
               variant="outline"
@@ -178,18 +156,18 @@ export function NormalRunScreen() {
 
           <Tabs
             value={activeTab}
-            onValueChange={(value) => setActiveTab(value as RunningCourseTab)}
+            onValueChange={(value) => setActiveTab(value as ActiveCourseTab)}
             className="w-full"
           >
             <TabsList className="h-auto w-full justify-start gap-[var(--space-4)] rounded-none border-b border-[hsl(var(--border-default))] bg-transparent p-0">
               <TabsTrigger
-                value="official"
+                value="OFFICIAL"
                 className="rounded-none border-b-2 border-transparent px-0 pb-[var(--space-2)] pt-0 body-l-b text-[hsl(var(--text-secondary))] shadow-none data-[state=active]:border-transparent data-[state=active]:border-b-2 data-[state=active]:border-b-[hsl(var(--primary-1))] data-[state=active]:bg-transparent data-[state=active]:text-[hsl(var(--primary-1))]"
               >
                 공식 코스
               </TabsTrigger>
               <TabsTrigger
-                value="community"
+                value="COMMUNITY"
                 className="rounded-none border-b-2 border-transparent px-0 pb-[var(--space-2)] pt-0 body-l-b text-[hsl(var(--text-secondary))] shadow-none data-[state=active]:border-transparent data-[state=active]:border-b-2 data-[state=active]:border-b-[hsl(var(--primary-1))] data-[state=active]:bg-transparent data-[state=active]:text-[hsl(var(--primary-1))]"
               >
                 커뮤니티 코스
@@ -198,34 +176,40 @@ export function NormalRunScreen() {
           </Tabs>
         </header>
 
-        {/* 필터된 코스 렌더링 섹션 */}
         <section className="flex flex-col gap-[var(--space-4)]">
-          {filteredCourses.map((course) => (
-            // 러닝 코스 카드 UI
-            <RunningCourseCard
-              key={course.id}
-              course={course}
-              isSaved={savedCourses.has(course.id)}
-              onClick={() => navigate(`/normal/${course.id}`)}
-              onToggleSave={handleToggleSave}
-            />
-          ))}
-
-          {/* 필터된 코스 카드 없을시 폴백 UI */}
-          {filteredCourses.length === 0 ? (
-            <div className="flex h-40 flex-col items-center justify-center rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-[var(--space-5)] text-center">
-              <p className="body-l-b text-[hsl(var(--text-primary))]">
-                검색 결과가 없습니다
-              </p>
+          {isLoading ? (
+            <div className="flex h-40 items-center justify-center">
               <p className="body-r text-[hsl(var(--text-secondary))]">
-                코스 이름을 바꿔 검색하거나 필터를 초기화해보세요.
+                코스를 불러오는 중입니다...
               </p>
             </div>
-          ) : null}
+          ) : (
+            <>
+              {filteredCourses.map((course) => (
+                <RunningCourseCard
+                  key={course.courseId}
+                  course={course}
+                  isSaved={savedCourses.has(course.courseId)}
+                  onClick={() => navigate(`/normal/${course.courseId}`)}
+                  onToggleSave={handleToggleSave}
+                />
+              ))}
+
+              {filteredCourses.length === 0 && (
+                <div className="flex h-40 flex-col items-center justify-center rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-[var(--space-5)] text-center">
+                  <p className="body-l-b text-[hsl(var(--text-primary))]">
+                    검색 결과가 없습니다
+                  </p>
+                  <p className="body-r text-[hsl(var(--text-secondary))]">
+                    코스 이름을 바꿔 검색하거나 필터를 초기화해보세요.
+                  </p>
+                </div>
+              )}
+            </>
+          )}
         </section>
       </div>
 
-      {/* 러닝 서비스 가이드 모달 */}
       <RunningGuideModal
         isOpen={showGuide}
         onClose={handleCloseGuide}
@@ -248,7 +232,6 @@ export function NormalRunScreen() {
         ]}
       />
 
-      {/* 일반 러닝 필터 Drawer */}
       <RunningFilterModal
         isOpen={showFilterModal}
         values={filters}
