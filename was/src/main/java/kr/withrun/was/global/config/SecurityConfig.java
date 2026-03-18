@@ -20,7 +20,7 @@ public class SecurityConfig {
     // application.yml에서 읽어들인 환경설정(프론트엔드 주소 등) 바구니를 가져옵니다.
     private final AuthProperties authProperties;
 
-    // 🛡️ 건물의 메인 경비실(SecurityFilterChain) 규칙을 설정하는 곳
+    // 건물의 메인 경비실(SecurityFilterChain) 규칙을 설정하는 곳
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
