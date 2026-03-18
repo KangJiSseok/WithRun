@@ -1,3 +1,4 @@
+import { useInfiniteScroll } from '@/shared/hooks';
 import type { RunningSession } from '@/shared/apis/Calendar';
 
 const TIME_SLOT_LABEL: Record<string, string> = {
@@ -44,6 +45,9 @@ interface RunningHistoryListProps {
 }
 
 export function RunningHistoryList({ title, items, isLoading, hasMore, isLoadingMore, onLoadMore }: RunningHistoryListProps) {
+  // 목록 끝에 위치한 sentinel 요소가 뷰포트에 들어오면 자동으로 다음 페이지 로드
+  const sentinelRef = useInfiniteScroll(hasMore, isLoadingMore, onLoadMore);
+
   return (
     <div className="flex flex-col gap-[var(--space-3)]">
       <p className="body-b text-[hsl(var(--text-primary))]">{title}</p>
@@ -103,17 +107,13 @@ export function RunningHistoryList({ title, items, isLoading, hasMore, isLoading
           </div>
         ))}
 
-      {!isLoading && hasMore && (
-        // 클릭 시 onLoadMore 호출
-        // 로딩 중엔 비활성화 + "불러오는 중..." 텍스트 표시
-        <button
-          type="button"
-          onClick={onLoadMore}
-          disabled={isLoadingMore}
-          className="w-full p-[var(--space-3)] rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] body-r text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--surface-subtle))] transition-colors disabled:opacity-50"
-        >
-          {isLoadingMore ? '불러오는 중...' : '더 보기'}
-        </button>
+      {/* 스크롤 감지용 sentinel — 뷰포트 진입 시 다음 페이지 자동 로드 */}
+      <div ref={sentinelRef} />
+
+      {isLoadingMore && (
+        <div className="flex justify-center py-[var(--space-2)]">
+          <span className="caption-r text-[hsl(var(--text-secondary))]">불러오는 중...</span>
+        </div>
       )}
     </div>
   );
