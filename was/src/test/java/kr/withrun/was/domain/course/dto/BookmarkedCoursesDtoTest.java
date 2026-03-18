@@ -28,35 +28,23 @@ class BookmarkedCoursesDtoTest {
     @Test
     void exposesExactRequestComponents() {
         assertThat(componentNamesOf(BookmarkedCoursesRequest.class))
-                .containsExactly("userId", "size", "cursor");
+                .containsExactly("size", "cursor");
     }
 
-    @DisplayName("사용자 ID는 양수여야 한다")
-    @ParameterizedTest(name = "userId={0}")
-    @ValueSource(longs = {0L, -1L})
-    void rejectsNonPositiveUserId(long userId) {
-        Set<ConstraintViolation<BookmarkedCoursesRequest>> violations = validate(
-                new BookmarkedCoursesRequest(userId, 10, null)
-        );
-
-        assertOnlyViolationOn(violations, "userId");
-    }
-
-    @DisplayName("size는 필수다")
+    @DisplayName("size를 생략하면 기본값 10을 사용한다")
     @Test
-    void rejectsMissingSize() {
-        Set<ConstraintViolation<BookmarkedCoursesRequest>> violations = validate(
-                new BookmarkedCoursesRequest(1L, null, null)
-        );
+    void defaultsSizeTo10WhenMissing() {
+        BookmarkedCoursesRequest request = new BookmarkedCoursesRequest(null, null);
 
-        assertOnlyViolationOn(violations, "size");
+        assertThat(request.size()).isEqualTo(10);
+        assertThat(validate(request)).isEmpty();
     }
 
     @DisplayName("최대 size 50은 허용한다")
     @Test
     void acceptsMaximumSize() {
         Set<ConstraintViolation<BookmarkedCoursesRequest>> violations = validate(
-                new BookmarkedCoursesRequest(1L, 50, null)
+                new BookmarkedCoursesRequest(50, null)
         );
 
         assertThat(violations).isEmpty();
@@ -67,7 +55,7 @@ class BookmarkedCoursesDtoTest {
     @ValueSource(ints = {0, -1, 51})
     void rejectsSizeOutsideSupportedRange(int size) {
         Set<ConstraintViolation<BookmarkedCoursesRequest>> violations = validate(
-                new BookmarkedCoursesRequest(1L, size, null)
+                new BookmarkedCoursesRequest(size, null)
         );
 
         assertOnlyViolationOn(violations, "size");

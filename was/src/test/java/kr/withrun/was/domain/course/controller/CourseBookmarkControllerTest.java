@@ -25,6 +25,7 @@ import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 
+import static org.mockito.ArgumentMatchers.anyLong;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
@@ -100,7 +101,7 @@ class CourseBookmarkControllerTest {
     @Test
     void wrapsBookmarkedCoursesResponseInSuccessEnvelope() throws Exception {
         long userId = 20L;
-        BookmarkedCoursesRequest request = new BookmarkedCoursesRequest(userId, 2, "previous-cursor");
+        BookmarkedCoursesRequest request = new BookmarkedCoursesRequest(2, "previous-cursor");
         BookmarkedCoursesResponse response = new BookmarkedCoursesResponse(
                 List.of(new BookmarkedCourseItemResponse(
                         12L,
@@ -119,7 +120,7 @@ class CourseBookmarkControllerTest {
                 true,
                 "next-cursor"
         );
-        given(courseBookmarkService.findBookmarkedCourses(request)).willReturn(response);
+        given(courseBookmarkService.findBookmarkedCourses(userId, request)).willReturn(response);
 
         mockMvc.perform(get("/api/courses/bookmarks/{userId}", userId)
                         .queryParam("size", "2")
@@ -139,7 +140,7 @@ class CourseBookmarkControllerTest {
                 .andExpect(jsonPath("$.data.hasMore").value(true))
                 .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"));
 
-        then(courseBookmarkService).should().findBookmarkedCourses(request);
+        then(courseBookmarkService).should().findBookmarkedCourses(userId, request);
     }
 
     @DisplayName("북마크 목록 size가 유효하지 않으면 잘못된 입력 응답을 반환한다")
@@ -152,23 +153,24 @@ class CourseBookmarkControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
 
-        then(courseBookmarkService).should(never()).findBookmarkedCourses(any());
+        then(courseBookmarkService).should(never()).findBookmarkedCourses(anyLong(), any(BookmarkedCoursesRequest.class));
     }
 
     @DisplayName("북마크 목록 size가 빈 문자열이면 기본값 10을 사용한다")
     @Test
     void usesDefaultSizeWhenBookmarkedCoursesSizeIsBlank() throws Exception {
-        BookmarkedCoursesRequest request = new BookmarkedCoursesRequest(20L, 10, null);
+        long userId = 20L;
+        BookmarkedCoursesRequest request = new BookmarkedCoursesRequest(10, null);
         BookmarkedCoursesResponse response = new BookmarkedCoursesResponse(List.of(), false, null);
-        given(courseBookmarkService.findBookmarkedCourses(request)).willReturn(response);
+        given(courseBookmarkService.findBookmarkedCourses(userId, request)).willReturn(response);
 
-        mockMvc.perform(get("/api/courses/bookmarks/{userId}", 20L)
+        mockMvc.perform(get("/api/courses/bookmarks/{userId}", userId)
                         .queryParam("size", ""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()));
 
-        then(courseBookmarkService).should().findBookmarkedCourses(request);
+        then(courseBookmarkService).should().findBookmarkedCourses(userId, request);
     }
 
     @DisplayName("북마크 목록 size 숫자 변환 오류는 size 필드로 응답한다")
@@ -182,23 +184,24 @@ class CourseBookmarkControllerTest {
                 .andExpect(jsonPath("$.data[0].field").value("size"))
                 .andExpect(jsonPath("$.data[0].rejectedValue").value("abc"));
 
-        then(courseBookmarkService).should(never()).findBookmarkedCourses(any());
+        then(courseBookmarkService).should(never()).findBookmarkedCourses(anyLong(), any(BookmarkedCoursesRequest.class));
     }
 
     @DisplayName("서비스가 커서를 거부하면 잘못된 커서 응답을 반환한다")
     @Test
     void returnsInvalidCursorWhenBookmarkedCoursesServiceRejectsCursor() throws Exception {
-        BookmarkedCoursesRequest request = new BookmarkedCoursesRequest(20L, 10, "%%%") ;
-        given(courseBookmarkService.findBookmarkedCourses(request))
+        long userId = 20L;
+        BookmarkedCoursesRequest request = new BookmarkedCoursesRequest(10, "%%%");
+        given(courseBookmarkService.findBookmarkedCourses(userId, request))
                 .willThrow(new CustomException(ResponseCode.INVALID_CURSOR));
 
-        mockMvc.perform(get("/api/courses/bookmarks/{userId}", 20L)
+        mockMvc.perform(get("/api/courses/bookmarks/{userId}", userId)
                         .queryParam("cursor", "%%%"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_CURSOR.getCode()));
 
-        then(courseBookmarkService).should().findBookmarkedCourses(request);
+        then(courseBookmarkService).should().findBookmarkedCourses(userId, request);
     }
 
     @DisplayName("없는 코스에 북마크를 추가하면 코스 없음 응답을 반환한다")

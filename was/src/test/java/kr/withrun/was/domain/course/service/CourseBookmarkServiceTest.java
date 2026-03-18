@@ -176,7 +176,8 @@ class CourseBookmarkServiceTest {
         ));
 
         BookmarkedCoursesResponse response = courseBookmarkService.findBookmarkedCourses(
-                new BookmarkedCoursesRequest(user.getId(), 1, null)
+                user.getId(),
+                new BookmarkedCoursesRequest(1, null)
         );
 
         assertThat(response.items()).hasSize(1);
@@ -234,7 +235,8 @@ class CourseBookmarkServiceTest {
         );
 
         BookmarkedCoursesResponse response = courseBookmarkService.findBookmarkedCourses(
-                new BookmarkedCoursesRequest(user.getId(), 5, cursor)
+                user.getId(),
+                new BookmarkedCoursesRequest(5, cursor)
         );
 
         assertThat(response.items()).hasSize(1);
@@ -254,7 +256,8 @@ class CourseBookmarkServiceTest {
         when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
 
         assertThatThrownBy(() -> courseBookmarkService.findBookmarkedCourses(
-                new BookmarkedCoursesRequest(user.getId(), 10, "%%%")
+                user.getId(),
+                new BookmarkedCoursesRequest(10, "%%%")
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -267,7 +270,8 @@ class CourseBookmarkServiceTest {
         when(userRepository.findNotDeletedUser(43L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> courseBookmarkService.findBookmarkedCourses(
-                new BookmarkedCoursesRequest(43L, 10, null)
+                43L,
+                new BookmarkedCoursesRequest(10, null)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
