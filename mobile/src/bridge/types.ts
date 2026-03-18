@@ -19,6 +19,8 @@ export type WatchHealthData = {
   timestamp: number
   heartRate: number
   caloriesKcal: number
+  cadenceSpm: number   // Samsung Health SPM (모바일 가속도계보다 정확)
+  distanceM: number    // 만보계 기반 누적 거리(m)
 }
 
 export type GpsLocation = {
