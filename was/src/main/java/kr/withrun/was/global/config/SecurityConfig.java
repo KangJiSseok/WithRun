@@ -23,8 +23,6 @@ public class SecurityConfig {
     private final CustomOAuth2UserService customOAuth2UserService;
 
     // 건물의 메인 경비실(SecurityFilterChain) 규칙을 설정하는 곳
-
-    // 건물의 메인 경비실(SecurityFilterChain) 규칙을 설정하는 곳
     @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
