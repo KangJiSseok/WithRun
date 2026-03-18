@@ -20,7 +20,12 @@ import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.RunningSession;
+import kr.withrun.was.domain.running.repository.RunningGpsSampleRepository;
+import kr.withrun.was.domain.running.repository.RunningHealthSampleRepository;
+import kr.withrun.was.domain.running.repository.GhostRunningResultRepository;
 import kr.withrun.was.domain.running.repository.RunningSessionRepository;
+import kr.withrun.was.domain.running.repository.RunningSessionSplitRepository;
+import kr.withrun.was.domain.running.repository.query.dto.GhostRunningResultRow;
 import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
@@ -28,8 +33,8 @@ import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.domain.user.type.Gender;
-import kr.withrun.was.global.common.type.TimeSlot;
 import kr.withrun.was.global.common.type.Difficulty;
+import kr.withrun.was.global.common.type.TimeSlot;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -81,12 +86,28 @@ class RunningSessionServiceTest {
     @Mock
     private CourseTypeMapRepository courseTypeMapRepository;
 
+    @Mock
+    private RunningGpsSampleRepository runningGpsSampleRepository;
+
+    @Mock
+    private RunningHealthSampleRepository runningHealthSampleRepository;
+
+    @Mock
+    private RunningSessionSplitRepository runningSessionSplitRepository;
+
+    @Mock
+    private GhostRunningResultRepository ghostRunningResultRepository;
+
     private RunningSessionService runningSessionService;
 
     @BeforeEach
     void setUp() {
         runningSessionService = new RunningSessionService(
+                ghostRunningResultRepository,
                 runningSessionRepository,
+                runningGpsSampleRepository,
+                runningHealthSampleRepository,
+                runningSessionSplitRepository,
                 userRepository,
                 courseRepository,
                 courseDifficultyRepository,
