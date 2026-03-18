@@ -1,5 +1,6 @@
 package kr.withrun.was.domain.running.dto;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
@@ -9,27 +10,34 @@ import jakarta.validation.constraints.Positive;
 import java.time.DateTimeException;
 import java.time.LocalDate;
 
+@Schema(description = "과거 러닝 세션 목록 조회 조건")
 public record PastRunningSessionsRequest(
 
         @NotNull
         @Positive
+        @Schema(description = "조회 대상 사용자 ID", example = "7", minimum = "1", requiredMode = Schema.RequiredMode.REQUIRED)
         Long userId,
 
         @Positive
         @Max(999999999)
+        @Schema(description = "조회 기준 연도. month 또는 day 를 함께 사용할 때 필요하다.", example = "2026", minimum = "1")
         Integer year,
 
         @Min(1)
         @Max(12)
+        @Schema(description = "조회 기준 월. year 와 함께 사용한다.", example = "3", minimum = "1", maximum = "12")
         Integer month,
 
         @Min(1)
         @Max(31)
+        @Schema(description = "조회 기준 일. year, month 와 함께 사용한다.", example = "16", minimum = "1", maximum = "31")
         Integer day,
 
         @Positive
+        @Schema(description = "페이지 크기. 생략 시 10이 적용된다.", example = "10", minimum = "1")
         Integer pageSize,
 
+        @Schema(description = "이전 응답의 nextCursor 값을 그대로 전달하는 불투명 페이지네이션 토큰", example = "MjAyNi0wMy0xNVQxOTozMDowMHwxMjA=", nullable = true)
         String cursor
 ) {
 
