@@ -11,7 +11,7 @@ export default function useWebUri() {
     const webHost = Constants.expoConfig?.hostUri?.split(':')[0] || 'localhost'
     const baseURL = (() => {
       // 실배포
-      if (!__DEV__) return 'https://your-production-domain.com'
+      if (!__DEV__) return process.env.EXPO_PUBLIC_PROD_WEB_DNS
       if (Platform.OS === 'android')
         return `http://${androidHost || 'localhost'}:5173` // android
       else if (Platform.OS === 'ios')
