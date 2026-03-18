@@ -60,6 +60,17 @@ class ResponseCodeTest {
         assertResponseCode(responseCodes.get("RUNNING_SESSION_ALREADY_COMPLETED"), "E404", HttpStatus.CONFLICT, "이미 종료된 러닝 세션입니다.");
     }
 
+    @DisplayName("고스트 러닝 결과 없음 코드를 Not Found 실패로 노출한다")
+    @Test
+    void exposesGhostRunningResultNotFoundAsNotFoundFailure() {
+        assertResponseCode(
+                ResponseCode.GHOST_RUNNING_RESULT_NOT_FOUND,
+                "E406",
+                HttpStatus.NOT_FOUND,
+                "고스트 러닝 결과를 찾을 수 없습니다."
+        );
+    }
+
     private static Map<String, ResponseCode> responseCodesByName() {
         return Arrays.stream(ResponseCode.values())
                 .collect(Collectors.toMap(ResponseCode::name, Function.identity()));
