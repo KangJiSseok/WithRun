@@ -15,7 +15,7 @@ export function MobileLayout() {
           <Outlet />
         </main>
         {/* 네비게이션 바는 항상 최상단에 존재해야 하기 때문에 z-tooltip으로 설정 */}
-        <div className="fixed flex justify-center bottom-6 left-6 right-6 z-tooltip">
+        <div className="fixed flex justify-center bottom-6 left-6 right-6 z-overlay">
           <div className="w-full min-w-[375px] max-w-[430px] px-4">
             {!hideNav && <BottomNavigation />}
           </div>
