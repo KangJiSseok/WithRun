@@ -12,6 +12,8 @@ import {
 } from '@/shared/components/shadcn/drawer';
 import { cn } from '@/shared/utils';
 import { useCourseSurveys } from '@/hooks/FreeRun/useCourseSurveys';
+import { registerCourse, MOCK_RUNNING_SESSION_ID } from '@/shared/apis/FreeRun/courseApi';
+import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
 
 type CourseShareModalProps = {
   isOpen: boolean;
@@ -42,11 +44,18 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
   const [difficultyOverride, setDifficultyOverride] = useState<string | null>(null);
   // 선택된 코스 타입 목록 (서버 enum 값, 복수 선택 가능)
   const [courseTypes, setCourseTypes] = useState<string[]>([]);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   // isOpen: Drawer가 열렸는지 여부를 전달
   // 훅 내부에서 isOpen이 true가 될 때 GET /courses/surveys API 호출
   // surveyData - API 응답 (courseTypes, difficulties 배열)
   // isLoading - 로딩 중 여부 (로딩 중일 때 "로딩 중..." 표시)
   const { surveyData, isLoading } = useCourseSurveys(isOpen);
+
+  // 추후 변경: store에서 실제 runningSessionId 읽어오기
+  // const runningSessionId = useFreeRunResultStore((s) => s.runningSessionId) ?? MOCK_RUNNING_SESSION_ID;
+  const runningSessionId = useFreeRunResultStore((s) => s.runningSessionId) ?? MOCK_RUNNING_SESSION_ID;
+  const setCourseId = useFreeRunResultStore((s) => s.setCourseId);
 
   // 사용자가 선택한 값이 있으면 그 값, 없으면 API 첫 번째 항목을 기본값으로 사용
   const difficulty = difficultyOverride ?? surveyData?.difficulties[0]?.label ?? '';
@@ -58,20 +67,19 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
     );
   }
 
-  // 추후 API 연동 시 교체:
-  // 1. import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
-  // 2. const setCourseId = useFreeRunResultStore((s) => s.setCourseId);
-  // 3. async function handleSubmit() {
-  //      const res = await axiosClient.post('/api/courses', {
-  //        title: courseTitle,
-  //        difficulty,
-  //        courseTypes,
-  //      });
-  //      setCourseId(res.data.data.courseId); // store에 저장 → 결과 화면 좋아요 버튼 API 연결
-  //      onClose();
-  //    }
-  function handleSubmit() {
-    onClose();
+  async function handleSubmit() {
+    setIsSubmitting(true);
+    try {
+      const res = await registerCourse(runningSessionId, {
+        title: courseTitle,
+        difficulty,
+        courseTypes,
+      });
+      setCourseId(res.courseId);
+      onClose();
+    } finally {
+      setIsSubmitting(false);
+    }
   }
 
   return (
@@ -152,9 +160,10 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
           {/* 업로드 버튼 */}
           <Button
             onClick={handleSubmit}
+            disabled={isSubmitting}
             className="w-full py-4 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] body-b h-auto"
           >
-            커뮤니티에 업로드
+            {isSubmitting ? '업로드 중...' : '커뮤니티에 업로드'}
           </Button>
         </div>
       </DrawerContent>
