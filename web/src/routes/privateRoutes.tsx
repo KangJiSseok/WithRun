@@ -4,7 +4,6 @@ import { CalendarPage } from '@/pages/private/calendar';
 import { CompetitionPage } from '@/pages/private/competition';
 import { FreePage } from '@/pages/private/FreeRun';
 import { FreeRunningPage } from '@/pages/private/FreeRunning';
-import { FreeRunResultPage } from '@/pages/private/FreeRunResult';
 import { HomePage } from '@/pages/private/home';
 import { NormalRunPage } from '@/pages/private/NormalRun';
 import { NormalRunDetailPage } from '@/pages/private/NormalRunDetail';
@@ -28,7 +27,6 @@ export const privateRoutes: RouteObject[] = [
     element: <FullscreenLayout />,
     children: [
       { path: '/freerun', element: <FreeRunningPage /> },
-      { path: '/freerun-result', element: <FreeRunResultPage /> },
       { path: '/normal/:courseId', element: <NormalRunDetailPage /> },
       { path: '/normal/:courseId/running', element: <NormalRunningPage /> },
     ],

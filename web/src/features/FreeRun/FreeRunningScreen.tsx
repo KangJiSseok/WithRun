@@ -1,10 +1,13 @@
 // 러닝 중 화면 (통계 3개 + 타이머 + 일시정지/종료 컨트롤)
 
-import { useNavigate } from 'react-router-dom';
 import { Pause, Play, Square } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import { useFreeRunning } from '@/hooks/FreeRun/useFreeRunning';
 import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
+
+interface FreeRunningScreenProps {
+  onFinish: () => void;
+}
 
 // startCard 컴포넌트에 props 전달 시 TypeScript 오류 방지 위해 별도 컴포넌트로 분리
 interface StatCardProps {
@@ -23,8 +26,7 @@ function StatCard({ label, value, unit }: StatCardProps) {
   );
 }
 
-export function FreeRunningScreen() {
-  const navigate = useNavigate();
+export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
   const { time, distance, pace, calories, isPaused, togglePause } = useFreeRunning();
   const setResult = useFreeRunResultStore((s) => s.setResult);
   // 추후 API 연동 시 추가: const setCourseId = useFreeRunResultStore((s) => s.setCourseId);
@@ -91,7 +93,7 @@ export function FreeRunningScreen() {
             // setResult({ time, distance, pace, calories });
             // setCourseId(res.data.data.courseId); // 자동 생성된 courseId 저장
             setResult({ time, distance, pace, calories });
-            navigate('/freerun-result');
+            onFinish();
           }}
           className={cn(
             'absolute w-14 h-14 rounded-full bg-[hsl(var(--secondary-3))] flex items-center justify-center text-[hsl(var(--text-inverse))] transition-all duration-300',
