@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 import {
   // CalendarData
   fetchCalendar,
@@ -9,6 +9,7 @@ import {
   type CalendarData,
   type CalendarSummaryData,
   type RunningHistoryData,
+  type RunningHistoryParams,
 } from '@/shared/apis/Calendar';
 
 export function useCalendar() {
@@ -35,7 +36,10 @@ export function useCalendar() {
   const [summaryData, setSummaryData] = useState<CalendarSummaryData | null>(null);
   // 러닝 기록 리스트 (항상 표시, 상태에 따라 전체/월별/일별 전환)
   const [historyData, setHistoryData] = useState<RunningHistoryData | null>(null);
+  // 초기/컨텍스트 전환 로딩용
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
+  // "더 보기" 요청 중인지 구분
+  const [isLoadingMore, setIsLoadingMore] = useState(false);
   // 선택한 날짜 (달력에서 클릭, 재클릭 시 해제)
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   // 달력 그리드 표시 여부 (토글 버튼으로 제어)
@@ -196,6 +200,33 @@ export function useCalendar() {
     setSelectedDate((prev) => (prev === date ? null : date));
   }
 
+  // 다음 페이지 로드: 현재 컨텍스트(전체/월별/일별)에 cursor를 추가해 요청 후 items에 append
+  const loadMore = useCallback(async () => {
+    if (!historyData?.hasMore || !historyData.nextCursor || isLoadingMore) return;
+    const cursor = historyData.nextCursor;
+    // 현재 컨텍스트에 맞는 파라미터 구성
+    let params: RunningHistoryParams = { cursor };
+    if (showCalendar) {
+      if (selectedDate) {
+        const parts = selectedDate.split('-');
+        params = { year: Number(parts[0]), month: Number(parts[1]), day: Number(parts[2]), cursor };
+      } else {
+        params = { year, month, cursor };
+      }
+    }
+    setIsLoadingMore(true);
+    try {
+      const more = await fetchRunningHistory(params);
+      setHistoryData((prev) =>
+        prev ? { ...more, items: [...prev.items, ...more.items] } : more,
+      );
+    } catch {
+      // 더 보기 실패 시 기존 목록 유지
+    } finally {
+      setIsLoadingMore(false);
+    }
+  }, [historyData, isLoadingMore, showCalendar, selectedDate, year, month]);
+
   return {
     year,
     month,
@@ -204,6 +235,8 @@ export function useCalendar() {
     summaryData,
     historyData,
     isHistoryLoading,
+    isLoadingMore,
+    loadMore,
     selectedDate,
     toggleDate,
     activeDates,

@@ -38,9 +38,12 @@ interface RunningHistoryListProps {
   title: string;
   items: RunningSession[];
   isLoading: boolean;
+  hasMore: boolean;
+  isLoadingMore: boolean;
+  onLoadMore: () => void;
 }
 
-export function RunningHistoryList({ title, items, isLoading }: RunningHistoryListProps) {
+export function RunningHistoryList({ title, items, isLoading, hasMore, isLoadingMore, onLoadMore }: RunningHistoryListProps) {
   return (
     <div className="flex flex-col gap-[var(--space-3)]">
       <p className="body-b text-[hsl(var(--text-primary))]">{title}</p>
@@ -99,6 +102,19 @@ export function RunningHistoryList({ title, items, isLoading }: RunningHistoryLi
             </div>
           </div>
         ))}
+
+      {!isLoading && hasMore && (
+        // 클릭 시 onLoadMore 호출
+        // 로딩 중엔 비활성화 + "불러오는 중..." 텍스트 표시
+        <button
+          type="button"
+          onClick={onLoadMore}
+          disabled={isLoadingMore}
+          className="w-full p-[var(--space-3)] rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] body-r text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--surface-subtle))] transition-colors disabled:opacity-50"
+        >
+          {isLoadingMore ? '불러오는 중...' : '더 보기'}
+        </button>
+      )}
     </div>
   );
 }

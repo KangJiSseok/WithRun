@@ -58,6 +58,10 @@ export interface RunningHistoryParams {
   year?: number;
   month?: number;
   day?: number;
+  // 다음 페이지 시작점
+  cursor?: string;
+  // 한 번에 가져올 개수
+  pageSize?: number;
 }
 
 export async function fetchRunningHistory(

@@ -22,6 +22,8 @@ export function CalendarScreen() {
     summaryData,
     historyData,
     isHistoryLoading,
+    isLoadingMore,
+    loadMore,
     selectedDate,
     toggleDate,
     activeDates,
@@ -137,6 +139,11 @@ export function CalendarScreen() {
         title={historyTitle}
         items={historyData?.items ?? []}
         isLoading={isHistoryLoading}
+        // useCalendar에서 isLoadingMore, loadMore 받아
+        // RunningHisoryList에 전달
+        hasMore={historyData?.hasMore ?? false}
+        isLoadingMore={isLoadingMore}
+        onLoadMore={loadMore}
       />
     </div>
   );
