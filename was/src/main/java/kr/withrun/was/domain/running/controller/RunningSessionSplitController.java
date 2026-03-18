@@ -13,6 +13,7 @@ import kr.withrun.was.domain.running.dto.CreateRunningSessionSplitResponse;
 import kr.withrun.was.domain.running.service.RunningSessionSplitService;
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
+import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -42,7 +43,7 @@ public class RunningSessionSplitController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "201",
                     description = "구간 기록 저장 성공",
-                    useReturnTypeSchema = true
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CreateRunningSessionSplitApiResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",

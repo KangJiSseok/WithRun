@@ -12,6 +12,7 @@ import kr.withrun.was.domain.course.dto.CreateCourseReviewResponse;
 import kr.withrun.was.domain.course.service.CourseReviewService;
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
+import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -38,7 +39,11 @@ public class CourseReviewController {
             description = "특정 코스에 대한 평점, 유형 태그, 체감 난이도를 저장한다. 같은 사용자는 같은 코스에 한 번만 리뷰를 작성할 수 있다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "201", description = "코스 리뷰 작성 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "201",
+                    description = "코스 리뷰 작성 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CreateCourseReviewApiResponse.class))
+            ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
                     description = "요청 본문 형식, 평점, 유형 태그 또는 난이도 값이 유효하지 않음",

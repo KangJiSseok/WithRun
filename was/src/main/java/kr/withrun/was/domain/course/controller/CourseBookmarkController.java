@@ -14,6 +14,7 @@ import kr.withrun.was.domain.course.dto.CourseBookmarkRemoveResponse;
 import kr.withrun.was.domain.course.service.CourseBookmarkService;
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
+import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
@@ -43,7 +44,11 @@ public class CourseBookmarkController {
             description = "특정 사용자가 코스를 북마크한다. 이미 북마크된 경우에도 현재 북마크 상태를 그대로 반환한다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "북마크 추가 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "북마크 추가 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CourseBookmarkAddApiResponse.class))
+            ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "코스 또는 사용자를 찾을 수 없음",
@@ -65,7 +70,11 @@ public class CourseBookmarkController {
             description = "특정 사용자의 코스 북마크를 해제한다. 북마크가 없어도 최종 상태를 false 로 반환한다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "북마크 해제 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "북마크 해제 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CourseBookmarkRemoveApiResponse.class))
+            ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "코스 또는 사용자를 찾을 수 없음",
@@ -87,7 +96,11 @@ public class CourseBookmarkController {
             description = "특정 사용자가 북마크한 코스를 최신 북마크 순으로 조회한다. cursor 는 이전 응답의 nextCursor 값을 그대로 전달하는 불투명 토큰이다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "북마크 목록 조회 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "북마크 목록 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.BookmarkedCoursesApiResponse.class))
+            ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
                     description = "size 또는 cursor 값이 유효하지 않음",

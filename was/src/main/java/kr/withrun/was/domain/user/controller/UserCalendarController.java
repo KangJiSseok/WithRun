@@ -14,6 +14,7 @@ import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
 import kr.withrun.was.domain.user.service.UserCalendarService;
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
+import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
@@ -39,7 +40,11 @@ public class UserCalendarController {
             description = "특정 사용자의 월간 러닝 캘린더와 일자별 집계 정보를 조회한다. year 와 month 는 쿼리 파라미터로 전달한다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "월간 캘린더 조회 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "월간 캘린더 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.UserCalendarMonthlyApiResponse.class))
+            ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
                     description = "year 또는 month 값이 유효하지 않음",
@@ -65,7 +70,11 @@ public class UserCalendarController {
             description = "특정 사용자의 누적 러닝 횟수, 거리, 연속 러닝 일수 같은 요약 지표를 조회한다."
     )
     @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "러닝 요약 조회 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "러닝 요약 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.UserCalendarSummaryApiResponse.class))
+            ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "사용자를 찾을 수 없음",
