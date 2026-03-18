@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
+import kr.withrun.was.domain.running.dto.GhostRunningResultResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
@@ -34,7 +35,7 @@ import org.springframework.web.bind.annotation.RestController;
 import static kr.withrun.was.global.response.ResponseCode.CREATED;
 
 @Validated
-@Tag(name = "Running Session", description = "러닝 세션 생성 및 종료 API")
+@Tag(name = "Running Session", description = "러닝 세션 생성, 종료, 조회 API")
 @RestController
 @RequestMapping("/api/running-sessions")
 @RequiredArgsConstructor
@@ -103,6 +104,26 @@ public class RunningSessionController {
             @Valid @RequestBody UpdateRunningSessionRequest request
     ) {
         return ApiResponse.successEntity(runningSessionService.completeRunningSession(runningSessionId, request));
+    }
+
+    @Operation(
+            summary = "고스트 러닝 결과를 조회한다",
+            description = "특정 러닝 세션에 저장된 고스트 러닝 승패 결과와 시간/거리 차이를 조회한다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(responseCode = "200", description = "고스트 러닝 결과 조회 성공", useReturnTypeSchema = true),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "고스트 러닝 결과를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+            )
+    })
+    @GetMapping("/{runningSessionId}/ghost-result")
+    public ResponseEntity<ApiResponse<GhostRunningResultResponse>> findGhostRunningResult(
+            @Parameter(description = "고스트 결과를 조회할 러닝 세션 ID", example = "901")
+            @PathVariable Long runningSessionId
+    ) {
+        return ApiResponse.successEntity(runningSessionService.findGhostRunningResult(runningSessionId));
     }
 
     @GetMapping("/history/past")
