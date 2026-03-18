@@ -80,3 +80,10 @@ export const COURSES: RunningCourse[] = [
     tab: 'community',
   },
 ];
+
+export const NEAR_BY_COURSE_PARAMS_MOCK = {
+  targetDistanceM: 3000,
+  latitude: 35.81825625437981,
+  longitude: 128.54800725286904,
+  radiusM: 1000,
+};
