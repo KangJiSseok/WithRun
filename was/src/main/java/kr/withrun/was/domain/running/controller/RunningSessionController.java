@@ -21,6 +21,7 @@ import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
 import lombok.RequiredArgsConstructor;
+import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -126,16 +127,68 @@ public class RunningSessionController {
         return ApiResponse.successEntity(runningSessionService.findGhostRunningResult(runningSessionId));
     }
 
+    @Operation(
+            summary = "과거 러닝 세션을 조회한다",
+            description = "사용자 기준으로 과거 러닝 세션 목록을 조회한다. year, month, day 는 날짜 필터이고 cursor 는 이전 응답의 nextCursor 값을 그대로 전달하는 불투명 토큰이다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "과거 러닝 세션 조회 성공",
+                    useReturnTypeSchema = true
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "userId, 날짜 필터 조합, pageSize 또는 cursor 값이 유효하지 않음",
+                    content = @Content(schema = @Schema(implementation = ValidationErrorApiResponseDoc.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+            )
+    })
     @GetMapping("/history/past")
     public ResponseEntity<ApiResponse<PastRunningSessionsResponse>> findPastRunningSessions(
-            @Valid @ModelAttribute PastRunningSessionsRequest request
+            @Valid @ParameterObject @ModelAttribute PastRunningSessionsRequest request
     ) {
         return ApiResponse.successEntity(runningSessionService.findPastRunningSessions(request));
     }
 
+    @Operation(
+            summary = "완료한 러닝 기록을 코스로 등록한다",
+            description = "완료된 러닝 세션 기록을 바탕으로 커뮤니티 코스를 생성한다. 난이도와 코스 유형은 문자열 enum 이름으로 전달하며 snapshotImageUrl 을 비우면 세션 스냅샷을 재사용한다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "201",
+                    description = "러닝 기록 코스 등록 성공",
+                    useReturnTypeSchema = true
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "요청 본문 형식, 난이도 또는 코스 유형 값이 유효하지 않음",
+                    content = @Content(schema = @Schema(implementation = ValidationErrorApiResponseDoc.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "러닝 세션을 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "아직 완료되지 않은 러닝 세션이라 코스로 등록할 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+            )
+    })
     @PostMapping("/{runningSessionId}/register-course")
     public ResponseEntity<ApiResponse<RegisterRunningSessionCourseResponse>> registerRunningSessionCourse(
+            @Parameter(description = "코스로 등록할 완료된 러닝 세션 ID", example = "91")
             @PathVariable Long runningSessionId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "코스 제목, 난이도, 코스 유형, 스냅샷 이미지 URL을 담은 요청 본문"
+            )
             @Valid @RequestBody RegisterRunningSessionCourseRequest request
     ) {
         return ApiResponse.successEntity(CREATED, runningSessionService.registerRunningSessionCourse(runningSessionId, request));
