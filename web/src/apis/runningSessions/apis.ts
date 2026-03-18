@@ -9,11 +9,11 @@ import type { CreateRunningSessionRequest, RunningSessionData } from './types';
  * courseId, ghostTargetRunningSessionId 둘 다 입력 X : 자유 러닝
  */
 export const createRunningSession = async (
-  body: CreateRunningSessionRequest,
+  body: CreateRunningSessionRequest
 ): Promise<ApiResponse<RunningSessionData>> => {
   const { data } = await axiosClient.post<ApiResponse<RunningSessionData>>(
-    '/api/running-sessions',
-    body,
+    '/running-sessions',
+    body
   );
   return data;
 };

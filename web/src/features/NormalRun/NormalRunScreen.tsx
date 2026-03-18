@@ -1,5 +1,5 @@
 import { Filter, MapPin } from 'lucide-react';
-import { useEffect, useState } from 'react';
+import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
@@ -41,20 +41,19 @@ export function NormalRunScreen() {
   const [searchKeyword, setSearchKeyword] = useState('');
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [filters, setFilters] = useState<RunningFilterState>(INITIAL_FILTERS);
-  const [savedCourses, setSavedCourses] = useState<Set<number>>(new Set());
+  // TODO : 북마크 API 연결 후 제거 (API 연결 전 UI 토글용 임시 오버라이드)
+  const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<number, boolean>>({});
 
-  // API isBookmarked 값으로 초기 북마크 상태 설정
-  useEffect(() => {
-    if (normalRunCourses.length > 0) {
-      setSavedCourses(
-        new Set(
-          normalRunCourses
-            .filter((c) => c.isBookmarked)
-            .map((c) => c.courseId),
-        ),
-      );
-    }
-  }, [normalRunCourses]);
+  // API의 isBookmarked 값에 사용자 토글 오버라이드를 합성해 최종 북마크 Set 생성
+  const savedCourses = useMemo(
+    () =>
+      new Set(
+        normalRunCourses
+          .filter((c) => bookmarkOverrides[c.courseId] ?? c.isBookmarked ?? false)
+          .map((c) => c.courseId),
+      ),
+    [normalRunCourses, bookmarkOverrides],
+  );
 
   function handleCloseGuide() {
     localStorage.setItem('running-guide-seen', 'true');
@@ -67,15 +66,10 @@ export function NormalRunScreen() {
 
   // TODO : 북마크 API 연결 로직으로 바꿔야함(지금은 UI만 변경되도록 만들어짐)
   function handleToggleSave(courseId: number) {
-    setSavedCourses((prev) => {
-      const next = new Set(prev);
-      if (next.has(courseId)) {
-        next.delete(courseId);
-      } else {
-        next.add(courseId);
-      }
-      return next;
-    });
+    setBookmarkOverrides((prev) => ({
+      ...prev,
+      [courseId]: !savedCourses.has(courseId),
+    }));
   }
 
   function handleFilterChange(key: keyof RunningFilterState, value: string) {

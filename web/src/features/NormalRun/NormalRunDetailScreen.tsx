@@ -5,10 +5,25 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
 import { useKakaoMap } from '@/shared/hooks/useKakaoMap';
-import type { RunningCourse } from '@/shared/components/RunningCourseCard';
+import type { CourseDetail, CourseDifficulty, CourseType } from '@/apis';
+
+const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
+  EASY: '쉬움',
+  MEDIUM: '보통',
+  HARD: '어려움',
+};
+
+const COURSE_TYPE_LABEL: Record<CourseType, string> = {
+  URBAN: '도심',
+  PARK: '공원',
+  RIVERSIDE: '한강변',
+  MOUNTAIN_TRAIL: '산/둘레길',
+  TRACK: '트랙',
+  OTHER: '기타',
+};
 
 type NormalRunDetailScreenProps = {
-  course: RunningCourse;
+  course: CourseDetail;
 };
 
 export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
@@ -23,7 +38,8 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
     return () => clearTimeout(timer);
   }, []);
 
-  useKakaoMap(containerRef);
+  // coordinates를 전달하면 폴리라인이 자동으로 그려지고 경로 전체가 보이도록 지도 범위 조정
+  useKakaoMap(containerRef, { coordinates: course.coordinates });
 
   return (
     <div className="relative h-screen w-full">
@@ -53,27 +69,29 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
             variant="outline"
             className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
           >
-            {course.distance}
+            {(course.distanceM / 1000).toFixed(1)}km
           </Badge>
           <Badge
             variant="outline"
             className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
           >
-            고도 {course.elevation}
+            고도 {course.elevationGainM}m
           </Badge>
-          <Badge
-            variant="outline"
-            className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
-          >
-            {course.difficulty}
-          </Badge>
-          {course.courseType.map((type) => (
+          {course.difficulty != null && (
+            <Badge
+              variant="outline"
+              className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+            >
+              {DIFFICULTY_LABEL[course.difficulty]}
+            </Badge>
+          )}
+          {course.types.map((type) => (
             <Badge
               key={type}
               variant="outline"
               className="rounded-full border-[hsl(var(--primary-1)/0.25)] bg-[hsl(var(--primary-1)/0.1)] px-[var(--space-3)] py-[var(--space-1)] text-[hsl(var(--primary-1))]"
             >
-              {type}
+              {COURSE_TYPE_LABEL[type]}
             </Badge>
           ))}
         </div>
