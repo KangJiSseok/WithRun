@@ -21,12 +21,14 @@ WithRun의 Google + Kakao 로그인 구현을 `web + mobile + was` 기준으로 
 
 - [x] `was`에 [`User`](../../was/src/main/java/kr/withrun/was/domain/user/entity/User.java) 엔티티가 있다.
 - [x] `was`에 [`UserAuthAccount`](../../was/src/main/java/kr/withrun/was/domain/user/entity/UserAuthAccount.java) 엔티티가 있다.
+- [x] `was`에 [`UserAuthAccountRepository`](../../was/src/main/java/kr/withrun/was/domain/user/repository/UserAuthAccountRepository.java)가 있다.
 - [x] [`SecurityConfig`](../../was/src/main/java/kr/withrun/was/global/config/SecurityConfig.java) 에서 `/oauth2/**`, `/login/oauth2/**`, `/api/auth/**` public 경로가 잡혀 있다.
 - [x] `application.yml`에 Google OAuth 설정과 `app.auth.frontend-base-url`, `app.auth.mobile-deep-link-base`, `app.auth.allowed-origins`가 이미 있다.
+- [x] `User`는 `profileCompleted`와 온보딩 전 생성 메서드를 갖도록 정리되었다.
 - [ ] Kakao OAuth 설정은 아직 없다.
 - [ ] `web`은 아직 `localStorage` access token + 401 즉시 `/login` 이동 방식이다.
 - [ ] `mobile` 브리지에는 아직 `startSocialLogin(url)`이 없다.
-- [ ] Google/Kakao OAuth, JWT, refresh, `/api/auth/me` 흐름이 현재 엔티티 구조에 완전히 맞게 정리되어 있는지 확인이 필요하다.
+- [ ] 실제 OAuth/JWT 실행 클래스는 아직 거의 없어서, Step 2부터 새로 만들어야 한다.
 
 ## Step 0. 사전 준비
 
@@ -58,29 +60,24 @@ Google/Kakao 콘솔과 Parameter Store 값이 준비되어 있고, 로컬/배포
 ## Step 1. WAS 엔티티와 인증 기준 정리
 
 - [ ] 기존 인증 로직이 `User`, `UserAuthAccount` 기준으로 동작하는지 점검한다.
-- [ ] `UserAuthAccountRepository`를 만든다.
-  - [ ] `findByProviderAndProviderUserId(provider, providerUserId)`
-  - [ ] 필요 시 이메일 중복 확인 메서드 추가
-- [ ] `UserRepository`를 정리한다.
-- [ ] JWT 생성/검증 로직이 `User` 기준으로 동작하도록 맞춘다.
-- [ ] refresh token 저장 구조를 점검한다.
-- [ ] `User`에 온보딩 완료 여부 필드를 추가한다.
-  - [ ] `profileCompleted` 또는 `onboardedAt`
-- [ ] 현재 `User`의 프로필 필드가 모두 `nullable = false`인지 확인하고, 온보딩 전 사용자 생성 전략을 먼저 정한다.
-  - [ ] `nickname`, `birthDate`, `gender`, `height`, `weight`를 온보딩 전까지 nullable로 둘지 결정
-  - [ ] 또는 임시 프로필 값을 허용할지 결정
-  - [ ] Step 3의 신규 계정 생성은 이 결정 이후에만 진행한다.
-- [ ] `SecurityConfig`의 세션 정책이 `IF_REQUIRED`인지 확인한다.
-  - [ ] OAuth2 로그인 시 CSRF 방지를 위한 state 값 저장에 세션이 필요하다.
-  - [ ] `STATELESS`로 바꾸면 OAuth 로그인이 실패할 수 있다.
-- [ ] 기존 인증 코드에서 `Member` 참조가 남아 있는지 확인한다.
+- [x] `UserAuthAccountRepository`를 만들고 `findByProviderAndProviderUserId(provider, providerUserId)`를 추가한다.
+- [ ] 필요 시 이메일 중복 확인 메서드를 나중에 추가할 수 있게 구조를 열어둔다.
+- [x] `UserRepository`에 닉네임 중복 확인 메서드를 추가한다.
+- [ ] 이후 만들 JWT 생성/검증 로직은 처음부터 `User` 기준으로 구현한다.
+- [ ] refresh token 저장 구조는 Step 3 이후에 실제 구현 방식을 정한다.
+- [x] `User`에 `profileCompleted` 필드를 추가한다.
+- [x] `User`의 프로필 필드를 온보딩 전까지 nullable 허용으로 정리한다.
+- [x] `User.createPendingSocialUser()`와 `completeProfile(...)`를 추가한다.
+- [x] `completeProfile(...)` 입력값 검증을 보강한다.
+- [x] `SecurityConfig`의 세션 정책이 `IF_REQUIRED`인지 확인한다.
+- [ ] 현재 레포에는 주요 인증 실행 클래스가 아직 거의 없으므로, Step 2부터 새로 만들 클래스들을 `User` 기준으로 구현한다.
+  - [ ] `CustomOAuth2UserService`
+  - [ ] `OAuth2SuccessHandler`
+  - [ ] `OAuth2FailureHandler`
   - [ ] `JwtProvider`
   - [ ] `JwtFilter`
-  - [ ] `OAuth2SuccessHandler`
-  - [ ] `CustomOAuth2UserService`
-  - [ ] `SecurityConfig`
   - [ ] `RefreshTokenStore`
-  - [ ] 기존 Controller / Service 계층
+  - [ ] `AuthController` / `AuthService`
 
 완료 기준:
 Google 로그인 기준으로도 `User` + `UserAuthAccount` 구조가 일관되게 사용되고, 이후 Kakao를 붙일 수 있는 상태가 된다.

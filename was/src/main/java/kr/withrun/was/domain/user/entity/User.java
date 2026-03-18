@@ -74,7 +74,23 @@ public class User extends BaseEntity {
         Double height,
         Double weight
     ) {
-        this.nickname = nickname;
+        if (nickname == null || nickname.isBlank()) {
+            throw new IllegalArgumentException("nickname must not be blank");
+        }
+        if (birthDate == null) {
+            throw new IllegalArgumentException("birthDate must not be null");
+        }
+        if (gender == null) {
+            throw new IllegalArgumentException("gender must not be null");
+        }
+        if (height == null || height <= 0) {
+            throw new IllegalArgumentException("height must be positive");
+        }
+        if (weight == null || weight <= 0) {
+            throw new IllegalArgumentException("weight must be positive");
+        }
+
+        this.nickname = nickname.trim();
         this.birthDate = birthDate;
         this.gender = gender;
         this.height = height;

@@ -10,6 +10,7 @@ import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
+import kr.withrun.was.domain.auth.oauth2.service.CustomOAuth2UserService;
 
 import java.util.List;
 
@@ -19,6 +20,7 @@ public class SecurityConfig {
 
     // application.yml에서 읽어들인 환경설정(프론트엔드 주소 등) 바구니를 가져옵니다.
     private final AuthProperties authProperties;
+    private final CustomOAuth2UserService customOAuth2UserService;
 
     // 건물의 메인 경비실(SecurityFilterChain) 규칙을 설정하는 곳
     @Bean
@@ -46,8 +48,13 @@ public class SecurityConfig {
                         .anyRequest().permitAll()
                 )
                 
-                // 5. OAuth2 소셜 로그인 기능 켜주세요! (기본 설정으로 적용)
-                .oauth2Login(Customizer.withDefaults());
+                // 5. OAuth2 소셜 로그인 기능 켜주세요! (기능 on)
+                .oauth2Login(oauth2 -> oauth2
+                    .userInfoEndpoint(userInfo -> userInfo
+                        .userService(customOAuth2UserService)
+        )
+);
+
 
         return http.build();
     }
