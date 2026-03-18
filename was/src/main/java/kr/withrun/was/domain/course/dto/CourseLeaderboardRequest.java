@@ -2,13 +2,15 @@ package kr.withrun.was.domain.course.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.Max;
+import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
 @Schema(description = "코스 리더보드 조회 조건")
 public record CourseLeaderboardRequest(
 
-        @Schema(description = "리더보드를 조회할 코스 ID", example = "12", minimum = "1")
+        @Schema(description = "리더보드를 조회할 코스 ID", example = "12", minimum = "1", requiredMode = Schema.RequiredMode.REQUIRED)
+        @NotNull
         @Positive
         Long courseId,
 
