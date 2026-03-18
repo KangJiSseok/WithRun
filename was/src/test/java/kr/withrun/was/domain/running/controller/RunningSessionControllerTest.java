@@ -1,5 +1,8 @@
 package kr.withrun.was.domain.running.controller;
 
+import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
 import kr.withrun.was.domain.running.dto.GhostRunningResultResponse;
@@ -11,12 +14,9 @@ import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
-import kr.withrun.was.domain.course.type.CourseStatus;
-import kr.withrun.was.domain.course.vo.Coordinates;
-import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
-import kr.withrun.was.global.common.type.TimeSlot;
 import kr.withrun.was.global.common.type.Difficulty;
+import kr.withrun.was.global.common.type.TimeSlot;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.hamcrest.Matchers;
@@ -49,8 +49,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @WebMvcTest(controllers = RunningSessionController.class, properties = "spring.config.import=")
 @DisplayName("러닝 세션 컨트롤러")
 class RunningSessionControllerTest {
-
-    private static final LocalDateTime STARTED_AT = LocalDateTime.of(2026, 3, 12, 6, 30);
 
     static {
         System.setProperty("spring.cloud.aws.parameterstore.enabled", "false");
@@ -105,7 +103,7 @@ class RunningSessionControllerTest {
 
     @DisplayName("필수 요청 필드가 없으면 잘못된 입력 응답을 반환한다")
     @ParameterizedTest(name = "누락된 필드: {0}")
-    @ValueSource(strings = {"userId", "mode", "startedAt", "startLatitude", "startLongitude"})
+    @ValueSource(strings = {"userId", "mode", "startLatitude", "startLongitude"})
     void returnsInvalidInputValueWhenRequiredRequestFieldIsMissing(String missingField) throws Exception {
         mockMvc.perform(post("/api/running-sessions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -549,11 +547,11 @@ class RunningSessionControllerTest {
     }
 
     private static CreateRunningSessionRequest validCreateRequest() {
-        return new CreateRunningSessionRequest(1L, COURSE, 300L, null, STARTED_AT, 30.0, 176.0);
+        return new CreateRunningSessionRequest(1L, COURSE, 300L, null, 30.0, 176.0);
     }
 
     private static CreateRunningSessionRequest ghostCreateRequest() {
-        return new CreateRunningSessionRequest(1L, GHOST, 300L, 44L, STARTED_AT, 30.0, 176.0);
+        return new CreateRunningSessionRequest(1L, GHOST, 300L, 44L, 30.0, 176.0);
     }
 
     private static String validCreateRequestBody() {
@@ -563,7 +561,6 @@ class RunningSessionControllerTest {
                   "mode": "COURSE",
                   "courseId": 300,
                   "ghostTargetRunningSessionId": null,
-                  "startedAt": "2026-03-12T06:30:00",
                   "startLatitude": 30.0,
                   "startLongitude": 176.0
                 }
@@ -577,7 +574,6 @@ class RunningSessionControllerTest {
                   "mode": "GHOST",
                   "courseId": 300,
                   "ghostTargetRunningSessionId": 44,
-                  "startedAt": "2026-03-12T06:30:00",
                   "startLatitude": 30.0,
                   "startLongitude": 176.0
                 }
@@ -591,7 +587,6 @@ class RunningSessionControllerTest {
                       "mode": "COURSE",
                       "courseId": 300,
                       "ghostTargetRunningSessionId": null,
-                      "startedAt": "2026-03-12T06:30:00",
                       "startLatitude": 30.0,
                       "startLongitude": 176.0
                     }
@@ -599,17 +594,6 @@ class RunningSessionControllerTest {
             case "mode" -> """
                     {
                       "userId": 1,
-                      "startedAt": "2026-03-12T06:30:00",
-                      "courseId": 300,
-                      "ghostTargetRunningSessionId": null,
-                      "startLatitude": 30.0,
-                      "startLongitude": 176.0
-                    }
-                    """;
-            case "startedAt" -> """
-                    {
-                      "userId": 1,
-                      "mode": "COURSE",
                       "courseId": 300,
                       "ghostTargetRunningSessionId": null,
                       "startLatitude": 30.0,
@@ -622,7 +606,6 @@ class RunningSessionControllerTest {
                       "mode": "COURSE",
                       "courseId": 300,
                       "ghostTargetRunningSessionId": null,
-                      "startedAt": "2026-03-12T06:30:00",
                       "startLongitude": 176.0
                     }
                     """;
@@ -632,7 +615,6 @@ class RunningSessionControllerTest {
                       "mode": "COURSE",
                       "courseId": 300,
                       "ghostTargetRunningSessionId": null,
-                      "startedAt": "2026-03-12T06:30:00",
                       "startLatitude": 30.0
                     }
                     """;
@@ -644,7 +626,6 @@ class RunningSessionControllerTest {
         String modeValue = "\"COURSE\"";
         String courseIdValue = "300";
         String ghostTargetValue = "null";
-        String startedAtValue = "\"2026-03-12T06:30:00\"";
         String startLatitudeValue = "30.0";
         String startLongitudeValue = "176.0";
 
@@ -656,9 +637,6 @@ class RunningSessionControllerTest {
         }
         if ("ghostTargetRunningSessionId".equals(fieldName)) {
             ghostTargetValue = value;
-        }
-        if ("startedAt".equals(fieldName)) {
-            startedAtValue = value;
         }
         if ("startLatitude".equals(fieldName)) {
             startLatitudeValue = value;
@@ -673,11 +651,10 @@ class RunningSessionControllerTest {
                   "mode": %s,
                   "courseId": %s,
                   "ghostTargetRunningSessionId": %s,
-                  "startedAt": %s,
                   "startLatitude": %s,
                   "startLongitude": %s
                 }
-                """.formatted(modeValue, courseIdValue, ghostTargetValue, startedAtValue, startLatitudeValue, startLongitudeValue);
+                """.formatted(modeValue, courseIdValue, ghostTargetValue, startLatitudeValue, startLongitudeValue);
     }
 
     private static RegisterRunningSessionCourseRequest validRegisterCourseRequest() {
