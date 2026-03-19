@@ -60,6 +60,7 @@ public class RunningSessionService {
                 mode,
                 course,
                 ghostTargetRunningSession,
+                request.startedAt(),
                 request.startLatitude(),
                 request.startLongitude()
         ));

@@ -28,8 +28,8 @@ import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.domain.user.type.Gender;
-import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.common.type.TimeSlot;
+import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -63,6 +63,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("러닝 세션 서비스")
 class RunningSessionServiceTest {
+
+    private static final LocalDateTime STARTED_AT = LocalDateTime.of(2026, 3, 12, 6, 30);
 
     @Mock
     private RunningSessionRepository runningSessionRepository;
@@ -119,7 +121,7 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 901L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(1L, FREE, null, null, 30.0, 176.0)
+                new CreateRunningSessionRequest(1L, FREE, null, null, STARTED_AT, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -130,7 +132,7 @@ class RunningSessionServiceTest {
         assertThat(savedSession.getCourse()).isNull();
         assertThat(savedSession.getGhostTargetRunningSession()).isNull();
         assertThat(savedSession.getMode()).isEqualTo(FREE);
-        assertThat(savedSession.getStartedAt()).isNotNull();
+        assertThat(savedSession.getStartedAt()).isEqualTo(STARTED_AT);
         assertThat(savedSession.getDistanceM()).isZero();
         assertThat(savedSession.getCaloriesKcal()).isZero();
         assertThat(savedSession.getIsCompleted()).isFalse();
@@ -156,7 +158,7 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 902L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(2L, COURSE, 300L, null, 30.0, 176.0)
+                new CreateRunningSessionRequest(2L, COURSE, 300L, null, STARTED_AT, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -188,7 +190,7 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 903L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(3L, GHOST, 301L, 44L, 30.0, 176.0)
+                new CreateRunningSessionRequest(3L, GHOST, 301L, 44L, STARTED_AT, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -214,7 +216,7 @@ class RunningSessionServiceTest {
         when(userRepository.findNotDeletedUser(10L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(10L, FREE, null, null, 30.0, 176.0)
+                new CreateRunningSessionRequest(10L, FREE, null, null, STARTED_AT, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -227,7 +229,7 @@ class RunningSessionServiceTest {
         stubUser(user(11L));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(11L, COURSE, null, null, 30.0, 176.0)
+                new CreateRunningSessionRequest(11L, COURSE, null, null, STARTED_AT, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -245,7 +247,7 @@ class RunningSessionServiceTest {
         when(courseRepository.findNotDeletedCourse(communityCourse.getId())).thenReturn(Optional.of(communityCourse));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(12L, COURSE, 302L, null, 30.0, 176.0)
+                new CreateRunningSessionRequest(12L, COURSE, 302L, null, STARTED_AT, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -263,7 +265,7 @@ class RunningSessionServiceTest {
         when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(13L, GHOST, 303L, null, 30.0, 176.0)
+                new CreateRunningSessionRequest(13L, GHOST, 303L, null, STARTED_AT, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -282,7 +284,7 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(55L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(14L, GHOST, 304L, 55L, 30.0, 176.0)
+                new CreateRunningSessionRequest(14L, GHOST, 304L, 55L, STARTED_AT, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -303,7 +305,7 @@ class RunningSessionServiceTest {
                 .thenReturn(Optional.of(incompleteGhostTarget));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(15L, GHOST, 305L, 56L, 30.0, 176.0)
+                new CreateRunningSessionRequest(15L, GHOST, 305L, 56L, STARTED_AT, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -315,7 +317,7 @@ class RunningSessionServiceTest {
     @DisplayName("종료 요청이 유효하면 세션을 완료 상태로 확정한다")
     @Test
     void completesRunningSessionWhenRequestIsValid() {
-        RunningSession runningSession = runningSession(1L, 1L, false, LocalDateTime.of(2026, 3, 12, 6, 30));
+        RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
         UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
@@ -353,7 +355,7 @@ class RunningSessionServiceTest {
     @DisplayName("세션 소유 사용자와 요청 사용자 ID가 다르면 세션 없음으로 처리한다")
     @Test
     void treatsDifferentUserAsRunningSessionNotFound() {
-        RunningSession runningSession = runningSession(1L, 2L, false, LocalDateTime.of(2026, 3, 12, 6, 30));
+        RunningSession runningSession = runningSession(1L, 2L, false, STARTED_AT);
         UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
@@ -366,7 +368,7 @@ class RunningSessionServiceTest {
     @DisplayName("이미 종료된 세션은 중복 종료를 거부한다")
     @Test
     void rejectsAlreadyCompletedRunningSession() {
-        RunningSession runningSession = runningSession(1L, 1L, true, LocalDateTime.of(2026, 3, 12, 6, 30));
+        RunningSession runningSession = runningSession(1L, 1L, true, STARTED_AT);
         UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
@@ -391,7 +393,7 @@ class RunningSessionServiceTest {
     @DisplayName("종료 시각이 시작 시각보다 빨라도 현재 요청 값을 그대로 반영한다")
     @Test
     void appliesEndedAtEvenWhenItIsBeforeStartedAt() {
-        RunningSession runningSession = runningSession(1L, 1L, false, LocalDateTime.of(2026, 3, 12, 6, 30));
+        RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
         UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T06:20:00");
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
@@ -405,7 +407,7 @@ class RunningSessionServiceTest {
     @DisplayName("완료된 러닝 세션을 커뮤니티 코스로 등록한다")
     @Test
     void registersCompletedRunningSessionAsCommunityCourse() {
-        RunningSession runningSession = runningSession(81L, 7L, true, LocalDateTime.of(2026, 3, 12, 6, 30));
+        RunningSession runningSession = runningSession(81L, 7L, true, STARTED_AT);
         setField(runningSession, "distanceM", 10000);
         setField(runningSession, "elevationGainM", 120);
         setField(runningSession, "snapshotImageUrl", "https://cdn.withrun.app/snapshots/81.png");
@@ -469,7 +471,7 @@ class RunningSessionServiceTest {
     @DisplayName("요청 이미지 URL이 없으면 러닝 세션 스냅샷을 사용한다")
     @Test
     void fallsBackToRunningSessionSnapshotWhenRequestSnapshotIsMissing() {
-        RunningSession runningSession = runningSession(82L, 7L, true, LocalDateTime.of(2026, 3, 12, 6, 30));
+        RunningSession runningSession = runningSession(82L, 7L, true, STARTED_AT);
         setField(runningSession, "snapshotImageUrl", "https://cdn.withrun.app/snapshots/82.png");
         setField(runningSession, "coordinates", new Coordinates(
                 List.of(37.566501),
@@ -494,7 +496,7 @@ class RunningSessionServiceTest {
     @DisplayName("완료되지 않은 세션은 코스 등록을 거부한다")
     @Test
     void rejectsRegisterCourseWhenRunningSessionIsNotCompleted() {
-        RunningSession runningSession = runningSession(83L, 7L, false, LocalDateTime.of(2026, 3, 12, 6, 30));
+        RunningSession runningSession = runningSession(83L, 7L, false, STARTED_AT);
         RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
                 "등록 실패 코스",
                 "MEDIUM",
