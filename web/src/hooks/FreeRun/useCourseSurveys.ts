@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getCourseSurveys } from '@/apis/runningSessions';
-import type { GetCourseSurveysResponse } from '@/apis/runningSessions';
+import { getCourseSurveys } from '@/apis/courses';
+import type { GetCourseSurveysResponse } from '@/apis/courses';
 
 export function useCourseSurveys(isOpen: boolean) {
   const [surveyData, setSurveyData] = useState<GetCourseSurveysResponse | null>(null);

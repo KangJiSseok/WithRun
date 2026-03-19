@@ -1,17 +1,5 @@
 import type { RunningMode } from '@/shared/types/api.type';
 
-// 설문조사 옵션 (GET /courses/surveys)
-export type CourseSurveyOption = {
-  index: number;
-  label: string;
-};
-
-// 설문조사 옵션 (GET /courses/surveys)
-export type GetCourseSurveysResponse = {
-  courseTypes: CourseSurveyOption[];
-  difficulties: CourseSurveyOption[];
-};
-
 export type CreateRunningSessionRequest = {
   userId: number;
   mode: RunningMode;
