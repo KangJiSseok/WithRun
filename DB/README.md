@@ -44,12 +44,16 @@
 
 ### 2.2 GPS 추적
 
-- 유저는 러닝 중 GPS 좌표가 5초마다 테이블에 저장된다 (TimescaleDB 사용).
+- 유저는 러닝 중 GPS 좌표가 1초마다 `running_gps_samples`에 저장된다 (`RDS PostgreSQL`).
+- `running_gps_samples`는 `append-only` raw telemetry table이다.
+- 주요 조회는 특정 러닝 세션의 최근 10분 raw GPS 데이터 조회다.
 - 유저의 러닝 경로는 저장된다.
 
 ### 2.3 생체 정보
 
-- 유저는 러닝 중 생체 정보가 5초마다 테이블에 저장된다 (TimescaleDB 사용).
+- 유저는 러닝 중 생체 정보가 1초마다 `running_health_samples`에 저장된다 (`RDS PostgreSQL`).
+- `running_health_samples`는 `append-only` raw telemetry table이다.
+- 주요 조회는 특정 러닝 세션의 최근 10분 raw health 데이터 조회다.
 
 ### 2.4 러닝 모드
 
@@ -65,6 +69,8 @@
 - 유저는 러닝 종료 후 기록이 자동으로 저장된다.
     1. 유저는 러닝 기록을 경쟁모드로 실행했을때는 강제 공개.
     2. 유저는 러닝 기록을 일반모드로 실행했을때는 비공개.
+- `running_sessions`, `running_session_splits`는 세션 결과와 구간 요약을 담는 summary/read model이다.
+- `running_health_samples`, `running_gps_samples`는 러닝 중 raw telemetry를 담는 `append-only` 테이블이다.
 
 ### 2.6 러닝 기록을 코스로 등록
 
@@ -137,7 +143,7 @@
 
 ### 4.3 러닝 생체 데이터
 
-- 워치는 5초마다 생체 정보와 GPS 좌표를 테이블에 저장한다 (TimescaleDB).
+- 워치는 1초마다 생체 정보와 GPS 좌표를 raw telemetry table에 저장한다 (`RDS PostgreSQL`).
 - 저장 데이터: 심박수, 속도, 페이스, 고도, GPS 좌표 등.
 
 ---
@@ -150,6 +156,7 @@
     1. 유저는 다른 사용자의 과거 러닝 기록과 실시간 경쟁한다.
     2. 유저는 자신의 과거 러닝 기록과 경쟁한다. (`courses.status = OFFICIAL`인 코스 기준)
 - 경쟁 결과는 러닝 세션에 기록된다.
+- 코스별 고스트 리더보드는 `course_ghost_leaderboard`에 사용자, 코스, 러닝 세션 기준 점수로 저장된다.
 
 ### 5.2 코스 투표
 
@@ -172,13 +179,16 @@
 ### 7.1 워치 데이터 수집
 
 - 워치는 Health Services를 통해 러닝 중 생체 데이터를 수집한다 (심박수, 거리, 칼로리, 속도, 페이스).
-- 워치는 5초마다 데이터를 테이블에 저장한다 (TimescaleDB).
+- 워치는 1초마다 데이터를 수집하고, Mobile이 이를 배치와 retry 기준에 따라 업로드한다.
 - 워치는 수집한 데이터를 폰으로 전송한다 (Data Layer API).
 
 ### 7.2 폰-웹 동기화
 
 - 폰은 워치에서 수신한 데이터를 웹 UI로 전달한다 (WebView bridge).
+- 폰은 pending queue를 소유하고 60초 배치를 관리한다.
 - 웹 UI는 러닝 데이터를 실시간으로 표시한다.
+- 웹 UI는 relay / UI 역할을 수행하며 queue owner가 아니다.
+- WAS는 업로드된 배치를 받아 raw telemetry를 저장하고, 성공 시점 기준으로 재시도 가능한 응답 계약을 제공한다.
 - 웹 UI는 워치로 명령을 전송한다 (러닝 시작/일시정지/종료 등).
 
 ---
@@ -199,10 +209,12 @@
 - `course_bookmarks`: 코스 북마크
 - `course_reviews`: 코스 평점 및 난이도 피드백
 - `course_review_course_types`: 리뷰 코스 타입 설문
-- `running_sessions`: 러닝 세션 요약 정보
-- `running_session_splits`: 1km 구간별 상세 지표
-- `running_health_samples`: 5초 주기 생체/주행 데이터
-- `running_gps_samples`: 5초 주기 GPS 데이터 (TimescaleDB)
+- `running_sessions`: 러닝 세션 summary/read model
+- `running_session_splits`: 1km 구간별 summary/read model
+- `running_health_samples`: 1초 주기 raw 생체/주행 telemetry 데이터
+- `running_gps_samples`: 1초 주기 raw GPS telemetry 데이터
+- `course_ghost_leaderboard`: 코스별 고스트 리더보드 점수
 - `ghost_running_results`: 고스트 러닝 결과
 - `user_calendars`: 일일 러닝 통계
-- `device_sync_states`: 디바이스 동기화 상태
+
+현재 schema source에는 서버 측 동기화 체크포인트 전용 테이블을 두지 않는다.

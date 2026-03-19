@@ -24,20 +24,7 @@ public enum ResponseCode {
     INVALID_RADIUS("E006", HttpStatus.BAD_REQUEST, "잘못된 반경 값입니다.", false),
     INVALID_TARGET_DISTANCE("E007", HttpStatus.BAD_REQUEST, "잘못된 목표 거리 값입니다.", false),
     INVALID_CURSOR("E008", HttpStatus.BAD_REQUEST, "잘못된 커서 값입니다.", false),
-
-    // Course Error
-    INVALID_COURSE_COORDINATES_FORMAT("E300", HttpStatus.BAD_REQUEST, "코스 좌표 형식이 올바르지 않습니다.", false),
-    INVALID_COURSE_COORDINATES_LENGTH("E301", HttpStatus.BAD_REQUEST, "코스 좌표 목록 길이가 올바르지 않습니다.", false),
-    INVALID_COURSE_COORDINATE_VALUE("E302", HttpStatus.BAD_REQUEST, "코스 좌표 값이 올바르지 않습니다.", false),
-    MISSING_COURSE_COORDINATE_ELEVATION("E303", HttpStatus.BAD_REQUEST, "코스 좌표의 고도 정보가 필요합니다.", false),
-    COURSE_NOT_FOUND("E304", HttpStatus.NOT_FOUND, "코스를 찾을 수 없습니다.", false),
-
-    // Running Error
-    INVALID_RUNNING_MODE("E400", HttpStatus.BAD_REQUEST, "잘못된 러닝 모드입니다.", false),
-    GHOST_TARGET_NOT_FOUND("E401", HttpStatus.NOT_FOUND, "고스트 대상 러닝 세션을 찾을 수 없습니다.", false),
-    INVALID_GHOST_TARGET("E402", HttpStatus.BAD_REQUEST, "유효하지 않은 고스트 대상 러닝 세션입니다.", false),
-    RUNNING_SESSION_NOT_FOUND("E403", HttpStatus.NOT_FOUND, "러닝 세션을 찾을 수 없습니다.", false),
-    RUNNING_SESSION_ALREADY_COMPLETED("E404", HttpStatus.CONFLICT, "이미 종료된 러닝 세션입니다.", false),
+    EMPTY_FILE("E009", HttpStatus.BAD_REQUEST, "업로드할 파일이 비어 있습니다.", false),
 
     // Auth Error
     UNAUTHORIZED("E100", HttpStatus.UNAUTHORIZED, "인증이 필요합니다.", false),
@@ -48,7 +35,28 @@ public enum ResponseCode {
     // User Error
     USER_NOT_FOUND("E200", HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.", false),
     USER_ALREADY_EXISTS("E201", HttpStatus.CONFLICT, "이미 존재하는 사용자입니다.", false),
-    PASSWORD_MISMATCH("E202", HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다.", false);
+    PASSWORD_MISMATCH("E202", HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다.", false),
+
+    // Course Error
+    INVALID_COURSE_COORDINATES_FORMAT("E300", HttpStatus.BAD_REQUEST, "코스 좌표 형식이 올바르지 않습니다.", false),
+    INVALID_COURSE_COORDINATES_LENGTH("E301", HttpStatus.BAD_REQUEST, "코스 좌표 목록 길이가 올바르지 않습니다.", false),
+    INVALID_COURSE_COORDINATE_VALUE("E302", HttpStatus.BAD_REQUEST, "코스 좌표 값이 올바르지 않습니다.", false),
+    MISSING_COURSE_COORDINATE_ELEVATION("E303", HttpStatus.BAD_REQUEST, "코스 좌표의 고도 정보가 필요합니다.", false),
+    COURSE_NOT_FOUND("E304", HttpStatus.NOT_FOUND, "코스를 찾을 수 없습니다.", false),
+    REVIEW_ALREADY_EXISTS("E305", HttpStatus.CONFLICT, "이미 리뷰를 작성한 코스입니다.", false),
+
+    // Running Error
+    INVALID_RUNNING_MODE("E400", HttpStatus.BAD_REQUEST, "잘못된 러닝 모드입니다.", false),
+    GHOST_TARGET_NOT_FOUND("E401", HttpStatus.NOT_FOUND, "고스트 대상 러닝 세션을 찾을 수 없습니다.", false),
+    INVALID_GHOST_TARGET("E402", HttpStatus.BAD_REQUEST, "유효하지 않은 고스트 대상 러닝 세션입니다.", false),
+    RUNNING_SESSION_NOT_FOUND("E403", HttpStatus.NOT_FOUND, "러닝 세션을 찾을 수 없습니다.", false),
+    RUNNING_SESSION_ALREADY_COMPLETED("E404", HttpStatus.CONFLICT, "이미 종료된 러닝 세션입니다.", false),
+    RUNNING_SESSION_NOT_COMPLETED("E405", HttpStatus.CONFLICT, "완료되지 않은 러닝 세션입니다.", false),
+    GHOST_RUNNING_RESULT_NOT_FOUND("E406", HttpStatus.NOT_FOUND, "고스트 러닝 결과를 찾을 수 없습니다.", false),
+
+    // File Error
+    S3_BUCKET_NOT_CONFIGURED("E500", HttpStatus.INTERNAL_SERVER_ERROR, "S3 버킷 설정이 필요합니다.", false),
+    S3_UPLOAD_FAILED("E501", HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다.", false);
 
     private final String code;
     private final HttpStatus status;

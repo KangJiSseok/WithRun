@@ -1,16 +1,21 @@
 package kr.withrun.was.domain.course.service;
 
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseLeaderboardItemResponse;
+import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
+import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.entity.Course;
+import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseLikeRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseReviewRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
+import kr.withrun.was.domain.course.repository.query.dto.CourseGhostLeaderboardRankRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.util.HaversineDistanceCalculator;
@@ -48,6 +53,7 @@ public class CourseService {
     private final CourseTypeMapRepository courseTypeMapRepository;
     private final CourseLikeRepository courseLikeRepository;
     private final CourseReviewRepository courseReviewRepository;
+    private final CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
 
     /**
      * 주변 코스 목록을 커서 기반으로 잘라 반환한다.
@@ -108,6 +114,41 @@ public class CourseService {
                 false,
                 false,
                 courseReviewRepository.findAverageRatingByCourseId(courseId)
+        );
+    }
+
+    public CourseLeaderboardResponse findCourseLeaderboard(CourseLeaderboardRequest request) {
+        getCourse(request.courseId());
+
+        List<CourseGhostLeaderboardRankRow> rows = courseGhostLeaderboardRepository.findRankedRowsByCourseId(
+                request.courseId(),
+                request.page(),
+                request.size()
+        );
+        long totalElements = courseGhostLeaderboardRepository.countByCourseId(request.courseId());
+
+        List<CourseLeaderboardItemResponse> items = rows.stream()
+                .map(row -> new CourseLeaderboardItemResponse(
+                        row.leaderboardId(),
+                        row.userId(),
+                        row.nickname(),
+                        row.runningSessionId(),
+                        row.point(),
+                        row.rank(),
+                        row.createdAt()
+                ))
+                .toList();
+        int totalPages = totalElements == 0 ? 0 : (int) ((totalElements + request.size() - 1) / request.size());
+        boolean hasNext = (long) (request.page() + 1) * request.size() < totalElements;
+
+        return new CourseLeaderboardResponse(
+                request.courseId(),
+                items,
+                request.page(),
+                request.size(),
+                totalElements,
+                totalPages,
+                hasNext
         );
     }
 

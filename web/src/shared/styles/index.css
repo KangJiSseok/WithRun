@@ -87,6 +87,15 @@
   -webkit-backdrop-filter: blur(12px) saturate(180%);
 }
 
+/* 바텀 시트 slide-up 애니메이션 */
+@keyframes slide-up {
+  from { transform: translateY(100%); }
+  to   { transform: translateY(0); }
+}
+@utility animate-slide-up {
+  animation: slide-up 0.3s cubic-bezier(0.32, 0.72, 0, 1);
+}
+
 /* 기본 body 스타일 */
 @layer base {
   * {
@@ -95,5 +104,6 @@
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-family-base);
+    touch-action: pan-x pan-y;
   }
 }

@@ -22,6 +22,22 @@ public class CourseReviewCustomRepositoryImpl implements CourseReviewCustomRepos
                         courseReview.course.id.eq(courseId),
                         courseReview.deletedAt.isNull()
                 )
-                .fetchOne();
+                        .fetchOne();
+    }
+
+    @Override
+    public boolean existsByCourseIdAndUserId(Long courseId, Long userId) {
+        QCourseReview courseReview = QCourseReview.courseReview;
+
+        Integer fetchedId = queryFactory
+                .selectOne()
+                .from(courseReview)
+                .where(
+                        courseReview.course.id.eq(courseId),
+                        courseReview.user.id.eq(userId)
+                )
+                .fetchFirst();
+
+        return fetchedId != null;
     }
 }

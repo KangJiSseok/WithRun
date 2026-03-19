@@ -6,21 +6,31 @@ import { FreePage } from '@/pages/private/FreeRun';
 import { FreeRunningPage } from '@/pages/private/FreeRunning';
 import { FreeRunResultPage } from '@/pages/private/FreeRunResult';
 import { HomePage } from '@/pages/private/home';
-import { NormalPage } from '@/pages/private/normal';
-import { MobileLayout } from '@/shared/layouts/MobileLayout';
+import { NormalRunPage } from '@/pages/private/NormalRun';
+import { NormalRunDetailPage } from '@/pages/private/NormalRunDetail';
+import { NormalRunningPage } from '@/pages/private/NormalRunning';
+import { FullscreenLayout } from '@/shared/layouts/FullscreenLayout';
+import { MainLayout } from '@/shared/layouts/MainLayout';
 
 export const privateRoutes: RouteObject[] = [
   {
-    element: <MobileLayout />,
+    element: <MainLayout />,
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/home', element: <HomePage /> },
       { path: '/free', element: <FreePage /> },
-      { path: '/freerun', element: <FreeRunningPage /> },
-      { path: '/freerun-result', element: <FreeRunResultPage /> },
-      { path: '/normal', element: <NormalPage /> },
+      { path: '/normal', element: <NormalRunPage /> },
       { path: '/competition', element: <CompetitionPage /> },
       { path: '/calendar', element: <CalendarPage /> },
+    ],
+  },
+  {
+    element: <FullscreenLayout />,
+    children: [
+      { path: '/freerun', element: <FreeRunningPage /> },
+      { path: '/freerun-result', element: <FreeRunResultPage /> },
+      { path: '/normal/:courseId', element: <NormalRunDetailPage /> },
+      { path: '/normal/:courseId/running', element: <NormalRunningPage /> },
     ],
   },
 ];

@@ -3,6 +3,7 @@
   "private": true,
   "version": "0.0.0",
   "type": "module",
+  "packageManager": "pnpm@10.27.0",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
@@ -28,6 +29,7 @@
     "tailwind-merge": "^3.5.0",
     "tailwindcss": "^4.2.1",
     "three": "^0.183.2",
+    "vaul": "^1.1.2",
     "zustand": "^5.0.11"
   },
   "devDependencies": {

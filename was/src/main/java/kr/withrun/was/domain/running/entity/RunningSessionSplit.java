@@ -13,6 +13,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -60,4 +61,45 @@ public class RunningSessionSplit extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_running_session_splits_running_session")
     )
     private RunningSession runningSession;
+
+    @Builder
+    private RunningSessionSplit(
+            Long id,
+            Integer splitIndex,
+            Integer splitDistanceM,
+            Integer splitDurationSec,
+            Integer splitPaceSecPerKm,
+            Integer avgHeartRate,
+            Integer elevationGainM,
+            RunningSession runningSession
+    ) {
+        this.id = id;
+        this.splitIndex = splitIndex;
+        this.splitDistanceM = splitDistanceM;
+        this.splitDurationSec = splitDurationSec;
+        this.splitPaceSecPerKm = splitPaceSecPerKm;
+        this.avgHeartRate = avgHeartRate;
+        this.elevationGainM = elevationGainM;
+        this.runningSession = runningSession;
+    }
+
+    public static RunningSessionSplit create(
+            RunningSession runningSession,
+            Integer splitIndex,
+            Integer splitDistanceM,
+            Integer splitDurationSec,
+            Integer splitPaceSecPerKm,
+            Integer avgHeartRate,
+            Integer elevationGainM
+    ) {
+        return RunningSessionSplit.builder()
+                .runningSession(runningSession)
+                .splitIndex(splitIndex)
+                .splitDistanceM(splitDistanceM)
+                .splitDurationSec(splitDurationSec)
+                .splitPaceSecPerKm(splitPaceSecPerKm)
+                .avgHeartRate(avgHeartRate)
+                .elevationGainM(elevationGainM)
+                .build();
+    }
 }

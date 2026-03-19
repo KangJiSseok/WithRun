@@ -1,3 +1,5 @@
+import { CalendarScreen } from '@/features/Calendar';
+
 export function CalendarPage() {
-  return <div>달력 페이지</div>;
+  return <CalendarScreen />;
 }

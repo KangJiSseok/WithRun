@@ -1,1 +1,1 @@
-export type SharedExampleType = {};
+export * from './api.type';

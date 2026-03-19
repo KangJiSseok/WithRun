@@ -5,19 +5,19 @@
 ## 설계 기준
 
 - 기준 소스: `was/src/main/java/kr/withrun/was/domain/**`의 현재 Entity / Enum 구조
-- 공통 감사 컬럼: 모든 Entity 테이블은 `BaseEntity` 기준으로 `created_at`, `updated_at`, `deleted_at`를 가집니다.
+- 공통 감사 컬럼: `BaseEntity`를 상속한 Entity 테이블은 `created_at`, `updated_at`, `deleted_at`를 가집니다. `BaseEntity`를 상속하지 않는 테이블은 Entity에 명시적으로 선언된 컬럼만 둡니다.
 - 시간 타입: Entity가 `LocalDateTime` / `BaseEntity`의 `TIMESTAMP` 정의를 사용하므로 스키마도 `TIMESTAMP` 기준으로 맞췄습니다.
 - Enum 저장 정책: Enum 컬럼은 모두 `VARCHAR`에 저장하며, 값은 현재 Java Enum 상수명 그대로 대문자 문자열을 사용합니다.
 - 테이블 네이밍: 명시적 `@Table(name = ...)`는 그대로 따르고, `CourseTypeMap`은 Spring Boot/Hibernate 기본 snake_case 규칙을 따라 `course_type_map`으로 정리했습니다.
 - 테이블 정리: 현재 Entity에 없는 `user_preference_surfaces`, `course_surface_maps`는 이번 스키마에서 제거했습니다.
+- 현재 schema source에는 서버 측 동기화 체크포인트 전용 테이블을 두지 않습니다.
 
-## 공통 컬럼
+## 감사 컬럼 규칙
 
-모든 테이블은 아래 공통 컬럼을 가집니다.
-
-- `created_at`: 생성 시각, `TIMESTAMP NOT NULL DEFAULT NOW()`
-- `updated_at`: 최종 수정 시각, `TIMESTAMP NOT NULL DEFAULT NOW()`
-- `deleted_at`: 소프트 삭제 시각, `TIMESTAMP`
+- `BaseEntity` 상속 테이블: `created_at`, `updated_at`, `deleted_at`
+- `course_bookmarks`: Entity가 `created_at`만 직접 선언
+- `course_likes`: 감사 컬럼 없음
+- `course_ghost_leaderboard`: 현재 `was` Entity와 별개로 정의된 DB 테이블이며 `created_at`만 사용
 
 ## Enum 컬럼 값
 
@@ -30,8 +30,6 @@
 - `mode`: `FREE`, `COURSE`, `GHOST`
 - `source_device`: `WATCH`, `PHONE`
 - `result_status`: `WIN`, `LOSE`, `DRAW`, `INCOMPLETE`
-- `device_type`: `WATCH`, `PHONE`, `WEB`
-- `sync_status`: `IDLE`, `SYNCING`, `ERROR`
 
 ## 관계 모델 요약
 
@@ -46,8 +44,8 @@
 - 사용자 선호 다중 선택: `user_preference_purposes`, `user_preference_course_types`, `user_preference_time_slots`
 - 코스 타입 매핑: `course_type_map`
 - 리뷰 다중 선택 매핑: `course_review_course_types`
+- 고스트 리더보드 매핑: `course_ghost_leaderboard`
 - 사용자 집계: `user_calendars`
-- 디바이스 동기화 상태: `device_sync_states`
 
 ### 러닝 세션 관계
 
@@ -55,6 +53,7 @@
 - `running_sessions.course_id` -> `courses.course_id`
 - `running_sessions.ghost_target_running_session_id` -> `running_sessions.running_session_id`
 - 샘플 테이블(`running_health_samples`, `running_gps_samples`)은 모두 `running_sessions`를 부모로 둡니다.
+- `course_ghost_leaderboard`는 `users`, `courses`, `running_sessions`를 함께 참조하는 코스별 고스트 점수 보드입니다.
 - `ghost_running_results.running_session_id`는 세션당 1건만 허용됩니다.
 
 ## 테이블 상세
@@ -108,7 +107,7 @@
   - `user_id`: `user_running_preferences.user_id` FK
   - `purpose`: `DIET`, `HEALTH_MAINTENANCE`, `RACE_PREPARATION`, `ENDURANCE_IMPROVEMENT`
 - 주요 제약:
-  - `fk_user_preference_purposes_user_running_preference` (`ON DELETE CASCADE`)
+  - `fk_user_preference_purpose_user_running_preference` (`ON DELETE CASCADE`)
   - `uq_user_preference_purposes_user_purpose`
   - `chk_user_preference_purposes_purpose`
 
@@ -120,7 +119,7 @@
   - `user_id`: `user_running_preferences.user_id` FK
   - `course_type`: `RIVERSIDE`, `PARK`, `MOUNTAIN_TRAIL`, `TRACK`, `URBAN`, `OTHER`
 - 주요 제약:
-  - `fk_user_preference_course_types_user_running_preference` (`ON DELETE CASCADE`)
+  - `fk_user_preference_course_type_user_running_preference` (`ON DELETE CASCADE`)
   - `uq_user_preference_course_types_user_type`
   - `chk_user_preference_course_types_course_type`
 
@@ -132,7 +131,7 @@
   - `user_id`: `user_running_preferences.user_id` FK
   - `time_slot`: `DAWN`, `MORNING`, `AFTERNOON`, `EVENING`
 - 주요 제약:
-  - `fk_user_preference_time_slots_user_running_preference` (`ON DELETE CASCADE`)
+  - `fk_user_preference_time_slot_user_running_preference` (`ON DELETE CASCADE`)
   - `uq_user_preference_time_slots_user_slot`
   - `chk_user_preference_time_slots_time_slot`
 
@@ -174,7 +173,7 @@
   - `course_id`: `courses.course_id` FK
   - `course_type`: `RIVERSIDE`, `PARK`, `MOUNTAIN_TRAIL`, `TRACK`, `URBAN`, `OTHER`
 - 주요 제약:
-  - `fk_course_type_map_course` (`ON DELETE CASCADE`)
+  - `fk_course_type_maps_course` (`ON DELETE CASCADE`)
   - `uq_course_type_map_course_type`
   - `chk_course_type_map_course_type`
 
@@ -206,6 +205,7 @@
   - `chk_running_sessions_completed_state`
 - 비고:
   - `COURSE`와 `GHOST`는 `courses.status = OFFICIAL`인 코스만 사용할 수 있으며, 이 교차 테이블 규칙은 WAS 애플리케이션 검증으로 강제합니다.
+  - `running_sessions`는 raw sample의 부모이면서 세션 결과를 담는 summary/read model입니다.
 
 ### running_session_splits
 
@@ -226,10 +226,12 @@
   - `chk_running_session_splits_pace`
   - `chk_running_session_splits_avg_heart_rate`
   - `chk_running_session_splits_elevation`
+- 비고:
+  - `running_session_splits`는 raw telemetry를 직접 대체하지 않고, 구간 단위 요약을 담는 summary/read model입니다.
 
 ### running_health_samples
 
-- 목적: 세션별 생체/주행 샘플 시계열 데이터
+- 목적: 세션별 raw health/주행 telemetry 저장
 - 핵심 컬럼:
   - `running_health_sample_id`: PK
   - `running_session_id`: 세션 FK
@@ -243,10 +245,18 @@
   - `uq_running_health_samples_session_time`
   - `chk_running_health_samples_source_device`
   - 심박/속도/페이스/거리/칼로리/케이던스 체크
+- 비고:
+  - `append-only` raw telemetry table로 사용합니다.
+  - `1초 주기` 샘플 저장을 전제로 합니다.
+  - 핵심 read path는 `특정 running_session_id의 최근 10분 조회`입니다.
+  - 기본 hot path index는 기존 UNIQUE `(running_session_id, sampled_at)`를 우선 활용합니다.
+  - 동일 키의 별도 `DESC` 인덱스는 기본값으로 두지 않습니다.
+  - 서버 측 동기화 체크포인트 전용 테이블 없이 raw row 저장/조회 기준선을 설명합니다.
+  - `BRIN`, time partitioning, retention 상세값은 운영 이슈가 커질 때 후속 이슈에서 재검토합니다.
 
 ### running_gps_samples
 
-- 목적: 세션별 GPS 샘플 시계열 데이터
+- 목적: 세션별 raw GPS telemetry 저장
 - 핵심 컬럼:
   - `running_gps_sample_id`: PK
   - `running_session_id`: 세션 FK
@@ -258,6 +268,29 @@
   - `fk_running_gps_samples_running_session`, `fk_running_gps_samples_user` (둘 다 `ON DELETE CASCADE`)
   - `uq_running_gps_samples_session_time`
   - 위도/경도/정확도/방향값 범위 체크
+- 비고:
+  - `append-only` raw telemetry table로 사용합니다.
+  - `1초 주기` 샘플 저장을 전제로 합니다.
+  - 핵심 read path는 `특정 running_session_id의 최근 10분 조회`입니다.
+  - 기본 hot path index는 기존 UNIQUE `(running_session_id, sampled_at)`를 우선 활용합니다.
+  - 동일 키의 별도 `DESC` 인덱스는 기본값으로 두지 않습니다.
+  - 서버 측 동기화 체크포인트 전용 테이블 없이 raw row 저장/조회 기준선을 설명합니다.
+  - `BRIN`, time partitioning, retention 상세값은 운영 이슈가 커질 때 후속 이슈에서 재검토합니다.
+
+### course_ghost_leaderboard
+
+- 목적: 코스별 고스트 경쟁 점수를 사용자/세션 단위로 저장
+- 핵심 컬럼:
+  - `course_ghost_leaderboard_id`: PK
+  - `user_id`: `users.user_id` FK
+  - `course_id`: `courses.course_id` FK
+  - `running_session_id`: `running_sessions.running_session_id` FK
+  - `point`: 리더보드 점수
+  - `created_at`: 생성 시각
+- 주요 제약:
+  - `uq_course_ghost_leaderboard_user_course_session` 유니크 (`user_id`, `course_id`, `running_session_id`)
+  - `fk_course_ghost_leaderboard_user`, `fk_course_ghost_leaderboard_course`, `fk_course_ghost_leaderboard_running_session` (모두 `ON DELETE CASCADE`)
+  - `chk_course_ghost_leaderboard_point`
 
 ### ghost_running_results
 
@@ -284,6 +317,8 @@
   - `course_like_id`: PK
   - `course_id`, `user_id`: 코스/사용자 FK
   - `is_liked`: 좋아요 여부
+- 감사 컬럼:
+  - 없음 (`CourseLike` Entity는 `BaseEntity`를 상속하지 않음)
 - 주요 제약:
   - `fk_course_likes_course`, `fk_course_likes_user` (둘 다 `ON DELETE CASCADE`)
   - `uq_course_likes_course_user`
@@ -294,6 +329,9 @@
 - 핵심 컬럼:
   - `course_bookmark_id`: PK
   - `course_id`, `user_id`: 코스/사용자 FK
+  - `created_at`: 생성 시각
+- 감사 컬럼:
+  - `created_at`만 사용 (`CourseBookmark` Entity가 직접 선언)
 - 주요 제약:
   - `fk_course_bookmarks_course`, `fk_course_bookmarks_user` (둘 다 `ON DELETE CASCADE`)
   - `uq_course_bookmarks_course_user`
@@ -320,7 +358,7 @@
   - `course_review_id`: `course_reviews.course_review_id` FK
   - `course_type`: `RIVERSIDE`, `PARK`, `MOUNTAIN_TRAIL`, `TRACK`, `URBAN`, `OTHER`
 - 주요 제약:
-  - `fk_course_review_course_types_course_review` (`ON DELETE CASCADE`)
+  - `fk_course_reviews_course_types_review` (`ON DELETE CASCADE`)
   - `uq_course_review_course_types_review_type`
   - `chk_course_review_course_types_course_type`
 
@@ -338,23 +376,3 @@
   - `fk_user_calendars_user` (`ON DELETE CASCADE`)
   - `uq_user_calendars_user_date`
   - 거리/시간/칼로리/횟수 음수 방지 체크
-
-### device_sync_states
-
-- 목적: 사용자별 디바이스 동기화 상태 저장
-- 핵심 컬럼:
-  - `device_sync_state_id`: PK
-  - `user_id`: 사용자 FK
-  - `device_type`: `WATCH`, `PHONE`, `WEB`
-  - `device_identifier`: 디바이스 식별자
-  - `last_synced_sampled_at`: 마지막 샘플 시각
-  - `running_session_id`: 마지막 동기화 기준 세션 FK
-  - `sync_token`: 증분 동기화 토큰
-  - `sync_status`: `IDLE`, `SYNCING`, `ERROR`
-  - `last_error_message`: 최근 오류 메시지
-- 주요 제약:
-  - `fk_device_sync_states_user` (`ON DELETE CASCADE`)
-  - `fk_device_sync_states_running_session` (`ON DELETE RESTRICT`)
-  - `uq_device_sync_states_user_device`
-  - `chk_device_sync_states_device_type`
-  - `chk_device_sync_states_status`

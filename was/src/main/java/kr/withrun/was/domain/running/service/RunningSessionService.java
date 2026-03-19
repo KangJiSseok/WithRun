@@ -1,31 +1,70 @@
 package kr.withrun.was.domain.running.service;
 
 import kr.withrun.was.domain.course.entity.Course;
+import kr.withrun.was.domain.course.entity.CourseDifficulty;
+import kr.withrun.was.domain.course.entity.CourseTypeMap;
+import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
+import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.course.vo.GeoPoint;
+import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsRequest;
+import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsResponse;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
+import kr.withrun.was.domain.running.dto.GhostRunningResultResponse;
+import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
+import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
+import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
+import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
+import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
+import kr.withrun.was.domain.running.dto.RunningGpsSampleResponse;
+import kr.withrun.was.domain.running.dto.RunningHealthSampleResponse;
+import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
+import kr.withrun.was.domain.running.dto.RunningSessionSplitResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
+import kr.withrun.was.domain.running.entity.RunningGpsSample;
+import kr.withrun.was.domain.running.entity.RunningHealthSample;
 import kr.withrun.was.domain.running.entity.RunningSession;
+import kr.withrun.was.domain.running.entity.RunningSessionSplit;
+import kr.withrun.was.domain.running.repository.RunningGpsSampleRepository;
+import kr.withrun.was.domain.running.repository.RunningHealthSampleRepository;
+import kr.withrun.was.domain.running.repository.GhostRunningResultRepository;
 import kr.withrun.was.domain.running.repository.RunningSessionRepository;
+import kr.withrun.was.domain.running.repository.RunningSessionSplitRepository;
+import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.util.PastRunningSessionCursorCodec;
+import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
+import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.LinkedHashSet;
+import java.util.List;
+
 @Service
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class RunningSessionService {
 
+    private final GhostRunningResultRepository ghostRunningResultRepository;
     private final RunningSessionRepository runningSessionRepository;
+    private final RunningGpsSampleRepository runningGpsSampleRepository;
+    private final RunningHealthSampleRepository runningHealthSampleRepository;
+    private final RunningSessionSplitRepository runningSessionSplitRepository;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
+    private final CourseDifficultyRepository courseDifficultyRepository;
+    private final CourseTypeMapRepository courseTypeMapRepository;
 
     @Transactional
     public CreateRunningSessionResponse createRunningSession(CreateRunningSessionRequest request) {
@@ -48,6 +87,66 @@ public class RunningSessionService {
     }
 
     @Transactional
+    public CreateRunningSessionDetailsResponse createRunningSessionDetail(
+            Long runningSessionId,
+            CreateRunningSessionDetailsRequest request
+    ) {
+        User user = getUser(request.userId());
+        RunningSession runningSession = getRunningSession(runningSessionId);
+        runningSession.validateOwner(user.getId());
+
+        List<RunningGpsSample> runningGpsSamples = request.gpsSamples().stream()
+                .map(gpsSample -> RunningGpsSample.create(
+                        user,
+                        runningSession,
+                        gpsSample.bearingDeg(),
+                        gpsSample.accuracyM(),
+                        gpsSample.altitudeM(),
+                        gpsSample.longitude(),
+                        gpsSample.latitude(),
+                        gpsSample.sampledAt()
+                ))
+                .toList();
+        List<RunningHealthSample> runningHealthSamples = request.healthSamples().stream()
+                .map(healthSample -> RunningHealthSample.create(
+                        user,
+                        runningSession,
+                        healthSample.heartRate(),
+                        healthSample.speedMps(),
+                        healthSample.paceSecPerKm(),
+                        healthSample.distanceM(),
+                        healthSample.caloriesKcal(),
+                        healthSample.cadenceSpm(),
+                        healthSample.sampledAt()
+                ))
+                .toList();
+        List<RunningSessionSplit> runningSessionSplits = request.splits().stream()
+                .map(split -> RunningSessionSplit.create(
+                        runningSession,
+                        split.splitIndex(),
+                        split.splitDistanceM(),
+                        split.splitDurationSec(),
+                        split.splitPaceSecPerKm(),
+                        split.avgHeartRate(),
+                        split.elevationGainM()
+                ))
+                .toList();
+
+
+        runningGpsSampleRepository.saveAll(runningGpsSamples);
+        runningHealthSampleRepository.saveAll(runningHealthSamples);
+        runningSessionSplitRepository.saveAll(runningSessionSplits);
+
+        return CreateRunningSessionDetailsResponse.of(
+                runningSession.getId(),
+                user.getId(),
+                runningGpsSamples.size(),
+                runningHealthSamples.size(),
+                runningSessionSplits.size()
+        );
+    }
+
+    @Transactional
     public UpdateRunningSessionResponse completeRunningSession(Long runningSessionId, UpdateRunningSessionRequest request) {
         RunningSession runningSession = getRunningSession(runningSessionId);
         runningSession.validateOwner(request.userId());
@@ -66,6 +165,98 @@ public class RunningSessionService {
         );
 
         return UpdateRunningSessionResponse.from(runningSession);
+    }
+
+    @Transactional
+    public RegisterRunningSessionCourseResponse registerRunningSessionCourse(
+            Long runningSessionId,
+            RegisterRunningSessionCourseRequest request
+    ) {
+        RunningSession runningSession = getRunningSession(runningSessionId);
+        runningSession.validateCourseRegistrable();
+        Difficulty difficulty = parseDifficulty(request.difficulty());
+        List<CourseType> courseTypes = parseCourseTypes(request.courseTypes());
+
+        Course course = courseRepository.save(Course.builder()
+                .title(request.title())
+                .status(CourseStatus.COMMUNITY)
+                .distanceM(runningSession.getDistanceM())
+                .elevationGainM(runningSession.getElevationGainM())
+                .snapshotImageUrl(resolveSnapshotImageUrl(request.snapshotImageUrl(), runningSession.getSnapshotImageUrl()))
+                .startLatitude(runningSession.getStartLatitude())
+                .startLongitude(runningSession.getStartLongitude())
+                .endLatitude(runningSession.getEndLatitude())
+                .endLongitude(runningSession.getEndLongitude())
+                .coordinates(copyCoordinates(runningSession.getCoordinates()))
+                .user(runningSession.getUser())
+                .build());
+
+        courseDifficultyRepository.save(CourseDifficulty.create(course, difficulty));
+        courseTypeMapRepository.saveAll(courseTypes.stream()
+                .map(courseType -> CourseTypeMap.create(course, courseType))
+                .toList());
+
+        return RegisterRunningSessionCourseResponse.from(course, difficulty);
+    }
+
+    public PastRunningSessionsResponse findPastRunningSessions(PastRunningSessionsRequest request) {
+        PastRunningSessionCursorCodec.CursorPayload payload = request.cursor() == null
+                ? null
+                : PastRunningSessionCursorCodec.decode(request.cursor());
+
+        RunningSessionDateRange dateRange = RunningSessionDateRange.of(request.year(), request.month(), request.day());
+
+        getUser(request.userId());
+
+        List<PastRunningSessionHistoryRow> rows = runningSessionRepository.findPastRunningSessionHistoryRows(
+                request.userId(),
+                dateRange.startInclusive(),
+                dateRange.endExclusive(),
+                payload == null ? null : payload.startedAt(),
+                payload == null ? null : payload.runningSessionId(),
+                request.pageSize()
+        );
+
+        boolean hasMore = rows.size() > request.pageSize();
+        List<PastRunningSessionHistoryRow> pagedRows = hasMore
+                ? List.copyOf(rows.subList(0, request.pageSize()))
+                : List.copyOf(rows);
+        List<PastRunningSessionItemResponse> items = pagedRows.stream()
+                .map(PastRunningSessionItemResponse::from)
+                .toList();
+        String nextCursor = hasMore ? toCursor(pagedRows.getLast()) : null;
+
+        return new PastRunningSessionsResponse(items, hasMore, nextCursor);
+    }
+
+    public GhostRunningResultResponse findGhostRunningResult(Long runningSessionId) {
+        return ghostRunningResultRepository.findByRunningSessionId(runningSessionId)
+                .map(GhostRunningResultResponse::from)
+                .orElseThrow(() -> new CustomException(ResponseCode.GHOST_RUNNING_RESULT_NOT_FOUND));
+    }
+
+    public RunningSessionDetailResponse findRunningSessionDetail(Long runningSessionId, Long userId) {
+        User user = getUser(userId);
+        RunningSession runningSession = getRunningSession(runningSessionId);
+        runningSession.validateOwner(user.getId());
+
+        List<RunningGpsSampleResponse> gpsSamples = runningGpsSampleRepository
+                .findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
+                .stream()
+                .map(RunningGpsSampleResponse::from)
+                .toList();
+        List<RunningHealthSampleResponse> healthSamples = runningHealthSampleRepository
+                .findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
+                .stream()
+                .map(RunningHealthSampleResponse::from)
+                .toList();
+        List<RunningSessionSplitResponse> splits = runningSessionSplitRepository
+                .findByRunningSessionIdOrderBySplitIndexAsc(runningSessionId)
+                .stream()
+                .map(RunningSessionSplitResponse::from)
+                .toList();
+
+        return RunningSessionDetailResponse.of(runningSession, gpsSamples, healthSamples, splits);
     }
 
 
@@ -112,4 +303,53 @@ public class RunningSessionService {
                 .orElseThrow(() -> new CustomException(ResponseCode.RUNNING_SESSION_NOT_FOUND));
         return runningSession;
     }
+
+    private Difficulty parseDifficulty(String rawDifficulty) {
+        try {
+            return Difficulty.valueOf(rawDifficulty);
+        } catch (IllegalArgumentException exception) {
+            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private List<CourseType> parseCourseTypes(List<String> rawCourseTypes) {
+        LinkedHashSet<CourseType> courseTypes = new LinkedHashSet<>();
+        for (String rawCourseType : rawCourseTypes) {
+            courseTypes.add(parseCourseType(rawCourseType));
+        }
+        return List.copyOf(courseTypes);
+    }
+
+    private CourseType parseCourseType(String rawCourseType) {
+        try {
+            return CourseType.valueOf(rawCourseType);
+        } catch (IllegalArgumentException exception) {
+            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+        }
+    }
+
+    private String resolveSnapshotImageUrl(String requestedSnapshotImageUrl, String runningSessionSnapshotImageUrl) {
+        if (requestedSnapshotImageUrl == null || requestedSnapshotImageUrl.isBlank()) {
+            return runningSessionSnapshotImageUrl;
+        }
+        return requestedSnapshotImageUrl;
+    }
+
+    private Coordinates copyCoordinates(Coordinates coordinates) {
+        if (coordinates == null) {
+            return null;
+        }
+
+        List<GeoPoint> copiedPoints = coordinates.values().stream()
+                .map(point -> point == null
+                        ? null
+                        : new GeoPoint(point.latitude(), point.longitude(), point.elevationM()))
+                .toList();
+        return new Coordinates(copiedPoints);
+    }
+
+    private String toCursor(PastRunningSessionHistoryRow row) {
+        return PastRunningSessionCursorCodec.encode(row.startedAt(), row.runningSessionId());
+    }
+
 }

@@ -1,16 +1,22 @@
 package kr.withrun.was.domain.course.service;
 
+import kr.withrun.was.domain.course.dto.BookmarkedCourseItemResponse;
+import kr.withrun.was.domain.course.dto.BookmarkedCoursesRequest;
+import kr.withrun.was.domain.course.dto.BookmarkedCoursesResponse;
 import kr.withrun.was.domain.course.dto.CourseBookmarkAddResponse;
 import kr.withrun.was.domain.course.dto.CourseBookmarkRemoveResponse;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseBookmark;
 import kr.withrun.was.domain.course.repository.CourseBookmarkRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
+import kr.withrun.was.domain.course.repository.query.dto.BookmarkedCourseRow;
 import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.domain.user.type.Gender;
+import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.junit.jupiter.api.BeforeEach;
@@ -125,6 +131,153 @@ class CourseBookmarkServiceTest {
         verify(courseBookmarkRepository, never()).deleteBookmark(course.getId(), user.getId());
     }
 
+    @DisplayName("북마크 목록 첫 페이지를 반환하고 다음 커서를 생성한다")
+    @Test
+    void returnsFirstPageOfBookmarkedCoursesWithNextCursor() {
+        User user = user(40L);
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(courseBookmarkRepository.findBookmarkedCourseRows(user.getId(), null, null, 1)).thenReturn(List.of(
+                bookmarkedCourseRow(
+                        102L,
+                        LocalDateTime.of(2026, 3, 14, 10, 30),
+                        12L,
+                        "Latest Course",
+                        CourseStatus.OFFICIAL,
+                        7000,
+                        50,
+                        Difficulty.HARD,
+                        CourseType.PARK,
+                        "snapshot-12"
+                ),
+                bookmarkedCourseRow(
+                        101L,
+                        LocalDateTime.of(2026, 3, 14, 9, 0),
+                        11L,
+                        "Earlier Course",
+                        CourseStatus.COMMUNITY,
+                        5000,
+                        20,
+                        Difficulty.MEDIUM,
+                        CourseType.RIVERSIDE,
+                        "snapshot-11"
+                ),
+                bookmarkedCourseRow(
+                        101L,
+                        LocalDateTime.of(2026, 3, 14, 9, 0),
+                        11L,
+                        "Earlier Course",
+                        CourseStatus.COMMUNITY,
+                        5000,
+                        20,
+                        Difficulty.MEDIUM,
+                        CourseType.PARK,
+                        "snapshot-11"
+                )
+        ));
+
+        BookmarkedCoursesResponse response = courseBookmarkService.findBookmarkedCourses(
+                user.getId(),
+                new BookmarkedCoursesRequest(1, null)
+        );
+
+        assertThat(response.items()).hasSize(1);
+        BookmarkedCourseItemResponse firstItem = response.items().getFirst();
+        assertThat(firstItem.bookmarkId()).isEqualTo(102L);
+        assertThat(firstItem.bookmarkedAt()).isEqualTo(LocalDateTime.of(2026, 3, 14, 10, 30));
+        assertThat(firstItem.courseId()).isEqualTo(12L);
+        assertThat(firstItem.isBookmarked()).isTrue();
+        assertThat(firstItem.isRunnable()).isTrue();
+        assertThat(firstItem.courseTypes()).containsExactly(CourseType.PARK);
+        assertThat(response.hasMore()).isTrue();
+        assertThat(response.nextCursor()).isNotBlank();
+    }
+
+    @DisplayName("다음 커서를 넘기면 이후 북마크 코스만 반환하고 타입을 병합한다")
+    @Test
+    void returnsBookmarkedCoursesAfterCursorAndMergesCourseTypes() {
+        User user = user(41L);
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(courseBookmarkRepository.findBookmarkedCourseRows(
+                user.getId(),
+                LocalDateTime.of(2026, 3, 14, 10, 30),
+                102L,
+                5
+        )).thenReturn(List.of(
+                bookmarkedCourseRow(
+                        101L,
+                        LocalDateTime.of(2026, 3, 14, 9, 0),
+                        11L,
+                        "Earlier Course",
+                        CourseStatus.COMMUNITY,
+                        5000,
+                        20,
+                        Difficulty.MEDIUM,
+                        CourseType.PARK,
+                        "snapshot-11"
+                ),
+                bookmarkedCourseRow(
+                        101L,
+                        LocalDateTime.of(2026, 3, 14, 9, 0),
+                        11L,
+                        "Earlier Course",
+                        CourseStatus.COMMUNITY,
+                        5000,
+                        20,
+                        Difficulty.MEDIUM,
+                        CourseType.RIVERSIDE,
+                        "snapshot-11"
+                )
+        ));
+
+        String cursor = kr.withrun.was.domain.course.util.BookmarkedCourseCursorCodec.encode(
+                LocalDateTime.of(2026, 3, 14, 10, 30),
+                102L
+        );
+
+        BookmarkedCoursesResponse response = courseBookmarkService.findBookmarkedCourses(
+                user.getId(),
+                new BookmarkedCoursesRequest(5, cursor)
+        );
+
+        assertThat(response.items()).hasSize(1);
+        BookmarkedCourseItemResponse item = response.items().getFirst();
+        assertThat(item.bookmarkId()).isEqualTo(101L);
+        assertThat(item.status()).isEqualTo(CourseStatus.COMMUNITY);
+        assertThat(item.courseTypes()).containsExactly(CourseType.RIVERSIDE, CourseType.PARK);
+        assertThat(item.isRunnable()).isFalse();
+        assertThat(response.hasMore()).isFalse();
+        assertThat(response.nextCursor()).isNull();
+    }
+
+    @DisplayName("잘못된 커서는 INVALID_CURSOR 예외를 던진다")
+    @Test
+    void throwsInvalidCursorWhenCursorIsMalformed() {
+        User user = user(42L);
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+
+        assertThatThrownBy(() -> courseBookmarkService.findBookmarkedCourses(
+                user.getId(),
+                new BookmarkedCoursesRequest(10, "%%%")
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.INVALID_CURSOR);
+    }
+
+    @DisplayName("없는 사용자가 북마크 목록을 조회하면 사용자 없음 예외를 던진다")
+    @Test
+    void throwsUserNotFoundWhenUserIsMissingOnList() {
+        when(userRepository.findNotDeletedUser(43L)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courseBookmarkService.findBookmarkedCourses(
+                43L,
+                new BookmarkedCoursesRequest(10, null)
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.USER_NOT_FOUND);
+    }
+
     @DisplayName("없는 코스에 북마크를 추가하면 코스 없음 예외를 던진다")
     @Test
     void throwsCourseNotFoundWhenCourseIsMissingOnAdd() {
@@ -198,6 +351,33 @@ class CourseBookmarkServiceTest {
     private void stubCourseAndUser(Course course, User user) {
         when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
         when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+    }
+
+    private BookmarkedCourseRow bookmarkedCourseRow(
+            Long bookmarkId,
+            LocalDateTime bookmarkedAt,
+            Long courseId,
+            String title,
+            CourseStatus status,
+            Integer distanceM,
+            Integer elevationGainM,
+            Difficulty difficulty,
+            CourseType courseType,
+            String snapshotImageUrl
+    ) {
+        return new BookmarkedCourseRow(
+                bookmarkId,
+                bookmarkedAt,
+                courseId,
+                title,
+                status,
+                distanceM,
+                elevationGainM,
+                difficulty,
+                courseType,
+                snapshotImageUrl,
+                true
+        );
     }
 
     private Course course(Long id) {

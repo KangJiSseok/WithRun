@@ -8,6 +8,7 @@ import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRo
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.config.QuerydslConfig;
 import org.junit.jupiter.api.DisplayName;
@@ -47,9 +48,10 @@ class CourseRepositoryRowTest {
     @Test
     void preservesCoordinatesThroughPersistenceAndRowQuery() {
         Coordinates coordinates = new Coordinates(
-                List.of(37.5665, 37.5668),
-                List.of(126.9780, 126.9791),
-                List.of(12.0, 15.5)
+                List.of(
+                        new GeoPoint(37.5665, 126.9780, 12.0),
+                        new GeoPoint(37.5668, 126.9791, 15.5)
+                )
         );
         LocalDateTime createdAt = LocalDateTime.of(2026, 3, 11, 1, 0);
 
@@ -88,7 +90,7 @@ class CourseRepositoryRowTest {
         assertThat(row.courseType()).isEqualTo(CourseType.PARK);
     }
 
-    @DisplayName("배열 형태 좌표 JSON도 Row 조회 시 Coordinates로 역직렬화한다")
+    @DisplayName("객체 배열 형태 좌표 JSON도 Row 조회 시 Coordinates로 역직렬화한다")
     @Test
     void deserializesArrayShapedCoordinatesFromDatabase() {
         LocalDateTime createdAt = LocalDateTime.of(2026, 3, 11, 2, 0);
@@ -103,7 +105,7 @@ class CourseRepositoryRowTest {
                 .startLongitude(126.9780)
                 .endLatitude(37.5700)
                 .endLongitude(126.9820)
-                .coordinates(new Coordinates(List.of(0.0), List.of(0.0), List.of(0.0)))
+                .coordinates(new Coordinates(List.of(new GeoPoint(0.0, 0.0, 0.0))))
                 .build();
         setCreatedAt(course, createdAt);
         course = courseRepository.save(course);
@@ -119,7 +121,7 @@ class CourseRepositoryRowTest {
 
         updateCoordinatesJson(
                 course.getId(),
-                "[[37.5665,126.9780,12.0],[37.5668,126.9791,15.5]]"
+                "[{\"latitude\":37.5665,\"longitude\":126.9780,\"elevationM\":12.0},{\"latitude\":37.5668,\"longitude\":126.9791,\"elevationM\":15.5}]"
         );
         entityManager.clear();
 
@@ -128,9 +130,10 @@ class CourseRepositoryRowTest {
         assertThat(results).hasSize(1);
         NearbyCourseCandidateRow row = results.getFirst();
         assertThat(row.coordinates()).isEqualTo(new Coordinates(
-                List.of(37.5665, 37.5668),
-                List.of(126.9780, 126.9791),
-                List.of(12.0, 15.5)
+                List.of(
+                        new GeoPoint(37.5665, 126.9780, 12.0),
+                        new GeoPoint(37.5668, 126.9791, 15.5)
+                )
         ));
     }
 
