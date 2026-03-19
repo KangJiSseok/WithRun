@@ -147,7 +147,7 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
                       onClick={() => toggleCourseType(label as CourseType)}
                       className={cn(
                         'px-3 py-2 rounded-xl caption-m transition-colors border',
-                        courseTypes.includes(label)
+                        courseTypes.includes(label as CourseType)
                           ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
                           : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
                       )}
