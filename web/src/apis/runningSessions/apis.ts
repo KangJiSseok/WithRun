@@ -1,6 +1,6 @@
 import axiosClient from '@/shared/libs/axiosClient';
 import type { ApiResponse } from '@/shared/types/api.type';
-import type { CreateRunningSessionRequest, RunningSessionData, RegisterCourseRequest, RegisterCourseResponse } from './types';
+import type { CreateRunningSessionRequest, RunningSessionData, RegisterCourseRequest, RegisterCourseResponse, GetRunningHistoryResponse, GetRunningHistoryParams } from './types';
 
 /**
  * 러닝 세션 생성 API
@@ -14,6 +14,24 @@ export const createRunningSession = async (
   const { data } = await axiosClient.post<ApiResponse<RunningSessionData>>(
     '/running-sessions',
     body
+  );
+  return data;
+};
+
+// 회원 시스템 구현 전 임시 mock 유저
+// 추후 변경 시 => auth context에서 실제 유저 정보 받아오기
+const MOCK_USER_ID = 1;
+
+/**
+ * 과거 러닝 세션 기록 조회
+ * GET /running-sessions/history/past
+ */
+export const getRunningHistoryApi = async (
+  params: GetRunningHistoryParams = {},
+): Promise<ApiResponse<GetRunningHistoryResponse>> => {
+  const { data } = await axiosClient.get<ApiResponse<GetRunningHistoryResponse>>(
+    '/running-sessions/history/past',
+    { params: { userId: MOCK_USER_ID, ...params } },
   );
   return data;
 };
