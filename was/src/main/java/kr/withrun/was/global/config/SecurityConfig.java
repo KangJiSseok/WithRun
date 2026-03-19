@@ -11,6 +11,8 @@ import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import kr.withrun.was.domain.auth.oauth2.service.CustomOAuth2UserService;
+import kr.withrun.was.domain.auth.oauth2.handler.OAuth2SuccessHandler;
+
 
 import java.util.List;
 
@@ -21,6 +23,9 @@ public class SecurityConfig {
     // application.yml에서 읽어들인 환경설정(프론트엔드 주소 등) 바구니를 가져옵니다.
     private final AuthProperties authProperties;
     private final CustomOAuth2UserService customOAuth2UserService;
+    // OAuth 로그인 성공 후 기존/신규 사용자를 처리하는 핸들러
+    private final OAuth2SuccessHandler oAuth2SuccessHandler;
+
 
     // 건물의 메인 경비실(SecurityFilterChain) 규칙을 설정하는 곳
     @Bean
@@ -52,7 +57,9 @@ public class SecurityConfig {
                 .oauth2Login(oauth2 -> oauth2
                     .userInfoEndpoint(userInfo -> userInfo
                         .userService(customOAuth2UserService)
-        )
+                )
+                // 6. 사용자 정보 파싱이 끝난 뒤, 기존/신규 사용자 분기와 redirect 처리 수행
+                .successHandler(oAuth2SuccessHandler)
 );
 
 
