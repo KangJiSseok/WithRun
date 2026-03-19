@@ -11,8 +11,10 @@ import {
   DrawerTitle,
 } from '@/shared/components/shadcn/drawer';
 import { cn } from '@/shared/utils';
+import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
 import { useCourseSurveys } from '@/hooks/FreeRun/useCourseSurveys';
-import { registerCourse, MOCK_RUNNING_SESSION_ID } from '@/shared/apis/FreeRun/courseApi';
+import { registerCourse } from '@/apis/runningSessions';
+import { MOCK_RUNNING_SESSION_ID } from '@/shared/apis/FreeRun/courseApi';
 import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
 
 type CourseShareModalProps = {
@@ -41,9 +43,9 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
     `나의 러닝 ${new Date().toLocaleDateString()}`,
   );
   // 사용자가 명시적으로 선택한 난이도 (null = 미선택, API 기본값 사용)
-  const [difficultyOverride, setDifficultyOverride] = useState<string | null>(null);
+  const [difficultyOverride, setDifficultyOverride] = useState<CourseDifficulty | null>(null);
   // 선택된 코스 타입 목록 (서버 enum 값, 복수 선택 가능)
-  const [courseTypes, setCourseTypes] = useState<string[]>([]);
+  const [courseTypes, setCourseTypes] = useState<CourseType[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // isOpen: Drawer가 열렸는지 여부를 전달
@@ -58,16 +60,17 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
   const setCourseId = useFreeRunResultStore((s) => s.setCourseId);
 
   // 사용자가 선택한 값이 있으면 그 값, 없으면 API 첫 번째 항목을 기본값으로 사용
-  const difficulty = difficultyOverride ?? surveyData?.difficulties[0]?.label ?? '';
+  const difficulty = difficultyOverride ?? (surveyData?.difficulties[0]?.label as CourseDifficulty | undefined);
 
   // 코스 타입 다중 선택 토글 함수
-  function toggleCourseType(label: string) {
+  function toggleCourseType(label: CourseType) {
     setCourseTypes((prev) =>
       prev.includes(label) ? prev.filter((t) => t !== label) : [...prev, label],
     );
   }
 
   async function handleSubmit() {
+    if (!difficulty) return;
     setIsSubmitting(true);
     try {
       const res = await registerCourse(runningSessionId, {
@@ -75,7 +78,7 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
         difficulty,
         courseTypes,
       });
-      setCourseId(res.courseId);
+      setCourseId(res.data.courseId);
       onClose();
     } finally {
       setIsSubmitting(false);
@@ -117,7 +120,7 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
                   {surveyData.difficulties.map(({ label }) => (
                     <button
                       key={label}
-                      onClick={() => setDifficultyOverride(label)}
+                      onClick={() => setDifficultyOverride(label as CourseDifficulty)}
                       className={cn(
                         'flex-1 py-2 rounded-xl caption-m transition-colors border',
                         difficulty === label
@@ -141,7 +144,7 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
                   {surveyData.courseTypes.map(({ label }) => (
                     <button
                       key={label}
-                      onClick={() => toggleCourseType(label)}
+                      onClick={() => toggleCourseType(label as CourseType)}
                       className={cn(
                         'px-3 py-2 rounded-xl caption-m transition-colors border',
                         courseTypes.includes(label)

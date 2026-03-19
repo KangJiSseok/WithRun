@@ -14,39 +14,6 @@ interface CourseLikeResponse {
   status: 'OFFICIAL' | 'COMMUNITY' | 'PRIVATE';
 }
 
-interface RegisterCourseRequest {
-  title: string;
-  difficulty: string;
-  courseTypes: string[];
-  snapshotImageUrl?: string;
-}
-
-interface RegisterCourseResponse {
-  courseId: number;
-  title: string;
-  status: string;
-  difficulty: string;
-  distanceM: number;
-  elevationGainM: number;
-  snapshotImageUrl: string | null;
-  startLatitude: number;
-  startLongitude: number;
-  endLatitude: number | null;
-  endLongitude: number | null;
-  coordinates: { latitude: number; longitude: number; elevation: number }[];
-}
-
-export async function registerCourse(
-  runningSessionId: number,
-  body: RegisterCourseRequest,
-): Promise<RegisterCourseResponse> {
-  const res = await axiosClient.post<{ data: RegisterCourseResponse }>(
-    `/running-sessions/${runningSessionId}/register-course`,
-    body,
-  );
-  return res.data.data;
-}
-
 export async function likeCourse(courseId: number): Promise<CourseLikeResponse> {
   const res = await axiosClient.post<{ data: CourseLikeResponse }>(
     `/courses/${courseId}/like/${MOCK_USER_ID}`,

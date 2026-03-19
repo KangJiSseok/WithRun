@@ -1,4 +1,4 @@
-import type { RunningMode } from '@/shared/types/api.type';
+import type { RunningMode, CourseDifficulty, CourseType, CourseStatus } from '@/shared/types/api.type';
 
 export type CreateRunningSessionRequest = {
   userId: number;
@@ -17,4 +17,26 @@ export type RunningSessionData = {
   distanceM: number;
   caloriesKcal: number;
   isCompleted: boolean;
+};
+
+export type RegisterCourseRequest = {
+  title: string;
+  difficulty: CourseDifficulty;
+  courseTypes: CourseType[];
+  snapshotImageUrl?: string;
+};
+
+export type RegisterCourseResponse = {
+  courseId: number;
+  title: string;
+  status: CourseStatus;
+  difficulty: CourseDifficulty;
+  distanceM: number;
+  elevationGainM: number;
+  snapshotImageUrl: string | null;
+  startLatitude: number;
+  startLongitude: number;
+  endLatitude: number | null;
+  endLongitude: number | null;
+  coordinates: { latitude: number; longitude: number; elevation: number }[];
 };
