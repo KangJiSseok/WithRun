@@ -1,10 +1,10 @@
 import { create } from 'zustand';
 
 interface FreeRunResult {
-  time: string;
-  distance: string;
-  pace: string;
-  calories: number;
+  durationSec: number;
+  distanceM: number;
+  caloriesKcal: number;
+  avgPaceSecPerKm: number;
 }
 
 interface FreeRunResultStore {

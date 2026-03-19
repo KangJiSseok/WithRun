@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Award, Home, MapPin, Activity, Timer, Save, Check, UploadCloud, Heart } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn, formatDuration, formatPace } from '@/shared/utils';
 import { CourseShareModal } from './CourseShareModal';
 import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
 import { useGeneratePaceData } from '@/hooks/FreeRun/useGeneratePaceData';
@@ -34,11 +34,20 @@ function StatItem({ label, value, unit }: StatItemProps) {
 }
 
 
+
 export function FreeRunResultScreen() {
   const navigate = useNavigate();
-  // 코스 저장 상태 (추후 API 연동 시 POST /courses 호출로 교체)
   const [isSaved, setIsSaved] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
+  const [showShareModal, setShowShareModal] = useState(false);
+
+  const result = useFreeRunResultStore((s) => s.result);
+  const courseId = useFreeRunResultStore((s) => s.courseId);
+
+  const durationSec = result?.durationSec ?? 0;
+  const distanceM = result?.distanceM ?? 0;
+  const caloriesKcal = result?.caloriesKcal ?? 0;
+  const avgPaceSecPerKm = result?.avgPaceSecPerKm ?? 0;
 
   // courseId가 있을 때만 API 호출, 없으면 로컬 토글만 (코스 등록 전 상태)
   async function handleLike() {
@@ -49,19 +58,11 @@ export function FreeRunResultScreen() {
       setIsLiked((prev) => !prev);
     }
   }
-  // 공식 코스 등록 Drawer 상태
-  const [showShareModal, setShowShareModal] = useState(false);
-  // FreeRunningScreen 종료 시점에 useFreeRunResultStore.setResult()로 저장
-  // 백엔드 연동 후: POST /runs → runId 반환 → store.setRunId(runId)
-  //  → 결과 화면에서 GET /runs/:runId → 데이터 표시
 
-  const result = useFreeRunResultStore((s) => s.result);
-  const courseId = useFreeRunResultStore((s) => s.courseId);
-
-  const time = result?.time ?? '00:00';
-  const distance = result?.distance ?? '0.00';
-  const pace = result?.pace ?? `--'--"`;
-  const calories = result?.calories ?? 0;
+  const time = formatDuration(durationSec);
+  const distance = (distanceM / 1000).toFixed(2);
+  const pace = formatPace(avgPaceSecPerKm);
+  const calories = caloriesKcal;
 
   const { paceData, avgSeconds } = useGeneratePaceData(pace, distance);
 
