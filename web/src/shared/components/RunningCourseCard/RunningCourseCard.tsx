@@ -4,7 +4,8 @@ import type { MouseEvent } from 'react';
 import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
 import { Card, CardContent } from '@/shared/components/shadcn/card';
-import type { CourseItem, CourseDifficulty, CourseType } from '@/apis';
+import type { CourseItem } from '@/apis/courses';
+import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
 
 const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
   EASY: '쉬움',
@@ -47,7 +48,10 @@ export function RunningCourseCard({
     >
       <div className="relative h-44 overflow-hidden">
         <img
-          src={course.snapshotImageUrl ?? 'https://placehold.co/430x176/e8e8e8/cccccc'}
+          src={
+            course.snapshotImageUrl ??
+            'https://placehold.co/430x176/e8e8e8/cccccc'
+          }
           alt={course.title}
           className="absolute inset-0 h-full w-full object-cover"
         />
@@ -84,12 +88,16 @@ export function RunningCourseCard({
 
       <CardContent className="flex flex-col gap-[var(--space-4)] p-[var(--space-5)]">
         <div className="flex items-start justify-between gap-[var(--space-4)]">
-          <h3 className="h3-b text-[hsl(var(--text-primary))]">{course.title}</h3>
+          <h3 className="h3-b text-[hsl(var(--text-primary))]">
+            {course.title}
+          </h3>
 
           <div className="flex items-center gap-[var(--space-1)] text-[hsl(var(--primary-1))]">
             <Heart size={18} fill="currentColor" />
             <span className="body-l-b">
-              {course.likeCount != null ? course.likeCount.toLocaleString() : '-'}
+              {course.likeCount != null
+                ? course.likeCount.toLocaleString()
+                : '-'}
             </span>
           </div>
         </div>

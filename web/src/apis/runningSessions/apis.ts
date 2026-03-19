@@ -1,5 +1,5 @@
 import axiosClient from '@/shared/libs/axiosClient';
-import type { ApiResponse } from '@/shared/types/apiResponse.type';
+import type { ApiResponse } from '@/shared/types/api.type';
 import type { CreateRunningSessionRequest, RunningSessionData } from './types';
 
 /**

@@ -1,3 +1,12 @@
+// API 공용 response 스키마
+export type ApiResponse<T = undefined> = {
+  success: boolean;
+  code: string;
+  message: string;
+  data: T;
+  traceId: string;
+};
+
 // 코스 종류
 export type CourseStatus = 'OFFICIAL' | 'COMMUNITY' | 'PRIVATE';
 // 탭에서 표시할 코스 상태 (PRIVATE 제외)

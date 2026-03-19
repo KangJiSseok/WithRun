@@ -1,11 +1,10 @@
-import type { RunningMode } from '../types';
+import type { RunningMode } from '@/shared/types/api.type';
 
 export type CreateRunningSessionRequest = {
   userId: number;
   mode: RunningMode;
   courseId?: number;
   ghostTargetRunningSessionId?: number;
-  startedAt: string; // ISO 8601 (e.g. "2026-03-17T06:30:00") -> new Date().toISOString()
   startLatitude: number; // -90 ~ 90
   startLongitude: number; // -180 ~ 180
 };

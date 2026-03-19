@@ -1,1 +1,1 @@
-export * from './apiResponse.type';
+export * from './api.type';

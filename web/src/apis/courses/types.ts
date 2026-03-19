@@ -1,4 +1,8 @@
-import type { CourseStatus, CourseDifficulty, CourseType } from '../types';
+import type {
+  CourseStatus,
+  CourseDifficulty,
+  CourseType,
+} from '@/shared/types/api.type';
 
 export type CoordinatePoint = {
   latitude: number;

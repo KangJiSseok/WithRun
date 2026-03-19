@@ -13,7 +13,7 @@ import { RunningCourseCard } from '@/shared/components/RunningCourseCard';
 import RunningCourseSearchBar from '@/shared/components/RunningCourseSearchBar/RunningCourseSearchBar';
 import { useNormalRunCourses } from '@/hooks/NormalRun/useNormalRunCourses';
 import { INITIAL_FILTERS } from '@/constants/NormalRun';
-import type { ActiveCourseTab, CourseDifficulty, CourseType } from '@/apis';
+import type { ActiveCourseTab, CourseDifficulty, CourseType } from '@/shared/types/api.type';
 
 const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
   EASY: '쉬움',
