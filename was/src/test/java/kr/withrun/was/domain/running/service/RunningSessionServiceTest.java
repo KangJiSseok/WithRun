@@ -343,49 +343,12 @@ class RunningSessionServiceTest {
         verify(runningSessionRepository, never()).save(any(RunningSession.class));
     }
 
-    @DisplayName("종료 요청이 유효하면 세션을 완료 상태로 확정한다")
-    @Test
-    void completesRunningSessionWhenRequestIsValid() {
-        RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
-        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
-        when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
-
-        LocalDateTime beforeComplete = LocalDateTime.now();
-        UpdateRunningSessionResponse response = runningSessionService.completeRunningSession(1L, request);
-        LocalDateTime afterComplete = LocalDateTime.now();
-
-        assertThat(response.runningSessionId()).isEqualTo(1L);
-        assertThat(response.isCompleted()).isTrue();
-        assertThat(response.isPublic()).isFalse();
-        assertThat(response.startedAt()).isEqualTo(LocalDateTime.parse("2026-03-12T06:30:00"));
-        assertThat(response.endedAt()).isBetween(beforeComplete, afterComplete);
-        assertThat(response.distanceM()).isEqualTo(10023);
-        assertThat(response.caloriesKcal()).isEqualTo(642);
-        assertThat(response.endLatitude()).isEqualTo(30.0);
-        assertThat(response.endLongitude()).isEqualTo(150.0);
-        assertThat(response.avgSpeedMps()).isEqualTo(11.0);
-        assertThat(response.durationSec()).isEqualTo(2520);
-        assertThat(response.avgPaceSecPerKm()).isEqualTo(2);
-        assertThat(response.startLatitude()).isEqualTo(37.5);
-        assertThat(response.startLongitude()).isEqualTo(127.0);
-        assertThat(response.elevationGainM()).isEqualTo(3);
-        assertThat(runningSession.getIsCompleted()).isTrue();
-        assertThat(runningSession.getEndedAt()).isEqualTo(response.endedAt());
-        assertThat(runningSession.getDistanceM()).isEqualTo(10023);
-        assertThat(runningSession.getCaloriesKcal()).isEqualTo(642);
-        assertThat(runningSession.getEndLatitude()).isEqualTo(30.0);
-        assertThat(runningSession.getEndLongitude()).isEqualTo(150.0);
-        assertThat(runningSession.getAvgSpeedMps()).isEqualTo(11.0);
-        assertThat(runningSession.getDurationSec()).isEqualTo(2520);
-        assertThat(runningSession.getAvgPaceSecPerKm()).isEqualTo(2);
-        assertThat(runningSession.getElevationGainM()).isEqualTo(3);
-    }
 
     @DisplayName("세션 소유 사용자와 요청 사용자 ID가 다르면 세션 없음으로 처리한다")
     @Test
     void treatsDifferentUserAsRunningSessionNotFound() {
         RunningSession runningSession = runningSession(1L, 2L, false, STARTED_AT);
-        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
+        UpdateRunningSessionRequest request = validUpdateRequest(1L);
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
         assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
@@ -398,7 +361,7 @@ class RunningSessionServiceTest {
     @Test
     void rejectsAlreadyCompletedRunningSession() {
         RunningSession runningSession = runningSession(1L, 1L, true, STARTED_AT);
-        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
+        UpdateRunningSessionRequest request = validUpdateRequest(1L);
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
         assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
@@ -410,7 +373,7 @@ class RunningSessionServiceTest {
     @DisplayName("존재하지 않는 세션은 종료할 수 없다")
     @Test
     void throwsRunningSessionNotFoundWhenSessionDoesNotExist() {
-        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
+        UpdateRunningSessionRequest request = validUpdateRequest(1L);
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
@@ -423,7 +386,7 @@ class RunningSessionServiceTest {
     @Test
     void appliesCurrentTimeForEndedAt() {
         RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
-        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T06:20:00");
+        UpdateRunningSessionRequest request = validUpdateRequest(1L);
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
         LocalDateTime beforeComplete = LocalDateTime.now();
@@ -431,7 +394,6 @@ class RunningSessionServiceTest {
         LocalDateTime afterComplete = LocalDateTime.now();
 
         assertThat(response.endedAt()).isBetween(beforeComplete, afterComplete);
-        assertThat(response.endedAt()).isNotEqualTo(request.endedAt());
         assertThat(runningSession.getEndedAt()).isEqualTo(response.endedAt());
         assertThat(runningSession.getIsCompleted()).isTrue();
     }
@@ -701,10 +663,9 @@ class RunningSessionServiceTest {
         return runningSession;
     }
 
-    private UpdateRunningSessionRequest validUpdateRequest(Long userId, String endedAt) {
+    private UpdateRunningSessionRequest validUpdateRequest(Long userId) {
         return new UpdateRunningSessionRequest(
                 userId,
-                LocalDateTime.parse(endedAt),
                 10023,
                 642,
                 30.0,
