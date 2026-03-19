@@ -4,6 +4,17 @@ import { Pause, Play, Square } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import { useFreeRunning } from '@/hooks/FreeRun/useFreeRunning';
 import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
+import { useBridgeDataStore } from '@/bridge';
+import { patchCompleteRunningSessionApi } from '@/apis';
+
+// 회원 시스템 구현 전 임시 mock 유저
+const MOCK_USER_ID = 1;
+
+function parseDurationSec(formatted: string): number {
+  const parts = formatted.split(':').map(Number);
+  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
+  return parts[0] * 60 + parts[1];
+}
 
 interface FreeRunningScreenProps {
   onFinish: () => void;
@@ -28,8 +39,52 @@ function StatCard({ label, value, unit }: StatCardProps) {
 
 export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
   const { time, distance, pace, calories, isPaused, togglePause } = useFreeRunning();
+  const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
   const setResult = useFreeRunResultStore((s) => s.setResult);
-  // 추후 API 연동 시 추가: const setCourseId = useFreeRunResultStore((s) => s.setCourseId);
+  const runningSessionId = useFreeRunResultStore((s) => s.runningSessionId);
+
+  const handleStop = async () => {
+    const durationSec = parseDurationSec(time);
+    const distanceM = Math.round(parseFloat(distance) * 1000);
+    const avgSpeedMps = durationSec > 0 ? distanceM / durationSec : 0;
+    const avgPaceSecPerKm = avgSpeedMps > 0 ? Math.round(1000 / avgSpeedMps) : 0;
+
+    const localResult = { durationSec, distanceM, caloriesKcal: calories, avgPaceSecPerKm };
+
+    if (runningSessionId !== null) {
+      try {
+        const res = await patchCompleteRunningSessionApi(runningSessionId, {
+          userId: MOCK_USER_ID,
+          endedAt: new Date().toISOString(),
+          distanceM,
+          caloriesKcal: calories,
+          endLatitude: gpsLocation?.latitude ?? 0,
+          endLongitude: gpsLocation?.longitude ?? 0,
+          avgSpeedMps,
+          durationSec,
+          avgPaceSecPerKm,
+          elevationGainM: 0,
+          distanceGapM: 0,
+          gpsSamples: [],
+          healthSamples: [],
+          splits: [],
+        });
+        setResult({
+          durationSec: res.data.durationSec,
+          distanceM: res.data.distanceM,
+          caloriesKcal: res.data.caloriesKcal,
+          avgPaceSecPerKm: res.data.avgPaceSecPerKm,
+        });
+      } catch {
+        // API 실패 시 로컬값으로 폴백
+        setResult(localResult);
+      }
+    } else {
+      setResult(localResult);
+    }
+
+    onFinish();
+  };
 
   return (
     <div className="absolute inset-0 bg-secondary-foreground flex flex-col items-center justify-between px-6 py-12">
@@ -87,14 +142,7 @@ export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
 
         {/* 종료 버튼 — 일시정지 시 오른쪽으로 슬라이드 */}
         <button
-          onClick={async () => {
-            // 추후 API 연동 시 교체:
-            // const res = await axiosClient.post('/api/runs', { time, distance, pace, calories });
-            // setResult({ time, distance, pace, calories });
-            // setCourseId(res.data.data.courseId); // 자동 생성된 courseId 저장
-            setResult({ time, distance, pace, calories });
-            onFinish();
-          }}
+          onClick={handleStop}
           className={cn(
             'absolute w-14 h-14 rounded-full bg-[hsl(var(--secondary-3))] flex items-center justify-center text-[hsl(var(--text-inverse))] transition-all duration-300',
             isPaused
