@@ -118,6 +118,94 @@ export type RunningSessionData = {
   isCompleted: boolean;
 };
 
+export type GpsSample = {
+  latitude: number;
+  longitude: number;
+  altitudeM: number | null;
+  accuracyM: number | null;
+  bearingDeg: number | null;
+  sampledAt: string; // ISO 8601
+};
+
+export type HealthSample = {
+  sampledAt: string; // ISO 8601
+  heartRate: number;
+  speedMps: number;
+  paceSecPerKm: number;
+  distanceM: number;
+  caloriesKcal: number;
+  cadenceSpm: number;
+};
+
+export type SplitData = {
+  userId: number;
+  splitIndex: number;
+  splitDistanceM: number;
+  splitDurationSec: number;
+  splitPaceSecPerKm: number;
+  avgHeartRate: number;
+  elevationGainM: number;
+};
+
+export type CompleteRunningSessionRequest = {
+  userId: number;
+  endedAt: string; // ISO 8601
+  distanceM: number;
+  caloriesKcal: number;
+  endLatitude: number; // -90 ~ 90
+  endLongitude: number; // -180 ~ 180
+  avgSpeedMps: number;
+  durationSec: number;
+  avgPaceSecPerKm: number;
+  elevationGainM: number;
+  distanceGapM: number;
+  gpsSamples: GpsSample[];
+  healthSamples: HealthSample[];
+  splits: SplitData[];
+};
+
+// 고스트러닝 응답 타입
+export type GhostRunningResult = {
+  ghostRunningResultId: number;
+  runningSessionId: number;
+  ghostTargetRunningSessionId: number;
+  targetUserId: number;
+  resultStatus: 'WIN' | 'LOSE' | 'DRAW';
+  point: number;
+  timeGapSec: number;
+  distanceGapM: number;
+  createdAt: string;
+};
+
+export type SplitResult = {
+  splitIndex: number;
+  splitDistanceM: number;
+  splitDurationSec: number;
+  splitPaceSecPerKm: number;
+  avgHeartRate: number;
+  elevationGainM: number;
+};
+
+// 자유러닝에서는 ghostRunningResult: GhostRunningResult | null
+// nullable로 명시되어 자유러닝에서는 null 반환
+export type CompleteRunningSessionResponse = {
+  runningSessionId: number;
+  userId: number;
+  snapshotImageUrl: string | null;
+  startedAt: string;
+  endedAt: string;
+  distanceM: number;
+  durationSec: number;
+  avgSpeedMps: number;
+  avgPaceSecPerKm: number;
+  caloriesKcal: number;
+  elevationGainM: number;
+  gpsSamples: GpsSample[];
+  healthSamples: HealthSample[];
+  splits: SplitResult[];
+  ghostRunningResult: GhostRunningResult | null;
+};
+
 export type RegisterCourseRequest = {
   title: string;
   difficulty: CourseDifficulty;

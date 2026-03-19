@@ -52,11 +52,12 @@ export const getRunningHistoryApi = async (
  */
 export const completeRunningSession = async (
   runningSessionId: number,
-  body: CompleteRunningSessionRequest
+  body: CompleteRunningSessionRequest,
 ): Promise<ApiResponse<CompleteRunningSessionResponse>> => {
-  const { data } = await axiosClient.patch<
-    ApiResponse<CompleteRunningSessionResponse>
-  >(`/running-sessions/${runningSessionId}`, body);
+  const { data } = await axiosClient.patch<ApiResponse<CompleteRunningSessionResponse>>(
+    `/running-sessions/${runningSessionId}`,
+    body,
+  );
   return data;
 };
 
