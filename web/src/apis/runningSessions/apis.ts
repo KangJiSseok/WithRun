@@ -62,6 +62,21 @@ export const completeRunningSession = async (
 };
 
 /**
+ * 러닝 세션 종료 API
+ * PATCH /running-sessions/{runningSessionId}
+ */
+export const patchCompleteRunningSessionApi = async (
+  runningSessionId: number,
+  body: CompleteRunningSessionRequest,
+): Promise<ApiResponse<CompleteRunningSessionResponse>> => {
+  const { data } = await axiosClient.patch<ApiResponse<CompleteRunningSessionResponse>>(
+    `/running-sessions/${runningSessionId}`,
+    body,
+  );
+  return data;
+};
+
+/**
  * 러닝 기록을 공식 코스로 등록하는 API
  * POST /running-sessions/{runningSessionId}/register-course
  */

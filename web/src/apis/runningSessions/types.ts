@@ -1,73 +1,5 @@
 import type { RunningMode, CourseDifficulty, CourseType, CourseStatus } from '@/shared/types/api.type';
 
-// GPS 샘플 (1초 단위 수집)
-export type GpsSample = {
-  latitude: number;
-  longitude: number;
-  altitudeM: number;
-  accuracyM: number;
-  bearingDeg: number;
-  sampledAt: string; // ISO 8601
-};
-
-// 헬스 샘플 (워치/모바일 1초 단위 수집)
-export type HealthSample = {
-  sampledAt: string; // ISO 8601
-  heartRate: number;
-  speedMps: number;
-  paceSecPerKm: number;
-  distanceM: number;
-  caloriesKcal: number;
-  cadenceSpm: number;
-};
-
-// 1km 단위 구간 기록 (TODO: 추후 구현)
-export type SplitRecord = {
-  userId: number;
-  splitIndex: number;
-  splitDistanceM: number;
-  splitDurationSec: number;
-  splitPaceSecPerKm: number;
-  avgHeartRate: number;
-  elevationGainM: number;
-};
-
-// PATCH /running-sessions/{id} 요청
-export type CompleteRunningSessionRequest = {
-  userId: number;
-  endedAt: string;
-  distanceM: number;
-  caloriesKcal: number;
-  endLatitude: number;
-  endLongitude: number;
-  avgSpeedMps: number;
-  durationSec: number;
-  avgPaceSecPerKm: number;
-  elevationGainM: number; // TODO: 추후 누적 상승 고도 계산 구현
-  distanceGapM: number;   // 일반 러닝 → 0
-  gpsSamples: GpsSample[];
-  healthSamples: HealthSample[];
-  splits: SplitRecord[];  // TODO: 추후 구현
-};
-
-// PATCH /running-sessions/{id} 응답
-export type CompleteRunningSessionResponse = {
-  runningSessionId: number;
-  userId: number;
-  snapshotImageUrl: string | null;
-  startedAt: string;
-  endedAt: string;
-  distanceM: number;
-  durationSec: number;
-  avgSpeedMps: number;
-  avgPaceSecPerKm: number;
-  caloriesKcal: number;
-  elevationGainM: number;
-  gpsSamples: GpsSample[];
-  healthSamples: HealthSample[];
-  splits: SplitRecord[];
-};
-
 // GET /running-sessions/history/past - 과거 러닝 세션 항목
 export type RunningHistoryItem = {
   runningSessionId: number;
@@ -118,6 +50,7 @@ export type RunningSessionData = {
   isCompleted: boolean;
 };
 
+// GPS 샘플 (1초 단위 수집)
 export type GpsSample = {
   latitude: number;
   longitude: number;
@@ -127,6 +60,7 @@ export type GpsSample = {
   sampledAt: string; // ISO 8601
 };
 
+// 헬스 샘플 (워치/모바일 1초 단위 수집)
 export type HealthSample = {
   sampledAt: string; // ISO 8601
   heartRate: number;
@@ -137,6 +71,7 @@ export type HealthSample = {
   cadenceSpm: number;
 };
 
+// 1km 단위 구간 기록 (TODO: 추후 구현)
 export type SplitData = {
   userId: number;
   splitIndex: number;
@@ -147,6 +82,7 @@ export type SplitData = {
   elevationGainM: number;
 };
 
+// PATCH /running-sessions/{id} 요청
 export type CompleteRunningSessionRequest = {
   userId: number;
   distanceM: number;
@@ -163,7 +99,7 @@ export type CompleteRunningSessionRequest = {
   splits: SplitData[];
 };
 
-// 고스트러닝 응답 타입
+// 고스트러닝 결과 타입
 export type GhostRunningResult = {
   ghostRunningResultId: number;
   runningSessionId: number;
@@ -185,8 +121,8 @@ export type SplitResult = {
   elevationGainM: number;
 };
 
-// 자유러닝에서는 ghostRunningResult: GhostRunningResult | null
-// nullable로 명시되어 자유러닝에서는 null 반환
+// PATCH /running-sessions/{id} 응답
+// 자유러닝에서는 ghostRunningResult: null
 export type CompleteRunningSessionResponse = {
   runningSessionId: number;
   userId: number;
