@@ -14,7 +14,6 @@ CREATE TABLE IF NOT EXISTS users (
   gender VARCHAR(16) NOT NULL,
   height_cm NUMERIC(5, 2) NOT NULL,
   weight_kg NUMERIC(5, 2) NOT NULL,
-  is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
@@ -92,7 +91,6 @@ INSERT INTO users (
   gender,
   height_cm,
   weight_kg,
-  is_active,
   created_at,
   updated_at,
   deleted_at
@@ -103,7 +101,6 @@ VALUES (
   'MALE',
   178.00,
   72.50,
-  TRUE,
   NOW(),
   NOW(),
   NULL
@@ -113,7 +110,6 @@ SET birth_date = EXCLUDED.birth_date,
     gender = EXCLUDED.gender,
     height_cm = EXCLUDED.height_cm,
     weight_kg = EXCLUDED.weight_kg,
-    is_active = EXCLUDED.is_active,
     updated_at = NOW(),
     deleted_at = NULL;
 
