@@ -1,5 +1,8 @@
 package kr.withrun.was.domain.running.controller;
 
+import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
@@ -10,12 +13,9 @@ import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
-import kr.withrun.was.domain.course.type.CourseStatus;
-import kr.withrun.was.domain.course.vo.Coordinates;
-import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
-import kr.withrun.was.global.common.type.TimeSlot;
 import kr.withrun.was.global.common.type.Difficulty;
+import kr.withrun.was.global.common.type.TimeSlot;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.hamcrest.Matchers;
@@ -26,6 +26,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -44,14 +45,12 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 @WebMvcTest(controllers = RunningSessionController.class, properties = "spring.config.import=")
 @AutoConfigureMockMvc(addFilters = false)
 @DisplayName("러닝 세션 컨트롤러")
 class RunningSessionControllerTest {
 
-    private static final LocalDateTime STARTED_AT = LocalDateTime.of(2026, 3, 12, 6, 30);
 
     static {
         System.setProperty("spring.cloud.aws.parameterstore.enabled", "false");
@@ -106,7 +105,7 @@ class RunningSessionControllerTest {
 
     @DisplayName("필수 요청 필드가 없으면 잘못된 입력 응답을 반환한다")
     @ParameterizedTest(name = "누락된 필드: {0}")
-    @ValueSource(strings = {"userId", "mode", "startedAt", "startLatitude", "startLongitude"})
+    @ValueSource(strings = {"userId", "mode", "startLatitude", "startLongitude"})
     void returnsInvalidInputValueWhenRequiredRequestFieldIsMissing(String missingField) throws Exception {
         mockMvc.perform(post("/api/running-sessions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -501,11 +500,11 @@ class RunningSessionControllerTest {
     }
 
     private static CreateRunningSessionRequest validCreateRequest() {
-        return new CreateRunningSessionRequest(1L, COURSE, 300L, null, STARTED_AT, 30.0, 176.0);
+        return new CreateRunningSessionRequest(1L, COURSE, 300L, null, 30.0, 176.0);
     }
 
     private static CreateRunningSessionRequest ghostCreateRequest() {
-        return new CreateRunningSessionRequest(1L, GHOST, 300L, 44L, STARTED_AT, 30.0, 176.0);
+        return new CreateRunningSessionRequest(1L, GHOST, 300L, 44L, 30.0, 176.0);
     }
 
     private static String validCreateRequestBody() {
