@@ -9,13 +9,13 @@ import kr.withrun.was.domain.course.dto.CourseLikeStatusResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.CreateCourseReviewResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
-import kr.withrun.was.domain.running.dto.CreateRunningGpsSampleBatchResponse;
-import kr.withrun.was.domain.running.dto.CreateRunningHealthSampleBatchResponse;
+import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsResponse;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionSplitResponse;
 import kr.withrun.was.domain.running.dto.GhostRunningResultResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
+import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarMonthlyResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
@@ -25,7 +25,7 @@ public final class SuccessApiResponseDocs {
     private SuccessApiResponseDocs() {
     }
 
-    @Schema(name = "CourseSurveyApiResponse", description = "코스 설문 항목 조회 성공 응답")
+    @Schema(name = "CourseSurveyApiResponse", description = "코스 설문 문항 조회 성공 응답")
     public record CourseSurveyApiResponse(
             @Schema(description = "요청 성공 여부", example = "true")
             boolean success,
@@ -129,32 +129,6 @@ public final class SuccessApiResponseDocs {
     ) {
     }
 
-    @Schema(name = "CreateRunningGpsSampleBatchApiResponse", description = "GPS 샘플 배치 저장 성공 응답")
-    public record CreateRunningGpsSampleBatchApiResponse(
-            @Schema(description = "요청 성공 여부", example = "true")
-            boolean success,
-            @Schema(description = "성공 응답 코드", example = "S002")
-            String code,
-            @Schema(description = "성공 응답 메시지", example = "리소스가 생성되었습니다.")
-            String message,
-            @Schema(description = "GPS 샘플 배치 저장 결과 데이터")
-            CreateRunningGpsSampleBatchResponse data
-    ) {
-    }
-
-    @Schema(name = "CreateRunningHealthSampleBatchApiResponse", description = "건강 샘플 배치 저장 성공 응답")
-    public record CreateRunningHealthSampleBatchApiResponse(
-            @Schema(description = "요청 성공 여부", example = "true")
-            boolean success,
-            @Schema(description = "성공 응답 코드", example = "S002")
-            String code,
-            @Schema(description = "성공 응답 메시지", example = "리소스가 생성되었습니다.")
-            String message,
-            @Schema(description = "건강 샘플 배치 저장 결과 데이터")
-            CreateRunningHealthSampleBatchResponse data
-    ) {
-    }
-
     @Schema(name = "CreateRunningSessionApiResponse", description = "러닝 세션 생성 성공 응답")
     public record CreateRunningSessionApiResponse(
             @Schema(description = "요청 성공 여부", example = "true")
@@ -165,6 +139,19 @@ public final class SuccessApiResponseDocs {
             String message,
             @Schema(description = "생성된 러닝 세션 데이터")
             CreateRunningSessionResponse data
+    ) {
+    }
+
+    @Schema(name = "CreateRunningSessionDetailsApiResponse", description = "러닝 세션 상세 데이터 저장 성공 응답")
+    public record CreateRunningSessionDetailsApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S002")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "리소스가 생성되었습니다.")
+            String message,
+            @Schema(description = "저장된 러닝 세션 상세 데이터")
+            CreateRunningSessionDetailsResponse data
     ) {
     }
 
@@ -191,6 +178,20 @@ public final class SuccessApiResponseDocs {
             String message,
             @Schema(description = "고스트 러닝 결과 데이터")
             GhostRunningResultResponse data
+    ) {
+    }
+
+
+    @Schema(name = "RunningSessionDetailApiResponse", description = "러닝 세션 상세 조회 성공 응답")
+    public record RunningSessionDetailApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "러닝 세션 상세 데이터")
+            RunningSessionDetailResponse data
     ) {
     }
 
@@ -246,7 +247,7 @@ public final class SuccessApiResponseDocs {
     ) {
     }
 
-    @Schema(name = "UserCalendarSummaryApiResponse", description = "러닝 요약 조회 성공 응답")
+    @Schema(name = "UserCalendarSummaryApiResponse", description = "사용자 러닝 요약 조회 성공 응답")
     public record UserCalendarSummaryApiResponse(
             @Schema(description = "요청 성공 여부", example = "true")
             boolean success,

@@ -10,17 +10,31 @@ import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
+import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsRequest;
+import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsResponse;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
+import kr.withrun.was.domain.running.dto.GhostRunningResultResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
+import kr.withrun.was.domain.running.dto.RunningGpsSampleResponse;
+import kr.withrun.was.domain.running.dto.RunningHealthSampleResponse;
+import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
+import kr.withrun.was.domain.running.dto.RunningSessionSplitResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
+import kr.withrun.was.domain.running.entity.RunningGpsSample;
+import kr.withrun.was.domain.running.entity.RunningHealthSample;
 import kr.withrun.was.domain.running.entity.RunningSession;
+import kr.withrun.was.domain.running.entity.RunningSessionSplit;
+import kr.withrun.was.domain.running.repository.RunningGpsSampleRepository;
+import kr.withrun.was.domain.running.repository.RunningHealthSampleRepository;
+import kr.withrun.was.domain.running.repository.GhostRunningResultRepository;
 import kr.withrun.was.domain.running.repository.RunningSessionRepository;
+import kr.withrun.was.domain.running.repository.RunningSessionSplitRepository;
 import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
 import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.domain.running.util.PastRunningSessionCursorCodec;
@@ -42,7 +56,11 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RunningSessionService {
 
+    private final GhostRunningResultRepository ghostRunningResultRepository;
     private final RunningSessionRepository runningSessionRepository;
+    private final RunningGpsSampleRepository runningGpsSampleRepository;
+    private final RunningHealthSampleRepository runningHealthSampleRepository;
+    private final RunningSessionSplitRepository runningSessionSplitRepository;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
     private final CourseDifficultyRepository courseDifficultyRepository;
@@ -66,6 +84,66 @@ public class RunningSessionService {
         ));
 
         return CreateRunningSessionResponse.from(savedRunningSession);
+    }
+
+    @Transactional
+    public CreateRunningSessionDetailsResponse createRunningSessionDetail(
+            Long runningSessionId,
+            CreateRunningSessionDetailsRequest request
+    ) {
+        User user = getUser(request.userId());
+        RunningSession runningSession = getRunningSession(runningSessionId);
+        runningSession.validateOwner(user.getId());
+
+        List<RunningGpsSample> runningGpsSamples = request.gpsSamples().stream()
+                .map(gpsSample -> RunningGpsSample.create(
+                        user,
+                        runningSession,
+                        gpsSample.bearingDeg(),
+                        gpsSample.accuracyM(),
+                        gpsSample.altitudeM(),
+                        gpsSample.longitude(),
+                        gpsSample.latitude(),
+                        gpsSample.sampledAt()
+                ))
+                .toList();
+        List<RunningHealthSample> runningHealthSamples = request.healthSamples().stream()
+                .map(healthSample -> RunningHealthSample.create(
+                        user,
+                        runningSession,
+                        healthSample.heartRate(),
+                        healthSample.speedMps(),
+                        healthSample.paceSecPerKm(),
+                        healthSample.distanceM(),
+                        healthSample.caloriesKcal(),
+                        healthSample.cadenceSpm(),
+                        healthSample.sampledAt()
+                ))
+                .toList();
+        List<RunningSessionSplit> runningSessionSplits = request.splits().stream()
+                .map(split -> RunningSessionSplit.create(
+                        runningSession,
+                        split.splitIndex(),
+                        split.splitDistanceM(),
+                        split.splitDurationSec(),
+                        split.splitPaceSecPerKm(),
+                        split.avgHeartRate(),
+                        split.elevationGainM()
+                ))
+                .toList();
+
+
+        runningGpsSampleRepository.saveAll(runningGpsSamples);
+        runningHealthSampleRepository.saveAll(runningHealthSamples);
+        runningSessionSplitRepository.saveAll(runningSessionSplits);
+
+        return CreateRunningSessionDetailsResponse.of(
+                runningSession.getId(),
+                user.getId(),
+                runningGpsSamples.size(),
+                runningHealthSamples.size(),
+                runningSessionSplits.size()
+        );
     }
 
     @Transactional
@@ -150,6 +228,37 @@ public class RunningSessionService {
 
         return new PastRunningSessionsResponse(items, hasMore, nextCursor);
     }
+
+    public GhostRunningResultResponse findGhostRunningResult(Long runningSessionId) {
+        return ghostRunningResultRepository.findByRunningSessionId(runningSessionId)
+                .map(GhostRunningResultResponse::from)
+                .orElseThrow(() -> new CustomException(ResponseCode.GHOST_RUNNING_RESULT_NOT_FOUND));
+    }
+
+    public RunningSessionDetailResponse findRunningSessionDetail(Long runningSessionId, Long userId) {
+        User user = getUser(userId);
+        RunningSession runningSession = getRunningSession(runningSessionId);
+        runningSession.validateOwner(user.getId());
+
+        List<RunningGpsSampleResponse> gpsSamples = runningGpsSampleRepository
+                .findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
+                .stream()
+                .map(RunningGpsSampleResponse::from)
+                .toList();
+        List<RunningHealthSampleResponse> healthSamples = runningHealthSampleRepository
+                .findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
+                .stream()
+                .map(RunningHealthSampleResponse::from)
+                .toList();
+        List<RunningSessionSplitResponse> splits = runningSessionSplitRepository
+                .findByRunningSessionIdOrderBySplitIndexAsc(runningSessionId)
+                .stream()
+                .map(RunningSessionSplitResponse::from)
+                .toList();
+
+        return RunningSessionDetailResponse.of(runningSession, gpsSamples, healthSamples, splits);
+    }
+
 
     private User getUser(Long userId) {
         return userRepository.findNotDeletedUser(userId)

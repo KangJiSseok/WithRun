@@ -7,12 +7,17 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
+import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsRequest;
+import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsResponse;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
+import kr.withrun.was.domain.running.dto.RunningSessionDetailRequest;
+import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
@@ -182,4 +187,19 @@ public class RunningSessionController {
         return ApiResponse.successEntity(CREATED, runningSessionService.registerRunningSessionCourse(runningSessionId, request));
     }
 
+    @PostMapping("/{runningSessionId}/detail")
+    public ResponseEntity<ApiResponse<CreateRunningSessionDetailsResponse>> createRunningSessionDetails(
+            @PathVariable @Positive Long runningSessionId,
+            @Valid @RequestBody CreateRunningSessionDetailsRequest request
+    ) {
+        return ApiResponse.successEntity(CREATED, runningSessionService.createRunningSessionDetail(runningSessionId, request));
+    }
+
+    @GetMapping("/{runningSessionId}/detail")
+    public ResponseEntity<ApiResponse<RunningSessionDetailResponse>> findRunningSessionDetail(
+            @PathVariable @Positive Long runningSessionId,
+            @Valid @RequestBody RunningSessionDetailRequest request
+    ) {
+        return ApiResponse.successEntity(runningSessionService.findRunningSessionDetail(runningSessionId, request.userId()));
+    }
 }
