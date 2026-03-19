@@ -4,6 +4,7 @@ import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseDifficulty;
 import kr.withrun.was.domain.course.entity.CourseTypeMap;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
+import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.type.CourseStatus;
@@ -83,6 +84,9 @@ class RunningSessionServiceTest {
     private CourseDifficultyRepository courseDifficultyRepository;
 
     @Mock
+    private CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
+
+    @Mock
     private CourseTypeMapRepository courseTypeMapRepository;
 
     @Mock
@@ -97,20 +101,25 @@ class RunningSessionServiceTest {
     @Mock
     private GhostRunningResultRepository ghostRunningResultRepository;
 
+    @Mock
+    private GhostRunningResultService ghostRunningResultService;
+
     private RunningSessionService runningSessionService;
 
     @BeforeEach
     void setUp() {
         runningSessionService = new RunningSessionService(
-                ghostRunningResultRepository,
                 runningSessionRepository,
-                runningGpsSampleRepository,
-                runningHealthSampleRepository,
-                runningSessionSplitRepository,
                 userRepository,
                 courseRepository,
                 courseDifficultyRepository,
-                courseTypeMapRepository
+                courseGhostLeaderboardRepository,
+                courseTypeMapRepository,
+                runningGpsSampleRepository,
+                runningHealthSampleRepository,
+                runningSessionSplitRepository,
+                ghostRunningResultRepository,
+                ghostRunningResultService
         );
     }
 
@@ -141,7 +150,7 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 901L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(1L, FREE, null, null, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(1L, FREE, null, null, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -152,7 +161,7 @@ class RunningSessionServiceTest {
         assertThat(savedSession.getCourse()).isNull();
         assertThat(savedSession.getGhostTargetRunningSession()).isNull();
         assertThat(savedSession.getMode()).isEqualTo(FREE);
-        assertThat(savedSession.getStartedAt()).isEqualTo(STARTED_AT);
+        assertThat(savedSession.getStartedAt()).isNotNull();
         assertThat(savedSession.getDistanceM()).isZero();
         assertThat(savedSession.getCaloriesKcal()).isZero();
         assertThat(savedSession.getIsCompleted()).isFalse();
@@ -178,7 +187,7 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 902L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(2L, COURSE, 300L, null, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(2L, COURSE, 300L, null, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -210,7 +219,7 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 903L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(3L, GHOST, 301L, 44L, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(3L, GHOST, 301L, 44L, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -236,7 +245,7 @@ class RunningSessionServiceTest {
         when(userRepository.findNotDeletedUser(10L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(10L, FREE, null, null, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(10L, FREE, null, null, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -249,7 +258,7 @@ class RunningSessionServiceTest {
         stubUser(user(11L));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(11L, COURSE, null, null, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(11L, COURSE, null, null, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -267,7 +276,7 @@ class RunningSessionServiceTest {
         when(courseRepository.findNotDeletedCourse(communityCourse.getId())).thenReturn(Optional.of(communityCourse));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(12L, COURSE, 302L, null, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(12L, COURSE, 302L, null, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -285,7 +294,7 @@ class RunningSessionServiceTest {
         when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(13L, GHOST, 303L, null, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(13L, GHOST, 303L, null, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -304,7 +313,7 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(55L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(14L, GHOST, 304L, 55L, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(14L, GHOST, 304L, 55L, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -325,7 +334,7 @@ class RunningSessionServiceTest {
                 .thenReturn(Optional.of(incompleteGhostTarget));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(15L, GHOST, 305L, 56L, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(15L, GHOST, 305L, 56L, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -341,27 +350,27 @@ class RunningSessionServiceTest {
         UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
+        LocalDateTime beforeComplete = LocalDateTime.now();
         UpdateRunningSessionResponse response = runningSessionService.completeRunningSession(1L, request);
+        LocalDateTime afterComplete = LocalDateTime.now();
 
-        assertThat(response).isEqualTo(new UpdateRunningSessionResponse(
-                1L,
-                true,
-                false,
-                LocalDateTime.parse("2026-03-12T06:30:00"),
-                LocalDateTime.parse("2026-03-12T07:12:00"),
-                10023,
-                642,
-                30.0,
-                150.0,
-                11.0,
-                2520,
-                2,
-                37.5,
-                127.0,
-                3
-        ));
+        assertThat(response.runningSessionId()).isEqualTo(1L);
+        assertThat(response.isCompleted()).isTrue();
+        assertThat(response.isPublic()).isFalse();
+        assertThat(response.startedAt()).isEqualTo(LocalDateTime.parse("2026-03-12T06:30:00"));
+        assertThat(response.endedAt()).isBetween(beforeComplete, afterComplete);
+        assertThat(response.distanceM()).isEqualTo(10023);
+        assertThat(response.caloriesKcal()).isEqualTo(642);
+        assertThat(response.endLatitude()).isEqualTo(30.0);
+        assertThat(response.endLongitude()).isEqualTo(150.0);
+        assertThat(response.avgSpeedMps()).isEqualTo(11.0);
+        assertThat(response.durationSec()).isEqualTo(2520);
+        assertThat(response.avgPaceSecPerKm()).isEqualTo(2);
+        assertThat(response.startLatitude()).isEqualTo(37.5);
+        assertThat(response.startLongitude()).isEqualTo(127.0);
+        assertThat(response.elevationGainM()).isEqualTo(3);
         assertThat(runningSession.getIsCompleted()).isTrue();
-        assertThat(runningSession.getEndedAt()).isEqualTo(LocalDateTime.of(2026, 3, 12, 7, 12, 0));
+        assertThat(runningSession.getEndedAt()).isEqualTo(response.endedAt());
         assertThat(runningSession.getDistanceM()).isEqualTo(10023);
         assertThat(runningSession.getCaloriesKcal()).isEqualTo(642);
         assertThat(runningSession.getEndLatitude()).isEqualTo(30.0);
@@ -410,17 +419,20 @@ class RunningSessionServiceTest {
                 .isEqualTo(ResponseCode.RUNNING_SESSION_NOT_FOUND);
     }
 
-    @DisplayName("종료 시각이 시작 시각보다 빨라도 현재 요청 값을 그대로 반영한다")
+    @DisplayName("종료 시각은 요청값 대신 서버 현재 시각으로 반영한다")
     @Test
-    void appliesEndedAtEvenWhenItIsBeforeStartedAt() {
+    void appliesCurrentTimeForEndedAt() {
         RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
         UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T06:20:00");
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
+        LocalDateTime beforeComplete = LocalDateTime.now();
         UpdateRunningSessionResponse response = runningSessionService.completeRunningSession(1L, request);
+        LocalDateTime afterComplete = LocalDateTime.now();
 
-        assertThat(response.endedAt()).isEqualTo(LocalDateTime.of(2026, 3, 12, 6, 20, 0));
-        assertThat(runningSession.getEndedAt()).isEqualTo(LocalDateTime.of(2026, 3, 12, 6, 20, 0));
+        assertThat(response.endedAt()).isBetween(beforeComplete, afterComplete);
+        assertThat(response.endedAt()).isNotEqualTo(request.endedAt());
+        assertThat(runningSession.getEndedAt()).isEqualTo(response.endedAt());
         assertThat(runningSession.getIsCompleted()).isTrue();
     }
 
