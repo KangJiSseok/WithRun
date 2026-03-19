@@ -4,7 +4,7 @@ import type { MouseEvent } from 'react';
 import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
 import { Card, CardContent } from '@/shared/components/shadcn/card';
-import type { CourseItem } from '@/apis/courses';
+import type { CourseItem } from '@/apis/course';
 import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
 
 const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {

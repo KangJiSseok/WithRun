@@ -5,7 +5,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
 import { useKakaoMap } from '@/shared/hooks/useKakaoMap';
-import type { CourseDetail } from '@/apis/courses';
+import type { CourseDetail } from '@/apis/course';
 import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
 
 const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {

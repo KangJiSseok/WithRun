@@ -5,11 +5,12 @@ import { cn } from '@/shared/utils';
 import { CourseShareModal } from './CourseShareModal';
 import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
 import { useGeneratePaceData } from '@/hooks/FreeRun/useGeneratePaceData';
-import { likeCourse } from '@/shared/apis/FreeRun/courseApi';
+import { likeCourse } from '@/apis/courseLike';
 
 // 회원 시스템 구현 전 임시 mock 유저
 // 추후 변경 시 => auth context에서 실제 유저 정보 받아오기
 const MOCK_USER = { name: '러너' };
+const MOCK_USER_ID = 1;
 
 // 심박수 mock 데이터 (워치 연동 예정)
 // 추후 변경 시 => state.heartRate로 대체 (min, avg, max 계산해서 저장)
@@ -42,8 +43,8 @@ export function FreeRunResultScreen() {
   // courseId가 있을 때만 API 호출, 없으면 로컬 토글만 (코스 등록 전 상태)
   async function handleLike() {
     if (courseId) {
-      const res = await likeCourse(courseId);
-      setIsLiked(res.isLiked);
+      const res = await likeCourse(courseId, MOCK_USER_ID);
+      setIsLiked(res.data.isLiked);
     } else {
       setIsLiked((prev) => !prev);
     }
@@ -197,7 +198,7 @@ export function FreeRunResultScreen() {
 
         {/* 홈으로 버튼 */}
         <button
-          onClick={() => navigate('/free')}
+          onClick={() => navigate('/free-run')}
           className="w-full py-4 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] body-b flex items-center justify-center gap-2"
         >
           <Home size={18} />

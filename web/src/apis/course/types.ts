@@ -4,6 +4,18 @@ import type {
   CourseType,
 } from '@/shared/types/api.type';
 
+// 코스 설문 선택지 옵션 (GET /courses/surveys)
+export type CourseSurveyOption = {
+  index: number;
+  label: string;
+};
+
+// 코스 설문 선택지 응답 (GET /courses/surveys)
+export type GetCourseSurveysResponse = {
+  courseTypes: CourseSurveyOption[];
+  difficulties: CourseSurveyOption[];
+};
+
 export type CoordinatePoint = {
   latitude: number;
   longitude: number;

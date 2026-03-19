@@ -3,7 +3,7 @@ import { Calendar, Ghost, Home, Map, Navigation } from 'lucide-react';
 
 const ITEMS = [
   { label: '홈', to: '/home', icon: Home },
-  { label: '자유', to: '/free', icon: Navigation },
+  { label: '자유', to: '/free-run', icon: Navigation },
   { label: '일반', to: '/normal', icon: Map },
   { label: '경쟁', to: '/competition', icon: Ghost },
   { label: '캘린더', to: '/calendar', icon: Calendar },
