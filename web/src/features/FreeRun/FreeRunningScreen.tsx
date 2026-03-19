@@ -6,7 +6,7 @@ import { cn } from '@/shared/utils';
 import { useFreeRunning } from '@/hooks/FreeRun/useFreeRunning';
 import { useRunningSessionStore } from '@/stores/runningSession';
 import { useBridgeDataStore } from '@/bridge';
-import { patchCompleteRunningSessionApi } from '@/apis';
+import { completeRunningSession } from '@/apis';
 
 // 회원 시스템 구현 전 임시 mock 유저
 const MOCK_USER_ID = 1;
@@ -70,7 +70,7 @@ export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
     setRunningMode('FREE');
 
     try {
-      const res = await patchCompleteRunningSessionApi(runningSessionId!, {
+      const res = await completeRunningSession(runningSessionId!, {
         userId: MOCK_USER_ID,
         distanceM,
         caloriesKcal: calories,
