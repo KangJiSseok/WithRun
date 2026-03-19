@@ -5,8 +5,8 @@ import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.entity.Course;
-import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
+import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseLikeRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseReviewRepository;
@@ -88,7 +88,7 @@ class CourseServiceTest {
         assertThat(response.status()).isEqualTo(course.getStatus());
         assertThat(response.difficulty()).isEqualTo(Difficulty.EASY);
         assertThat(response.coordinates()).isEqualTo(course.getCoordinates());
-        assertThat(response.types()).containsExactly(CourseType.RIVERSIDE, CourseType.PARK);
+        assertThat(response.courseTypes()).containsExactly(CourseType.RIVERSIDE, CourseType.PARK);
         assertThat(response.likeCount()).isEqualTo(14L);
         assertThat(response.isLiked()).isFalse();
         assertThat(response.isBookmarked()).isFalse();
