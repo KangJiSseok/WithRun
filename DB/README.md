@@ -204,8 +204,9 @@
 - `user_preference_course_types`: 사용자 선호 코스 타입 매핑
 - `user_preference_time_slots`: 사용자 선호 시간대 매핑
 - `courses`: 코스 정보
+- `course_difficulties`: 코스 난이도 1:1 매핑
 - `course_type_map`: 코스 타입 매핑
-- `course_likes`: 코스 좋아요 (like/unlike)
+- `course_likes`: 코스 좋아요 매핑
 - `course_bookmarks`: 코스 북마크
 - `course_reviews`: 코스 평점 및 난이도 피드백
 - `course_review_course_types`: 리뷰 코스 타입 설문

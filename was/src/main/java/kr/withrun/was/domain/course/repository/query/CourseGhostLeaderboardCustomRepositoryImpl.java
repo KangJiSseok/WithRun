@@ -41,10 +41,7 @@ public class CourseGhostLeaderboardCustomRepositoryImpl implements CourseGhostLe
                 ))
                 .from(courseGhostLeaderboard)
                 .join(courseGhostLeaderboard.user, user)
-                .where(
-                        courseGhostLeaderboard.course.id.eq(courseId),
-                        courseGhostLeaderboard.deletedAt.isNull()
-                )
+                .where(courseGhostLeaderboard.course.id.eq(courseId))
                 .orderBy(
                         courseGhostLeaderboard.point.desc(),
                         courseGhostLeaderboard.id.asc()
@@ -61,10 +58,7 @@ public class CourseGhostLeaderboardCustomRepositoryImpl implements CourseGhostLe
         Long count = queryFactory
                 .select(courseGhostLeaderboard.count())
                 .from(courseGhostLeaderboard)
-                .where(
-                        courseGhostLeaderboard.course.id.eq(courseId),
-                        courseGhostLeaderboard.deletedAt.isNull()
-                )
+                .where(courseGhostLeaderboard.course.id.eq(courseId))
                 .fetchOne();
 
         return count == null ? 0L : count;

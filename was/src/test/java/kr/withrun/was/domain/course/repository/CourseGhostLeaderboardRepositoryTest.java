@@ -94,25 +94,6 @@ class CourseGhostLeaderboardRepositoryTest {
         assertThat(courseGhostLeaderboardRepository.countByCourseId(course.getId())).isEqualTo(4L);
     }
 
-    @DisplayName("삭제된 리더보드 항목은 count에서 제외한다")
-    @Test
-    void excludesDeletedLeaderboardRowsFromCount() {
-        Course course = persistCourse("Deleted Row Course");
-        User user = persistUser("runner-delete");
-        CourseGhostLeaderboard leaderboard = persistLeaderboard(
-                course,
-                user,
-                120,
-                LocalDateTime.of(2026, 3, 18, 11, 0)
-        );
-        leaderboard.delete();
-
-        entityManager.flush();
-        entityManager.clear();
-
-        assertThat(courseGhostLeaderboardRepository.countByCourseId(course.getId())).isZero();
-    }
-
     private Course persistCourse(String title) {
         Course course = Course.builder()
                 .title(title)
