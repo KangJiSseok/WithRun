@@ -184,7 +184,7 @@ export function NormalRunScreen() {
                   key={course.courseId}
                   course={course}
                   isSaved={savedCourses.has(course.courseId)}
-                  onClick={() => navigate(`/normal/${course.courseId}`)}
+                  onClick={() => navigate(`/normal-run/${course.courseId}`)}
                   onToggleSave={handleToggleSave}
                 />
               ))}
