@@ -12,7 +12,6 @@ import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
-import kr.withrun.was.domain.running.dto.GhostRunningResultResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
@@ -21,9 +20,7 @@ import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.RunningSession;
-import kr.withrun.was.domain.running.repository.GhostRunningResultRepository;
 import kr.withrun.was.domain.running.repository.RunningSessionRepository;
-import kr.withrun.was.domain.running.repository.query.dto.GhostRunningResultRow;
 import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
@@ -70,9 +67,6 @@ class RunningSessionServiceTest {
     private static final LocalDateTime STARTED_AT = LocalDateTime.of(2026, 3, 12, 6, 30);
 
     @Mock
-    private GhostRunningResultRepository ghostRunningResultRepository;
-
-    @Mock
     private RunningSessionRepository runningSessionRepository;
 
     @Mock
@@ -92,7 +86,6 @@ class RunningSessionServiceTest {
     @BeforeEach
     void setUp() {
         runningSessionService = new RunningSessionService(
-                ghostRunningResultRepository,
                 runningSessionRepository,
                 userRepository,
                 courseRepository,
@@ -605,49 +598,6 @@ class RunningSessionServiceTest {
         assertThat(response.items()).isEmpty();
         assertThat(response.hasMore()).isFalse();
         assertThat(response.nextCursor()).isNull();
-    }
-
-    @DisplayName("고스트 러닝 결과 조회 시 결과 상세를 응답한다")
-    @Test
-    void returnsGhostRunningResultWhenResultExists() {
-        LocalDateTime createdAt = LocalDateTime.of(2026, 3, 8, 8, 15);
-        GhostRunningResultRow ghostRunningResult = new GhostRunningResultRow(
-                77L,
-                901L,
-                345L,
-                202L,
-                GhostResultStatus.WIN,
-                14,
-                32,
-                createdAt
-        );
-        when(ghostRunningResultRepository.findByRunningSessionId(901L))
-                .thenReturn(Optional.of(ghostRunningResult));
-
-        GhostRunningResultResponse response = runningSessionService.findGhostRunningResult(901L);
-
-        assertThat(response).isEqualTo(new GhostRunningResultResponse(
-                77L,
-                901L,
-                345L,
-                202L,
-                GhostResultStatus.WIN,
-                14,
-                32,
-                createdAt
-        ));
-    }
-
-    @DisplayName("고스트 러닝 결과가 없으면 GHOST_RUNNING_RESULT_NOT_FOUND 예외를 던진다")
-    @Test
-    void throwsGhostRunningResultNotFoundWhenResultDoesNotExist() {
-        when(ghostRunningResultRepository.findByRunningSessionId(901L))
-                .thenReturn(Optional.empty());
-
-        assertThatThrownBy(() -> runningSessionService.findGhostRunningResult(901L))
-                .isInstanceOf(CustomException.class)
-                .extracting("responseCode")
-                .isEqualTo(ResponseCode.GHOST_RUNNING_RESULT_NOT_FOUND);
     }
 
     private void stubUser(User user) {

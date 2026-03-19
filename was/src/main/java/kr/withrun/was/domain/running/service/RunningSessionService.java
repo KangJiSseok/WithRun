@@ -12,7 +12,6 @@ import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
-import kr.withrun.was.domain.running.dto.GhostRunningResultResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
@@ -21,7 +20,6 @@ import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.RunningSession;
-import kr.withrun.was.domain.running.repository.GhostRunningResultRepository;
 import kr.withrun.was.domain.running.repository.RunningSessionRepository;
 import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
 import kr.withrun.was.domain.running.type.RunningMode;
@@ -44,7 +42,6 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RunningSessionService {
 
-    private final GhostRunningResultRepository ghostRunningResultRepository;
     private final RunningSessionRepository runningSessionRepository;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
@@ -152,12 +149,6 @@ public class RunningSessionService {
         String nextCursor = hasMore ? toCursor(pagedRows.getLast()) : null;
 
         return new PastRunningSessionsResponse(items, hasMore, nextCursor);
-    }
-
-    public GhostRunningResultResponse findGhostRunningResult(Long runningSessionId) {
-        return ghostRunningResultRepository.findByRunningSessionId(runningSessionId)
-                .map(GhostRunningResultResponse::from)
-                .orElseThrow(() -> new CustomException(ResponseCode.GHOST_RUNNING_RESULT_NOT_FOUND));
     }
 
     private User getUser(Long userId) {
