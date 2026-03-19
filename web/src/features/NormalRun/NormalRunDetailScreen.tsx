@@ -1,10 +1,10 @@
 import { ArrowLeft, MapPin } from 'lucide-react';
-import { useEffect, useRef, useState } from 'react';
+import { useRef } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
-import { useKakaoMap } from '@/shared/hooks/useKakaoMap';
+import { useNormalRunDetailMap } from '@/hooks/NormalRun/useNormalRunDetailMap';
 import type { CourseDetail } from '@/apis/course';
 import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
 
@@ -31,16 +31,14 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
   const navigate = useNavigate();
   const { courseId } = useParams();
   const containerRef = useRef<HTMLDivElement>(null);
-  const [isAtStartPoint, setIsAtStartPoint] = useState(false);
 
-  // TODO: 실제 GPS 출발지 도착 감지 로직으로 교체
-  useEffect(() => {
-    const timer = setTimeout(() => setIsAtStartPoint(true), 2000);
-    return () => clearTimeout(timer);
-  }, []);
-
-  // coordinates를 전달하면 폴리라인이 자동으로 그려지고 경로 전체가 보이도록 지도 범위 조정
-  useKakaoMap(containerRef, { coordinates: course.coordinates });
+  const { isNearStart } = useNormalRunDetailMap(containerRef, {
+    coordinates: course.coordinates,
+    startLatitude: course.startLatitude,
+    startLongitude: course.startLongitude,
+    endLatitude: course.endLatitude,
+    endLongitude: course.endLongitude,
+  });
 
   return (
     <div className="relative h-screen w-full">
@@ -116,7 +114,7 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
         {/* 러닝 시작 버튼 */}
         <Button
           type="button"
-          disabled={!isAtStartPoint}
+          disabled={!isNearStart}
           onClick={() => navigate(`/normal-run-session/${courseId}`)}
           className="h-14 w-full rounded-[var(--radius-xl)] body-l-b"
         >

@@ -1,9 +1,10 @@
 import { Pause, Play, Square } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 
-import { FreeRunMap } from '@/features/FreeRun/FreeRunMap';
-import { useFreeRunning } from '@/hooks/FreeRun/useFreeRunning';
+import { NormalRunMap } from './NormalRunMap';
+import { useNormalRunning } from '@/hooks/NormalRun/useNormalRunning';
 import { cn } from '@/shared/utils';
+import type { CourseDetail } from '@/apis/course';
 
 interface StatItemProps {
   label: string;
@@ -29,15 +30,19 @@ function StatItem({ label, value, valueClassName, sub }: StatItemProps) {
   );
 }
 
-export function NormalRunSessionScreen() {
+type NormalRunSessionScreenProps = {
+  courseDetail: CourseDetail;
+};
+
+export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenProps) {
   const navigate = useNavigate();
   const { time, distance, pace, calories, isPaused, togglePause } =
-    useFreeRunning();
+    useNormalRunning();
 
   return (
     <div className="absolute inset-0 overflow-hidden">
       {/* 지도 */}
-      <FreeRunMap />
+      <NormalRunMap coordinates={courseDetail.coordinates} />
 
       {/* 상단 통계 오버레이 */}
       <div className="absolute left-0 right-0 top-0 z-sticky flex justify-between px-8 pt-14">
