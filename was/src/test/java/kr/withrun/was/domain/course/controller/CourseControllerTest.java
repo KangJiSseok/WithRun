@@ -278,7 +278,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.coordinates[0].latitude").value(37.57))
                 .andExpect(jsonPath("$.data.coordinates[1].longitude").value(126.98))
                 .andExpect(jsonPath("$.data.coordinates[0].elevationM").value(10.0))
-                .andExpect(jsonPath("$.data.types[0]").value(CourseType.RIVERSIDE.name()))
+                .andExpect(jsonPath("$.data.courseTypes[0]").value(CourseType.RIVERSIDE.name()))
                 .andExpect(jsonPath("$.data.likeCount").value(14))
                 .andExpect(jsonPath("$.data.isLiked").value(false))
                 .andExpect(jsonPath("$.data.isBookmarked").value(false))

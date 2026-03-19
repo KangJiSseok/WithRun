@@ -48,7 +48,7 @@ public record CourseDetailResponse(
         Coordinates coordinates,
 
         @ArraySchema(schema = @Schema(implementation = CourseType.class), arraySchema = @Schema(description = "코스 유형 목록"))
-        List<CourseType> types,
+        List<CourseType> courseTypes,
 
         @Schema(description = "누적 좋아요 수", example = "128")
         Long likeCount,
