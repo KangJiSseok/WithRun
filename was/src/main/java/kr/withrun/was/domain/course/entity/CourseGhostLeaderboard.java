@@ -92,8 +92,12 @@ public class CourseGhostLeaderboard {
         return new CourseGhostLeaderboard(user, course, runningSession, point);
     }
 
-    public void updatePointAndRunningSession(Integer point, RunningSession runningSession) {
+    public void updatePoint(Integer point) {
         this.point = point == null ? 0 : point;
+    }
+
+    public void updatePointAndRunningSession(Integer point, RunningSession runningSession) {
+        updatePoint(point);
         this.runningSession = runningSession;
     }
 

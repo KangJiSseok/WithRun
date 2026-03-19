@@ -312,13 +312,14 @@ public class RunningSessionService {
 
     private void upsertCourseGhostLeaderboard(RunningSession runningSession, int point) {
         Course leaderboardCourse = resolveLeaderboardCourse(runningSession);
-        List<CourseGhostLeaderboard> existingRows = courseGhostLeaderboardRepository
-                .findByUserIdAndCourseIdAndDeletedAtIsNullOrderByPointDescIdAsc(
+        CourseGhostLeaderboard existingRow = courseGhostLeaderboardRepository
+                .findTopByUserIdAndCourseId(
                         runningSession.getUser().getId(),
                         leaderboardCourse.getId()
-                );
+                )
+                .orElse(null);
 
-        if (existingRows.isEmpty()) {
+        if (existingRow == null) {
             courseGhostLeaderboardRepository.save(CourseGhostLeaderboard.create(
                     runningSession.getUser(),
                     leaderboardCourse,
@@ -328,14 +329,9 @@ public class RunningSessionService {
             return;
         }
 
-        CourseGhostLeaderboard primaryRow = existingRows.get(0);
-        for (int index = 1; index < existingRows.size(); index++) {
-            existingRows.get(index).delete();
-        }
-
-        int existingPoint = primaryRow.getPoint() == null ? 0 : primaryRow.getPoint();
+        int existingPoint = existingRow.getPoint() == null ? 0 : existingRow.getPoint();
         if (point > existingPoint) {
-            primaryRow.updatePointAndRunningSession(point, runningSession);
+            existingRow.updatePoint(point);
         }
     }
 
