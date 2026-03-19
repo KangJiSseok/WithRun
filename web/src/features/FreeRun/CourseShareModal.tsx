@@ -14,7 +14,9 @@ import { cn } from '@/shared/utils';
 import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
 import { useCourseSurveys } from '@/hooks/FreeRun/useCourseSurveys';
 import { registerCourse } from '@/apis/runningSessions';
-import { MOCK_RUNNING_SESSION_ID } from '@/shared/apis/FreeRun/courseApi';
+
+// 추후 변경: createRunningSession 응답에서 받아온 runningSessionId를 store에서 읽어오기
+const MOCK_RUNNING_SESSION_ID = 17;
 import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
 
 type CourseShareModalProps = {
