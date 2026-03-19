@@ -1,6 +1,6 @@
 import axiosClient from '@/shared/libs/axiosClient';
 import type { ApiResponse } from '@/shared/types/api.type';
-import type { CreateRunningSessionRequest, RunningSessionData } from './types';
+import type { CreateRunningSessionRequest, GetCourseSurveysResponse, RunningSessionData } from './types';
 
 /**
  * 러닝 세션 생성 API
@@ -14,6 +14,14 @@ export const createRunningSession = async (
   const { data } = await axiosClient.post<ApiResponse<RunningSessionData>>(
     '/running-sessions',
     body
+  );
+  return data;
+};
+
+export const getCourseSurveys = async (
+): Promise<ApiResponse<GetCourseSurveysResponse>> => {
+  const { data } = await axiosClient.get<ApiResponse<GetCourseSurveysResponse>>(
+    '/courses/surveys'
   );
   return data;
 };

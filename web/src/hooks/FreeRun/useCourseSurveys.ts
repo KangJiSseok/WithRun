@@ -1,8 +1,9 @@
 import { useEffect, useState } from 'react';
-import { fetchCourseSurveys, type CourseSurveyData } from '@/shared/apis/FreeRun/courseApi';
+import { getCourseSurveys } from '@/apis/runningSessions';
+import type { GetCourseSurveysResponse } from '@/apis/runningSessions';
 
 export function useCourseSurveys(isOpen: boolean) {
-  const [surveyData, setSurveyData] = useState<CourseSurveyData | null>(null);
+  const [surveyData, setSurveyData] = useState<GetCourseSurveysResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Drawer가 열릴 때마다 설문 선택지 조회
@@ -11,8 +12,8 @@ export function useCourseSurveys(isOpen: boolean) {
     async function load() {
       setIsLoading(true);
       try {
-        const data = await fetchCourseSurveys();
-        setSurveyData(data);
+        const res = await getCourseSurveys();
+        setSurveyData(res.data);
       } catch {
         setSurveyData(null);
       } finally {
