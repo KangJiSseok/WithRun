@@ -30,6 +30,7 @@ public class GhostRunningResultCustomRepositoryImpl implements GhostRunningResul
                                 ghostRunningResult.ghostTargetRunningSession.id,
                                 targetUser.id,
                                 ghostRunningResult.resultStatus,
+                                ghostRunningResult.point,
                                 ghostRunningResult.timeGapSec,
                                 ghostRunningResult.distanceGapM,
                                 ghostRunningResult.createdAt

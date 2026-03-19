@@ -10,6 +10,7 @@ public record GhostRunningResultRow(
         Long ghostTargetRunningSessionId,
         Long targetUserId,
         GhostResultStatus resultStatus,
+        Integer point,
         Integer timeGapSec,
         Integer distanceGapM,
         LocalDateTime createdAt

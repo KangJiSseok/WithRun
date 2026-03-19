@@ -4,6 +4,7 @@ import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseDifficulty;
 import kr.withrun.was.domain.course.entity.CourseTypeMap;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
+import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.type.CourseStatus;
@@ -83,6 +84,9 @@ class RunningSessionServiceTest {
     private CourseDifficultyRepository courseDifficultyRepository;
 
     @Mock
+    private CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
+
+    @Mock
     private CourseTypeMapRepository courseTypeMapRepository;
 
     @Mock
@@ -97,20 +101,25 @@ class RunningSessionServiceTest {
     @Mock
     private GhostRunningResultRepository ghostRunningResultRepository;
 
+    @Mock
+    private GhostRunningResultService ghostRunningResultService;
+
     private RunningSessionService runningSessionService;
 
     @BeforeEach
     void setUp() {
         runningSessionService = new RunningSessionService(
-                ghostRunningResultRepository,
                 runningSessionRepository,
-                runningGpsSampleRepository,
-                runningHealthSampleRepository,
-                runningSessionSplitRepository,
                 userRepository,
                 courseRepository,
                 courseDifficultyRepository,
-                courseTypeMapRepository
+                courseGhostLeaderboardRepository,
+                courseTypeMapRepository,
+                runningGpsSampleRepository,
+                runningHealthSampleRepository,
+                runningSessionSplitRepository,
+                ghostRunningResultRepository,
+                ghostRunningResultService
         );
     }
 
@@ -152,6 +161,7 @@ class RunningSessionServiceTest {
         assertThat(savedSession.getCourse()).isNull();
         assertThat(savedSession.getGhostTargetRunningSession()).isNull();
         assertThat(savedSession.getMode()).isEqualTo(FREE);
+        assertThat(savedSession.getStartedAt()).isNotNull();
         assertThat(savedSession.getDistanceM()).isZero();
         assertThat(savedSession.getCaloriesKcal()).isZero();
         assertThat(savedSession.getIsCompleted()).isFalse();
@@ -336,31 +346,31 @@ class RunningSessionServiceTest {
     @DisplayName("종료 요청이 유효하면 세션을 완료 상태로 확정한다")
     @Test
     void completesRunningSessionWhenRequestIsValid() {
-        RunningSession runningSession = runningSession(1L, 1L, false);
+        RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
         UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
+        LocalDateTime beforeComplete = LocalDateTime.now();
         UpdateRunningSessionResponse response = runningSessionService.completeRunningSession(1L, request);
+        LocalDateTime afterComplete = LocalDateTime.now();
 
-        assertThat(response).isEqualTo(new UpdateRunningSessionResponse(
-                1L,
-                true,
-                false,
-                LocalDateTime.parse("2026-03-12T06:30:00"),
-                LocalDateTime.parse("2026-03-12T07:12:00"),
-                10023,
-                642,
-                30.0,
-                150.0,
-                11.0,
-                2520,
-                2,
-                37.5,
-                127.0,
-                3
-        ));
+        assertThat(response.runningSessionId()).isEqualTo(1L);
+        assertThat(response.isCompleted()).isTrue();
+        assertThat(response.isPublic()).isFalse();
+        assertThat(response.startedAt()).isEqualTo(LocalDateTime.parse("2026-03-12T06:30:00"));
+        assertThat(response.endedAt()).isBetween(beforeComplete, afterComplete);
+        assertThat(response.distanceM()).isEqualTo(10023);
+        assertThat(response.caloriesKcal()).isEqualTo(642);
+        assertThat(response.endLatitude()).isEqualTo(30.0);
+        assertThat(response.endLongitude()).isEqualTo(150.0);
+        assertThat(response.avgSpeedMps()).isEqualTo(11.0);
+        assertThat(response.durationSec()).isEqualTo(2520);
+        assertThat(response.avgPaceSecPerKm()).isEqualTo(2);
+        assertThat(response.startLatitude()).isEqualTo(37.5);
+        assertThat(response.startLongitude()).isEqualTo(127.0);
+        assertThat(response.elevationGainM()).isEqualTo(3);
         assertThat(runningSession.getIsCompleted()).isTrue();
-        assertThat(runningSession.getEndedAt()).isEqualTo(LocalDateTime.of(2026, 3, 12, 7, 12, 0));
+        assertThat(runningSession.getEndedAt()).isEqualTo(response.endedAt());
         assertThat(runningSession.getDistanceM()).isEqualTo(10023);
         assertThat(runningSession.getCaloriesKcal()).isEqualTo(642);
         assertThat(runningSession.getEndLatitude()).isEqualTo(30.0);
@@ -374,7 +384,7 @@ class RunningSessionServiceTest {
     @DisplayName("세션 소유 사용자와 요청 사용자 ID가 다르면 세션 없음으로 처리한다")
     @Test
     void treatsDifferentUserAsRunningSessionNotFound() {
-        RunningSession runningSession = runningSession(1L, 2L, false);
+        RunningSession runningSession = runningSession(1L, 2L, false, STARTED_AT);
         UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
@@ -387,7 +397,7 @@ class RunningSessionServiceTest {
     @DisplayName("이미 종료된 세션은 중복 종료를 거부한다")
     @Test
     void rejectsAlreadyCompletedRunningSession() {
-        RunningSession runningSession = runningSession(1L, 1L, true);
+        RunningSession runningSession = runningSession(1L, 1L, true, STARTED_AT);
         UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
@@ -409,24 +419,27 @@ class RunningSessionServiceTest {
                 .isEqualTo(ResponseCode.RUNNING_SESSION_NOT_FOUND);
     }
 
-    @DisplayName("종료 시각이 시작 시각보다 빨라도 현재 요청 값을 그대로 반영한다")
+    @DisplayName("종료 시각은 요청값 대신 서버 현재 시각으로 반영한다")
     @Test
-    void appliesEndedAtEvenWhenItIsBeforeStartedAt() {
-        RunningSession runningSession = runningSession(1L, 1L, false);
+    void appliesCurrentTimeForEndedAt() {
+        RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
         UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T06:20:00");
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
+        LocalDateTime beforeComplete = LocalDateTime.now();
         UpdateRunningSessionResponse response = runningSessionService.completeRunningSession(1L, request);
+        LocalDateTime afterComplete = LocalDateTime.now();
 
-        assertThat(response.endedAt()).isEqualTo(LocalDateTime.of(2026, 3, 12, 6, 20, 0));
-        assertThat(runningSession.getEndedAt()).isEqualTo(LocalDateTime.of(2026, 3, 12, 6, 20, 0));
+        assertThat(response.endedAt()).isBetween(beforeComplete, afterComplete);
+        assertThat(response.endedAt()).isNotEqualTo(request.endedAt());
+        assertThat(runningSession.getEndedAt()).isEqualTo(response.endedAt());
         assertThat(runningSession.getIsCompleted()).isTrue();
     }
 
     @DisplayName("완료된 러닝 세션을 커뮤니티 코스로 등록한다")
     @Test
     void registersCompletedRunningSessionAsCommunityCourse() {
-        RunningSession runningSession = runningSession(81L, 7L, true);
+        RunningSession runningSession = runningSession(81L, 7L, true, STARTED_AT);
         setField(runningSession, "distanceM", 10000);
         setField(runningSession, "elevationGainM", 120);
         setField(runningSession, "snapshotImageUrl", "https://cdn.withrun.app/snapshots/81.png");
@@ -490,7 +503,7 @@ class RunningSessionServiceTest {
     @DisplayName("요청 이미지 URL이 없으면 러닝 세션 스냅샷을 사용한다")
     @Test
     void fallsBackToRunningSessionSnapshotWhenRequestSnapshotIsMissing() {
-        RunningSession runningSession = runningSession(82L, 7L, true);
+        RunningSession runningSession = runningSession(82L, 7L, true, STARTED_AT);
         setField(runningSession, "snapshotImageUrl", "https://cdn.withrun.app/snapshots/82.png");
         setField(runningSession, "coordinates", new Coordinates(
                 List.of(37.566501),
@@ -515,7 +528,7 @@ class RunningSessionServiceTest {
     @DisplayName("완료되지 않은 세션은 코스 등록을 거부한다")
     @Test
     void rejectsRegisterCourseWhenRunningSessionIsNotCompleted() {
-        RunningSession runningSession = runningSession(83L, 7L, false);
+        RunningSession runningSession = runningSession(83L, 7L, false, STARTED_AT);
         RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
                 "등록 실패 코스",
                 "MEDIUM",
@@ -672,10 +685,10 @@ class RunningSessionServiceTest {
         return runningSession;
     }
 
-    private RunningSession runningSession(Long id, Long userId, boolean isCompleted) {
+    private RunningSession runningSession(Long id, Long userId, boolean isCompleted, LocalDateTime startedAt) {
         RunningSession runningSession = instantiate(RunningSession.class);
         setField(runningSession, "id", id);
-        setField(runningSession, "startedAt", STARTED_AT);
+        setField(runningSession, "startedAt", startedAt);
         setField(runningSession, "distanceM", 0);
         setField(runningSession, "caloriesKcal", 0);
         setField(runningSession, "elevationGainM", 0);
