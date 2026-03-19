@@ -117,7 +117,7 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
         <Button
           type="button"
           disabled={!isAtStartPoint}
-          onClick={() => navigate(`/normal/${courseId}/running`)}
+          onClick={() => navigate(`/normal-run-session/${courseId}`)}
           className="h-14 w-full rounded-[var(--radius-xl)] body-l-b"
         >
           러닝 시작

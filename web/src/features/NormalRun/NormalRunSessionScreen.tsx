@@ -29,7 +29,7 @@ function StatItem({ label, value, valueClassName, sub }: StatItemProps) {
   );
 }
 
-export function NormalRunningScreen() {
+export function NormalRunSessionScreen() {
   const navigate = useNavigate();
   const { time, distance, pace, calories, isPaused, togglePause } =
     useFreeRunning();
@@ -88,7 +88,7 @@ export function NormalRunningScreen() {
 
             {/* 종료 버튼 (일시정지 시 등장) */}
             <button
-              onClick={() => navigate('/normal')}
+              onClick={() => navigate('/normal-run')}
               className={cn(
                 'absolute flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white transition-all duration-300',
                 isPaused
