@@ -136,7 +136,6 @@ class CourseGhostLeaderboardRepositoryTest {
                 RunningMode.COURSE,
                 course,
                 null,
-                startedAt,
                 37.5,
                 127.0
         );

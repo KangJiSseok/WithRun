@@ -30,9 +30,9 @@ import kr.withrun.was.domain.running.entity.RunningGpsSample;
 import kr.withrun.was.domain.running.entity.RunningHealthSample;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.entity.RunningSessionSplit;
+import kr.withrun.was.domain.running.repository.GhostRunningResultRepository;
 import kr.withrun.was.domain.running.repository.RunningGpsSampleRepository;
 import kr.withrun.was.domain.running.repository.RunningHealthSampleRepository;
-import kr.withrun.was.domain.running.repository.GhostRunningResultRepository;
 import kr.withrun.was.domain.running.repository.RunningSessionRepository;
 import kr.withrun.was.domain.running.repository.RunningSessionSplitRepository;
 import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
@@ -78,7 +78,6 @@ public class RunningSessionService {
                 mode,
                 course,
                 ghostTargetRunningSession,
-                request.startedAt(),
                 request.startLatitude(),
                 request.startLongitude()
         ));
