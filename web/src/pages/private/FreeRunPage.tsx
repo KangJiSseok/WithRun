@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { FreeRunScreen } from '@/features/FreeRun';
 import { RunningGuideModal } from '@/shared/components/RunningGuideModal';
 
-export function FreePage() {
+export function FreeRunPage() {
   const [showGuide, setShowGuide] = useState(false);
 
   useEffect(() => {

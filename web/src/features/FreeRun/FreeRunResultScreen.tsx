@@ -197,7 +197,7 @@ export function FreeRunResultScreen() {
 
         {/* 홈으로 버튼 */}
         <button
-          onClick={() => navigate('/free')}
+          onClick={() => navigate('/free-run')}
           className="w-full py-4 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] body-b flex items-center justify-center gap-2"
         >
           <Home size={18} />
