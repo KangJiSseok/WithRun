@@ -1,16 +1,15 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import {
-  // CalendarData
-  fetchCalendar,
-  // CalendarSummaryData
-  fetchCalendarSummary,
-  // RunningHistoryData
-  fetchRunningHistory,
-  type CalendarData,
+  getMonthlyCalendarApi,
+  getCalendarSummaryApi,
+  type MonthlyCalendarData,
   type CalendarSummaryData,
-  type RunningHistoryData,
-  type RunningHistoryParams,
-} from '@/shared/apis/Calendar';
+} from '@/apis/userCalendar';
+import {
+  getRunningHistoryApi,
+  type GetRunningHistoryResponse,
+  type GetRunningHistoryParams,
+} from '@/apis/runningSessions';
 
 export function useCalendar() {
   // 날짜 표시 방법
@@ -26,16 +25,16 @@ export function useCalendar() {
   const [month, setMonth] = useState(today.getMonth() + 1);
   // 월별 캘린더 데이터 (달력 그리드용)
   // 1. 컴포넌트 마운트 -> data = null, 달력이 닫혀있으므로 API 호출 안 함
-  // 2. 달력 열릴 때 -> fetchCalendar 호출 -> 응답 오면 data = CalendarData
+  // 2. 달력 열릴 때 -> getMonthlyCalendarApi 호출 -> 응답 오면 data = MonthlyCalendarData
   // 3. 월 이동 시 -> 새 API 호출 -> 응답 오면 setData (새 데이터)
-  const [data, setData] = useState<CalendarData | null>(null);
+  const [data, setData] = useState<MonthlyCalendarData | null>(null);
   // API 호출 중인지 아닌지를 나타내는 플래그
   // 초기값 false = 아직 로딩 중 아님
   const [isLoading, setIsLoading] = useState(false);
   // 전체 기간 요약 (달력 닫힌 상태에서 ActivitySummary에 표시)
   const [summaryData, setSummaryData] = useState<CalendarSummaryData | null>(null);
   // 러닝 기록 리스트 (항상 표시, 상태에 따라 전체/월별/일별 전환)
-  const [historyData, setHistoryData] = useState<RunningHistoryData | null>(null);
+  const [historyData, setHistoryData] = useState<GetRunningHistoryResponse | null>(null);
   // 초기/컨텍스트 전환 로딩용
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   // "더 보기" 요청 중인지 구분
@@ -59,11 +58,11 @@ export function useCalendar() {
   // 현재 방식: async 함수 내부로 이동 -> 비동기 컨텍스트에서 호출되므로 경고 방지
 
   // 마운트 시 1회: 전체 기간 요약 + 전체 러닝 기록 조회
-  // 컴포넌트 마운트 -> fetchCalendarSummary() 호출
+  // 컴포넌트 마운트 -> getCalendarSummaryApi() 호출
   // -> 성공: setSummaryData(응답 데이터)
   // -> 실패: setSummaryData(null) (에러 메시지 대신 빈 화면)
   // --> setIsHistoryLoading(true) -> 로딩 스피너 표시
-  // -> fetchRunningHistory({}) 호출 (매개변수 없이 전체 기록 조회)
+  // -> getRunningHistoryApi({}) 호출 (매개변수 없이 전체 기록 조회)
   // -> 성공: setHistoryData(응답 데이터)
   // -> 실패: setHistoryData(null)
   // --> finally: setIsHistoryLoading(false) -> 로딩 스피너 숨김
@@ -71,16 +70,16 @@ export function useCalendar() {
     let cancelled = false;
     async function loadInitial() {
       try {
-        const summary = await fetchCalendarSummary();
-        if (!cancelled) setSummaryData(summary);
+        const summary = await getCalendarSummaryApi();
+        if (!cancelled) setSummaryData(summary.data);
       } catch {
         if (!cancelled) setSummaryData(null);
       }
       if (cancelled) return;
       setIsHistoryLoading(true);
       try {
-        const history = await fetchRunningHistory({});
-        if (!cancelled) setHistoryData(history);
+        const history = await getRunningHistoryApi({});
+        if (!cancelled) setHistoryData(history.data);
       } catch {
         if (!cancelled) setHistoryData(null);
       } finally {
@@ -101,13 +100,13 @@ export function useCalendar() {
     if (!wasOpen || showCalendar) return;
     let cancelled = false;
     // 성공: summaryData에 새 데이터, 실패: summaryData = null
-    fetchCalendarSummary()
-      .then((data) => { if (!cancelled) setSummaryData(data); })
+    getCalendarSummaryApi()
+      .then((res) => { if (!cancelled) setSummaryData(res.data); })
       .catch(() => { if (!cancelled) setSummaryData(null); });
     // 달력 닫히면 전체 기록으로 복귀 → params 없이 호출
     setIsHistoryLoading(true);
-    fetchRunningHistory({})
-      .then((data) => { if (!cancelled) setHistoryData(data); })
+    getRunningHistoryApi({})
+      .then((res) => { if (!cancelled) setHistoryData(res.data); })
       .catch(() => { if (!cancelled) setHistoryData(null); })
       .finally(() => { if (!cancelled) setIsHistoryLoading(false); });
     return () => { cancelled = true; };
@@ -121,8 +120,8 @@ export function useCalendar() {
     async function load() {
       setIsLoading(true);
       try {
-        const result = await fetchCalendar(year, month);
-        setData(result);
+        const result = await getMonthlyCalendarApi(year, month);
+        setData(result.data);
       } catch {
         setData(null);
       } finally {
@@ -155,9 +154,9 @@ export function useCalendar() {
         } else {
           params = { year, month };
         }
-        const history = await fetchRunningHistory(params);
+        const history = await getRunningHistoryApi(params);
         // 이전 요청보다 늦게 도착한 응답은 무시 (race condition 방지)
-        if (!cancelled) setHistoryData(history);
+        if (!cancelled) setHistoryData(history.data);
       } catch {
         if (!cancelled) setHistoryData(null);
       } finally {
@@ -205,7 +204,7 @@ export function useCalendar() {
     if (!historyData?.hasMore || !historyData.nextCursor || isLoadingMore) return;
     const cursor = historyData.nextCursor;
     // 현재 컨텍스트에 맞는 파라미터 구성
-    let params: RunningHistoryParams = { cursor };
+    let params: GetRunningHistoryParams = { cursor };
     if (showCalendar) {
       if (selectedDate) {
         const parts = selectedDate.split('-');
@@ -216,9 +215,9 @@ export function useCalendar() {
     }
     setIsLoadingMore(true);
     try {
-      const more = await fetchRunningHistory(params);
+      const more = await getRunningHistoryApi(params);
       setHistoryData((prev) =>
-        prev ? { ...more, items: [...prev.items, ...more.items] } : more,
+        prev ? { ...more.data, items: [...prev.items, ...more.data.items] } : more.data,
       );
     } catch {
       // 더 보기 실패 시 기존 목록 유지
