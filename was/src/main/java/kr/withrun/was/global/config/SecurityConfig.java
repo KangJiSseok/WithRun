@@ -41,8 +41,8 @@ public class SecurityConfig {
                 // 4. 출입 검문소 규칙 설정 (누구를 들여보내고 누구를 막을지)
                 .authorizeHttpRequests(auth -> auth
                         // 소셜 로그인 관련 주소(/oauth2, /login/oauth2 등)는 로그인 안 한 사람도 100% 무사 통과(permitAll)
-                        .requestMatchers("/oauth2/**", "/login/oauth2/**", "/api/auth/**").permitAll()
-                        
+                        // .requestMatchers("/oauth2/**", "/login/oauth2/**", "/api/auth/**").permitAll()
+                        .requestMatchers("/**").permitAll()
                         // 그 외 나머지 다른 모든 주소도 일단 지금은 무사 통과! 
                         // (🚨 나중에는 .authenticated()로 바꿔서 "로그인한 사람만 통과"하게 설정해야 합니다)
                         .anyRequest().permitAll()
