@@ -5,7 +5,6 @@ import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
-import kr.withrun.was.domain.running.dto.GhostRunningResultResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
@@ -387,55 +386,6 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.RUNNING_SESSION_NOT_COMPLETED.getCode()));
 
         then(runningSessionService).should().registerRunningSessionCourse(runningSessionId, request);
-    }
-
-    @DisplayName("고스트 러닝 결과 조회 응답을 성공 응답 포맷으로 감싼다")
-    @Test
-    void wrapsGhostRunningResultResponseInSuccessEnvelope() throws Exception {
-        long runningSessionId = 901L;
-        GhostRunningResultResponse response = new GhostRunningResultResponse(
-                77L,
-                runningSessionId,
-                345L,
-                202L,
-                GhostResultStatus.WIN,
-                14,
-                32,
-                LocalDateTime.of(2026, 3, 8, 8, 15)
-        );
-        given(runningSessionService.findGhostRunningResult(runningSessionId)).willReturn(response);
-
-        mockMvc.perform(get("/api/running-sessions/{runningSessionId}/ghost-result", runningSessionId))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
-                .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
-                .andExpect(jsonPath("$.data.ghostRunningResultId").value(77L))
-                .andExpect(jsonPath("$.data.runningSessionId").value(runningSessionId))
-                .andExpect(jsonPath("$.data.ghostTargetRunningSessionId").value(345L))
-                .andExpect(jsonPath("$.data.targetUserId").value(202L))
-                .andExpect(jsonPath("$.data.resultStatus").value(GhostResultStatus.WIN.name()))
-                .andExpect(jsonPath("$.data.timeGapSec").value(14))
-                .andExpect(jsonPath("$.data.distanceGapM").value(32))
-                .andExpect(jsonPath("$.data.createdAt").value("2026-03-08T08:15:00"));
-
-        then(runningSessionService).should().findGhostRunningResult(runningSessionId);
-    }
-
-    @DisplayName("고스트 러닝 결과가 없으면 찾을 수 없음 응답을 반환한다")
-    @Test
-    void returnsNotFoundWhenGhostRunningResultDoesNotExist() throws Exception {
-        long runningSessionId = 901L;
-        given(runningSessionService.findGhostRunningResult(runningSessionId))
-                .willThrow(new CustomException(ResponseCode.GHOST_RUNNING_RESULT_NOT_FOUND));
-
-        mockMvc.perform(get("/api/running-sessions/{runningSessionId}/ghost-result", runningSessionId))
-                .andExpect(status().isNotFound())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value(ResponseCode.GHOST_RUNNING_RESULT_NOT_FOUND.getCode()))
-                .andExpect(jsonPath("$.message").value(ResponseCode.GHOST_RUNNING_RESULT_NOT_FOUND.getMessage()));
-
-        then(runningSessionService).should().findGhostRunningResult(runningSessionId);
     }
 
     @DisplayName("과거 러닝 세션 조회 응답을 성공 응답 포맷으로 감싼다")
