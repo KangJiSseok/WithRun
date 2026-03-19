@@ -86,7 +86,7 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
               {DIFFICULTY_LABEL[course.difficulty]}
             </Badge>
           )}
-          {course.types.map((type) => (
+          {course.courseTypes.map((type) => (
             <Badge
               key={type}
               variant="outline"

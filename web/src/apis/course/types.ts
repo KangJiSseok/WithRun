@@ -36,7 +36,7 @@ export type CourseDetail = {
   endLatitude: number;
   endLongitude: number;
   coordinates: CoordinatePoint[];
-  types: CourseType[]; // 백엔드 필드명 불일치 (courseTypes 통일 예정)
+  courseTypes: CourseType[];
   likeCount: number;
   isLiked: boolean;
   isBookmarked: boolean;

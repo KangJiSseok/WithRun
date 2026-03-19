@@ -1,6 +1,6 @@
 import { useNavigate } from 'react-router-dom';
-import { RunCharacter } from '@/shared/components/RunCharacter';
 import { FreeRunMap } from './FreeRunMap';
+import { RunCharacter } from '@/shared/components';
 
 export function FreeRunScreen() {
   const navigate = useNavigate();

@@ -1,4 +1,5 @@
 import { Filter, MapPin } from 'lucide-react';
+
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
@@ -9,11 +10,18 @@ import {
 import { RunningGuideModal } from '@/shared/components/RunningGuideModal';
 import { Button } from '@/shared/components/shadcn/button';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/shadcn/tabs';
-import { RunningCourseCard } from '@/shared/components/RunningCourseCard';
-import RunningCourseSearchBar from '@/shared/components/RunningCourseSearchBar/RunningCourseSearchBar';
 import { useNormalRunCourses } from '@/hooks/NormalRun/useNormalRunCourses';
 import { INITIAL_FILTERS } from '@/constants/NormalRun';
-import type { ActiveCourseTab, CourseDifficulty, CourseType } from '@/shared/types/api.type';
+import type {
+  ActiveCourseTab,
+  CourseDifficulty,
+  CourseType,
+} from '@/shared/types/api.type';
+import {
+  RunningCourseCard,
+  RunningCourseSearchBar,
+  TabTitle,
+} from '@/shared/components';
 
 const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
   EASY: '쉬움',
@@ -42,17 +50,21 @@ export function NormalRunScreen() {
   const [showFilterModal, setShowFilterModal] = useState(false);
   const [filters, setFilters] = useState<RunningFilterState>(INITIAL_FILTERS);
   // TODO : 북마크 API 연결 후 제거 (API 연결 전 UI 토글용 임시 오버라이드)
-  const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<number, boolean>>({});
+  const [bookmarkOverrides, setBookmarkOverrides] = useState<
+    Record<number, boolean>
+  >({});
 
   // API의 isBookmarked 값에 사용자 토글 오버라이드를 합성해 최종 북마크 Set 생성
   const savedCourses = useMemo(
     () =>
       new Set(
         normalRunCourses
-          .filter((c) => bookmarkOverrides[c.courseId] ?? c.isBookmarked ?? false)
-          .map((c) => c.courseId),
+          .filter(
+            (c) => bookmarkOverrides[c.courseId] ?? c.isBookmarked ?? false
+          )
+          .map((c) => c.courseId)
       ),
-    [normalRunCourses, bookmarkOverrides],
+    [normalRunCourses, bookmarkOverrides]
   );
 
   function handleCloseGuide() {
@@ -111,11 +123,13 @@ export function NormalRunScreen() {
 
     if (filters.courseType.length > 0) {
       const labels = course.courseTypes.map((t) => COURSE_TYPE_LABEL[t]);
-      if (!labels.some((label) => filters.courseType.includes(label))) return false;
+      if (!labels.some((label) => filters.courseType.includes(label)))
+        return false;
     }
 
     if (filters.difficulty.length > 0 && course.difficulty != null) {
-      if (!filters.difficulty.includes(DIFFICULTY_LABEL[course.difficulty])) return false;
+      if (!filters.difficulty.includes(DIFFICULTY_LABEL[course.difficulty]))
+        return false;
     }
 
     return true;
@@ -125,12 +139,7 @@ export function NormalRunScreen() {
     <>
       <div className="flex flex-col gap-[var(--space-6)] pb-[var(--space-6)]">
         <header className="flex flex-col gap-[var(--space-6)]">
-          <div className="flex items-center gap-[var(--space-3)]">
-            <MapPin size={28} className="text-[hsl(var(--primary-1))]" />
-            <h1 className="h2-b text-[hsl(var(--text-primary))]">
-              일반 러닝 코스
-            </h1>
-          </div>
+          <TabTitle icon={MapPin} title="일반 러닝 코스" />
 
           <div className="flex items-center gap-[var(--space-3)]">
             <RunningCourseSearchBar
