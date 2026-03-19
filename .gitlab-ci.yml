@@ -37,7 +37,7 @@ build_was:
 build_web:
   stage: build
   script:
-    - cp "$WEB_ENV_PROD" web/.env.production
+    - printf '%s\n' "$WEB_ENV_PROD" > web/.env.production
     - docker build -f web/Dockerfile -t web-build:test .
 
 test_was:
@@ -52,7 +52,7 @@ docker_push_dev:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
   script:
-    - cp "$WEB_ENV_TEST" web/.env.test
+    - printf '%s\n' "$WEB_ENV_TEST" > web/.env.test
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
     - docker build -t "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WAS_IMAGE:dev-latest" ./was
     - docker build -f web/Dockerfile --build-arg VITE_MODE=test -t "$WEB_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WEB_IMAGE:dev-latest" .
@@ -66,7 +66,7 @@ docker_push_prod:
   rules:
     - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "master"'
   script:
-    - cp "$WEB_ENV_PROD" web/.env.production
+    - printf '%s\n' "$WEB_ENV_PROD" > web/.env.production
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
     - docker build -t "$WAS_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WAS_IMAGE:prod-latest" ./was
     - docker build -f web/Dockerfile --build-arg VITE_MODE=production -t "$WEB_IMAGE:$CI_COMMIT_SHORT_SHA" -t "$WEB_IMAGE:prod-latest" .
