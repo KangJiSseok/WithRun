@@ -23,6 +23,9 @@ public record GhostRunningResultResponse(
         @Schema(description = "고스트 러닝 결과 상태")
         GhostResultStatus resultStatus,
 
+        @Schema(description = "고스트 러닝 결과 점수", example = "2140")
+        Integer point,
+
         @Schema(description = "시간 차이(초)", example = "14")
         Integer timeGapSec,
 
@@ -40,6 +43,7 @@ public record GhostRunningResultResponse(
                 ghostRunningResult.ghostTargetRunningSessionId(),
                 ghostRunningResult.targetUserId(),
                 ghostRunningResult.resultStatus(),
+                ghostRunningResult.point(),
                 ghostRunningResult.timeGapSec(),
                 ghostRunningResult.distanceGapM(),
                 ghostRunningResult.createdAt()

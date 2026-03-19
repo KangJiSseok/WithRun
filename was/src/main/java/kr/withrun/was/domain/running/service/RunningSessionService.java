@@ -2,18 +2,22 @@ package kr.withrun.was.domain.running.service;
 
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseDifficulty;
+import kr.withrun.was.domain.course.entity.CourseGhostLeaderboard;
 import kr.withrun.was.domain.course.entity.CourseTypeMap;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
+import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
-import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsRequest;
-import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsResponse;
+import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
+import kr.withrun.was.domain.running.dto.CreateRunningGpsSampleRequest;
+import kr.withrun.was.domain.running.dto.CreateRunningHealthSampleRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
+import kr.withrun.was.domain.running.dto.CreateRunningSessionSplitRequest;
 import kr.withrun.was.domain.running.dto.GhostRunningResultResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
@@ -26,6 +30,7 @@ import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionSplitResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
+import kr.withrun.was.domain.running.entity.GhostRunningResult;
 import kr.withrun.was.domain.running.entity.RunningGpsSample;
 import kr.withrun.was.domain.running.entity.RunningHealthSample;
 import kr.withrun.was.domain.running.entity.RunningSession;
@@ -36,6 +41,7 @@ import kr.withrun.was.domain.running.repository.RunningHealthSampleRepository;
 import kr.withrun.was.domain.running.repository.RunningSessionRepository;
 import kr.withrun.was.domain.running.repository.RunningSessionSplitRepository;
 import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
+import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.domain.running.util.PastRunningSessionCursorCodec;
 import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
@@ -56,15 +62,17 @@ import java.util.List;
 @RequiredArgsConstructor
 public class RunningSessionService {
 
-    private final GhostRunningResultRepository ghostRunningResultRepository;
     private final RunningSessionRepository runningSessionRepository;
-    private final RunningGpsSampleRepository runningGpsSampleRepository;
-    private final RunningHealthSampleRepository runningHealthSampleRepository;
-    private final RunningSessionSplitRepository runningSessionSplitRepository;
     private final UserRepository userRepository;
     private final CourseRepository courseRepository;
     private final CourseDifficultyRepository courseDifficultyRepository;
+    private final CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
     private final CourseTypeMapRepository courseTypeMapRepository;
+    private final RunningGpsSampleRepository runningGpsSampleRepository;
+    private final RunningHealthSampleRepository runningHealthSampleRepository;
+    private final RunningSessionSplitRepository runningSessionSplitRepository;
+    private final GhostRunningResultRepository ghostRunningResultRepository;
+    private final GhostRunningResultService ghostRunningResultService;
 
     @Transactional
     public CreateRunningSessionResponse createRunningSession(CreateRunningSessionRequest request) {
@@ -86,73 +94,12 @@ public class RunningSessionService {
     }
 
     @Transactional
-    public CreateRunningSessionDetailsResponse createRunningSessionDetail(
-            Long runningSessionId,
-            CreateRunningSessionDetailsRequest request
-    ) {
-        User user = getUser(request.userId());
-        RunningSession runningSession = getRunningSession(runningSessionId);
-        runningSession.validateOwner(user.getId());
-
-        List<RunningGpsSample> runningGpsSamples = request.gpsSamples().stream()
-                .map(gpsSample -> RunningGpsSample.create(
-                        user,
-                        runningSession,
-                        gpsSample.bearingDeg(),
-                        gpsSample.accuracyM(),
-                        gpsSample.altitudeM(),
-                        gpsSample.longitude(),
-                        gpsSample.latitude(),
-                        gpsSample.sampledAt()
-                ))
-                .toList();
-        List<RunningHealthSample> runningHealthSamples = request.healthSamples().stream()
-                .map(healthSample -> RunningHealthSample.create(
-                        user,
-                        runningSession,
-                        healthSample.heartRate(),
-                        healthSample.speedMps(),
-                        healthSample.paceSecPerKm(),
-                        healthSample.distanceM(),
-                        healthSample.caloriesKcal(),
-                        healthSample.cadenceSpm(),
-                        healthSample.sampledAt()
-                ))
-                .toList();
-        List<RunningSessionSplit> runningSessionSplits = request.splits().stream()
-                .map(split -> RunningSessionSplit.create(
-                        runningSession,
-                        split.splitIndex(),
-                        split.splitDistanceM(),
-                        split.splitDurationSec(),
-                        split.splitPaceSecPerKm(),
-                        split.avgHeartRate(),
-                        split.elevationGainM()
-                ))
-                .toList();
-
-
-        runningGpsSampleRepository.saveAll(runningGpsSamples);
-        runningHealthSampleRepository.saveAll(runningHealthSamples);
-        runningSessionSplitRepository.saveAll(runningSessionSplits);
-
-        return CreateRunningSessionDetailsResponse.of(
-                runningSession.getId(),
-                user.getId(),
-                runningGpsSamples.size(),
-                runningHealthSamples.size(),
-                runningSessionSplits.size()
-        );
-    }
-
-    @Transactional
     public UpdateRunningSessionResponse completeRunningSession(Long runningSessionId, UpdateRunningSessionRequest request) {
         RunningSession runningSession = getRunningSession(runningSessionId);
         runningSession.validateOwner(request.userId());
         runningSession.validateCompletable();
 
         runningSession.complete(
-                request.endedAt(),
                 request.distanceM(),
                 request.caloriesKcal(),
                 request.endLatitude(),
@@ -164,6 +111,53 @@ public class RunningSessionService {
         );
 
         return UpdateRunningSessionResponse.from(runningSession);
+    }
+
+    @Transactional
+    public RunningSessionDetailResponse completeRunningSession(Long runningSessionId, CompleteRunningSessionRequest request) {
+        RunningSession runningSession = getRunningSession(runningSessionId);
+        User user = getUser(request.userId());
+        runningSession.validateOwner(user.getId());
+        runningSession.validateCompletable();
+
+        runningSession.complete(
+                request.distanceM(),
+                request.caloriesKcal(),
+                request.endLatitude(),
+                request.endLongitude(),
+                request.avgSpeedMps(),
+                request.durationSec(),
+                request.avgPaceSecPerKm(),
+                request.elevationGainM()
+        );
+
+        List<RunningGpsSample> savedGpsSamples = saveGpsSamples(runningSession, user, request.gpsSamples());
+        List<RunningHealthSample> savedHealthSamples = saveHealthSamples(runningSession, user, request.healthSamples());
+        List<RunningSessionSplit> savedSplits = saveSplits(runningSession, user, request.splits());
+
+        GhostRunningResult ghostRunningResult = createGhostRunningResultIfNeeded(runningSession, request.distanceGapM());
+
+        List<RunningGpsSampleResponse> gpsResponses = savedGpsSamples.stream()
+                .map(RunningGpsSampleResponse::from)
+                .toList();
+        List<RunningHealthSampleResponse> healthResponses = savedHealthSamples.stream()
+                .map(RunningHealthSampleResponse::from)
+                .toList();
+        List<RunningSessionSplitResponse> splitResponses = savedSplits.stream()
+                .map(RunningSessionSplitResponse::from)
+                .toList();
+
+        GhostRunningResultResponse ghostRunningResultResponse = ghostRunningResult == null
+                ? null
+                : toGhostRunningResultResponse(ghostRunningResult);
+
+        return RunningSessionDetailResponse.of(
+                runningSession,
+                gpsResponses,
+                healthResponses,
+                splitResponses,
+                ghostRunningResultResponse
+        );
     }
 
     @Transactional
@@ -198,6 +192,30 @@ public class RunningSessionService {
         return RegisterRunningSessionCourseResponse.from(course, difficulty);
     }
 
+    public RunningSessionDetailResponse findRunningSessionDetail(Long runningSessionId, Long userId) {
+        RunningSession runningSession = getRunningSession(runningSessionId);
+        runningSession.validateOwner(userId);
+
+        List<RunningGpsSampleResponse> gpsSamples = runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
+                .stream()
+                .map(RunningGpsSampleResponse::from)
+                .toList();
+        List<RunningHealthSampleResponse> healthSamples = runningHealthSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
+                .stream()
+                .map(RunningHealthSampleResponse::from)
+                .toList();
+        List<RunningSessionSplitResponse> splits = runningSessionSplitRepository.findByRunningSessionIdOrderBySplitIndexAsc(runningSessionId)
+                .stream()
+                .map(RunningSessionSplitResponse::from)
+                .toList();
+
+        GhostRunningResultResponse ghostRunningResult = ghostRunningResultRepository.findByRunningSessionIdAndDeletedAtIsNull(runningSessionId)
+                .map(this::toGhostRunningResultResponse)
+                .orElse(null);
+
+        return RunningSessionDetailResponse.of(runningSession, gpsSamples, healthSamples, splits, ghostRunningResult);
+    }
+
     public PastRunningSessionsResponse findPastRunningSessions(PastRunningSessionsRequest request) {
         PastRunningSessionCursorCodec.CursorPayload payload = request.cursor() == null
                 ? null
@@ -228,36 +246,190 @@ public class RunningSessionService {
         return new PastRunningSessionsResponse(items, hasMore, nextCursor);
     }
 
-    public GhostRunningResultResponse findGhostRunningResult(Long runningSessionId) {
-        return ghostRunningResultRepository.findByRunningSessionId(runningSessionId)
-                .map(GhostRunningResultResponse::from)
-                .orElseThrow(() -> new CustomException(ResponseCode.GHOST_RUNNING_RESULT_NOT_FOUND));
+    private GhostRunningResult createGhostRunningResultIfNeeded(RunningSession runningSession, Integer requestedDistanceGapM) {
+        if (runningSession.getMode() != RunningMode.GHOST) {
+            return null;
+        }
+
+        RunningSession targetSession = runningSession.getGhostTargetRunningSession();
+        if (targetSession == null || !Boolean.TRUE.equals(targetSession.getIsCompleted())) {
+            throw new CustomException(ResponseCode.INVALID_GHOST_TARGET);
+        }
+
+        if (runningSession.getDurationSec() == null || targetSession.getDurationSec() == null) {
+            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+        }
+
+        Difficulty difficulty = resolveGhostDifficulty(runningSession, targetSession);
+        int point = ghostRunningResultService.calculateGhostRunningPoint(runningSession.getDurationSec(), difficulty);
+        int targetPoint = ghostRunningResultService.calculateGhostRunningPoint(targetSession.getDurationSec(), difficulty);
+
+        GhostResultStatus resultStatus = resolveGhostResultStatus(point, targetPoint);
+        int timeGapSec = Math.abs(runningSession.getDurationSec() - targetSession.getDurationSec());
+
+        if (requestedDistanceGapM == null) {
+            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+        }
+        int distanceGapM = requestedDistanceGapM;
+
+        GhostRunningResult ghostRunningResult = GhostRunningResult.create(
+                resultStatus,
+                point,
+                timeGapSec,
+                distanceGapM,
+                runningSession,
+                targetSession,
+                targetSession.getUser()
+        );
+
+        GhostRunningResult savedGhostRunningResult = ghostRunningResultRepository.save(ghostRunningResult);
+        upsertCourseGhostLeaderboard(runningSession, point);
+        return savedGhostRunningResult;
     }
 
-    public RunningSessionDetailResponse findRunningSessionDetail(Long runningSessionId, Long userId) {
-        User user = getUser(userId);
-        RunningSession runningSession = getRunningSession(runningSessionId);
-        runningSession.validateOwner(user.getId());
+    private Difficulty resolveGhostDifficulty(RunningSession runningSession, RunningSession targetSession) {
+        Long courseId = runningSession.getCourse() != null
+                ? runningSession.getCourse().getId()
+                : targetSession.getCourse() == null ? null : targetSession.getCourse().getId();
 
-        List<RunningGpsSampleResponse> gpsSamples = runningGpsSampleRepository
-                .findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
-                .stream()
-                .map(RunningGpsSampleResponse::from)
-                .toList();
-        List<RunningHealthSampleResponse> healthSamples = runningHealthSampleRepository
-                .findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
-                .stream()
-                .map(RunningHealthSampleResponse::from)
-                .toList();
-        List<RunningSessionSplitResponse> splits = runningSessionSplitRepository
-                .findByRunningSessionIdOrderBySplitIndexAsc(runningSessionId)
-                .stream()
-                .map(RunningSessionSplitResponse::from)
-                .toList();
+        if (courseId == null) {
+            throw new CustomException(ResponseCode.COURSE_NOT_FOUND);
+        }
 
-        return RunningSessionDetailResponse.of(runningSession, gpsSamples, healthSamples, splits);
+        return courseDifficultyRepository.findDifficultyByCourseId(courseId)
+                .orElseThrow(() -> new CustomException(ResponseCode.COURSE_DIFFICULTY_NOT_FOUND));
     }
 
+    private GhostResultStatus resolveGhostResultStatus(int point, int targetPoint) {
+        if (point > targetPoint) {
+            return GhostResultStatus.WIN;
+        }
+        if (point < targetPoint) {
+            return GhostResultStatus.LOSE;
+        }
+        return GhostResultStatus.DRAW;
+    }
+
+    private void upsertCourseGhostLeaderboard(RunningSession runningSession, int point) {
+        Course leaderboardCourse = resolveLeaderboardCourse(runningSession);
+        List<CourseGhostLeaderboard> existingRows = courseGhostLeaderboardRepository
+                .findByUserIdAndCourseIdAndDeletedAtIsNullOrderByPointDescIdAsc(
+                        runningSession.getUser().getId(),
+                        leaderboardCourse.getId()
+                );
+
+        if (existingRows.isEmpty()) {
+            courseGhostLeaderboardRepository.save(CourseGhostLeaderboard.create(
+                    runningSession.getUser(),
+                    leaderboardCourse,
+                    runningSession,
+                    point
+            ));
+            return;
+        }
+
+        CourseGhostLeaderboard primaryRow = existingRows.get(0);
+        for (int index = 1; index < existingRows.size(); index++) {
+            existingRows.get(index).delete();
+        }
+
+        int existingPoint = primaryRow.getPoint() == null ? 0 : primaryRow.getPoint();
+        if (point > existingPoint) {
+            primaryRow.updatePointAndRunningSession(point, runningSession);
+        }
+    }
+
+    private Course resolveLeaderboardCourse(RunningSession runningSession) {
+        if (runningSession.getCourse() != null) {
+            return runningSession.getCourse();
+        }
+
+        RunningSession targetSession = runningSession.getGhostTargetRunningSession();
+        if (targetSession != null && targetSession.getCourse() != null) {
+            return targetSession.getCourse();
+        }
+
+        throw new CustomException(ResponseCode.COURSE_NOT_FOUND);
+    }
+
+    private List<RunningGpsSample> saveGpsSamples(
+            RunningSession runningSession,
+            User user,
+            List<CreateRunningGpsSampleRequest> requests
+    ) {
+        List<RunningGpsSample> samples = requests.stream()
+                .map(request -> RunningGpsSample.create(
+                        user,
+                        runningSession,
+                        request.bearingDeg(),
+                        request.accuracyM(),
+                        request.altitudeM(),
+                        request.longitude(),
+                        request.latitude(),
+                        request.sampledAt()
+                ))
+                .toList();
+        return runningGpsSampleRepository.saveAll(samples);
+    }
+
+    private List<RunningHealthSample> saveHealthSamples(
+            RunningSession runningSession,
+            User user,
+            List<CreateRunningHealthSampleRequest> requests
+    ) {
+        List<RunningHealthSample> samples = requests.stream()
+                .map(request -> RunningHealthSample.create(
+                        user,
+                        runningSession,
+                        request.heartRate(),
+                        request.speedMps(),
+                        request.paceSecPerKm(),
+                        request.distanceM(),
+                        request.caloriesKcal(),
+                        request.cadenceSpm(),
+                        request.sampledAt()
+                ))
+                .toList();
+        return runningHealthSampleRepository.saveAll(samples);
+    }
+
+    private List<RunningSessionSplit> saveSplits(
+            RunningSession runningSession,
+            User user,
+            List<CreateRunningSessionSplitRequest> requests
+    ) {
+        List<RunningSessionSplit> splits = requests.stream()
+                .map(request -> {
+                    if (!user.getId().equals(request.userId())) {
+                        throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+                    }
+                    return RunningSessionSplit.create(
+                            runningSession,
+                            request.splitIndex(),
+                            request.splitDistanceM(),
+                            request.splitDurationSec(),
+                            request.splitPaceSecPerKm(),
+                            request.avgHeartRate(),
+                            request.elevationGainM()
+                    );
+                })
+                .toList();
+        return runningSessionSplitRepository.saveAll(splits);
+    }
+
+    private GhostRunningResultResponse toGhostRunningResultResponse(GhostRunningResult ghostRunningResult) {
+        return new GhostRunningResultResponse(
+                ghostRunningResult.getId(),
+                ghostRunningResult.getRunningSession().getId(),
+                ghostRunningResult.getGhostTargetRunningSession().getId(),
+                ghostRunningResult.getTargetUser() == null ? null : ghostRunningResult.getTargetUser().getId(),
+                ghostRunningResult.getResultStatus(),
+                ghostRunningResult.getPoint(),
+                ghostRunningResult.getTimeGapSec(),
+                ghostRunningResult.getDistanceGapM(),
+                ghostRunningResult.getCreatedAt()
+        );
+    }
 
     private User getUser(Long userId) {
         return userRepository.findNotDeletedUser(userId)
@@ -298,9 +470,8 @@ public class RunningSessionService {
     }
 
     private RunningSession getRunningSession(Long runningSessionId) {
-        RunningSession runningSession = runningSessionRepository.findByIdAndDeletedAtIsNull(runningSessionId)
+        return runningSessionRepository.findByIdAndDeletedAtIsNull(runningSessionId)
                 .orElseThrow(() -> new CustomException(ResponseCode.RUNNING_SESSION_NOT_FOUND));
-        return runningSession;
     }
 
     private Difficulty parseDifficulty(String rawDifficulty) {
@@ -350,5 +521,4 @@ public class RunningSessionService {
     private String toCursor(PastRunningSessionHistoryRow row) {
         return PastRunningSessionCursorCodec.encode(row.startedAt(), row.runningSessionId());
     }
-
 }

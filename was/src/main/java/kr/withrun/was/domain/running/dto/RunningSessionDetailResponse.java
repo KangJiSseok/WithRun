@@ -1,10 +1,12 @@
 package kr.withrun.was.domain.running.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import kr.withrun.was.domain.running.entity.RunningSession;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record RunningSessionDetailResponse(
         Long runningSessionId,
         Long userId,
@@ -19,13 +21,24 @@ public record RunningSessionDetailResponse(
         Integer elevationGainM,
         List<RunningGpsSampleResponse> gpsSamples,
         List<RunningHealthSampleResponse> healthSamples,
-        List<RunningSessionSplitResponse> splits
+        List<RunningSessionSplitResponse> splits,
+        GhostRunningResultResponse ghostRunningResult
 ) {
     public static RunningSessionDetailResponse of(
             RunningSession runningSession,
             List<RunningGpsSampleResponse> gpsSamples,
             List<RunningHealthSampleResponse> healthSamples,
             List<RunningSessionSplitResponse> splits
+    ) {
+        return of(runningSession, gpsSamples, healthSamples, splits, null);
+    }
+
+    public static RunningSessionDetailResponse of(
+            RunningSession runningSession,
+            List<RunningGpsSampleResponse> gpsSamples,
+            List<RunningHealthSampleResponse> healthSamples,
+            List<RunningSessionSplitResponse> splits,
+            GhostRunningResultResponse ghostRunningResult
     ) {
         return new RunningSessionDetailResponse(
                 runningSession.getId(),
@@ -41,7 +54,8 @@ public record RunningSessionDetailResponse(
                 runningSession.getElevationGainM(),
                 gpsSamples,
                 healthSamples,
-                splits
+                splits,
+                ghostRunningResult
         );
     }
 }

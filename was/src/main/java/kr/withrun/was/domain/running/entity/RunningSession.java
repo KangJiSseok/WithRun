@@ -139,7 +139,6 @@ public class RunningSession extends BaseEntity {
     }
 
     public void complete(
-            LocalDateTime endedAt,
             Integer distanceM,
             Integer caloriesKcal,
             Double endLatitude,
@@ -149,7 +148,7 @@ public class RunningSession extends BaseEntity {
             Integer avgPaceSecPerKm,
             Integer elevationGainM
     ) {
-        this.endedAt = endedAt;
+        this.endedAt = LocalDateTime.now();
         this.distanceM = distanceM;
         this.caloriesKcal = caloriesKcal;
         this.endLatitude = endLatitude;

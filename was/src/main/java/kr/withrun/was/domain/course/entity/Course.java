@@ -65,7 +65,7 @@ public class Course extends BaseEntity {
     private Double endLongitude;
 
     @JdbcTypeCode(SqlTypes.JSON)
-    @Column(name = "coordinates", columnDefinition = "jsonb")
+    @Column(name = "coordinates", columnDefinition = "jsonb", nullable = false)
     private Coordinates coordinates;
 
     @Column(name = "promoted_at")

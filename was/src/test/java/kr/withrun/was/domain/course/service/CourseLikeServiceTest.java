@@ -5,6 +5,7 @@ import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.repository.CourseLikeRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.exception.CustomException;
@@ -18,6 +19,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -145,7 +147,7 @@ class CourseLikeServiceTest {
                 .startLongitude(127.0)
                 .endLatitude(37.6)
                 .endLongitude(127.1)
-                .coordinates(null)
+                .coordinates(new Coordinates(List.of(37.5, 37.6), List.of(127.0, 127.1), List.of(10.0, 12.0)))
                 .promotedAt(promotedAt)
                 .build();
         kr.withrun.was.domain.course.entity.CourseLike courseLike = mockExistingLike();
@@ -192,7 +194,7 @@ class CourseLikeServiceTest {
                 .startLongitude(127.0)
                 .endLatitude(37.6)
                 .endLongitude(127.1)
-                .coordinates(null)
+                .coordinates(new Coordinates(List.of(37.5, 37.6), List.of(127.0, 127.1), List.of(10.0, 12.0)))
                 .build();
     }
 

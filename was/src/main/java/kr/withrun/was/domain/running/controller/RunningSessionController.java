@@ -8,8 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
-import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsRequest;
-import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsResponse;
+import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
@@ -18,8 +17,6 @@ import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailRequest;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
-import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
-import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
@@ -89,7 +86,7 @@ public class RunningSessionController {
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "러닝 세션 종료 성공",
-                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.UpdateRunningSessionApiResponse.class))
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.RunningSessionDetailApiResponse.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
@@ -108,14 +105,14 @@ public class RunningSessionController {
             )
     })
     @PatchMapping("/{runningSessionId}")
-    public ResponseEntity<ApiResponse<UpdateRunningSessionResponse>> completeRunningSession(
+    public ResponseEntity<ApiResponse<RunningSessionDetailResponse>> completeRunningSession(
             @Parameter(description = "종료 처리할 러닝 세션 ID", example = "91")
             @PathVariable Long runningSessionId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
-                    description = "러닝 종료 시점의 최종 기록을 담은 요청 본문"
+                    description = "러닝 종료 기록과 GPS/건강/스플릿 상세 데이터를 함께 담은 요청 본문"
             )
-            @Valid @RequestBody UpdateRunningSessionRequest request
+            @Valid @RequestBody CompleteRunningSessionRequest request
     ) {
         return ApiResponse.successEntity(runningSessionService.completeRunningSession(runningSessionId, request));
     }
@@ -185,14 +182,6 @@ public class RunningSessionController {
             @Valid @RequestBody RegisterRunningSessionCourseRequest request
     ) {
         return ApiResponse.successEntity(CREATED, runningSessionService.registerRunningSessionCourse(runningSessionId, request));
-    }
-
-    @PostMapping("/{runningSessionId}/detail")
-    public ResponseEntity<ApiResponse<CreateRunningSessionDetailsResponse>> createRunningSessionDetails(
-            @PathVariable @Positive Long runningSessionId,
-            @Valid @RequestBody CreateRunningSessionDetailsRequest request
-    ) {
-        return ApiResponse.successEntity(CREATED, runningSessionService.createRunningSessionDetail(runningSessionId, request));
     }
 
     @GetMapping("/{runningSessionId}/detail")
