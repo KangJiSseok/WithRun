@@ -1,16 +1,10 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FreeRunningScreen, FreeRunResultScreen } from '@/features/FreeRun';
 import { useRunningSession } from '@/shared/hooks';
-import { useRunningSessionStore } from '@/stores/runningSession';
 
 export function FreeRunSessionPage() {
   const [phase, setPhase] = useState<'running' | 'result'>('running');
-  const clear = useRunningSessionStore((s) => s.clear);
   const { sessionReady, error } = useRunningSession({ mode: 'FREE' });
-
-  useEffect(() => {
-    clear();
-  }, []);
 
   if (error) {
     return (
