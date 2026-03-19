@@ -64,7 +64,8 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
                 .leftJoin(courseTypeMap).on(courseTypeMap.course.eq(course)
                         .and(courseTypeMap.deletedAt.isNull()))
                 .where(course.status.eq(CourseStatus.OFFICIAL)
-                        .and(course.deletedAt.isNull()))
+                        .and(course.deletedAt.isNull())
+                        .and(course.coordinates.isNotNull()))
                 .fetch();
     }
 }
