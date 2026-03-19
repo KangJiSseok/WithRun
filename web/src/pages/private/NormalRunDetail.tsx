@@ -1,13 +1,25 @@
 import { useParams } from 'react-router-dom';
 
 import { NormalRunDetailScreen } from '@/features/NormalRun';
-import { COURSES } from '@/constants/NormalRun';
+import { useNormalRunCourseDetail } from '@/hooks/NormalRun/useNormalRunCourseDetail';
 
 export function NormalRunDetailPage() {
   const { courseId } = useParams();
-  const course = COURSES.find((c) => c.id === Number(courseId));
+  const { courseDetail, isLoading, error } = useNormalRunCourseDetail(
+    courseId ? Number(courseId) : undefined
+  );
 
-  if (!course) {
+  if (isLoading) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <p className="body-l text-[hsl(var(--text-secondary))]">
+          코스 정보를 불러오는 중입니다...
+        </p>
+      </div>
+    );
+  }
+
+  if (error || !courseDetail) {
     return (
       <div className="flex h-screen items-center justify-center">
         <p className="body-l text-[hsl(var(--text-secondary))]">
@@ -17,5 +29,5 @@ export function NormalRunDetailPage() {
     );
   }
 
-  return <NormalRunDetailScreen course={course} />;
+  return <NormalRunDetailScreen course={courseDetail} />;
 }

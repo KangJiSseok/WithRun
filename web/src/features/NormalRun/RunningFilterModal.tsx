@@ -9,14 +9,6 @@ import {
 } from '@/shared/components/shadcn/drawer';
 import { Button } from '@/shared/components/shadcn/button';
 
-const PURPOSE_OPTIONS = [
-  '전체',
-  '다이어트',
-  '건강유지',
-  '대회준비',
-  '체력향상',
-];
-
 const DISTANCE_OPTIONS = ['전체', '5km 미만', '5km - 10km', '10km 이상'];
 const COURSE_TYPE_OPTIONS = [
   '전체',
@@ -25,11 +17,11 @@ const COURSE_TYPE_OPTIONS = [
   '한강변',
   '산/둘레길',
   '트랙',
+  '기타',
 ];
 const DIFFICULTY_OPTIONS = ['전체', '쉬움', '보통', '어려움'];
 
 export type RunningFilterState = {
-  purpose: string;
   distance: string[];
   courseType: string[];
   difficulty: string[];
@@ -39,7 +31,6 @@ type FilterCategory = {
   key: keyof RunningFilterState;
   label: string;
   options: string[];
-  multiple: boolean;
 };
 
 type RunningFilterModalProps = {
@@ -53,28 +44,19 @@ type RunningFilterModalProps = {
 
 const FILTER_CATEGORIES: FilterCategory[] = [
   {
-    key: 'purpose',
-    label: '러닝 목적',
-    options: PURPOSE_OPTIONS,
-    multiple: false,
-  },
-  {
     key: 'distance',
     label: '거리',
     options: DISTANCE_OPTIONS,
-    multiple: true,
   },
   {
     key: 'courseType',
     label: '코스 타입',
     options: COURSE_TYPE_OPTIONS,
-    multiple: true,
   },
   {
     key: 'difficulty',
     label: '난이도',
     options: DIFFICULTY_OPTIONS,
-    multiple: true,
   },
 ];
 
@@ -124,11 +106,10 @@ export function RunningFilterModal({
               <div className="flex flex-wrap gap-2">
                 {category.options.map((option) => {
                   const valuesForCategory = values[category.key];
-                  const isActive = category.multiple
-                    ? option === '전체'
+                  const isActive =
+                    option === '전체'
                       ? valuesForCategory.length === 0
-                      : valuesForCategory.includes(option)
-                    : valuesForCategory === option;
+                      : valuesForCategory.includes(option);
 
                   return (
                     <Button
