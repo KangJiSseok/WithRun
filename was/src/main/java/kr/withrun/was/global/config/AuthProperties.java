@@ -7,6 +7,7 @@ import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
 
 // Getter란 속성값을 가져오는 메서드를 자동으로 생성해준다.
 // Setter란 속성값을 설정하는 메서드를 자동으로 생성해준다.
@@ -21,4 +22,14 @@ public class AuthProperties {
     private String frontendBaseUrl;
     private String mobileDeepLinkBase;
     private List<String> allowedOrigins = new ArrayList<>();
+
+    public void setAllowedOrigins(List<String> allowedOrigins) {
+        this.allowedOrigins = allowedOrigins == null
+                ? new ArrayList<>()
+                : allowedOrigins.stream()
+                        .filter(Objects::nonNull)
+                        .map(String::trim)
+                        .filter(origin -> !origin.isBlank())
+                        .toList();
+    }
 }
