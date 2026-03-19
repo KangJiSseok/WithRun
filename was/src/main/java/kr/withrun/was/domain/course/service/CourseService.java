@@ -1,6 +1,7 @@
 package kr.withrun.was.domain.course.service;
 
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseFilterResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
@@ -9,14 +10,15 @@ import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.entity.Course;
-import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
+import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseLikeRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseReviewRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.CourseGhostLeaderboardRankRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
+import kr.withrun.was.domain.course.type.CourseDistanceType;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.util.HaversineDistanceCalculator;
 import kr.withrun.was.domain.course.util.NearbyCourseCursorCodec;
@@ -84,6 +86,29 @@ public class CourseService {
                         .toList(),
                 Arrays.stream(Difficulty.values())
                         .map(difficulty -> new CourseSurveyResponse.CourseSurveyListResponse(
+                                difficulty.getIndex(),
+                                difficulty.getLabel()
+                        ))
+                        .toList()
+        );
+    }
+
+    public CourseFilterResponse findCourseFilters() {
+        return new CourseFilterResponse(
+                Arrays.stream(CourseDistanceType.values())
+                        .map(courseDistanceType -> new CourseFilterResponse.CourseFilterListResponse(
+                                courseDistanceType.getIndex(),
+                                courseDistanceType.getLabel()
+                        ))
+                        .toList(),
+                Arrays.stream(CourseType.values())
+                        .map(courseType -> new CourseFilterResponse.CourseFilterListResponse(
+                                courseType.getIndex(),
+                                courseType.getLabel()
+                        ))
+                        .toList(),
+                Arrays.stream(Difficulty.values())
+                        .map(difficulty -> new CourseFilterResponse.CourseFilterListResponse(
                                 difficulty.getIndex(),
                                 difficulty.getLabel()
                         ))

@@ -38,6 +38,19 @@ public final class SuccessApiResponseDocs {
     ) {
     }
 
+    @Schema(name = "CourseFilterApiResponse", description = "코스 필터 조회 성공 응답")
+    public record CourseFilterApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "코스 설문 응답 데이터")
+            CourseSurveyResponse data
+    ) {
+    }
+
     @Schema(name = "CourseDetailApiResponse", description = "코스 상세 조회 성공 응답")
     public record CourseDetailApiResponse(
             @Schema(description = "요청 성공 여부", example = "true")

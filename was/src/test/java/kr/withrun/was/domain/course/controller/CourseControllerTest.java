@@ -1,6 +1,7 @@
 package kr.withrun.was.domain.course.controller;
 
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseFilterResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
@@ -239,6 +240,40 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.difficulties[0].label").value("EASY"));
 
         then(courseService).should().findCourseSurveys();
+    }
+
+    @DisplayName("코스 필터 응답을 성공 응답 포맷으로 감싼다")
+    @Test
+    void wrapsCourseFiltersResponseInSuccessEnvelope() throws Exception {
+        CourseFilterResponse response = new CourseFilterResponse(
+                List.of(
+                        new CourseFilterResponse.CourseFilterListResponse(1, "1km"),
+                        new CourseFilterResponse.CourseFilterListResponse(2, "3km")
+                ),
+                List.of(
+                        new CourseFilterResponse.CourseFilterListResponse(1, "RIVERSIDE"),
+                        new CourseFilterResponse.CourseFilterListResponse(2, "PARK")
+                ),
+                List.of(
+                        new CourseFilterResponse.CourseFilterListResponse(1, "EASY"),
+                        new CourseFilterResponse.CourseFilterListResponse(2, "MEDIUM")
+                )
+        );
+        given(courseService.findCourseFilters()).willReturn(response);
+
+        mockMvc.perform(get("/api/courses/filter"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
+                .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
+                .andExpect(jsonPath("$.data.courseDistanceTypes[0].index").value(1))
+                .andExpect(jsonPath("$.data.courseDistanceTypes[0].label").value("1km"))
+                .andExpect(jsonPath("$.data.courseTypes[0].index").value(1))
+                .andExpect(jsonPath("$.data.courseTypes[0].label").value("RIVERSIDE"))
+                .andExpect(jsonPath("$.data.difficulties[0].index").value(1))
+                .andExpect(jsonPath("$.data.difficulties[0].label").value("EASY"));
+
+        then(courseService).should().findCourseFilters();
     }
 
     @DisplayName("코스 상세 조회 응답을 성공 응답 포맷으로 감싼다")
