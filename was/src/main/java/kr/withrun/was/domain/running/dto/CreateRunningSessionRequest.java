@@ -7,6 +7,8 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import kr.withrun.was.domain.running.type.RunningMode;
 
+import java.time.LocalDateTime;
+
 @Schema(description = "러닝 세션 시작 요청")
 public record CreateRunningSessionRequest(
         @Schema(description = "러닝을 시작하는 사용자 ID", example = "7", requiredMode = Schema.RequiredMode.REQUIRED)
@@ -25,6 +27,10 @@ public record CreateRunningSessionRequest(
         @Schema(description = "GHOST 모드일 때 목표가 되는 완료된 러닝 세션 ID", example = "91", nullable = true)
         @Positive
         Long ghostTargetRunningSessionId,
+
+        @Schema(description = "러닝 시작 시각", example = "2026-03-17T06:30:00", requiredMode = Schema.RequiredMode.REQUIRED)
+        @NotNull
+        LocalDateTime startedAt,
 
         @Schema(description = "러닝 시작 지점 위도", example = "37.5665", minimum = "-90.0", maximum = "90.0", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull

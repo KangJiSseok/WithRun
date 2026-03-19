@@ -119,6 +119,7 @@ public class RunningSession extends BaseEntity {
             RunningMode mode,
             Course course,
             RunningSession ghostTargetRunningSession,
+            LocalDateTime startedAt,
             Double startLatitude,
             Double startLongitude
     ) {
@@ -127,7 +128,7 @@ public class RunningSession extends BaseEntity {
         runningSession.mode = mode;
         runningSession.course = course;
         runningSession.ghostTargetRunningSession = ghostTargetRunningSession;
-        runningSession.startedAt = LocalDateTime.now();
+        runningSession.startedAt = startedAt;
         runningSession.distanceM = 0;
         runningSession.caloriesKcal = 0;
         runningSession.elevationGainM = 0;
