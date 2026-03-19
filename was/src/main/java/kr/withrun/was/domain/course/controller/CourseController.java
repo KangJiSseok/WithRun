@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseFilterResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
@@ -53,6 +54,23 @@ public class CourseController {
     @GetMapping("/surveys")
     public ResponseEntity<ApiResponse<CourseSurveyResponse>> findCourseSurveys() {
         return ApiResponse.successEntity(courseService.findCourseSurveys());
+    }
+
+
+    @Operation(
+            summary = "코스 필터 항목을 조회한다",
+            description = "코스 거리, 코스 유형과 난이도 설문에 사용할 선택 항목 목록을 조회한다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "코스 필터 항목 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CourseFilterApiResponse.class))
+            )
+    })
+    @GetMapping("/filter")
+    public ResponseEntity<ApiResponse<CourseFilterResponse>> findCourseFilters() {
+        return ApiResponse.successEntity(courseService.findCourseFilters());
     }
 
     @Operation(
