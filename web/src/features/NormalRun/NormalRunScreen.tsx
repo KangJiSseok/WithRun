@@ -1,58 +1,96 @@
 import { Filter, MapPin } from 'lucide-react';
-
 import { useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import {
-  RunningFilterModal,
-  type RunningFilterState,
-} from './RunningFilterModal';
+  RunningCourseCard,
+  RunningCourseFilterDrawer,
+  RunningCourseSearchBar,
+  TabTitle,
+  type CourseFilterCategory,
+  type RunningCourseFilterState,
+} from '@/shared/components';
 import { RunningGuideModal } from '@/shared/components/RunningGuideModal';
 import { Button } from '@/shared/components/shadcn/button';
 import { Tabs, TabsList, TabsTrigger } from '@/shared/components/shadcn/tabs';
-import { useNormalRunCourses } from '@/hooks/NormalRun/useNormalRunCourses';
-import { INITIAL_FILTERS } from '@/constants/NormalRun';
-import type {
-  ActiveCourseTab,
-  CourseDifficulty,
-  CourseType,
-} from '@/shared/types/api.type';
+import { useNormalRunCourseFilter } from '@/hooks/NormalRun/useNormalRunCourseFilter';
 import {
-  RunningCourseCard,
-  RunningCourseSearchBar,
-  TabTitle,
-} from '@/shared/components';
-
-const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
-  EASY: '쉬움',
-  MEDIUM: '보통',
-  HARD: '어려움',
-};
-
-const COURSE_TYPE_LABEL: Record<CourseType, string> = {
-  URBAN: '도심',
-  PARK: '공원',
-  RIVERSIDE: '한강변',
-  MOUNTAIN_TRAIL: '산/둘레길',
-  TRACK: '트랙',
-  OTHER: '기타',
-};
+  useNormalRunCourses,
+  DEFAULT_TARGET_DISTANCE_M,
+} from '@/hooks/NormalRun/useNormalRunCourses';
+import { INITIAL_FILTERS } from '@/constants/NormalRun';
+import type { ActiveCourseTab } from '@/shared/types/api.type';
 
 export function NormalRunScreen() {
   const navigate = useNavigate();
-  const { normalRunCourses, isLoading } = useNormalRunCourses();
 
   const [showGuide, setShowGuide] = useState(() => {
     return !localStorage.getItem('running-guide-seen');
   });
   const [activeTab, setActiveTab] = useState<ActiveCourseTab>('OFFICIAL');
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  const [filters, setFilters] = useState<RunningFilterState>(INITIAL_FILTERS);
+  const [showFilterDrawer, setShowFilterDrawer] = useState(false);
+  // 드로어 내 선택 중인 임시 상태 (버튼 클릭마다 업데이트, API 미호출)
+  const [filters, setFilters] =
+    useState<RunningCourseFilterState>(INITIAL_FILTERS);
+  // 필터 적용 버튼 클릭 시 확정되는 상태 (API 호출 트리거)
+  const [appliedFilters, setAppliedFilters] =
+    useState<RunningCourseFilterState>(INITIAL_FILTERS);
   // TODO : 북마크 API 연결 후 제거 (API 연결 전 UI 토글용 임시 오버라이드)
   const [bookmarkOverrides, setBookmarkOverrides] = useState<
     Record<number, boolean>
   >({});
+
+  // 거리 선택 → targetDistanceM 파싱 (예: "5" → 5000m)
+  const targetDistanceM = useMemo(() => {
+    const d = appliedFilters.distance[0];
+    if (!d) return DEFAULT_TARGET_DISTANCE_M;
+    const km = parseInt(d);
+    return isNaN(km) ? DEFAULT_TARGET_DISTANCE_M : km * 1000;
+  }, [appliedFilters.distance]);
+
+  const { normalRunCourses, isLoading } = useNormalRunCourses(targetDistanceM);
+  const { courseFilters } = useNormalRunCourseFilter();
+
+  // API 응답 기반 동적 filter categories 구성
+  const categories = useMemo<CourseFilterCategory[]>(() => {
+    if (!courseFilters) return [];
+    return [
+      {
+        key: 'distance',
+        label: '거리',
+        options: [
+          { value: '전체', label: '전체' },
+          ...courseFilters.courseDistanceTypes.map((o) => ({
+            value: o.data,
+            label: o.label,
+          })),
+        ],
+      },
+      {
+        key: 'courseType',
+        label: '코스 타입',
+        options: [
+          { value: '전체', label: '전체' },
+          ...courseFilters.courseTypes.map((o) => ({
+            value: o.data,
+            label: o.label,
+          })),
+        ],
+      },
+      {
+        key: 'difficulty',
+        label: '난이도',
+        options: [
+          { value: '전체', label: '전체' },
+          ...courseFilters.difficulties.map((o) => ({
+            value: o.data,
+            label: o.label,
+          })),
+        ],
+      },
+    ];
+  }, [courseFilters]);
 
   // API의 isBookmarked 값에 사용자 토글 오버라이드를 합성해 최종 북마크 Set 생성
   const savedCourses = useMemo(
@@ -84,7 +122,10 @@ export function NormalRunScreen() {
     }));
   }
 
-  function handleFilterChange(key: keyof RunningFilterState, value: string) {
+  function handleFilterChange(
+    key: keyof RunningCourseFilterState,
+    value: string
+  ) {
     setFilters((prev) => {
       if (value === '전체') {
         return { ...prev, [key]: [] };
@@ -103,34 +144,15 @@ export function NormalRunScreen() {
 
   function handleResetFilters() {
     setFilters(INITIAL_FILTERS);
+    setAppliedFilters(INITIAL_FILTERS);
   }
 
+  // 탭 + 키워드 검색만 적용 (courseType, difficulty는 향후 백엔드 지원 시 연결)
   const filteredCourses = normalRunCourses.filter((course) => {
     if (course.status !== activeTab) return false;
 
     const keyword = searchKeyword.trim().toLowerCase();
     if (keyword && !course.title.toLowerCase().includes(keyword)) return false;
-
-    if (filters.distance.length > 0) {
-      const distanceKm = course.distanceM / 1000;
-      const matchesDistance = filters.distance.some((f) => {
-        if (f === '5km 미만') return distanceKm < 5;
-        if (f === '5km - 10km') return distanceKm >= 5 && distanceKm <= 10;
-        return f === '10km 이상' && distanceKm > 10;
-      });
-      if (!matchesDistance) return false;
-    }
-
-    if (filters.courseType.length > 0) {
-      const labels = course.courseTypes.map((t) => COURSE_TYPE_LABEL[t]);
-      if (!labels.some((label) => filters.courseType.includes(label)))
-        return false;
-    }
-
-    if (filters.difficulty.length > 0 && course.difficulty != null) {
-      if (!filters.difficulty.includes(DIFFICULTY_LABEL[course.difficulty]))
-        return false;
-    }
 
     return true;
   });
@@ -150,7 +172,7 @@ export function NormalRunScreen() {
               type="button"
               variant="outline"
               size="icon"
-              onClick={() => setShowFilterModal(true)}
+              onClick={() => setShowFilterDrawer(true)}
               className="h-14 w-14 rounded-[var(--radius-xl)] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))]"
             >
               <Filter size={20} />
@@ -235,11 +257,15 @@ export function NormalRunScreen() {
         ]}
       />
 
-      <RunningFilterModal
-        isOpen={showFilterModal}
+      <RunningCourseFilterDrawer
+        isOpen={showFilterDrawer}
+        categories={categories}
         values={filters}
-        onClose={() => setShowFilterModal(false)}
-        onApply={() => setShowFilterModal(false)}
+        onClose={() => setShowFilterDrawer(false)}
+        onApply={() => {
+          setAppliedFilters(filters);
+          setShowFilterDrawer(false);
+        }}
         onReset={handleResetFilters}
         onChange={handleFilterChange}
       />

@@ -4,9 +4,9 @@ import type {
   CourseType,
 } from '@/shared/types/api.type';
 
-// 코스 설문 선택지 옵션 (GET /courses/surveys)
+// 코스 설문 선택지 옵션
 export type CourseSurveyOption = {
-  index: number;
+  data: string;
   label: string;
 };
 
@@ -78,4 +78,10 @@ export type GetNearbyCoursesData = {
   hasMore: boolean;
   nextCursor: string | null;
   suggestedNextRadiusM: number | null;
+};
+
+export type GetNormalRunCourseFilterData = {
+  courseDistanceTypes: CourseSurveyOption[];
+  courseTypes: CourseSurveyOption[];
+  difficulties: CourseSurveyOption[];
 };
