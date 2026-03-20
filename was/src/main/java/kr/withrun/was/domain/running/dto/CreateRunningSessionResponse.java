@@ -4,6 +4,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.type.RunningMode;
 
+import java.util.List;
+
 @Schema(description = "러닝 세션 시작 결과")
 public record CreateRunningSessionResponse(
         @Schema(description = "생성된 러닝 세션 ID", example = "91")
@@ -18,6 +20,9 @@ public record CreateRunningSessionResponse(
         @Schema(description = "목표 고스트 세션 ID. 고스트 러닝이 아니면 null 이다.", example = "77", nullable = true)
         Long ghostTargetRunningSessionId,
 
+        @Schema(description = "고스트 대상 세션의 GPS 샘플 목록. 고스트 러닝이 아니면 null 이다.", nullable = true)
+        List<RunningGpsSampleResponse> ghostTargetGpsSamples,
+
         @Schema(description = "현재 누적 거리(m). 시작 직후에는 0 이다.", example = "0")
         int distanceM,
 
@@ -29,6 +34,13 @@ public record CreateRunningSessionResponse(
 ) {
 
     public static CreateRunningSessionResponse from(RunningSession runningSession) {
+        return from(runningSession, null);
+    }
+
+    public static CreateRunningSessionResponse from(
+            RunningSession runningSession,
+            List<RunningGpsSampleResponse> ghostTargetGpsSamples
+    ) {
         return new CreateRunningSessionResponse(
                 runningSession.getId(),
                 runningSession.getMode(),
@@ -38,6 +50,7 @@ public record CreateRunningSessionResponse(
                 runningSession.getGhostTargetRunningSession() != null
                         ? runningSession.getGhostTargetRunningSession().getId()
                         : null,
+                ghostTargetGpsSamples,
                 runningSession.getDistanceM(),
                 runningSession.getCaloriesKcal(),
                 Boolean.TRUE.equals(runningSession.getIsCompleted())
