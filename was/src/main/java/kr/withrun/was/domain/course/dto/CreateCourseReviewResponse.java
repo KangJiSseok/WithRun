@@ -20,11 +20,11 @@ public record CreateCourseReviewResponse(
         @Schema(description = "저장된 평점", example = "4")
         Integer rating,
 
-        @ArraySchema(schema = @Schema(implementation = CourseType.class), arraySchema = @Schema(description = "저장된 코스 유형 목록"))
-        List<CourseType> courseTypes,
+        @ArraySchema(schema = @Schema(implementation = CourseTypeOption.class), arraySchema = @Schema(description = "저장된 코스 유형 목록"))
+        List<CourseTypeOption> courseTypes,
 
-        @Schema(description = "저장된 체감 난이도")
-        Difficulty submittedDifficulty,
+        @Schema(description = "저장된 체감 난이도", implementation = DifficultyOption.class)
+        DifficultyOption submittedDifficulty,
 
         @Schema(description = "리뷰 생성 시각", example = "2026-03-17T10:15:30")
         LocalDateTime createdAt
@@ -35,9 +35,33 @@ public record CreateCourseReviewResponse(
                 courseReview.getId(),
                 courseReview.getCourse().getId(),
                 courseReview.getRating(),
-                courseTypes,
-                courseReview.getDifficulty(),
+                courseTypes.stream().map(CourseTypeOption::from).toList(),
+                DifficultyOption.from(courseReview.getDifficulty()),
                 courseReview.getCreatedAt()
         );
+    }
+
+    @Schema(name = "CreateCourseReviewCourseTypeOption", description = "코스 리뷰 응답의 코스 유형 항목")
+    public record CourseTypeOption(
+            @Schema(description = "클라이언트가 사용하는 데이터 값", example = "RIVERSIDE")
+            String data,
+            @Schema(description = "사용자에게 노출하는 라벨", example = "강변")
+            String label
+    ) {
+        public static CourseTypeOption from(CourseType courseType) {
+            return new CourseTypeOption(courseType.getData(), courseType.getLabel());
+        }
+    }
+
+    @Schema(name = "CreateCourseReviewDifficultyOption", description = "코스 리뷰 응답의 난이도 항목")
+    public record DifficultyOption(
+            @Schema(description = "클라이언트가 사용하는 데이터 값", example = "MEDIUM")
+            String data,
+            @Schema(description = "사용자에게 노출하는 라벨", example = "보통")
+            String label
+    ) {
+        public static DifficultyOption from(Difficulty difficulty) {
+            return new DifficultyOption(difficulty.getData(), difficulty.getLabel());
+        }
     }
 }

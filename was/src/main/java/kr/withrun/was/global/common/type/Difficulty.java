@@ -10,15 +10,15 @@ import lombok.Getter;
 @Schema(description = "체감 난이도 분류")
 public enum Difficulty {
     @Schema(description = "쉬운 난이도")
-    EASY(1, "EASY"),
+    EASY("EASY", "쉬움"),
 
     @Schema(description = "보통 난이도")
-    MEDIUM(2, "MEDIUM"),
+    MEDIUM("MEDIUM", "보통"),
 
     @Schema(description = "어려운 난이도")
-    HARD(3, "HARD");
+    HARD("HARD", "어려움");
 
-    private final int index;
+    private final String data;
     private final String label;
-    
+
 }

@@ -79,16 +79,10 @@ public class CourseService {
     public CourseSurveyResponse findCourseSurveys() {
         return new CourseSurveyResponse(
                 Arrays.stream(CourseType.values())
-                        .map(courseType -> new CourseSurveyResponse.CourseSurveyListResponse(
-                                courseType.getIndex(),
-                                courseType.getLabel()
-                        ))
+                        .map(CourseSurveyResponse.CourseTypeOption::from)
                         .toList(),
                 Arrays.stream(Difficulty.values())
-                        .map(difficulty -> new CourseSurveyResponse.CourseSurveyListResponse(
-                                difficulty.getIndex(),
-                                difficulty.getLabel()
-                        ))
+                        .map(CourseSurveyResponse.DifficultyOption::from)
                         .toList()
         );
     }
@@ -96,22 +90,13 @@ public class CourseService {
     public CourseFilterResponse findCourseFilters() {
         return new CourseFilterResponse(
                 Arrays.stream(CourseDistanceType.values())
-                        .map(courseDistanceType -> new CourseFilterResponse.CourseFilterListResponse(
-                                courseDistanceType.getIndex(),
-                                courseDistanceType.getLabel()
-                        ))
+                        .map(CourseFilterResponse.CourseDistanceTypeOption::from)
                         .toList(),
                 Arrays.stream(CourseType.values())
-                        .map(courseType -> new CourseFilterResponse.CourseFilterListResponse(
-                                courseType.getIndex(),
-                                courseType.getLabel()
-                        ))
+                        .map(CourseFilterResponse.CourseTypeOption::from)
                         .toList(),
                 Arrays.stream(Difficulty.values())
-                        .map(difficulty -> new CourseFilterResponse.CourseFilterListResponse(
-                                difficulty.getIndex(),
-                                difficulty.getLabel()
-                        ))
+                        .map(CourseFilterResponse.DifficultyOption::from)
                         .toList()
         );
     }
@@ -123,8 +108,8 @@ public class CourseService {
                 course.getId(),
                 course.getTitle(),
                 course.getStatus(),
-                courseDifficultyRepository.findDifficultyByCourseId(courseId)
-                        .orElse(null),
+                CourseDetailResponse.DifficultyOption.from(courseDifficultyRepository.findDifficultyByCourseId(courseId)
+                        .orElse(null)),
                 course.getDistanceM(),
                 course.getElevationGainM(),
                 course.getSnapshotImageUrl(),
@@ -133,7 +118,9 @@ public class CourseService {
                 course.getEndLatitude(),
                 course.getEndLongitude(),
                 course.getCoordinates(),
-                courseTypeMapRepository.findCourseTypesByCourseId(courseId),
+                courseTypeMapRepository.findCourseTypesByCourseId(courseId).stream()
+                        .map(CourseDetailResponse.CourseTypeOption::from)
+                        .toList(),
                 courseLikeRepository.countByCourseId(courseId),
                 // TODO: 인증에서 userId를 전달받는 방식이 정해지면 isLiked/isBookmarked를 사용자 기준으로 계산하도록 수정해야 한다.
                 false,
@@ -282,7 +269,7 @@ public class CourseService {
                         representative.endLatitude(),
                         representative.endLongitude(),
                         distanceFromUserM.getAsInt(),
-                        representative.difficulty(),
+                        NearbyCourseItemResponse.DifficultyOption.from(representative.difficulty()),
                         mergeCourseTypes(candidateRows),
                         representative.snapshotImageUrl()
                 )
@@ -301,13 +288,15 @@ public class CourseService {
     }
 
     // 같은 코스가 여러 타입으로 조회될 수 있으므로 중복 없이 하나의 리스트로 합친다.
-    private List<CourseType> mergeCourseTypes(List<NearbyCourseCandidateRow> candidateRows) {
+    private List<NearbyCourseItemResponse.CourseTypeOption> mergeCourseTypes(List<NearbyCourseCandidateRow> candidateRows) {
         EnumSet<CourseType> courseTypes = EnumSet.noneOf(CourseType.class);
         for (NearbyCourseCandidateRow candidateRow : candidateRows) {
             if (candidateRow.courseType() != null) {
                 courseTypes.add(candidateRow.courseType());
             }
         }
-        return List.copyOf(courseTypes);
+        return courseTypes.stream()
+                .map(NearbyCourseItemResponse.CourseTypeOption::from)
+                .toList();
     }
 }

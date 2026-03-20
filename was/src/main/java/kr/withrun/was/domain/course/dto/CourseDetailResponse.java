@@ -20,8 +20,8 @@ public record CourseDetailResponse(
         @Schema(description = "코스 상태")
         CourseStatus status,
 
-        @Schema(description = "코스 난이도", nullable = true)
-        Difficulty difficulty,
+        @Schema(description = "코스 난이도", implementation = DifficultyOption.class, nullable = true)
+        DifficultyOption difficulty,
 
         @Schema(description = "코스 총 거리(m)", example = "5200")
         Integer distanceM,
@@ -47,8 +47,8 @@ public record CourseDetailResponse(
         @Schema(description = "코스 전체 경로 좌표")
         Coordinates coordinates,
 
-        @ArraySchema(schema = @Schema(implementation = CourseType.class), arraySchema = @Schema(description = "코스 유형 목록"))
-        List<CourseType> courseTypes,
+        @ArraySchema(schema = @Schema(implementation = CourseTypeOption.class), arraySchema = @Schema(description = "코스 유형 목록"))
+        List<CourseTypeOption> courseTypes,
 
         @Schema(description = "누적 좋아요 수", example = "128")
         Long likeCount,
@@ -62,4 +62,30 @@ public record CourseDetailResponse(
         @Schema(description = "평균 리뷰 평점", example = "4.3", nullable = true)
         Double averageRating
 ) {
+    @Schema(name = "CourseDetailDifficultyOption", description = "코스 상세 응답의 난이도 항목")
+    public record DifficultyOption(
+            @Schema(description = "클라이언트가 사용하는 데이터 값", example = "MEDIUM")
+            String data,
+            @Schema(description = "사용자에게 노출하는 라벨", example = "보통")
+            String label
+    ) {
+        public static DifficultyOption from(Difficulty difficulty) {
+            if (difficulty == null) {
+                return null;
+            }
+            return new DifficultyOption(difficulty.getData(), difficulty.getLabel());
+        }
+    }
+
+    @Schema(name = "CourseDetailCourseTypeOption", description = "코스 상세 응답의 코스 유형 항목")
+    public record CourseTypeOption(
+            @Schema(description = "클라이언트가 사용하는 데이터 값", example = "RIVERSIDE")
+            String data,
+            @Schema(description = "사용자에게 노출하는 라벨", example = "강변")
+            String label
+    ) {
+        public static CourseTypeOption from(CourseType courseType) {
+            return new CourseTypeOption(courseType.getData(), courseType.getLabel());
+        }
+    }
 }

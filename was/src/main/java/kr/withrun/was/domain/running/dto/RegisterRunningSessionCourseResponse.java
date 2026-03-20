@@ -14,8 +14,8 @@ public record RegisterRunningSessionCourseResponse(
         String title,
         @Schema(description = "코스 상태", example = "COMMUNITY")
         CourseStatus status,
-        @Schema(description = "코스 난이도", example = "MEDIUM")
-        Difficulty difficulty,
+        @Schema(description = "코스 난이도", implementation = DifficultyOption.class)
+        DifficultyOption difficulty,
         @Schema(description = "코스 거리(m)", example = "10000")
         Integer distanceM,
         @Schema(description = "누적 상승 고도(m)", example = "120")
@@ -39,7 +39,7 @@ public record RegisterRunningSessionCourseResponse(
                 course.getId(),
                 course.getTitle(),
                 course.getStatus(),
-                difficulty,
+                DifficultyOption.from(difficulty),
                 course.getDistanceM(),
                 course.getElevationGainM(),
                 course.getSnapshotImageUrl(),
@@ -49,5 +49,17 @@ public record RegisterRunningSessionCourseResponse(
                 course.getEndLongitude(),
                 course.getCoordinates()
         );
+    }
+
+    @Schema(name = "RegisterRunningSessionCourseDifficultyOption", description = "러닝 기록 코스 등록 응답의 난이도 항목")
+    public record DifficultyOption(
+            @Schema(description = "클라이언트가 사용하는 데이터 값", example = "MEDIUM")
+            String data,
+            @Schema(description = "사용자에게 노출하는 라벨", example = "보통")
+            String label
+    ) {
+        public static DifficultyOption from(Difficulty difficulty) {
+            return new DifficultyOption(difficulty.getData(), difficulty.getLabel());
+        }
     }
 }
