@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useBridgeDataStore } from '@/bridge';
 import { createRunningSession } from '@/apis';
-import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
+import { useRunningSessionStore } from '@/stores/runningSession';
 
 // 회원 시스템 구현 전 임시 mock 유저
 const MOCK_USER_ID = 1;
@@ -22,7 +22,7 @@ export function useRunningSession(params: UseRunningSessionParams) {
   const calledRef = useRef(false);
 
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
-  const setRunningSessionId = useFreeRunResultStore((s) => s.setRunningSessionId);
+  const setRunningSessionId = useRunningSessionStore((s) => s.setRunningSessionId);
 
   useEffect(() => {
     // 중복 호출 방어

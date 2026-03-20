@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Award, Home, MapPin, Activity, Timer, Save, Check, UploadCloud, Heart } from 'lucide-react';
 import { cn, formatDuration, formatPace } from '@/shared/utils';
 import { CourseShareModal } from './CourseShareModal';
-import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
+import { useRunningSessionStore } from '@/stores/runningSession';
 import { useGeneratePaceData } from '@/hooks/FreeRun/useGeneratePaceData';
 import { likeCourse } from '@/apis/courseLike';
 
@@ -41,8 +41,8 @@ export function FreeRunResultScreen() {
   const [isLiked, setIsLiked] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
-  const result = useFreeRunResultStore((s) => s.result);
-  const courseId = useFreeRunResultStore((s) => s.courseId);
+  const result = useRunningSessionStore((s) => s.result);
+  const courseId = useRunningSessionStore((s) => s.courseId);
 
   const durationSec = result?.durationSec ?? 0;
   const distanceM = result?.distanceM ?? 0;

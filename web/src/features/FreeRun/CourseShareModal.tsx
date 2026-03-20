@@ -17,7 +17,7 @@ import { registerCourse } from '@/apis/runningSessions';
 
 // 추후 변경: createRunningSession 응답에서 받아온 runningSessionId를 store에서 읽어오기
 const MOCK_RUNNING_SESSION_ID = 17;
-import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
+import { useRunningSessionStore } from '@/stores/runningSession';
 
 type CourseShareModalProps = {
   isOpen: boolean;
@@ -58,8 +58,8 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
 
   // 추후 변경: store에서 실제 runningSessionId 읽어오기
   // const runningSessionId = useFreeRunResultStore((s) => s.runningSessionId) ?? MOCK_RUNNING_SESSION_ID;
-  const runningSessionId = useFreeRunResultStore((s) => s.runningSessionId) ?? MOCK_RUNNING_SESSION_ID;
-  const setCourseId = useFreeRunResultStore((s) => s.setCourseId);
+  const runningSessionId = useRunningSessionStore((s) => s.runningSessionId) ?? MOCK_RUNNING_SESSION_ID;
+  const setCourseId = useRunningSessionStore((s) => s.setCourseId);
 
   // 사용자가 선택한 값이 있으면 그 값, 없으면 API 첫 번째 항목을 기본값으로 사용
   const difficulty = difficultyOverride ?? (surveyData?.difficulties[0]?.label as CourseDifficulty | undefined);
