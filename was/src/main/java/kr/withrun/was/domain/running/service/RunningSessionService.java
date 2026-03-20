@@ -90,7 +90,9 @@ public class RunningSessionService {
                 request.startLongitude()
         ));
 
-        return CreateRunningSessionResponse.from(savedRunningSession);
+        List<RunningGpsSampleResponse> ghostTargetGpsSamples = getGhostTargetGpsSamples(mode, ghostTargetRunningSession);
+
+        return CreateRunningSessionResponse.from(savedRunningSession, ghostTargetGpsSamples);
     }
 
     @Transactional
@@ -430,6 +432,20 @@ public class RunningSessionService {
     private User getUser(Long userId) {
         return userRepository.findNotDeletedUser(userId)
                 .orElseThrow(() -> new CustomException(ResponseCode.USER_NOT_FOUND));
+    }
+
+    private List<RunningGpsSampleResponse> getGhostTargetGpsSamples(
+            RunningMode mode,
+            RunningSession ghostTargetRunningSession
+    ) {
+        if (mode != RunningMode.GHOST || ghostTargetRunningSession == null) {
+            return null;
+        }
+
+        return runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(ghostTargetRunningSession.getId())
+                .stream()
+                .map(RunningGpsSampleResponse::from)
+                .toList();
     }
 
     private Course getCourse(RunningMode mode, Long courseId) {
