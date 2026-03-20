@@ -1,9 +1,10 @@
 // 러닝 중 화면 (통계 3개 + 타이머 + 일시정지/종료 컨트롤)
 
+import { useState } from 'react';
 import { Pause, Play, Square } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import { useFreeRunning } from '@/hooks/FreeRun/useFreeRunning';
-import { useFreeRunResultStore } from '@/stores/FreeRun/useFreeRunResultStore';
+import { useRunningSessionStore } from '@/stores/runningSession';
 import { useBridgeDataStore } from '@/bridge';
 import { patchCompleteRunningSessionApi } from '@/apis';
 
@@ -20,7 +21,6 @@ interface FreeRunningScreenProps {
   onFinish: () => void;
 }
 
-// startCard 컴포넌트에 props 전달 시 TypeScript 오류 방지 위해 별도 컴포넌트로 분리
 interface StatCardProps {
   label: string;
   value: string;
@@ -40,49 +40,68 @@ function StatCard({ label, value, unit }: StatCardProps) {
 export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
   const { time, distance, pace, calories, isPaused, togglePause } = useFreeRunning();
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
-  const setResult = useFreeRunResultStore((s) => s.setResult);
-  const runningSessionId = useFreeRunResultStore((s) => s.runningSessionId);
+  const setResult = useRunningSessionStore((s) => s.setResult);
+  const setRunningMode = useRunningSessionStore((s) => s.setRunningMode);
+  const runningSessionId = useRunningSessionStore((s) => s.runningSessionId);
 
-  const handleStop = async () => {
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [submitError, setSubmitError] = useState<string | null>(null);
+  const [localResult, setLocalResult] = useState<{
+    durationSec: number;
+    distanceM: number;
+    caloriesKcal: number;
+    avgPaceSecPerKm: number;
+  } | null>(null);
+
+  const buildPayload = () => {
     const durationSec = parseDurationSec(time);
     const distanceM = Math.round(parseFloat(distance) * 1000);
     const avgSpeedMps = durationSec > 0 ? distanceM / durationSec : 0;
-    const avgPaceSecPerKm = avgSpeedMps > 0 ? Math.round(1000 / avgSpeedMps) : 0;
+    // TODO: 웹 테스트용 fallback — 실제 이동 데이터 없을 때 300(5분/km) 임시 사용
+    const avgPaceSecPerKm = avgSpeedMps > 0 ? Math.round(1000 / avgSpeedMps) : 300;
+    return { durationSec, distanceM, avgSpeedMps, avgPaceSecPerKm };
+  };
 
-    const localResult = { durationSec, distanceM, caloriesKcal: calories, avgPaceSecPerKm };
+  const handleStop = async () => {
+    const { durationSec, distanceM, avgSpeedMps, avgPaceSecPerKm } = buildPayload();
+    setLocalResult({ durationSec, distanceM, caloriesKcal: calories, avgPaceSecPerKm });
+    setSubmitError(null);
+    setIsSubmitting(true);
+    setRunningMode('FREE');
 
-    if (runningSessionId !== null) {
-      try {
-        const res = await patchCompleteRunningSessionApi(runningSessionId, {
-          userId: MOCK_USER_ID,
-          endedAt: new Date().toISOString(),
-          distanceM,
-          caloriesKcal: calories,
-          endLatitude: gpsLocation?.latitude ?? 0,
-          endLongitude: gpsLocation?.longitude ?? 0,
-          avgSpeedMps,
-          durationSec,
-          avgPaceSecPerKm,
-          elevationGainM: 0,
-          distanceGapM: 0,
-          gpsSamples: [],
-          healthSamples: [],
-          splits: [],
-        });
-        setResult({
-          durationSec: res.data.durationSec,
-          distanceM: res.data.distanceM,
-          caloriesKcal: res.data.caloriesKcal,
-          avgPaceSecPerKm: res.data.avgPaceSecPerKm,
-        });
-      } catch {
-        // API 실패 시 로컬값으로 폴백
-        setResult(localResult);
-      }
-    } else {
-      setResult(localResult);
+    try {
+      const res = await patchCompleteRunningSessionApi(runningSessionId!, {
+        userId: MOCK_USER_ID,
+        distanceM,
+        caloriesKcal: calories,
+        endLatitude: gpsLocation?.latitude ?? 0,
+        endLongitude: gpsLocation?.longitude ?? 0,
+        avgSpeedMps,
+        durationSec,
+        avgPaceSecPerKm,
+        elevationGainM: 0,
+        distanceGapM: 0,
+        gpsSamples: [],
+        healthSamples: [],
+        splits: [],
+      });
+      setResult({
+        durationSec: res.data.durationSec,
+        distanceM: res.data.distanceM,
+        caloriesKcal: res.data.caloriesKcal,
+        avgPaceSecPerKm: res.data.avgPaceSecPerKm,
+      });
+      onFinish();
+    } catch {
+      setSubmitError('서버 연결에 실패했습니다.');
+    } finally {
+      setIsSubmitting(false);
     }
+  };
 
+  const handleForceFinish = () => {
+    if (!localResult) return;
+    setResult(localResult);
     onFinish();
   };
 
@@ -92,7 +111,6 @@ export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
       <div className="w-full flex gap-3 mt-4">
         <StatCard label="거리" value={distance} unit="km" />
         <StatCard label="페이스" value={pace} unit="/km" />
-        {/* StartCard의 value prop이 string 타입이어야 함 */}
         <StatCard label="칼로리" value={String(calories)} unit="kcal" />
       </div>
 
@@ -117,22 +135,40 @@ export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
               : 'bg-primary/20 text-primary',
           )}
         >
-          {/* 버튼 상태 뜨는거 */}
           {isPaused ? '일시정지' : '러닝 중'}
         </span>
       </div>
 
+      {/* 에러 메시지 + 재시도/결과보기 버튼 */}
+      {submitError && (
+        <div className="w-full flex flex-col items-center gap-3">
+          <span className="caption-r text-red-400">{submitError}</span>
+          <div className="flex gap-3 w-full">
+            <button
+              onClick={handleStop}
+              className="flex-1 py-3 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] caption-b"
+            >
+              재시도
+            </button>
+            <button
+              onClick={handleForceFinish}
+              className="flex-1 py-3 rounded-2xl bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))] caption-b"
+            >
+              결과 보기
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* 하단 컨트롤 */}
       <div className="relative flex items-center justify-center mb-4 w-full">
-        {/* 일시정지/재개 버튼 — 항상 가운데 고정 */}
+        {/* 일시정지/재개 버튼 */}
         <button
           onClick={togglePause}
-          className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-[hsl(var(--text-inverse))] shadow-[0_0_30px_hsl(var(--primary)/50%)] z-10"
-          // aria-label은 접근성 향상을 위해 버튼의 기능을 명확히 설명하는 텍스트로 설정
-          // (시각 장애인용 보조 기술)을 위한 접근성 속성
+          disabled={isSubmitting}
+          className="w-20 h-20 rounded-full bg-primary flex items-center justify-center text-[hsl(var(--text-inverse))] shadow-[0_0_30px_hsl(var(--primary)/50%)] z-10 disabled:opacity-50"
           aria-label={isPaused ? '러닝 재개' : '일시정지'}
         >
-          {/* 크기도 고정 */}
           {isPaused ? (
             <Play size={30} fill="currentColor" />
           ) : (
@@ -143,8 +179,9 @@ export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
         {/* 종료 버튼 — 일시정지 시 오른쪽으로 슬라이드 */}
         <button
           onClick={handleStop}
+          disabled={isSubmitting}
           className={cn(
-            'absolute w-14 h-14 rounded-full bg-[hsl(var(--secondary-3))] flex items-center justify-center text-[hsl(var(--text-inverse))] transition-all duration-300',
+            'absolute w-14 h-14 rounded-full bg-[hsl(var(--secondary-3))] flex items-center justify-center text-[hsl(var(--text-inverse))] transition-all duration-300 disabled:opacity-50',
             isPaused
               ? 'opacity-100 translate-x-[80px]'
               : 'opacity-0 translate-x-[50px] pointer-events-none',

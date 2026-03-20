@@ -149,7 +149,6 @@ export type SplitData = {
 
 export type CompleteRunningSessionRequest = {
   userId: number;
-  endedAt: string; // ISO 8601
   distanceM: number;
   caloriesKcal: number;
   endLatitude: number; // -90 ~ 90
