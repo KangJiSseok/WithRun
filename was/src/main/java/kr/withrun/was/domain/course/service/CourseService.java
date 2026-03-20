@@ -26,6 +26,7 @@ import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -42,6 +43,8 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CourseService {
 
+    @Value("${app.cdn.base-url}")
+    private String CDN_URL;
     // 목표 거리 허용 오차는 +- 1km로 두고 비슷한 길이의 코스만 후보로 남긴다.
     private static final int TARGET_DISTANCE_TOLERANCE_M = 1000;
     // 요청 페이지 크기가 없으면 기본으로 3개를 내려준다.
@@ -112,7 +115,7 @@ public class CourseService {
                         .orElse(null)),
                 course.getDistanceM(),
                 course.getElevationGainM(),
-                course.getSnapshotImageUrl(),
+                CDN_URL + "/" + course.getSnapshotImageUrl(),
                 course.getStartLatitude(),
                 course.getStartLongitude(),
                 course.getEndLatitude(),
@@ -271,7 +274,7 @@ public class CourseService {
                         distanceFromUserM.getAsInt(),
                         NearbyCourseItemResponse.DifficultyOption.from(representative.difficulty()),
                         mergeCourseTypes(candidateRows),
-                        representative.snapshotImageUrl()
+                        CDN_URL + "/" + representative.snapshotImageUrl()
                 )
         );
     }

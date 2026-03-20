@@ -51,6 +51,7 @@ import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -61,6 +62,9 @@ import java.util.List;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class RunningSessionService {
+
+    @Value("${app.cdn.base-url}")
+    private String CDN_URL;
 
     private final RunningSessionRepository runningSessionRepository;
     private final UserRepository userRepository;
@@ -156,6 +160,7 @@ public class RunningSessionService {
                 gpsResponses,
                 healthResponses,
                 splitResponses,
+                CDN_URL + "/" + runningSession.getSnapshotImageUrl(),
                 ghostRunningResultResponse
         );
     }
@@ -189,7 +194,11 @@ public class RunningSessionService {
                 .map(courseType -> CourseTypeMap.create(course, courseType))
                 .toList());
 
-        return RegisterRunningSessionCourseResponse.from(course, difficulty);
+        return RegisterRunningSessionCourseResponse.from(
+                course,
+                difficulty,
+                CDN_URL + "/" + course.getSnapshotImageUrl()
+        );
     }
 
     public RunningSessionDetailResponse findRunningSessionDetail(Long runningSessionId, Long userId) {
@@ -213,7 +222,14 @@ public class RunningSessionService {
                 .map(this::toGhostRunningResultResponse)
                 .orElse(null);
 
-        return RunningSessionDetailResponse.of(runningSession, gpsSamples, healthSamples, splits, ghostRunningResult);
+        return RunningSessionDetailResponse.of(
+                runningSession,
+                gpsSamples,
+                healthSamples,
+                splits,
+                CDN_URL + "/" + runningSession.getSnapshotImageUrl(),
+                ghostRunningResult
+        );
     }
 
     public PastRunningSessionsResponse findPastRunningSessions(PastRunningSessionsRequest request) {
@@ -239,7 +255,7 @@ public class RunningSessionService {
                 ? List.copyOf(rows.subList(0, request.pageSize()))
                 : List.copyOf(rows);
         List<PastRunningSessionItemResponse> items = pagedRows.stream()
-                .map(PastRunningSessionItemResponse::from)
+                .map(row -> PastRunningSessionItemResponse.from(row, CDN_URL + "/" + row.snapshotImageUrl()))
                 .toList();
         String nextCursor = hasMore ? toCursor(pagedRows.getLast()) : null;
 

@@ -9,30 +9,31 @@ import org.springframework.stereotype.Service;
 import org.springframework.util.StringUtils;
 import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.GetUrlRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.model.S3Exception;
-
-import java.util.UUID;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class S3FileService {
 
+    private static final String COURSE_SNAPSHOT_DIRECTORY = "courese-snapshot";
+    private static final String COURSE_SNAPSHOT_EXTENSION = ".png";
+
     private final S3Client s3Client;
 
     @Value("${app.s3.bucket:}")
     private String bucket;
 
-    public String uploadCourseSnapshot(byte[] snapshotImageBytes, String directory) {
+    public String uploadCourseSnapshot(byte[] snapshotImageBytes, Long courseId) {
         validateBucketConfigured();
+        validateCourseId(courseId);
 
         if (snapshotImageBytes == null || snapshotImageBytes.length == 0) {
             throw new CustomException(ResponseCode.EMPTY_FILE);
         }
 
-        String objectKey = buildObjectKey(directory, ".png");
+        String objectKey = buildObjectKey(courseId);
 
         PutObjectRequest putObjectRequest = PutObjectRequest.builder()
                 .bucket(bucket)
@@ -51,9 +52,7 @@ public class S3FileService {
             throw new CustomException(ResponseCode.S3_UPLOAD_FAILED);
         }
 
-        return s3Client.utilities()
-                .getUrl(GetUrlRequest.builder().bucket(bucket).key(objectKey).build())
-                .toExternalForm();
+        return objectKey;
     }
 
     private void validateBucketConfigured() {
@@ -62,32 +61,13 @@ public class S3FileService {
         }
     }
 
-    private String buildObjectKey(String directory, String extension) {
-        String normalizedDirectory = normalizeDirectory(directory);
-        String objectDirectory = StringUtils.hasText(normalizedDirectory)
-                ? normalizedDirectory
-                : "course-snapshots/";
-        return objectDirectory + UUID.randomUUID() + extension;
-    }
-
-    private String normalizeDirectory(String directory) {
-        if (!StringUtils.hasText(directory)) {
-            return "";
-        }
-
-        String normalized = directory.trim().replace('\\', '/');
-        normalized = normalized.replaceAll("/{2,}", "/");
-        normalized = normalized.replaceAll("^/+", "");
-        normalized = normalized.replaceAll("/+$", "");
-
-        if (!StringUtils.hasText(normalized)) {
-            return "";
-        }
-
-        if (normalized.contains("..")) {
+    private void validateCourseId(Long courseId) {
+        if (courseId == null || courseId <= 0) {
             throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
         }
+    }
 
-        return normalized + "/";
+    private String buildObjectKey(Long courseId) {
+        return COURSE_SNAPSHOT_DIRECTORY + "/" + courseId + COURSE_SNAPSHOT_EXTENSION;
     }
 }

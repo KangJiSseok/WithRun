@@ -30,7 +30,7 @@ public record RunningSessionDetailResponse(
             List<RunningHealthSampleResponse> healthSamples,
             List<RunningSessionSplitResponse> splits
     ) {
-        return of(runningSession, gpsSamples, healthSamples, splits, null);
+        return of(runningSession, gpsSamples, healthSamples, splits, runningSession.getSnapshotImageUrl(), null);
     }
 
     public static RunningSessionDetailResponse of(
@@ -40,10 +40,28 @@ public record RunningSessionDetailResponse(
             List<RunningSessionSplitResponse> splits,
             GhostRunningResultResponse ghostRunningResult
     ) {
+        return of(
+                runningSession,
+                gpsSamples,
+                healthSamples,
+                splits,
+                runningSession.getSnapshotImageUrl(),
+                ghostRunningResult
+        );
+    }
+
+    public static RunningSessionDetailResponse of(
+            RunningSession runningSession,
+            List<RunningGpsSampleResponse> gpsSamples,
+            List<RunningHealthSampleResponse> healthSamples,
+            List<RunningSessionSplitResponse> splits,
+            String snapshotImageUrl,
+            GhostRunningResultResponse ghostRunningResult
+    ) {
         return new RunningSessionDetailResponse(
                 runningSession.getId(),
                 runningSession.getUser().getId(),
-                runningSession.getSnapshotImageUrl(),
+                snapshotImageUrl,
                 runningSession.getStartedAt(),
                 runningSession.getEndedAt(),
                 runningSession.getDistanceM(),

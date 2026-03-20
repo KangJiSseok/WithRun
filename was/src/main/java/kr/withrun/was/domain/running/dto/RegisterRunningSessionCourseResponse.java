@@ -35,6 +35,10 @@ public record RegisterRunningSessionCourseResponse(
 ) {
 
     public static RegisterRunningSessionCourseResponse from(Course course, Difficulty difficulty) {
+        return from(course, difficulty, course.getSnapshotImageUrl());
+    }
+
+    public static RegisterRunningSessionCourseResponse from(Course course, Difficulty difficulty, String snapshotImageUrl) {
         return new RegisterRunningSessionCourseResponse(
                 course.getId(),
                 course.getTitle(),
@@ -42,7 +46,7 @@ public record RegisterRunningSessionCourseResponse(
                 DifficultyOption.from(difficulty),
                 course.getDistanceM(),
                 course.getElevationGainM(),
-                course.getSnapshotImageUrl(),
+                snapshotImageUrl,
                 course.getStartLatitude(),
                 course.getStartLongitude(),
                 course.getEndLatitude(),
