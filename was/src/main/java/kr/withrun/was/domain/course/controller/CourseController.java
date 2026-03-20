@@ -68,7 +68,7 @@ public class CourseController {
                     content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CourseFilterApiResponse.class))
             )
     })
-    @GetMapping("/filter")
+    @GetMapping("/filter/normal-run")
     public ResponseEntity<ApiResponse<CourseFilterResponse>> findCourseFilters() {
         return ApiResponse.successEntity(courseService.findCourseFilters());
     }
