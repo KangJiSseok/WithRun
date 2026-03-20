@@ -191,10 +191,16 @@ export function FreeRunResultScreen() {
         {/* 공식 코스 등록 버튼 */}
         <button
           onClick={() => setShowShareModal(true)}
-          className="w-full py-4 rounded-2xl bg-primary/20 border border-primary/30 text-primary body-b flex items-center justify-center gap-2"
+          disabled={courseId !== null}
+          className={cn(
+            'w-full py-4 rounded-2xl body-b flex items-center justify-center gap-2 transition-colors',
+            courseId !== null
+              ? 'bg-[hsl(var(--secondary-4))] text-[hsl(var(--secondary-5))] cursor-default'
+              : 'bg-primary/20 border border-primary/30 text-primary',
+          )}
         >
-          <UploadCloud size={18} />
-          공식 코스 등록
+          {courseId !== null ? <Check size={18} /> : <UploadCloud size={18} />}
+          {courseId !== null ? '등록 완료' : '공식 코스 등록'}
         </button>
 
         {/* 홈으로 버튼 */}
