@@ -1,4 +1,5 @@
 import { Activity, Award, Bookmark, Home, MapPin, Timer } from 'lucide-react';
+import { NormalRunResultMap } from './NormalRunResultMap';
 import { useNavigate } from 'react-router-dom';
 
 import { cn } from '@/shared/utils';
@@ -131,12 +132,18 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
           <p className="body-r text-[hsl(var(--secondary-5))]">수고하셨습니다</p>
         </div>
 
-        {/* 지도 영역 (GPS 경로 표시 예정) */}
-        <div className="h-40 bg-[hsl(var(--secondary-2))] rounded-2xl flex items-center justify-center border border-[hsl(var(--secondary-3))]">
-          <div className="flex flex-col items-center gap-2 text-[hsl(var(--secondary-5))]">
-            <MapPin size={24} />
-            <span className="caption-r">러닝 코스 지도 (GPS 연동 예정)</span>
-          </div>
+        {/* 지도 영역 — GPS 샘플 2개 이상일 때 경로 표시 */}
+        <div className="h-40 rounded-2xl overflow-hidden border border-[hsl(var(--secondary-3))]">
+          {result.gpsSamples.length >= 2 ? (
+            <NormalRunResultMap gpsSamples={result.gpsSamples} />
+          ) : (
+            <div className="h-full bg-[hsl(var(--secondary-2))] flex items-center justify-center">
+              <div className="flex flex-col items-center gap-2 text-[hsl(var(--secondary-5))]">
+                <MapPin size={24} />
+                <span className="caption-r">GPS 데이터 없음</span>
+              </div>
+            </div>
+          )}
         </div>
 
         {/* 거리 */}

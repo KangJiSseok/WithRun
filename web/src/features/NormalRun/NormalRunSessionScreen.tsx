@@ -72,9 +72,7 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
         endedAt: new Date().toISOString(),
         endLatitude: gps?.latitude ?? 0,
         endLongitude: gps?.longitude ?? 0,
-        elevationGainM: 0, // TODO: 추후 고도 누적 계산
         distanceGapM: 0,
-        splits: [], // TODO: 추후 구현
         ...data,
       }).catch(() => {}); // fire-and-forget
       ca();
@@ -91,9 +89,7 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
         endedAt: new Date().toISOString(),
         endLatitude: gpsLocation?.latitude ?? 0,
         endLongitude: gpsLocation?.longitude ?? 0,
-        elevationGainM: 0, // TODO: 추후 고도 누적 계산
         distanceGapM: 0,
-        splits: [], // TODO: 추후 구현
         ...data,
       });
       setResult(res.data);

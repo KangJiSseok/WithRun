@@ -12,7 +12,10 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
-import type { GpsSample, HealthSample } from '@/apis/runningSessions';
+import type { GpsSample, HealthSample, SplitRecord } from '@/apis/runningSessions';
+
+// 회원 시스템 구현 전 임시 mock 유저 (SplitRecord.userId 용)
+const MOCK_USER_ID = 1;
 
 // 워치 메시지가 이 시간(ms) 이상 오지 않으면 연결 끊김으로 판단
 const WATCH_TIMEOUT_MS = 3000;
@@ -39,8 +42,19 @@ export function useNormalRunning() {
   const startTimeRef = useRef<number | null>(null);
   const elapsedRef = useRef(0);
   const prevGpsRef = useRef<{ lat: number; lon: number } | null>(null);
+  const prevAltitudeRef = useRef<number | null>(null);
   const gpsSamplesRef = useRef<GpsSample[]>([]);
   const healthSamplesRef = useRef<HealthSample[]>([]);
+
+  // 고도 누적 상승
+  const elevationGainMRef = useRef(0);
+
+  // 1km 구간 기록 (splits)
+  const splitsRef = useRef<SplitRecord[]>([]);
+  const lastSplitKmRef = useRef(0);
+  const lastSplitTimeRef = useRef(0);
+  const lastSplitElevationRef = useRef(0);
+  const currentKmHeartRatesRef = useRef<number[]>([]);
 
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
   const watchHealthData = useBridgeDataStore((s) => s.watchHealthData);
@@ -102,6 +116,16 @@ export function useNormalRunning() {
 
     prevGpsRef.current = { lat, lon };
 
+    // 고도 누적 상승 계산
+    const altitude = gpsLocation.altitude ?? null;
+    if (altitude !== null && prevAltitudeRef.current !== null) {
+      const altDelta = altitude - prevAltitudeRef.current;
+      if (altDelta > 0) {
+        elevationGainMRef.current += altDelta;
+      }
+    }
+    prevAltitudeRef.current = altitude;
+
     // GPS 샘플 누적 (세션 종료 시 서버 전송용)
     gpsSamplesRef.current.push({
       latitude: gpsLocation.latitude,
@@ -113,7 +137,7 @@ export function useNormalRunning() {
     });
   }, [gpsLocation, isPaused]);
 
-  // 헬스 샘플 누적 (세션 종료 시 서버 전송용)
+  // 헬스 샘플 누적 + 구간 심박수 추적
   useEffect(() => {
     if (isPaused || !watchHealthData) return;
     const speedMps = gpsLocation?.speedMps ?? 0;
@@ -128,7 +152,50 @@ export function useNormalRunning() {
         ? (watchHealthData.cadenceSpm ?? gpsLocation?.cadenceSpm ?? 0)
         : (gpsLocation?.cadenceSpm ?? 0),
     });
+    if (watchHealthData.heartRate > 0) {
+      currentKmHeartRatesRef.current.push(watchHealthData.heartRate);
+    }
   }, [watchHealthData, isPaused]);
+
+  // distanceKm: 워치 연결 시 워치 데이터 우선, 미연결 시 Haversine 폴백
+  const distanceKm =
+    isWatchConnected && watchHealthData && watchHealthData.distanceM > 0
+      ? watchHealthData.distanceM / 1000
+      : haversineDistanceKm;
+
+  // 1km 구간 완주 감지 → split 기록
+  useEffect(() => {
+    if (isPaused) return;
+    const targetKm = Math.floor(distanceKm);
+    if (targetKm <= lastSplitKmRef.current) return;
+
+    for (let km = lastSplitKmRef.current + 1; km <= targetKm; km++) {
+      const splitDurationSec = time - lastSplitTimeRef.current;
+      const splitElevGain = Math.round(
+        elevationGainMRef.current - lastSplitElevationRef.current,
+      );
+      const hrs = currentKmHeartRatesRef.current;
+      const avgHeartRate =
+        hrs.length > 0
+          ? Math.round(hrs.reduce((a, b) => a + b, 0) / hrs.length)
+          : 0;
+
+      splitsRef.current.push({
+        userId: MOCK_USER_ID,
+        splitIndex: km,
+        splitDistanceM: 1000,
+        splitDurationSec,
+        splitPaceSecPerKm: splitDurationSec, // 1km 구간이므로 duration = pace
+        avgHeartRate,
+        elevationGainM: splitElevGain,
+      });
+
+      lastSplitTimeRef.current = time;
+      lastSplitElevationRef.current = elevationGainMRef.current;
+      currentKmHeartRatesRef.current = [];
+    }
+    lastSplitKmRef.current = targetKm;
+  }, [distanceKm, time, isPaused]);
 
   // ── 출력값 계산 ────────────────────────────────────────────────
 
@@ -150,11 +217,6 @@ export function useNormalRunning() {
   const cadenceSpm = isWatchConnected
     ? (watchHealthData?.cadenceSpm ?? gpsLocation?.cadenceSpm ?? 0)
     : (gpsLocation?.cadenceSpm ?? 0);
-
-  const distanceKm =
-    isWatchConnected && watchHealthData && watchHealthData.distanceM > 0
-      ? watchHealthData.distanceM / 1000
-      : haversineDistanceKm;
 
   const formatTime = (s: number) => {
     const h = Math.floor(s / 3600);
@@ -180,8 +242,10 @@ export function useNormalRunning() {
       avgSpeedMps: parseFloat(avgSpeedMps.toFixed(2)),
       avgPaceSecPerKm,
       caloriesKcal: calories,
+      elevationGainM: Math.round(elevationGainMRef.current),
       gpsSamples: gpsSamplesRef.current,
       healthSamples: healthSamplesRef.current,
+      splits: splitsRef.current,
     };
   }, [time, distanceKm, calories]);
 
