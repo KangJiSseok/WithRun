@@ -71,6 +71,8 @@ app:
   s3:
     # 업로드 파일을 저장할 S3 버킷
     bucket: ${s3.bucket:}
+  cdn:
+    base-url: ${cdn.url}
 
   auth:
     # 로그인 성공 후 웹 프론트로 복귀할 기본 주소
