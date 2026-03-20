@@ -12,6 +12,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
+import type { GpsSample, HealthSample } from '@/apis/runningSessions';
 
 // 워치 메시지가 이 시간(ms) 이상 오지 않으면 연결 끊김으로 판단
 const WATCH_TIMEOUT_MS = 3000;
@@ -38,6 +39,8 @@ export function useNormalRunning() {
   const startTimeRef = useRef<number | null>(null);
   const elapsedRef = useRef(0);
   const prevGpsRef = useRef<{ lat: number; lon: number } | null>(null);
+  const gpsSamplesRef = useRef<GpsSample[]>([]);
+  const healthSamplesRef = useRef<HealthSample[]>([]);
 
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
   const watchHealthData = useBridgeDataStore((s) => s.watchHealthData);
@@ -98,7 +101,34 @@ export function useNormalRunning() {
     }
 
     prevGpsRef.current = { lat, lon };
+
+    // GPS 샘플 누적 (세션 종료 시 서버 전송용)
+    gpsSamplesRef.current.push({
+      latitude: gpsLocation.latitude,
+      longitude: gpsLocation.longitude,
+      altitudeM: gpsLocation.altitude ?? 0,
+      accuracyM: gpsLocation.accuracy ?? 0,
+      bearingDeg: gpsLocation.heading ?? 0,
+      sampledAt: new Date().toISOString(),
+    });
   }, [gpsLocation, isPaused]);
+
+  // 헬스 샘플 누적 (세션 종료 시 서버 전송용)
+  useEffect(() => {
+    if (isPaused || !watchHealthData) return;
+    const speedMps = gpsLocation?.speedMps ?? 0;
+    healthSamplesRef.current.push({
+      sampledAt: new Date(watchHealthData.timestamp).toISOString(),
+      heartRate: watchHealthData.heartRate,
+      speedMps,
+      paceSecPerKm: speedMps > 0 ? Math.round(1000 / speedMps) : 0,
+      distanceM: watchHealthData.distanceM,
+      caloriesKcal: watchHealthData.caloriesKcal,
+      cadenceSpm: isWatchConnected
+        ? (watchHealthData.cadenceSpm ?? gpsLocation?.cadenceSpm ?? 0)
+        : (gpsLocation?.cadenceSpm ?? 0),
+    });
+  }, [watchHealthData, isPaused]);
 
   // ── 출력값 계산 ────────────────────────────────────────────────
 
@@ -138,8 +168,26 @@ export function useNormalRunning() {
 
   const togglePause = useCallback(() => setIsPaused((prev) => !prev), []);
 
+  // 세션 종료 시 호출 — 수집된 샘플 배열과 종합 통계를 반환
+  const getCollectedData = useCallback(() => {
+    const distanceM = Math.round(distanceKm * 1000);
+    const avgSpeedMps = time > 0 ? distanceM / time : 0;
+    const avgPaceSecPerKm = distanceKm > 0 ? Math.round(time / distanceKm) : 0;
+
+    return {
+      durationSec: time,
+      distanceM,
+      avgSpeedMps: parseFloat(avgSpeedMps.toFixed(2)),
+      avgPaceSecPerKm,
+      caloriesKcal: calories,
+      gpsSamples: gpsSamplesRef.current,
+      healthSamples: healthSamplesRef.current,
+    };
+  }, [time, distanceKm, calories]);
+
   return {
     time: formatTime(time),
+    durationSec: time,
     distance: distanceKm.toFixed(2),
     pace,
     calories,
@@ -148,5 +196,6 @@ export function useNormalRunning() {
     isWatchConnected,
     isPaused,
     togglePause,
+    getCollectedData,
   };
 }
