@@ -113,8 +113,11 @@ class CourseBookmarkControllerTest {
                         CourseStatus.OFFICIAL,
                         10000,
                         35,
-                        Difficulty.MEDIUM,
-                        List.of(CourseType.RIVERSIDE, CourseType.PARK),
+                        new BookmarkedCourseItemResponse.DifficultyOption("MEDIUM", "보통"),
+                        List.of(
+                                new BookmarkedCourseItemResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                                new BookmarkedCourseItemResponse.CourseTypeOption("PARK", "공원")
+                        ),
                         "https://example.com/course.jpg",
                         true,
                         true
@@ -136,7 +139,10 @@ class CourseBookmarkControllerTest {
                 .andExpect(jsonPath("$.data.items[0].courseId").value(42L))
                 .andExpect(jsonPath("$.data.items[0].title").value("Han River"))
                 .andExpect(jsonPath("$.data.items[0].status").value(CourseStatus.OFFICIAL.name()))
-                .andExpect(jsonPath("$.data.items[0].courseTypes[0]").value(CourseType.RIVERSIDE.name()))
+                .andExpect(jsonPath("$.data.items[0].difficulty.data").value("MEDIUM"))
+                .andExpect(jsonPath("$.data.items[0].difficulty.label").value("보통"))
+                .andExpect(jsonPath("$.data.items[0].courseTypes[0].data").value("RIVERSIDE"))
+                .andExpect(jsonPath("$.data.items[0].courseTypes[0].label").value("강변"))
                 .andExpect(jsonPath("$.data.items[0].isBookmarked").value(true))
                 .andExpect(jsonPath("$.data.items[0].isRunnable").value(true))
                 .andExpect(jsonPath("$.data.hasMore").value(true))

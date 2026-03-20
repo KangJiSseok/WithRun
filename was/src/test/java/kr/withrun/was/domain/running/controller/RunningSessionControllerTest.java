@@ -330,7 +330,7 @@ class RunningSessionControllerTest {
                 101L,
                 "한강 야간 러닝 10K",
                 CourseStatus.COMMUNITY,
-                Difficulty.MEDIUM,
+                new RegisterRunningSessionCourseResponse.DifficultyOption("MEDIUM", "보통"),
                 10000,
                 120,
                 "https://cdn.example.com/course/snapshot.png",
@@ -354,7 +354,8 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.message").value(ResponseCode.CREATED.getMessage()))
                 .andExpect(jsonPath("$.data.courseId").value(101L))
                 .andExpect(jsonPath("$.data.status").value(CourseStatus.COMMUNITY.name()))
-                .andExpect(jsonPath("$.data.difficulty").value(Difficulty.MEDIUM.name()))
+                .andExpect(jsonPath("$.data.difficulty.data").value("MEDIUM"))
+                .andExpect(jsonPath("$.data.difficulty.label").value("보통"))
                 .andExpect(jsonPath("$.data.coordinates[0].latitude").value(37.566501))
                 .andExpect(jsonPath("$.data.coordinates[0].elevationM").value(0.0));
 

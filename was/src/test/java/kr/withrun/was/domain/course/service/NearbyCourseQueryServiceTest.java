@@ -183,7 +183,10 @@ class NearbyCourseQueryServiceTest {
         assertThat(items).hasSize(1);
         assertThat(items.get(0).courseId()).isEqualTo(7L);
         assertThat(items.get(0).courseTypes())
-                .containsExactly(CourseType.RIVERSIDE, CourseType.PARK);
+                .containsExactly(
+                        new NearbyCourseItemResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                        new NearbyCourseItemResponse.CourseTypeOption("PARK", "공원")
+                );
     }
 
     @DisplayName("페이지 크기가 없으면 기본값 3개와 다음 커서를 반환한다")
