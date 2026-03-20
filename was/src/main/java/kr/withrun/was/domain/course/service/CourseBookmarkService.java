@@ -111,7 +111,7 @@ public class CourseBookmarkService {
                 representative.status(),
                 representative.distanceM(),
                 representative.elevationGainM(),
-                representative.difficulty(),
+                BookmarkedCourseItemResponse.DifficultyOption.from(representative.difficulty()),
                 mergeCourseTypes(rows),
                 representative.snapshotImageUrl(),
                 true,
@@ -119,14 +119,16 @@ public class CourseBookmarkService {
         );
     }
 
-    private List<CourseType> mergeCourseTypes(List<BookmarkedCourseRow> rows) {
+    private List<BookmarkedCourseItemResponse.CourseTypeOption> mergeCourseTypes(List<BookmarkedCourseRow> rows) {
         EnumSet<CourseType> courseTypes = EnumSet.noneOf(CourseType.class);
         for (BookmarkedCourseRow row : rows) {
             if (row.courseType() != null) {
                 courseTypes.add(row.courseType());
             }
         }
-        return List.copyOf(courseTypes);
+        return courseTypes.stream()
+                .map(BookmarkedCourseItemResponse.CourseTypeOption::from)
+                .toList();
     }
 
     private String toCursor(BookmarkedCourseItemResponse item) {

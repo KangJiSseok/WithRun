@@ -5,6 +5,7 @@ import kr.withrun.was.domain.course.dto.BookmarkedCoursesResponse;
 import kr.withrun.was.domain.course.dto.CourseBookmarkAddResponse;
 import kr.withrun.was.domain.course.dto.CourseBookmarkRemoveResponse;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseFilterResponse;
 import kr.withrun.was.domain.course.dto.CourseLikeStatusResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.CreateCourseReviewResponse;
@@ -46,8 +47,8 @@ public final class SuccessApiResponseDocs {
             String code,
             @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
             String message,
-            @Schema(description = "코스 설문 응답 데이터")
-            CourseSurveyResponse data
+            @Schema(description = "코스 필터 응답 데이터")
+            CourseFilterResponse data
     ) {
     }
 

@@ -185,9 +185,10 @@ class CourseBookmarkServiceTest {
         assertThat(firstItem.bookmarkId()).isEqualTo(102L);
         assertThat(firstItem.bookmarkedAt()).isEqualTo(LocalDateTime.of(2026, 3, 14, 10, 30));
         assertThat(firstItem.courseId()).isEqualTo(12L);
+        assertThat(firstItem.difficulty()).isEqualTo(new BookmarkedCourseItemResponse.DifficultyOption("HARD", "어려움"));
         assertThat(firstItem.isBookmarked()).isTrue();
         assertThat(firstItem.isRunnable()).isTrue();
-        assertThat(firstItem.courseTypes()).containsExactly(CourseType.PARK);
+        assertThat(firstItem.courseTypes()).containsExactly(new BookmarkedCourseItemResponse.CourseTypeOption("PARK", "공원"));
         assertThat(response.hasMore()).isTrue();
         assertThat(response.nextCursor()).isNotBlank();
     }
@@ -243,7 +244,11 @@ class CourseBookmarkServiceTest {
         BookmarkedCourseItemResponse item = response.items().getFirst();
         assertThat(item.bookmarkId()).isEqualTo(101L);
         assertThat(item.status()).isEqualTo(CourseStatus.COMMUNITY);
-        assertThat(item.courseTypes()).containsExactly(CourseType.RIVERSIDE, CourseType.PARK);
+        assertThat(item.difficulty()).isEqualTo(new BookmarkedCourseItemResponse.DifficultyOption("MEDIUM", "보통"));
+        assertThat(item.courseTypes()).containsExactly(
+                new BookmarkedCourseItemResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                new BookmarkedCourseItemResponse.CourseTypeOption("PARK", "공원")
+        );
         assertThat(item.isRunnable()).isFalse();
         assertThat(response.hasMore()).isFalse();
         assertThat(response.nextCursor()).isNull();

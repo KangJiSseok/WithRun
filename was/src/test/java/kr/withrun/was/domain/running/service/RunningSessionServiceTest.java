@@ -427,7 +427,7 @@ class RunningSessionServiceTest {
         assertThat(response.courseId()).isEqualTo(501L);
         assertThat(response.title()).isEqualTo("한강 야간 러닝 10K");
         assertThat(response.status()).isEqualTo(CourseStatus.COMMUNITY);
-        assertThat(response.difficulty()).isEqualTo(Difficulty.MEDIUM);
+        assertThat(response.difficulty()).isEqualTo(new RegisterRunningSessionCourseResponse.DifficultyOption("MEDIUM", "보통"));
         assertThat(response.distanceM()).isEqualTo(10000);
         assertThat(response.elevationGainM()).isEqualTo(120);
         assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.example.com/course/snapshot.png");

@@ -187,8 +187,11 @@ class CourseControllerTest {
                         37.58,
                         126.98,
                         240,
-                        Difficulty.MEDIUM,
-                        List.of(CourseType.RIVERSIDE, CourseType.PARK),
+                        new NearbyCourseItemResponse.DifficultyOption("MEDIUM", "보통"),
+                        List.of(
+                                new NearbyCourseItemResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                                new NearbyCourseItemResponse.CourseTypeOption("PARK", "공원")
+                        ),
                         "https://example.com/course.jpg"
                 )),
                 true,
@@ -205,8 +208,10 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.items[0].courseId").value(1L))
                 .andExpect(jsonPath("$.data.items[0].title").value("Han River"))
                 .andExpect(jsonPath("$.data.items[0].status").value(CourseStatus.OFFICIAL.name()))
-                .andExpect(jsonPath("$.data.items[0].difficulty").value(Difficulty.MEDIUM.name()))
-                .andExpect(jsonPath("$.data.items[0].courseTypes[0]").value(CourseType.RIVERSIDE.name()))
+                .andExpect(jsonPath("$.data.items[0].difficulty.data").value("MEDIUM"))
+                .andExpect(jsonPath("$.data.items[0].difficulty.label").value("보통"))
+                .andExpect(jsonPath("$.data.items[0].courseTypes[0].data").value("RIVERSIDE"))
+                .andExpect(jsonPath("$.data.items[0].courseTypes[0].label").value("강변"))
                 .andExpect(jsonPath("$.data.hasMore").value(true))
                 .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"))
                 .andExpect(jsonPath("$.data.suggestedNextRadiusM").value(2000));
@@ -219,12 +224,12 @@ class CourseControllerTest {
     void wrapsCourseSurveysResponseInSuccessEnvelope() throws Exception {
         CourseSurveyResponse response = new CourseSurveyResponse(
                 List.of(
-                        new CourseSurveyResponse.CourseSurveyListResponse(1, "RIVERSIDE"),
-                        new CourseSurveyResponse.CourseSurveyListResponse(2, "PARK")
+                        new CourseSurveyResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                        new CourseSurveyResponse.CourseTypeOption("PARK", "공원")
                 ),
                 List.of(
-                        new CourseSurveyResponse.CourseSurveyListResponse(1, "EASY"),
-                        new CourseSurveyResponse.CourseSurveyListResponse(2, "MEDIUM")
+                        new CourseSurveyResponse.DifficultyOption("EASY", "쉬움"),
+                        new CourseSurveyResponse.DifficultyOption("MEDIUM", "보통")
                 )
         );
         given(courseService.findCourseSurveys()).willReturn(response);
@@ -234,10 +239,10 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
                 .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
-                .andExpect(jsonPath("$.data.courseTypes[0].index").value(1))
-                .andExpect(jsonPath("$.data.courseTypes[0].label").value("RIVERSIDE"))
-                .andExpect(jsonPath("$.data.difficulties[0].index").value(1))
-                .andExpect(jsonPath("$.data.difficulties[0].label").value("EASY"));
+                .andExpect(jsonPath("$.data.courseTypes[0].data").value("RIVERSIDE"))
+                .andExpect(jsonPath("$.data.courseTypes[0].label").value("강변"))
+                .andExpect(jsonPath("$.data.difficulties[0].data").value("EASY"))
+                .andExpect(jsonPath("$.data.difficulties[0].label").value("쉬움"));
 
         then(courseService).should().findCourseSurveys();
     }
@@ -247,16 +252,16 @@ class CourseControllerTest {
     void wrapsCourseFiltersResponseInSuccessEnvelope() throws Exception {
         CourseFilterResponse response = new CourseFilterResponse(
                 List.of(
-                        new CourseFilterResponse.CourseFilterListResponse(1, "1km"),
-                        new CourseFilterResponse.CourseFilterListResponse(2, "3km")
+                        new CourseFilterResponse.CourseDistanceTypeOption("1", "1km"),
+                        new CourseFilterResponse.CourseDistanceTypeOption("3", "3km")
                 ),
                 List.of(
-                        new CourseFilterResponse.CourseFilterListResponse(1, "RIVERSIDE"),
-                        new CourseFilterResponse.CourseFilterListResponse(2, "PARK")
+                        new CourseFilterResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                        new CourseFilterResponse.CourseTypeOption("PARK", "공원")
                 ),
                 List.of(
-                        new CourseFilterResponse.CourseFilterListResponse(1, "EASY"),
-                        new CourseFilterResponse.CourseFilterListResponse(2, "MEDIUM")
+                        new CourseFilterResponse.DifficultyOption("EASY", "쉬움"),
+                        new CourseFilterResponse.DifficultyOption("MEDIUM", "보통")
                 )
         );
         given(courseService.findCourseFilters()).willReturn(response);
@@ -266,12 +271,12 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
                 .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
-                .andExpect(jsonPath("$.data.courseDistanceTypes[0].index").value(1))
+                .andExpect(jsonPath("$.data.courseDistanceTypes[0].data").value("1"))
                 .andExpect(jsonPath("$.data.courseDistanceTypes[0].label").value("1km"))
-                .andExpect(jsonPath("$.data.courseTypes[0].index").value(1))
-                .andExpect(jsonPath("$.data.courseTypes[0].label").value("RIVERSIDE"))
-                .andExpect(jsonPath("$.data.difficulties[0].index").value(1))
-                .andExpect(jsonPath("$.data.difficulties[0].label").value("EASY"));
+                .andExpect(jsonPath("$.data.courseTypes[0].data").value("RIVERSIDE"))
+                .andExpect(jsonPath("$.data.courseTypes[0].label").value("강변"))
+                .andExpect(jsonPath("$.data.difficulties[0].data").value("EASY"))
+                .andExpect(jsonPath("$.data.difficulties[0].label").value("쉬움"));
 
         then(courseService).should().findCourseFilters();
     }
@@ -284,7 +289,7 @@ class CourseControllerTest {
                 courseId,
                 "Han River",
                 CourseStatus.OFFICIAL,
-                Difficulty.MEDIUM,
+                new CourseDetailResponse.DifficultyOption("MEDIUM", "보통"),
                 10000,
                 35,
                 "https://example.com/course.jpg",
@@ -296,7 +301,10 @@ class CourseControllerTest {
                         new GeoPoint(37.57, 126.97, 10.0),
                         new GeoPoint(37.58, 126.98, 12.0)
                 )),
-                List.of(CourseType.RIVERSIDE, CourseType.PARK),
+                List.of(
+                        new CourseDetailResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                        new CourseDetailResponse.CourseTypeOption("PARK", "공원")
+                ),
                 14L,
                 false,
                 false,
@@ -311,11 +319,13 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
                 .andExpect(jsonPath("$.data.courseId").value(courseId))
                 .andExpect(jsonPath("$.data.title").value("Han River"))
-                .andExpect(jsonPath("$.data.difficulty").value(Difficulty.MEDIUM.name()))
+                .andExpect(jsonPath("$.data.difficulty.data").value("MEDIUM"))
+                .andExpect(jsonPath("$.data.difficulty.label").value("보통"))
                 .andExpect(jsonPath("$.data.coordinates[0].latitude").value(37.57))
                 .andExpect(jsonPath("$.data.coordinates[1].longitude").value(126.98))
                 .andExpect(jsonPath("$.data.coordinates[0].elevationM").value(10.0))
-                .andExpect(jsonPath("$.data.courseTypes[0]").value(CourseType.RIVERSIDE.name()))
+                .andExpect(jsonPath("$.data.courseTypes[0].data").value("RIVERSIDE"))
+                .andExpect(jsonPath("$.data.courseTypes[0].label").value("강변"))
                 .andExpect(jsonPath("$.data.likeCount").value(14))
                 .andExpect(jsonPath("$.data.isLiked").value(false))
                 .andExpect(jsonPath("$.data.isBookmarked").value(false))

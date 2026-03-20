@@ -86,32 +86,35 @@ class CourseServiceTest {
         assertThat(response.courseId()).isEqualTo(course.getId());
         assertThat(response.title()).isEqualTo(course.getTitle());
         assertThat(response.status()).isEqualTo(course.getStatus());
-        assertThat(response.difficulty()).isEqualTo(Difficulty.EASY);
+        assertThat(response.difficulty()).isEqualTo(new CourseDetailResponse.DifficultyOption("EASY", "쉬움"));
         assertThat(response.coordinates()).isEqualTo(course.getCoordinates());
-        assertThat(response.courseTypes()).containsExactly(CourseType.RIVERSIDE, CourseType.PARK);
+        assertThat(response.courseTypes()).containsExactly(
+                new CourseDetailResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                new CourseDetailResponse.CourseTypeOption("PARK", "공원")
+        );
         assertThat(response.likeCount()).isEqualTo(14L);
         assertThat(response.isLiked()).isFalse();
         assertThat(response.isBookmarked()).isFalse();
         assertThat(response.averageRating()).isEqualTo(4.5);
     }
 
-    @DisplayName("코스 조회용 enum 목록을 index와 label로 반환한다")
+    @DisplayName("코스 조회용 enum 목록을 data와 label로 반환한다")
     @Test
     void returnsCourseLookups() {
         CourseSurveyResponse response = courseService.findCourseSurveys();
 
         assertThat(response.courseTypes()).containsExactly(
-                new CourseSurveyResponse.CourseSurveyListResponse(1, "RIVERSIDE"),
-                new CourseSurveyResponse.CourseSurveyListResponse(2, "PARK"),
-                new CourseSurveyResponse.CourseSurveyListResponse(3, "MOUNTAIN_TRAIL"),
-                new CourseSurveyResponse.CourseSurveyListResponse(4, "TRACK"),
-                new CourseSurveyResponse.CourseSurveyListResponse(5, "URBAN"),
-                new CourseSurveyResponse.CourseSurveyListResponse(6, "OTHER")
+                new CourseSurveyResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                new CourseSurveyResponse.CourseTypeOption("PARK", "공원"),
+                new CourseSurveyResponse.CourseTypeOption("MOUNTAIN_TRAIL", "산악"),
+                new CourseSurveyResponse.CourseTypeOption("TRACK", "트랙"),
+                new CourseSurveyResponse.CourseTypeOption("URBAN", "도심"),
+                new CourseSurveyResponse.CourseTypeOption("OTHER", "기타")
         );
         assertThat(response.difficulties()).containsExactly(
-                new CourseSurveyResponse.CourseSurveyListResponse(1, "EASY"),
-                new CourseSurveyResponse.CourseSurveyListResponse(2, "MEDIUM"),
-                new CourseSurveyResponse.CourseSurveyListResponse(3, "HARD")
+                new CourseSurveyResponse.DifficultyOption("EASY", "쉬움"),
+                new CourseSurveyResponse.DifficultyOption("MEDIUM", "보통"),
+                new CourseSurveyResponse.DifficultyOption("HARD", "어려움")
         );
     }
 

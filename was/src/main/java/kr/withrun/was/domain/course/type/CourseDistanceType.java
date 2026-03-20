@@ -6,20 +6,20 @@ import lombok.Getter;
 
 @Getter
 @AllArgsConstructor
-@Schema(description = "코스 유형 분류")
+@Schema(description = "코스 거리 분류")
 public enum CourseDistanceType {
     @Schema(description = "1km")
-    ONE(1, "1km"),
+    ONE("1", "1km"),
 
     @Schema(description = "3km")
-    THREE(2, "3km"),
+    THREE("3", "3km"),
 
     @Schema(description = "5km")
-    FIVE(3, "5km"),
+    FIVE("5", "5km"),
 
     @Schema(description = "10km")
-    SEVEN(4, "10km");
+    SEVEN("10", "10km");
 
-    private final int index;
+    private final String data;
     private final String label;
 }

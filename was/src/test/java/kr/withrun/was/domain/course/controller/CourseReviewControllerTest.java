@@ -51,8 +51,11 @@ class CourseReviewControllerTest {
                 501L,
                 courseId,
                 5,
-                List.of(CourseType.RIVERSIDE, CourseType.URBAN),
-                Difficulty.MEDIUM,
+                List.of(
+                        new CreateCourseReviewResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                        new CreateCourseReviewResponse.CourseTypeOption("URBAN", "도심")
+                ),
+                new CreateCourseReviewResponse.DifficultyOption("MEDIUM", "보통"),
                 LocalDateTime.of(2026, 3, 8, 21, 0)
         );
         given(courseReviewService.createCourseReview(courseId, request)).willReturn(response);
@@ -67,9 +70,12 @@ class CourseReviewControllerTest {
                 .andExpect(jsonPath("$.data.courseReviewId").value(501L))
                 .andExpect(jsonPath("$.data.courseId").value(courseId))
                 .andExpect(jsonPath("$.data.rating").value(5))
-                .andExpect(jsonPath("$.data.courseTypes[0]").value(CourseType.RIVERSIDE.name()))
-                .andExpect(jsonPath("$.data.courseTypes[1]").value(CourseType.URBAN.name()))
-                .andExpect(jsonPath("$.data.submittedDifficulty").value(Difficulty.MEDIUM.name()))
+                .andExpect(jsonPath("$.data.courseTypes[0].data").value("RIVERSIDE"))
+                .andExpect(jsonPath("$.data.courseTypes[0].label").value("강변"))
+                .andExpect(jsonPath("$.data.courseTypes[1].data").value("URBAN"))
+                .andExpect(jsonPath("$.data.courseTypes[1].label").value("도심"))
+                .andExpect(jsonPath("$.data.submittedDifficulty.data").value("MEDIUM"))
+                .andExpect(jsonPath("$.data.submittedDifficulty.label").value("보통"))
                 .andExpect(jsonPath("$.data.createdAt").value("2026-03-08T21:00:00"));
 
         then(courseReviewService).should().createCourseReview(courseId, request);

@@ -99,8 +99,11 @@ class BookmarkedCoursesDtoTest {
                 CourseStatus.OFFICIAL,
                 10000,
                 35,
-                Difficulty.MEDIUM,
-                List.of(CourseType.RIVERSIDE, CourseType.PARK),
+                new BookmarkedCourseItemResponse.DifficultyOption("MEDIUM", "보통"),
+                List.of(
+                        new BookmarkedCourseItemResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                        new BookmarkedCourseItemResponse.CourseTypeOption("PARK", "공원")
+                ),
                 "https://example.com/course.jpg",
                 true,
                 true
