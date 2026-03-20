@@ -29,6 +29,8 @@ spring:
               - email
 
 app:
+  cdn:
+    base-url: https://cdn.withrun.app
   auth:
     frontend-base-url: http://localhost:5173
     mobile-deep-link-base: withrun://auth/callback
