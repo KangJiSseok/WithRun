@@ -1,10 +1,17 @@
 import { Pause, Play, Square } from 'lucide-react';
+import { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { NormalRunMap } from './NormalRunMap';
 import { useNormalRunning } from '@/hooks/NormalRun/useNormalRunning';
 import { cn } from '@/shared/utils';
 import type { CourseDetail } from '@/apis/course';
+import { completeRunningSession } from '@/apis/runningSessions';
+import { useNormalRunSessionStore } from '@/stores/NormalRun';
+import { useBridgeDataStore } from '@/bridge';
+
+// 회원 시스템 구현 전 임시 mock 유저
+const MOCK_USER_ID = 1;
 
 interface StatItemProps {
   label: string;
@@ -36,8 +43,67 @@ type NormalRunSessionScreenProps = {
 
 export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenProps) {
   const navigate = useNavigate();
-  const { time, distance, pace, calories, isPaused, togglePause } =
+  const { time, distance, pace, calories, isPaused, togglePause, getCollectedData } =
     useNormalRunning();
+  const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
+
+  const session = useNormalRunSessionStore((s) => s.session);
+  const setResult = useNormalRunSessionStore((s) => s.setResult);
+  const clearAll = useNormalRunSessionStore((s) => s.clearAll);
+
+  const [isEnding, setIsEnding] = useState(false);
+
+  // "latest ref" 패턴: cleanup 클로저에서 최신값 접근
+  const latestGetCollectedDataRef = useRef(getCollectedData);
+  latestGetCollectedDataRef.current = getCollectedData;
+
+  const latestGpsLocationRef = useRef(gpsLocation);
+  latestGpsLocationRef.current = gpsLocation;
+
+  // 비정상 종료 처리 (앱 이탈 시 세션 종료 API fire-and-forget)
+  useEffect(() => {
+    return () => {
+      const { session: s, result: r, clearAll: ca } = useNormalRunSessionStore.getState();
+      if (!s || r) return; // 이미 완료됐거나 세션 없으면 skip
+      const data = latestGetCollectedDataRef.current();
+      const gps = latestGpsLocationRef.current;
+      completeRunningSession(s.runningSessionId, {
+        userId: MOCK_USER_ID,
+        endedAt: new Date().toISOString(),
+        endLatitude: gps?.latitude ?? 0,
+        endLongitude: gps?.longitude ?? 0,
+        elevationGainM: 0, // TODO: 추후 고도 누적 계산
+        distanceGapM: 0,
+        splits: [], // TODO: 추후 구현
+        ...data,
+      }).catch(() => {}); // fire-and-forget
+      ca();
+    };
+  }, []);
+
+  const handleStopRunning = async () => {
+    if (isEnding || !session) return;
+    setIsEnding(true);
+    const data = getCollectedData();
+    try {
+      const res = await completeRunningSession(session.runningSessionId, {
+        userId: MOCK_USER_ID,
+        endedAt: new Date().toISOString(),
+        endLatitude: gpsLocation?.latitude ?? 0,
+        endLongitude: gpsLocation?.longitude ?? 0,
+        elevationGainM: 0, // TODO: 추후 고도 누적 계산
+        distanceGapM: 0,
+        splits: [], // TODO: 추후 구현
+        ...data,
+      });
+      setResult(res.data);
+    } catch {
+      clearAll();
+      navigate('/normal-run');
+    } finally {
+      setIsEnding(false);
+    }
+  };
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -58,7 +124,7 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
 
       {/* 하단 그라데이션 + 컨트롤 */}
       <div className="absolute bottom-0 left-0 right-0 z-sticky">
-        <div className="h-52 bg-gradient-to-b from-transparent to-black/90" />
+        <div className="h-52 bg-linear-to-b from-transparent to-black/90" />
 
         <div className="flex flex-col items-center gap-5 bg-black/90 pb-14 pt-2">
           {/* 타이머 */}
@@ -93,14 +159,15 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
 
             {/* 종료 버튼 (일시정지 시 등장) */}
             <button
-              onClick={() => navigate('/normal-run')}
+              onClick={handleStopRunning}
+              disabled={isEnding}
               className={cn(
                 'absolute flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white transition-all duration-300',
                 isPaused
-                  ? 'translate-x-[80px] opacity-100'
-                  : 'pointer-events-none translate-x-[50px] opacity-0'
+                  ? 'translate-x-20 opacity-100'
+                  : 'pointer-events-none translate-x-12.5 opacity-0'
               )}
-              aria-label="러닝 종료"
+              aria-label={isEnding ? '종료 중...' : '러닝 종료'}
             >
               <Square size={22} fill="currentColor" />
             </button>

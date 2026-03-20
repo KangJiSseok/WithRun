@@ -1,6 +1,15 @@
 import axiosClient from '@/shared/libs/axiosClient';
 import type { ApiResponse } from '@/shared/types/api.type';
-import type { CreateRunningSessionRequest, RunningSessionData, RegisterCourseRequest, RegisterCourseResponse, GetRunningHistoryResponse, GetRunningHistoryParams } from './types';
+import type {
+  CreateRunningSessionRequest,
+  RunningSessionData,
+  CompleteRunningSessionRequest,
+  CompleteRunningSessionResponse,
+  RegisterCourseRequest,
+  RegisterCourseResponse,
+  GetRunningHistoryResponse,
+  GetRunningHistoryParams,
+} from './types';
 
 /**
  * 러닝 세션 생성 API
@@ -19,7 +28,7 @@ export const createRunningSession = async (
 };
 
 // 회원 시스템 구현 전 임시 mock 유저
-// 추후 변경 시 => auth context에서 실제 유저 정보 받아오기
+// TODO : 추후 변경 시 => auth context에서 실제 유저 정보 받아오기
 const MOCK_USER_ID = 1;
 
 /**
@@ -27,12 +36,27 @@ const MOCK_USER_ID = 1;
  * GET /running-sessions/history/past
  */
 export const getRunningHistoryApi = async (
-  params: GetRunningHistoryParams = {},
+  params: GetRunningHistoryParams = {}
 ): Promise<ApiResponse<GetRunningHistoryResponse>> => {
-  const { data } = await axiosClient.get<ApiResponse<GetRunningHistoryResponse>>(
-    '/running-sessions/history/past',
-    { params: { userId: MOCK_USER_ID, ...params } },
-  );
+  const { data } = await axiosClient.get<
+    ApiResponse<GetRunningHistoryResponse>
+  >('/running-sessions/history/past', {
+    params: { userId: MOCK_USER_ID, ...params },
+  });
+  return data;
+};
+
+/**
+ * 러닝 세션 종료 API
+ * PATCH /running-sessions/{runningSessionId}
+ */
+export const completeRunningSession = async (
+  runningSessionId: number,
+  body: CompleteRunningSessionRequest
+): Promise<ApiResponse<CompleteRunningSessionResponse>> => {
+  const { data } = await axiosClient.patch<
+    ApiResponse<CompleteRunningSessionResponse>
+  >(`/running-sessions/${runningSessionId}`, body);
   return data;
 };
 

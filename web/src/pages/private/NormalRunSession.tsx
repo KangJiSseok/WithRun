@@ -1,13 +1,15 @@
 import { useParams } from 'react-router-dom';
 
-import { NormalRunSessionScreen } from '@/features/NormalRun';
+import { NormalRunSessionScreen, NormalRunResultScreen } from '@/features/NormalRun';
 import { useNormalRunCourseDetail } from '@/hooks/NormalRun/useNormalRunCourseDetail';
+import { useNormalRunSessionStore } from '@/stores/NormalRun';
 
 export function NormalRunSessionPage() {
   const { courseId } = useParams();
   const { courseDetail, isLoading, error } = useNormalRunCourseDetail(
     courseId ? Number(courseId) : undefined
   );
+  const result = useNormalRunSessionStore((s) => s.result);
 
   if (isLoading) {
     return (
@@ -27,6 +29,10 @@ export function NormalRunSessionPage() {
         </p>
       </div>
     );
+  }
+
+  if (result) {
+    return <NormalRunResultScreen result={result} />;
   }
 
   return <NormalRunSessionScreen courseDetail={courseDetail} />;
