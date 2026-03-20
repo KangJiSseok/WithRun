@@ -9,6 +9,9 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseFilterResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
@@ -98,6 +101,32 @@ public class CourseController {
     }
 
     @Operation(
+            summary = "코스 고스트 상세를 조회한다",
+            description = "특정 코스의 고스트 러닝 화면에서 사용하는 코스 상세 정보와 지정한 사용자의 최고 기록 슬롯을 조회한다. 아직 인증 연동 전이라 userId path variable 을 임시로 받는다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "코스 고스트 상세 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CourseGhostDetailApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "코스를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+            )
+    })
+    @GetMapping("/{courseId}/ghost-detail/{userId}")
+    public ResponseEntity<ApiResponse<CourseGhostDetailResponse>> findCourseGhostDetail(
+            @Parameter(description = "고스트 상세를 조회할 코스 ID", example = "12")
+            @PathVariable Long courseId,
+            @Parameter(description = "고스트 개인 기록을 조회할 사용자 ID", example = "7")
+            @PathVariable Long userId
+    ) {
+        return ApiResponse.successEntity(courseService.findCourseGhostDetail(courseId, userId));
+    }
+
+    @Operation(
             summary = "주변 코스를 조회한다",
             description = "현재 좌표, 탐색 반경, 목표 거리 조건으로 주변 코스를 조회한다. cursor 는 이전 응답의 nextCursor 값을 그대로 전달하는 불투명 토큰이다."
     )
@@ -142,5 +171,35 @@ public class CourseController {
             @Valid @ParameterObject @ModelAttribute CourseLeaderboardRequest request
     ) {
         return ApiResponse.successEntity(courseService.findCourseLeaderboard(request));
+    }
+
+    @Operation(
+            summary = "코스 고스트 리더보드를 조회한다",
+            description = "특정 코스의 고스트 리더보드를 조회한다. cursor 는 이전 응답의 nextCursor 값을 그대로 전달하는 불투명 토큰이며 point 내림차순, leaderboardId 오름차순 기준으로 이어진다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "코스 고스트 리더보드 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CourseGhostLeaderboardApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "size 또는 cursor 값이 유효하지 않음",
+                    content = @Content(schema = @Schema(implementation = ValidationErrorApiResponseDoc.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "코스를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+            )
+    })
+    @GetMapping("/{courseId}/ghost-leaderboard")
+    public ResponseEntity<ApiResponse<CourseGhostLeaderboardResponse>> findCourseGhostLeaderboard(
+            @Parameter(description = "고스트 리더보드를 조회할 코스 ID", example = "12")
+            @PathVariable Long courseId,
+            @Valid @ParameterObject @ModelAttribute CourseGhostLeaderboardRequest request
+    ) {
+        return ApiResponse.successEntity(courseService.findCourseGhostLeaderboard(courseId, request));
     }
 }

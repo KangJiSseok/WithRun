@@ -21,6 +21,37 @@ public class CourseGhostLeaderboardCustomRepositoryImpl implements CourseGhostLe
     private final JPAQueryFactory queryFactory;
 
     @Override
+    public List<CourseGhostLeaderboardRankRow> findRankedRowsByCourseId(Long courseId) {
+        QCourseGhostLeaderboard courseGhostLeaderboard = QCourseGhostLeaderboard.courseGhostLeaderboard;
+        QUser user = QUser.user;
+        NumberExpression<Long> rankExpression = Expressions.numberTemplate(
+                Long.class,
+                "rank() over(order by {0} desc)",
+                courseGhostLeaderboard.point
+        );
+
+        return queryFactory
+                .select(Projections.constructor(
+                        CourseGhostLeaderboardRankRow.class,
+                        courseGhostLeaderboard.id,
+                        courseGhostLeaderboard.user.id,
+                        user.nickname,
+                        courseGhostLeaderboard.runningSession.id,
+                        courseGhostLeaderboard.point,
+                        rankExpression,
+                        courseGhostLeaderboard.createdAt
+                ))
+                .from(courseGhostLeaderboard)
+                .join(courseGhostLeaderboard.user, user)
+                .where(courseGhostLeaderboard.course.id.eq(courseId))
+                .orderBy(
+                        courseGhostLeaderboard.point.desc(),
+                        courseGhostLeaderboard.id.asc()
+                )
+                .fetch();
+    }
+
+    @Override
     public List<CourseGhostLeaderboardRankRow> findRankedRowsByCourseId(Long courseId, int page, int size) {
         QCourseGhostLeaderboard courseGhostLeaderboard = QCourseGhostLeaderboard.courseGhostLeaderboard;
         QUser user = QUser.user;
