@@ -11,6 +11,7 @@ import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
+import kr.withrun.was.domain.running.dto.RunningGpsSampleResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
@@ -78,6 +79,7 @@ class RunningSessionControllerTest {
                 COURSE,
                 300L,
                 null,
+                null,
                 0,
                 0,
                 false
@@ -95,10 +97,50 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.mode").value(COURSE.name()))
                 .andExpect(jsonPath("$.data.courseId").value(300L))
                 .andExpect(jsonPath("$.data.ghostTargetRunningSessionId").value(Matchers.nullValue()))
+                .andExpect(jsonPath("$.data.ghostTargetGpsSamples").value(Matchers.nullValue()))
                 .andExpect(jsonPath("$.data.startedAt").doesNotExist())
                 .andExpect(jsonPath("$.data.distanceM").value(0))
                 .andExpect(jsonPath("$.data.caloriesKcal").value(0))
                 .andExpect(jsonPath("$.data.isCompleted").value(false));
+
+        then(runningSessionService).should().createRunningSession(request);
+    }
+
+    @DisplayName("GHOST 모드 세션 생성 응답은 대상 세션 GPS 샘플을 함께 직렬화한다")
+    @Test
+    void serializesGhostTargetGpsSamplesInCreateResponse() throws Exception {
+        CreateRunningSessionRequest request = ghostCreateRequest();
+        CreateRunningSessionResponse response = new CreateRunningSessionResponse(
+                902L,
+                GHOST,
+                300L,
+                44L,
+                java.util.List.of(
+                        new RunningGpsSampleResponse(
+                                LocalDateTime.parse("2026-03-12T06:30:05"),
+                                37.5665,
+                                126.9780,
+                                12.3,
+                                3.2,
+                                181.0
+                        )
+                ),
+                0,
+                0,
+                false
+        );
+        given(runningSessionService.createRunningSession(request)).willReturn(response);
+
+        mockMvc.perform(post("/api/running-sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(ghostCreateRequestBody()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.runningSessionId").value(902L))
+                .andExpect(jsonPath("$.data.mode").value(GHOST.name()))
+                .andExpect(jsonPath("$.data.ghostTargetRunningSessionId").value(44L))
+                .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].sampledAt").value("2026-03-12T06:30:05"))
+                .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].latitude").value(37.5665))
+                .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].longitude").value(126.9780));
 
         then(runningSessionService).should().createRunningSession(request);
     }
