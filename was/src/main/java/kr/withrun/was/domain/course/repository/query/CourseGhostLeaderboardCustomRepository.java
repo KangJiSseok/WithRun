@@ -8,6 +8,8 @@ import java.util.Optional;
 
 public interface CourseGhostLeaderboardCustomRepository {
 
+    List<CourseGhostLeaderboardRankRow> findRankedRowsByCourseId(Long courseId);
+
     List<CourseGhostLeaderboardRankRow> findRankedRowsByCourseId(Long courseId, int page, int size);
 
     long countByCourseId(Long courseId);

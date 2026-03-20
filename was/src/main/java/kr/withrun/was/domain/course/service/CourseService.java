@@ -2,6 +2,10 @@ package kr.withrun.was.domain.course.service;
 
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseFilterResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardItemResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
@@ -21,6 +25,7 @@ import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRo
 import kr.withrun.was.domain.course.type.CourseDistanceType;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.util.HaversineDistanceCalculator;
+import kr.withrun.was.domain.course.util.CourseGhostLeaderboardCursorCodec;
 import kr.withrun.was.domain.course.util.NearbyCourseCursorCodec;
 import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
@@ -129,6 +134,22 @@ public class CourseService {
         );
     }
 
+    public CourseGhostDetailResponse findCourseGhostDetail(Long courseId, Long userId) {
+        Course course = getCourse(courseId);
+
+        return CourseGhostDetailResponse.of(
+                course,
+                courseDifficultyRepository.findDifficultyByCourseId(courseId)
+                        .orElse(null),
+                courseTypeMapRepository.findCourseTypesByCourseId(courseId),
+                courseLikeRepository.countByCourseId(courseId),
+                false,
+                false,
+                courseReviewRepository.findAverageRatingByCourseId(courseId),
+                findMyGhostRecord(courseId, userId)
+        );
+    }
+
     public CourseLeaderboardResponse findCourseLeaderboard(CourseLeaderboardRequest request) {
         getCourse(request.courseId());
 
@@ -164,6 +185,31 @@ public class CourseService {
         );
     }
 
+    public CourseGhostLeaderboardResponse findCourseGhostLeaderboard(Long courseId, CourseGhostLeaderboardRequest request) {
+        getCourse(courseId);
+
+        List<CourseGhostLeaderboardRankRow> rows = courseGhostLeaderboardRepository.findRankedRowsByCourseId(courseId);
+        int startIndex = resolveGhostLeaderboardStartIndex(rows, request.cursor());
+        List<CourseGhostLeaderboardRankRow> remainingRows = rows.subList(startIndex, rows.size());
+        boolean hasMore = remainingRows.size() > request.size();
+        List<CourseGhostLeaderboardRankRow> pageRows = List.copyOf(remainingRows.subList(0, Math.min(request.size(), remainingRows.size())));
+        String nextCursor = hasMore ? toGhostLeaderboardCursor(pageRows.getLast()) : null;
+
+        List<CourseGhostLeaderboardItemResponse> items = pageRows.stream()
+                .map(row -> new CourseGhostLeaderboardItemResponse(
+                        row.leaderboardId(),
+                        row.userId(),
+                        row.nickname(),
+                        row.runningSessionId(),
+                        row.point(),
+                        row.rank(),
+                        row.createdAt()
+                ))
+                .toList();
+
+        return new CourseGhostLeaderboardResponse(items, hasMore, nextCursor);
+    }
+
     private Course getCourse(Long courseId) {
         Course course = courseRepository.findNotDeletedCourse(courseId)
                 .orElseThrow(() -> new CustomException(ResponseCode.COURSE_NOT_FOUND));
@@ -173,6 +219,54 @@ public class CourseService {
 
     private int resolvePageSize(Integer pageSize) {
         return pageSize == null ? DEFAULT_PAGE_SIZE : pageSize;
+    }
+
+    private CourseGhostDetailResponse.MyRecord findMyGhostRecord(Long courseId, Long userId) {
+        return courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(userId, courseId)
+                .map(leaderboard -> new CourseGhostDetailResponse.MyRecord(
+                        leaderboard.getId(),
+                        leaderboard.getRunningSession().getId(),
+                        leaderboard.getRunningSession().getDurationSec(),
+                        leaderboard.getPoint(),
+                        findRank(courseId, leaderboard.getId()),
+                        leaderboard.getCreatedAt()
+                ))
+                .orElse(null);
+    }
+
+    private Long findRank(Long courseId, Long leaderboardId) {
+        return courseGhostLeaderboardRepository.findRankedRowsByCourseId(courseId).stream()
+                .filter(row -> row.leaderboardId().equals(leaderboardId))
+                .map(CourseGhostLeaderboardRankRow::rank)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private int resolveGhostLeaderboardStartIndex(List<CourseGhostLeaderboardRankRow> rows, String cursor) {
+        if (cursor == null) {
+            return 0;
+        }
+
+        CourseGhostLeaderboardCursorCodec.CursorPayload payload = CourseGhostLeaderboardCursorCodec.decode(cursor);
+        for (int index = 0; index < rows.size(); index++) {
+            if (isStrictlyAfter(rows.get(index), payload)) {
+                return index;
+            }
+        }
+
+        return rows.size();
+    }
+
+    private boolean isStrictlyAfter(
+            CourseGhostLeaderboardRankRow row,
+            CourseGhostLeaderboardCursorCodec.CursorPayload payload
+    ) {
+        return row.point() < payload.point()
+                || (row.point().equals(payload.point()) && row.leaderboardId() > payload.leaderboardId());
+    }
+
+    private String toGhostLeaderboardCursor(CourseGhostLeaderboardRankRow row) {
+        return CourseGhostLeaderboardCursorCodec.encode(row.point(), row.leaderboardId());
     }
 
     /**
