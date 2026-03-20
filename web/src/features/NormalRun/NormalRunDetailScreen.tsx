@@ -1,5 +1,5 @@
 import { ArrowLeft, MapPin } from 'lucide-react';
-import { useRef } from 'react';
+import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
 import { Badge } from '@/shared/components/shadcn/badge';
@@ -7,6 +7,12 @@ import { Button } from '@/shared/components/shadcn/button';
 import { useNormalRunDetailMap } from '@/hooks/NormalRun/useNormalRunDetailMap';
 import type { CourseDetail } from '@/apis/course';
 import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
+import { createRunningSession } from '@/apis/runningSessions';
+import { useNormalRunSessionStore } from '@/stores/NormalRun';
+import { bridge, useBridgeDataStore } from '@/bridge';
+
+// 회원 시스템 구현 전 임시 mock 유저
+const MOCK_USER_ID = 1;
 
 const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
   EASY: '쉬움',
@@ -31,6 +37,10 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
   const navigate = useNavigate();
   const { courseId } = useParams();
   const containerRef = useRef<HTMLDivElement>(null);
+  const [isStarting, setIsStarting] = useState(false);
+
+  const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
+  const setSession = useNormalRunSessionStore((s) => s.setSession);
 
   const { isNearStart } = useNormalRunDetailMap(containerRef, {
     coordinates: course.coordinates,
@@ -39,6 +49,25 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
     endLatitude: course.endLatitude,
     endLongitude: course.endLongitude,
   });
+
+  const handleStartRunning = async () => {
+    if (!gpsLocation || !courseId) return;
+
+    setIsStarting(true);
+    try {
+      const res = await createRunningSession({
+        userId: MOCK_USER_ID,
+        mode: 'COURSE',
+        courseId: Number(courseId),
+        startLatitude: gpsLocation.latitude,
+        startLongitude: gpsLocation.longitude,
+      });
+      setSession(res.data);
+      navigate(`/normal-run-session/${courseId}`);
+    } finally {
+      setIsStarting(false);
+    }
+  };
 
   return (
     <div className="relative h-screen w-full">
@@ -111,15 +140,21 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
           </div>
         </div>
 
-        {/* 러닝 시작 버튼 */}
-        <Button
-          type="button"
-          disabled={!isNearStart}
-          onClick={() => navigate(`/normal-run-session/${courseId}`)}
-          className="h-14 w-full rounded-[var(--radius-xl)] body-l-b"
-        >
-          러닝 시작
-        </Button>
+        {/* 러닝 시작 — 모바일(웹뷰): 버튼, 데스크탑: 안내 텍스트 */}
+        {bridge.isWebViewBridgeAvailable ? (
+          <Button
+            type="button"
+            disabled={!isNearStart || isStarting}
+            onClick={handleStartRunning}
+            className="h-14 w-full rounded-xl body-l-b"
+          >
+            {isStarting ? '시작 중...' : '러닝 시작'}
+          </Button>
+        ) : (
+          <p className="body-m py-(--space-3) text-center text-[hsl(var(--text-secondary))]">
+            모바일 앱에서 이용할 수 있는 서비스입니다.
+          </p>
+        )}
       </div>
     </div>
   );
