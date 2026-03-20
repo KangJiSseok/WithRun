@@ -12,6 +12,7 @@ import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 import kr.withrun.was.domain.auth.oauth2.service.CustomOAuth2UserService;
 import kr.withrun.was.domain.auth.oauth2.handler.OAuth2SuccessHandler;
+import kr.withrun.was.domain.auth.oauth2.handler.OAuth2FailureHandler;
 
 
 import java.util.List;
@@ -26,6 +27,8 @@ public class SecurityConfig {
     // OAuth 로그인 성공 후 기존/신규 사용자를 처리하는 핸들러
     private final OAuth2SuccessHandler oAuth2SuccessHandler;
 
+    // OAuth 로그인 실패 시 에러 처리 핸들러
+    private final OAuth2FailureHandler oAuth2FailureHandler;
 
     // 건물의 메인 경비실(SecurityFilterChain) 규칙을 설정하는 곳
     @Bean
@@ -60,6 +63,7 @@ public class SecurityConfig {
                 )
                 // 6. 사용자 정보 파싱이 끝난 뒤, 기존/신규 사용자 분기와 redirect 처리 수행
                 .successHandler(oAuth2SuccessHandler)
+                .failureHandler(oAuth2FailureHandler)
 );
 
 
