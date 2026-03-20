@@ -8,7 +8,6 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @Schema(description = "러닝 세션 종료 및 상세 기록 저장 요청")
@@ -17,10 +16,6 @@ public record CompleteRunningSessionRequest(
         @NotNull
         @Positive
         Long userId,
-
-        @Schema(description = "러닝 종료 시각", example = "2026-03-17T07:02:15", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull
-        LocalDateTime endedAt,
 
         @Schema(description = "최종 러닝 거리(m)", example = "5320", minimum = "0", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull
