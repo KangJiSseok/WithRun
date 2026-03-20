@@ -15,9 +15,9 @@ public class WebConfig implements WebMvcConfigurer {
                         "http://localhost:5174",
                         "http://localhost:8082",
                         "https://with-run-demo.vercel.app",
-                        "https://i14d209.p.ssafy.io",
-                        "http://i14d209.p.ssafy.io:8081",
-                        "http://i14d209.p.ssafy.io:8082"
+                        "https://j14d202.p.ssafy.io",
+                        "http://j14d202.p.ssafy.io:8081",
+                        "http://j14d202.p.ssafy.io:8082"
                 )
                 .allowedMethods("*")
                 .allowedHeaders("*")
