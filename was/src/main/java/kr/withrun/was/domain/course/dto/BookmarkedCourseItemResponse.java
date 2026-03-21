@@ -9,7 +9,7 @@ import kr.withrun.was.global.common.type.Difficulty;
 import java.time.LocalDateTime;
 import java.util.List;
 
-@Schema(description = "북마크한 코스 단건 정보")
+@Schema(description = "북마크한 코스 단건 정보. 좋아요 메타데이터를 포함한다.")
 public record BookmarkedCourseItemResponse(
         @Schema(description = "북마크 ID", example = "42")
         Long bookmarkId,
@@ -41,11 +41,14 @@ public record BookmarkedCourseItemResponse(
         @Schema(description = "코스 대표 이미지 URL", example = "https://cdn.withrun.kr/courses/12.png", nullable = true)
         String snapshotImageUrl,
 
-        @Schema(description = "북마크 목록 응답에서는 항상 true 다.", example = "true")
-        boolean isBookmarked,
+        @Schema(description = "누적 좋아요 수", example = "23")
+        Long likeCount,
 
-        @Schema(description = "현재 상태에서 실제 주행 가능한 코스인지 여부. OFFICIAL 상태일 때 true 다.", example = "true")
-        boolean isRunnable
+        @Schema(description = "현재 사용자의 좋아요 여부", example = "true")
+        boolean isLiked,
+
+        @Schema(description = "북마크 목록 응답에서는 항상 true 다.", example = "true")
+        boolean isBookmarked
 ) {
     @Schema(name = "BookmarkedCourseDifficultyOption", description = "북마크 코스 응답의 난이도 항목")
     public record DifficultyOption(

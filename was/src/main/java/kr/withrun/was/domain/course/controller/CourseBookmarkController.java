@@ -92,8 +92,8 @@ public class CourseBookmarkController {
     }
 
     @Operation(
-            summary = "북마크한 코스 목록을 조회한다",
-            description = "특정 사용자가 북마크한 코스를 최신 북마크 순으로 조회한다. cursor 는 이전 응답의 nextCursor 값을 그대로 전달하는 불투명 토큰이다."
+            summary = "북마크한 코스 OFFICIAL, COMMUNITY 인 목록을 조회한다",
+            description = "특정 사용자가 북마크한 OFFICIAL, COMMUNITY 코스를 최신 북마크 순으로 조회한다. 각 항목에는 누적 좋아요 수와 해당 userId 기준 좋아요 여부가 포함된다. cursor 는 이전 응답의 nextCursor 값을 그대로 전달하는 불투명 토큰이다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -114,7 +114,7 @@ public class CourseBookmarkController {
     })
     @GetMapping("/bookmarks/{userId}")
     public ResponseEntity<ApiResponse<BookmarkedCoursesResponse>> findBookmarkedCourses(
-            @Parameter(description = "북마크 목록을 조회할 사용자 ID", example = "7")
+            @Parameter(description = "북마크 목록과 항목별 좋아요 여부를 조회할 사용자 ID. 현재 구현에서는 인증 사용자 ID와 같은 의미로 사용한다.", example = "7")
             @PathVariable Long userId,
             @Valid @ParameterObject @ModelAttribute BookmarkedCoursesRequest request
     ) {

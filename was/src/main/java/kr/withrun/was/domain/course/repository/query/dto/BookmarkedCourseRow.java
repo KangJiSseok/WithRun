@@ -17,6 +17,8 @@ public record BookmarkedCourseRow(
         Difficulty difficulty,
         CourseType courseType,
         String snapshotImageUrl,
+        Long likeCount,
+        Boolean isLiked,
         Boolean isBookmarked
 ) {
 }

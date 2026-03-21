@@ -1,15 +1,19 @@
 package kr.withrun.was.domain.course.repository.query;
 
-import com.querydsl.core.Tuple;
+import com.querydsl.core.types.Expression;
+import com.querydsl.core.types.Projections;
 import com.querydsl.core.types.dsl.BooleanExpression;
 import com.querydsl.core.types.dsl.Expressions;
+import com.querydsl.jpa.JPAExpressions;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.withrun.was.domain.course.entity.CourseBookmark;
 import kr.withrun.was.domain.course.entity.QCourse;
 import kr.withrun.was.domain.course.entity.QCourseBookmark;
 import kr.withrun.was.domain.course.entity.QCourseDifficulty;
+import kr.withrun.was.domain.course.entity.QCourseLike;
 import kr.withrun.was.domain.course.entity.QCourseTypeMap;
 import kr.withrun.was.domain.course.repository.query.dto.BookmarkedCourseRow;
+import kr.withrun.was.domain.course.type.CourseStatus;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -24,7 +28,7 @@ public class CourseBookmarkCustomRepositoryImpl implements CourseBookmarkCustomR
     private final JPAQueryFactory queryFactory;
 
     @Override
-    public Optional<CourseBookmark> findBookmark(Long courseId, Long userId) {
+    public Optional<CourseBookmark> findByCourseIdAndUserId(Long courseId, Long userId) {
         QCourseBookmark courseBookmark = QCourseBookmark.courseBookmark;
 
         return Optional.ofNullable(
@@ -44,7 +48,14 @@ public class CourseBookmarkCustomRepositoryImpl implements CourseBookmarkCustomR
         QCourseBookmark courseBookmark = QCourseBookmark.courseBookmark;
         QCourse course = QCourse.course;
         QCourseDifficulty courseDifficulty = QCourseDifficulty.courseDifficulty;
+        QCourseLike courseLike = QCourseLike.courseLike;
+        QCourseLike currentUserCourseLike = new QCourseLike("currentUserCourseLike");
         QCourseTypeMap courseTypeMap = QCourseTypeMap.courseTypeMap;
+        Expression<Long> likeCountExpression = JPAExpressions
+                .select(courseLike.count())
+                .from(courseLike)
+                .where(courseLike.course.eq(course));
+        BooleanExpression isLikedExpression = currentUserCourseLike.id.isNotNull();
 
         List<Long> pagedBookmarkIds = queryFactory
                 .select(courseBookmark.id)
@@ -53,6 +64,7 @@ public class CourseBookmarkCustomRepositoryImpl implements CourseBookmarkCustomR
                 .where(
                         courseBookmark.user.id.eq(userId),
                         course.deletedAt.isNull(),
+                        isPublicCourse(course),
                         isAfterCursor(courseBookmark, cursorBookmarkedAt, cursorBookmarkId)
                 )
                 .orderBy(
@@ -67,7 +79,8 @@ public class CourseBookmarkCustomRepositoryImpl implements CourseBookmarkCustomR
         }
 
         return queryFactory
-                .select(
+                .select(Projections.constructor(
+                        BookmarkedCourseRow.class,
                         courseBookmark.id,
                         courseBookmark.createdAt,
                         course.id,
@@ -78,28 +91,30 @@ public class CourseBookmarkCustomRepositoryImpl implements CourseBookmarkCustomR
                         courseDifficulty.difficulty,
                         courseTypeMap.courseType,
                         course.snapshotImageUrl,
+                        likeCountExpression,
+                        isLikedExpression,
                         Expressions.constant(Boolean.TRUE)
-                )
+                ))
                 .from(courseBookmark)
                 .join(courseBookmark.course, course)
                 .leftJoin(courseDifficulty).on(courseDifficulty.course.eq(course)
                         .and(courseDifficulty.deletedAt.isNull()))
                 .leftJoin(courseTypeMap).on(courseTypeMap.course.eq(course)
                         .and(courseTypeMap.deletedAt.isNull()))
+                .leftJoin(currentUserCourseLike).on(currentUserCourseLike.course.eq(course)
+                        .and(currentUserCourseLike.user.id.eq(userId)))
                 .where(
                         courseBookmark.id.in(pagedBookmarkIds),
                         courseBookmark.user.id.eq(userId),
-                        course.deletedAt.isNull()
+                        course.deletedAt.isNull(),
+                        isPublicCourse(course)
                 )
                 .orderBy(
                         courseBookmark.createdAt.desc(),
                         courseBookmark.id.desc(),
                         courseTypeMap.id.asc().nullsLast()
                 )
-                .fetch()
-                .stream()
-                .map(tuple -> toBookmarkedCourseRow(tuple, courseBookmark, course, courseDifficulty, courseTypeMap))
-                .toList();
+                .fetch();
     }
 
     @Override
@@ -115,28 +130,6 @@ public class CourseBookmarkCustomRepositoryImpl implements CourseBookmarkCustomR
                 .execute();
     }
 
-    private BookmarkedCourseRow toBookmarkedCourseRow(
-            Tuple tuple,
-            QCourseBookmark courseBookmark,
-            QCourse course,
-            QCourseDifficulty courseDifficulty,
-            QCourseTypeMap courseTypeMap
-    ) {
-        return new BookmarkedCourseRow(
-                tuple.get(courseBookmark.id),
-                tuple.get(courseBookmark.createdAt),
-                tuple.get(course.id),
-                tuple.get(course.title),
-                tuple.get(course.status),
-                tuple.get(course.distanceM),
-                tuple.get(course.elevationGainM),
-                tuple.get(courseDifficulty.difficulty),
-                tuple.get(courseTypeMap.courseType),
-                tuple.get(course.snapshotImageUrl),
-                tuple.get(Expressions.constant(Boolean.TRUE))
-        );
-    }
-
     private BooleanExpression isAfterCursor(
             QCourseBookmark courseBookmark,
             LocalDateTime cursorBookmarkedAt,
@@ -149,5 +142,9 @@ public class CourseBookmarkCustomRepositoryImpl implements CourseBookmarkCustomR
         return courseBookmark.createdAt.lt(cursorBookmarkedAt)
                 .or(courseBookmark.createdAt.eq(cursorBookmarkedAt)
                         .and(courseBookmark.id.lt(cursorBookmarkId)));
+    }
+
+    private BooleanExpression isPublicCourse(QCourse course) {
+        return course.status.in(CourseStatus.OFFICIAL, CourseStatus.COMMUNITY);
     }
 }
