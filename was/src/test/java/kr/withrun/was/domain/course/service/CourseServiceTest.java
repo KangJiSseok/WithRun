@@ -4,9 +4,10 @@ import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
-import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
+import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseGhostLeaderboard;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
@@ -106,23 +107,47 @@ class CourseServiceTest {
         assertThat(response.averageRating()).isEqualTo(4.5);
     }
 
-    @DisplayName("코스 조회용 enum 목록을 data와 label로 반환한다")
+    @DisplayName("코스 등록 메타 조회는 mode 를 포함한 enum 목록을 data와 label로 반환한다")
     @Test
-    void returnsCourseLookups() {
-        CourseSurveyResponse response = courseService.findCourseSurveys();
+    void returnsCourseRegisterMeta() {
+        CourseRegisterMetaResponse response = courseService.findCourseRegisterMeta();
 
         assertThat(response.courseTypes()).containsExactly(
-                new CourseSurveyResponse.CourseTypeOption("RIVERSIDE", "강변"),
-                new CourseSurveyResponse.CourseTypeOption("PARK", "공원"),
-                new CourseSurveyResponse.CourseTypeOption("MOUNTAIN_TRAIL", "산악"),
-                new CourseSurveyResponse.CourseTypeOption("TRACK", "트랙"),
-                new CourseSurveyResponse.CourseTypeOption("URBAN", "도심"),
-                new CourseSurveyResponse.CourseTypeOption("OTHER", "기타")
+                new CourseRegisterMetaResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                new CourseRegisterMetaResponse.CourseTypeOption("PARK", "공원"),
+                new CourseRegisterMetaResponse.CourseTypeOption("MOUNTAIN_TRAIL", "산악"),
+                new CourseRegisterMetaResponse.CourseTypeOption("TRACK", "트랙"),
+                new CourseRegisterMetaResponse.CourseTypeOption("URBAN", "도심"),
+                new CourseRegisterMetaResponse.CourseTypeOption("OTHER", "기타")
         );
         assertThat(response.difficulties()).containsExactly(
-                new CourseSurveyResponse.DifficultyOption("EASY", "쉬움"),
-                new CourseSurveyResponse.DifficultyOption("MEDIUM", "보통"),
-                new CourseSurveyResponse.DifficultyOption("HARD", "어려움")
+                new CourseRegisterMetaResponse.DifficultyOption("EASY", "쉬움"),
+                new CourseRegisterMetaResponse.DifficultyOption("MEDIUM", "보통"),
+                new CourseRegisterMetaResponse.DifficultyOption("HARD", "어려움")
+        );
+        assertThat(response.mode()).containsExactly(
+                new CourseRegisterMetaResponse.ModeOption("COMMUNITY", "커뮤니티 코스"),
+                new CourseRegisterMetaResponse.ModeOption("PRIVATE", "개인 코스")
+        );
+    }
+
+    @DisplayName("설문 메타 조회는 mode 없이 enum 목록을 data와 label로 반환한다")
+    @Test
+    void returnsSurveyMeta() {
+        CourseSurveyMetaResponse response = courseService.findSurveyMeta();
+
+        assertThat(response.courseTypes()).containsExactly(
+                new CourseSurveyMetaResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                new CourseSurveyMetaResponse.CourseTypeOption("PARK", "공원"),
+                new CourseSurveyMetaResponse.CourseTypeOption("MOUNTAIN_TRAIL", "산악"),
+                new CourseSurveyMetaResponse.CourseTypeOption("TRACK", "트랙"),
+                new CourseSurveyMetaResponse.CourseTypeOption("URBAN", "도심"),
+                new CourseSurveyMetaResponse.CourseTypeOption("OTHER", "기타")
+        );
+        assertThat(response.difficulties()).containsExactly(
+                new CourseSurveyMetaResponse.DifficultyOption("EASY", "쉬움"),
+                new CourseSurveyMetaResponse.DifficultyOption("MEDIUM", "보통"),
+                new CourseSurveyMetaResponse.DifficultyOption("HARD", "어려움")
         );
     }
 
