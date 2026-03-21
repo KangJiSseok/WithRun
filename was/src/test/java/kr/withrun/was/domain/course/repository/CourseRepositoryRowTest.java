@@ -1,6 +1,7 @@
 package kr.withrun.was.domain.course.repository;
 
 import jakarta.persistence.EntityManager;
+import kr.withrun.was.domain.course.dto.PreferredDistanceRange;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseDifficulty;
 import kr.withrun.was.domain.course.entity.CourseTypeMap;
@@ -148,7 +149,7 @@ class CourseRepositoryRowTest {
         persistCourse("Wrong Status Course", 5000, CourseStatus.COMMUNITY, createdAt);
 
         List<NearbyCourseCandidateRow> results =
-                courseRepository.findOfficialNearbyCourseCandidates(List.of(5000));
+                courseRepository.findOfficialNearbyCourseCandidates(List.of(new PreferredDistanceRange(4800, 5200)));
 
         assertThat(results)
                 .extracting(NearbyCourseCandidateRow::courseId)
@@ -165,7 +166,10 @@ class CourseRepositoryRowTest {
         persistCourse("Unmatched Course", 7000, CourseStatus.OFFICIAL, createdAt);
 
         List<NearbyCourseCandidateRow> results =
-                courseRepository.findOfficialNearbyCourseCandidates(List.of(3000, 10000));
+                courseRepository.findOfficialNearbyCourseCandidates(List.of(
+                        new PreferredDistanceRange(2800, 3200),
+                        new PreferredDistanceRange(9600, 10000)
+                ));
 
         assertThat(results)
                 .extracting(NearbyCourseCandidateRow::courseId)

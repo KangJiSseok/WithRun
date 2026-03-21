@@ -5,6 +5,7 @@ import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
+import kr.withrun.was.domain.course.dto.PreferredDistanceRange;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseLikeRepository;
@@ -362,7 +363,7 @@ class NearbyCourseQueryServiceTest {
         NearbyGhostCoursesRequest request = new NearbyGhostCoursesRequest(
                 USER_LATITUDE,
                 USER_LONGITUDE,
-                List.of(5000),
+                List.of(range(4800, 5200)),
                 null,
                 null
         );
@@ -386,7 +387,7 @@ class NearbyCourseQueryServiceTest {
         NearbyGhostCoursesRequest request = new NearbyGhostCoursesRequest(
                 USER_LATITUDE,
                 USER_LONGITUDE,
-                List.of(5000),
+                List.of(range(4800, 5200)),
                 null,
                 null
         );
@@ -412,7 +413,7 @@ class NearbyCourseQueryServiceTest {
         NearbyGhostCoursesRequest request = new NearbyGhostCoursesRequest(
                 USER_LATITUDE,
                 USER_LONGITUDE,
-                List.of(5000),
+                List.of(range(4800, 5200)),
                 2,
                 null
         );
@@ -439,7 +440,7 @@ class NearbyCourseQueryServiceTest {
         NearbyGhostCoursesRequest baseRequest = new NearbyGhostCoursesRequest(
                 USER_LATITUDE,
                 USER_LONGITUDE,
-                List.of(5000),
+                List.of(range(4800, 5200)),
                 null,
                 null
         );
@@ -456,7 +457,7 @@ class NearbyCourseQueryServiceTest {
         NearbyGhostCoursesRequest pagedRequest = new NearbyGhostCoursesRequest(
                 USER_LATITUDE,
                 USER_LONGITUDE,
-                List.of(5000),
+                List.of(range(4800, 5200)),
                 10,
                 NearbyCourseCursorCodec.encode(cursorItem.distanceFromUserM(), cursorItem.courseId())
         );
@@ -476,7 +477,7 @@ class NearbyCourseQueryServiceTest {
         NearbyGhostCoursesRequest request = new NearbyGhostCoursesRequest(
                 USER_LATITUDE,
                 USER_LONGITUDE,
-                List.of(5000),
+                List.of(range(4800, 5200)),
                 null,
                 "%%%"
         );
@@ -492,8 +493,12 @@ class NearbyCourseQueryServiceTest {
         when(courseRepository.findOfficialNearbyCourseCandidates()).thenReturn(List.of(candidates));
     }
 
-    private void stubGhostCandidates(List<Integer> preferredDistanceMs, NearbyCourseCandidateRow... candidates) {
+    private void stubGhostCandidates(List<PreferredDistanceRange> preferredDistanceMs, NearbyCourseCandidateRow... candidates) {
         when(courseRepository.findOfficialNearbyCourseCandidates(preferredDistanceMs)).thenReturn(List.of(candidates));
+    }
+
+    private PreferredDistanceRange range(int min, int max) {
+        return new PreferredDistanceRange(min, max);
     }
 
     private NearbyCoursesResponse findNearbyCourses(NearbyCoursesRequest request) {

@@ -15,6 +15,7 @@ import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
+import kr.withrun.was.domain.course.dto.PreferredDistanceRange;
 import kr.withrun.was.domain.course.service.CourseService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
@@ -621,7 +622,13 @@ class CourseControllerTest {
     @ParameterizedTest(name = "pageSize={0}")
     @ValueSource(strings = {"0", "-1", "11", "abc", "1.5"})
     void returnsInvalidInputValueWhenGhostPageSizeIsInvalid(String invalidPageSize) throws Exception {
-        mockMvc.perform(nearbyGhostCoursesRequest("37.5665", "126.9780", new String[]{"3000", "5000"}, invalidPageSize, null))
+        mockMvc.perform(nearbyGhostCoursesRequest(
+                        "37.5665",
+                        "126.9780",
+                        new String[][]{{"1", "3000"}, {"3001", "5000"}},
+                        invalidPageSize,
+                        null
+                ))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
@@ -635,7 +642,10 @@ class CourseControllerTest {
         NearbyGhostCoursesRequest request = new NearbyGhostCoursesRequest(
                 37.5665,
                 126.9780,
-                List.of(3000, 5000),
+                List.of(
+                        new PreferredDistanceRange(1, 3000),
+                        new PreferredDistanceRange(3001, 5000)
+                ),
                 3,
                 "bmV4dA"
         );
@@ -663,7 +673,13 @@ class CourseControllerTest {
         );
         given(courseService.findNearbyGhostCourses(request)).willReturn(response);
 
-        mockMvc.perform(nearbyGhostCoursesRequest("37.5665", "126.9780", new String[]{"3000", "5000"}, "3", "bmV4dA"))
+        mockMvc.perform(nearbyGhostCoursesRequest(
+                        "37.5665",
+                        "126.9780",
+                        new String[][]{{"1", "3000"}, {"3001", "5000"}},
+                        "3",
+                        "bmV4dA"
+                ))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
@@ -687,14 +703,24 @@ class CourseControllerTest {
         NearbyGhostCoursesRequest request = new NearbyGhostCoursesRequest(
                 37.5665,
                 126.9780,
-                List.of(3000, 5000, 10000),
+                List.of(
+                        new PreferredDistanceRange(1, 3000),
+                        new PreferredDistanceRange(3001, 5000),
+                        new PreferredDistanceRange(5001, 10000)
+                ),
                 2,
                 null
         );
         NearbyGhostCoursesResponse response = new NearbyGhostCoursesResponse(List.of(), false, null);
         given(courseService.findNearbyGhostCourses(request)).willReturn(response);
 
-        mockMvc.perform(nearbyGhostCoursesRequest("37.5665", "126.9780", new String[]{"3000", "5000", "10000"}, "2", null))
+        mockMvc.perform(nearbyGhostCoursesRequest(
+                        "37.5665",
+                        "126.9780",
+                        new String[][]{{"1", "3000"}, {"3001", "5000"}, {"5001", "10000"}},
+                        "2",
+                        null
+                ))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
@@ -764,7 +790,7 @@ class CourseControllerTest {
         return nearbyGhostCoursesRequest(
                 "latitude".equals(missingParameter) ? null : "37.5665",
                 "longitude".equals(missingParameter) ? null : "126.9780",
-                "preferredDistanceMs".equals(missingParameter) ? null : new String[]{"3000", "5000"},
+                "preferredDistanceMs".equals(missingParameter) ? null : new String[][]{{"1", "3000"}, {"3001", "5000"}},
                 null,
                 null
         );
@@ -777,7 +803,7 @@ class CourseControllerTest {
         return nearbyGhostCoursesRequest(
                 "latitude".equals(parameterName) ? value : "37.5665",
                 "longitude".equals(parameterName) ? value : "126.9780",
-                new String[]{"3000", "5000"},
+                new String[][]{{"1", "3000"}, {"3001", "5000"}},
                 null,
                 null
         );
@@ -786,7 +812,7 @@ class CourseControllerTest {
     private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder nearbyGhostCoursesRequest(
             String latitude,
             String longitude,
-            String[] preferredDistanceMs,
+            String[][] preferredDistanceMs,
             String pageSize,
             String cursor
     ) {
@@ -798,7 +824,10 @@ class CourseControllerTest {
             requestBuilder.param("longitude", longitude);
         }
         if (preferredDistanceMs != null) {
-            requestBuilder.param("preferredDistanceMs", preferredDistanceMs);
+            for (int index = 0; index < preferredDistanceMs.length; index++) {
+                requestBuilder.param("preferredDistanceMs[" + index + "].min", preferredDistanceMs[index][0]);
+                requestBuilder.param("preferredDistanceMs[" + index + "].max", preferredDistanceMs[index][1]);
+            }
         }
         if (pageSize != null) {
             requestBuilder.param("pageSize", pageSize);
