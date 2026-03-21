@@ -14,6 +14,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.HandlerMethodValidationException;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.ResponseCode;
@@ -69,6 +70,15 @@ public class GlobalExceptionHandler {
         return ResponseEntity
                 .status(ResponseCode.INVALID_INPUT_VALUE.getStatus())
                 .body(ApiResponse.fail(ResponseCode.INVALID_INPUT_VALUE));
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public ResponseEntity<ApiResponse<Void>> handleNoResourceFoundException(NoResourceFoundException e) {
+        log.warn("No resource found: {}", e.getResourcePath());
+
+        return ResponseEntity
+                .status(ResponseCode.ENTITY_NOT_FOUND.getStatus())
+                .body(ApiResponse.fail(ResponseCode.ENTITY_NOT_FOUND));
     }
 
     private ResponseEntity<ApiResponse<List<ValidationError>>> buildValidationErrorResponse(

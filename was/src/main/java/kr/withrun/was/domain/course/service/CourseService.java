@@ -6,10 +6,11 @@ import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
-import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
+import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
@@ -23,6 +24,7 @@ import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.CourseGhostLeaderboardRankRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
 import kr.withrun.was.domain.course.type.CourseDistanceType;
+import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.util.HaversineDistanceCalculator;
 import kr.withrun.was.domain.course.util.CourseGhostLeaderboardCursorCodec;
@@ -84,13 +86,27 @@ public class CourseService {
         return new NearbyCoursesResponse(pageItems, hasMore, nextCursor, suggestedNextRadiusM);
     }
 
-    public CourseSurveyResponse findCourseSurveys() {
-        return new CourseSurveyResponse(
+    public CourseRegisterMetaResponse findCourseRegisterMeta() {
+        return new CourseRegisterMetaResponse(
                 Arrays.stream(CourseType.values())
-                        .map(CourseSurveyResponse.CourseTypeOption::from)
+                        .map(CourseRegisterMetaResponse.CourseTypeOption::from)
+                        .toList(),
+                List.of(CourseStatus.COMMUNITY, CourseStatus.PRIVATE).stream()
+                        .map(CourseRegisterMetaResponse.ModeOption::from)
                         .toList(),
                 Arrays.stream(Difficulty.values())
-                        .map(CourseSurveyResponse.DifficultyOption::from)
+                        .map(CourseRegisterMetaResponse.DifficultyOption::from)
+                        .toList()
+        );
+    }
+
+    public CourseSurveyMetaResponse findSurveyMeta() {
+        return new CourseSurveyMetaResponse(
+                Arrays.stream(CourseType.values())
+                        .map(CourseSurveyMetaResponse.CourseTypeOption::from)
+                        .toList(),
+                Arrays.stream(Difficulty.values())
+                        .map(CourseSurveyMetaResponse.DifficultyOption::from)
                         .toList()
         );
     }
