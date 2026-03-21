@@ -111,7 +111,8 @@ Google 로그인 기준으로도 `User` + `UserAuthAccount` 구조가 일관되�
   - [ ] 신규 계정이면 `User`를 `profileCompleted=false`로 생성한다.
   - [ ] 신규 계정이면 `UserAuthAccount`를 함께 생성한다.
   - [ ] 신규 계정도 기존 계정과 동일하게 토큰을 발급한다.
-  - [ ] redirect 시 `isNewMember=true` 쿼리 파라미터를 포함한다.
+  <!-- isNewUser는 callback 첫 진입에서만 사용하는 1회성 분기용 파라미터 -->
+  - [ ] redirect 시 `isNewUser=true` 쿼리 파라미터를 포함한다.
   - [ ] access token / refresh token 발급
   - [ ] refresh token을 쿠키로 내려준다
 - [ ] OAuth 실패 핸들러를 정리한다.
@@ -158,8 +159,8 @@ Google/Kakao 로그인 성공 시 토큰 발급까지 이어지고, 실패 시 �
   - [ ] `provider`
   - [ ] `email`
   - [ ] `profileImageUrl`
-- [ ] 기존 `isNewMember` 플래그를 `profileCompleted` 중심 흐름으로 정리한다.
-  - [ ] callback redirect 시에는 `isNewMember=true`를 1회성 쿼리 파라미터로만 사용한다.
+- [ ] 기존 `isNewUser` 플래그를 `profileCompleted` 중심 흐름으로 정리한다.
+  - [ ] callback redirect 시에는 `isNewUser=true`를 1회성 쿼리 파라미터로만 사용한다.
   - [ ] `/api/auth/me` 응답에서는 `profileCompleted: false`를 지속 상태로 사용한다.
 - [ ] 에러 응답 형식을 통일한다.
 

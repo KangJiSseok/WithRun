@@ -59,7 +59,8 @@ public class User extends BaseEntity {
             cascade = CascadeType.ALL,
             orphanRemoval = true)
     private UserRunningPreference userRunningPreference;
-
+    
+    // 기존 DB에 사용자 정보가 없다면 
     public static User createPendingSocialUser() {
         User user = new User();
         user.profileCompleted = false;
