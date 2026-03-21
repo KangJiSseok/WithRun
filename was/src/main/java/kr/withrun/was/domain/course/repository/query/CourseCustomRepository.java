@@ -11,4 +11,6 @@ public interface CourseCustomRepository {
     Optional<Course> findNotDeletedCourse(Long courseId);
 
     List<NearbyCourseCandidateRow> findOfficialNearbyCourseCandidates();
+
+    List<NearbyCourseCandidateRow> findOfficialNearbyCourseCandidates(List<Integer> preferredDistanceMs);
 }
