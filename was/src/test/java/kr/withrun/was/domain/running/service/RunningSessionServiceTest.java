@@ -18,8 +18,10 @@ import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
+import kr.withrun.was.domain.running.dto.RunningGpsSampleResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
+import kr.withrun.was.domain.running.entity.RunningGpsSample;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.repository.GhostRunningResultRepository;
 import kr.withrun.was.domain.running.repository.RunningGpsSampleRepository;
@@ -50,6 +52,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -239,6 +242,52 @@ class RunningSessionServiceTest {
         assertThat(response.distanceM()).isZero();
         assertThat(response.caloriesKcal()).isZero();
         assertThat(response.isCompleted()).isFalse();
+    }
+
+    @DisplayName("GHOST 모드 시작 응답은 대상 세션의 GPS 샘플을 포함한다")
+    @Test
+    void includesGhostTargetGpsSamplesInGhostCreateResponse() {
+        User user = user(30L);
+        Course course = course(306L, CourseStatus.OFFICIAL);
+        RunningSession ghostTarget = completedRunningSession(57L);
+        RunningGpsSample firstGpsSample = gpsSample(
+                ghostTarget,
+                99L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 5),
+                37.5665,
+                126.9780,
+                12.3,
+                3.2,
+                181.0
+        );
+        RunningGpsSample secondGpsSample = gpsSample(
+                ghostTarget,
+                99L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 15),
+                37.5667,
+                126.9782,
+                12.8,
+                2.9,
+                184.0
+        );
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(ghostTarget.getId()))
+                .thenReturn(Optional.of(ghostTarget));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 904L));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(ghostTarget.getId()))
+                .thenReturn(List.of(firstGpsSample, secondGpsSample));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(30L, GHOST, 306L, 57L, 30.0, 176.0)
+        );
+
+        assertThat(recordComponentNames(CreateRunningSessionResponse.class)).contains("ghostTargetGpsSamples");
+        assertThat(invokeAccessor(response, "ghostTargetGpsSamples")).isEqualTo(List.of(
+                RunningGpsSampleResponse.from(firstGpsSample),
+                RunningGpsSampleResponse.from(secondGpsSample)
+        ));
+        verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(57L);
     }
 
     @DisplayName("없는 사용자는 USER_NOT_FOUND 예외를 던진다")
@@ -676,6 +725,42 @@ class RunningSessionServiceTest {
                 2520,
                 2,
                 3
+        );
+    }
+
+    private List<String> recordComponentNames(Class<?> type) {
+        return Arrays.stream(type.getRecordComponents())
+                .map(java.lang.reflect.RecordComponent::getName)
+                .toList();
+    }
+
+    private Object invokeAccessor(Object target, String accessorName) {
+        try {
+            return target.getClass().getMethod(accessorName).invoke(target);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Failed to invoke accessor " + accessorName, exception);
+        }
+    }
+
+    private RunningGpsSample gpsSample(
+            RunningSession runningSession,
+            Long userId,
+            LocalDateTime sampledAt,
+            Double latitude,
+            Double longitude,
+            Double altitudeM,
+            Double accuracyM,
+            Double bearingDeg
+    ) {
+        return RunningGpsSample.create(
+                user(userId),
+                runningSession,
+                bearingDeg,
+                accuracyM,
+                altitudeM,
+                longitude,
+                latitude,
+                sampledAt
         );
     }
 
