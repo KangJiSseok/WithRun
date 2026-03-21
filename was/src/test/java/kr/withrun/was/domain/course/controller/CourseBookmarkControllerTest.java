@@ -119,6 +119,7 @@ class CourseBookmarkControllerTest {
                                 new BookmarkedCourseItemResponse.CourseTypeOption("PARK", "공원")
                         ),
                         "https://example.com/course.jpg",
+                        23L,
                         true,
                         true
                 )),
@@ -143,8 +144,9 @@ class CourseBookmarkControllerTest {
                 .andExpect(jsonPath("$.data.items[0].difficulty.label").value("보통"))
                 .andExpect(jsonPath("$.data.items[0].courseTypes[0].data").value("RIVERSIDE"))
                 .andExpect(jsonPath("$.data.items[0].courseTypes[0].label").value("강변"))
+                .andExpect(jsonPath("$.data.items[0].likeCount").value(23L))
+                .andExpect(jsonPath("$.data.items[0].isLiked").value(true))
                 .andExpect(jsonPath("$.data.items[0].isBookmarked").value(true))
-                .andExpect(jsonPath("$.data.items[0].isRunnable").value(true))
                 .andExpect(jsonPath("$.data.hasMore").value(true))
                 .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"));
 
