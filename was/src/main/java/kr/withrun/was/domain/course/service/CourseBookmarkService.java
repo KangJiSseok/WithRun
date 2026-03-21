@@ -10,7 +10,6 @@ import kr.withrun.was.domain.course.entity.CourseBookmark;
 import kr.withrun.was.domain.course.repository.CourseBookmarkRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.query.dto.BookmarkedCourseRow;
-import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.util.BookmarkedCourseCursorCodec;
 import kr.withrun.was.domain.user.entity.User;
@@ -22,7 +21,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -46,7 +44,7 @@ public class CourseBookmarkService {
         Course course = getCourse(courseId);
         User user = getUser(userId);
 
-        return courseBookmarkRepository.findBookmark(courseId, userId)
+        return courseBookmarkRepository.findByCourseIdAndUserId(courseId, userId)
                 .map(bookmark -> new CourseBookmarkAddResponse(courseId, true, bookmark.getCreatedAt()))
                 .orElseGet(() -> saveBookmark(course, user));
     }
@@ -56,7 +54,7 @@ public class CourseBookmarkService {
         getCourse(courseId);
         getUser(userId);
 
-        return courseBookmarkRepository.findBookmark(courseId, userId)
+        return courseBookmarkRepository.findByCourseIdAndUserId(courseId, userId)
                 .map(bookmark -> {
                     courseBookmarkRepository.deleteBookmark(courseId, userId);
                     return new CourseBookmarkRemoveResponse(courseId, false);
@@ -68,7 +66,7 @@ public class CourseBookmarkService {
         getUser(userId);
 
         List<BookmarkedCourseRow> rows = fetchBookmarkedCourseRows(userId, request);
-        List<BookmarkedCourseItemResponse> items =  groupBookmarkedCourseItems(rows);
+        List<BookmarkedCourseItemResponse> items = groupBookmarkedCourseItems(rows);
         int pageSize = request.size();
         boolean hasMore = items.size() > pageSize;
         List<BookmarkedCourseItemResponse> pagedItems = hasMore
@@ -118,8 +116,9 @@ public class CourseBookmarkService {
                 BookmarkedCourseItemResponse.DifficultyOption.from(representative.difficulty()),
                 mergeCourseTypes(rows),
                 CDN_URL + "/" + representative.snapshotImageUrl(),
-                true,
-                representative.status() == CourseStatus.OFFICIAL
+                representative.likeCount(),
+                Boolean.TRUE.equals(representative.isLiked()),
+                true
         );
     }
 

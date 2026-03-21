@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseBookmark;
 import kr.withrun.was.domain.course.entity.CourseDifficulty;
+import kr.withrun.was.domain.course.entity.CourseLike;
 import kr.withrun.was.domain.course.entity.CourseTypeMap;
 import kr.withrun.was.domain.course.repository.query.CourseBookmarkCustomRepository;
 import kr.withrun.was.domain.course.repository.query.dto.BookmarkedCourseRow;
@@ -64,11 +65,27 @@ class CourseBookmarkRepositoryTest {
         entityManager.clear();
 
         CourseBookmark foundBookmark = courseBookmarkRepository
-                .findBookmark(course.getId(), user.getId())
+                .findByCourseIdAndUserId(course.getId(), user.getId())
                 .orElseThrow();
 
         assertThat(foundBookmark.getId()).isEqualTo(bookmark.getId());
         assertThat(foundBookmark.getCreatedAt()).isNotNull();
+    }
+
+    @DisplayName("비공개 코스 북마크도 코스와 사용자 ID로 조회한다")
+    @Test
+    void findsPrivateBookmarkByCourseIdAndUserId() {
+        User user = persistUser("runner-private");
+        Course privateCourse = persistCourse("bookmark-course-private", CourseStatus.PRIVATE);
+        CourseBookmark bookmark = courseBookmarkRepository.save(CourseBookmark.create(privateCourse, user));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        CourseBookmark foundBookmark = courseBookmarkRepository.findByCourseIdAndUserId(privateCourse.getId(), user.getId())
+                .orElseThrow();
+
+        assertThat(foundBookmark.getId()).isEqualTo(bookmark.getId());
     }
 
     @DisplayName("코스와 사용자 ID로 북마크를 물리 삭제한다")
@@ -83,7 +100,7 @@ class CourseBookmarkRepositoryTest {
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(courseBookmarkRepository.findBookmark(course.getId(), user.getId())).isEmpty();
+        assertThat(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), user.getId())).isEmpty();
         assertThat(countBookmarkRows()).isZero();
     }
 
@@ -103,7 +120,7 @@ class CourseBookmarkRepositoryTest {
         entityManager.clear();
 
         assertThat(recreatedBookmark.getId()).isNotNull();
-        assertThat(courseBookmarkRepository.findBookmark(course.getId(), user.getId())).isPresent();
+        assertThat(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), user.getId())).isPresent();
         assertThat(countBookmarkRows()).isEqualTo(1);
     }
 
@@ -111,11 +128,14 @@ class CourseBookmarkRepositoryTest {
     @Test
     void findsBookmarkedCourseRowsOrderedAndFiltered() {
         User user = persistUser("runner-d");
+        User likedByFirst = persistUser("runner-d-like-1");
+        User likedBySecond = persistUser("runner-d-like-2");
         LocalDateTime sharedCreatedAt = LocalDateTime.of(2026, 3, 14, 10, 30);
 
         Course firstCourse = persistCourse("bookmark-course-d1", CourseStatus.OFFICIAL);
         Course secondCourse = persistCourse("bookmark-course-d2", CourseStatus.COMMUNITY);
         Course deletedCourse = persistCourse("bookmark-course-d3", CourseStatus.OFFICIAL);
+        Course privateCourse = persistCourse("bookmark-course-d4", CourseStatus.PRIVATE);
         deletedCourse.delete();
 
         persistDifficulty(firstCourse, Difficulty.MEDIUM, false);
@@ -127,10 +147,16 @@ class CourseBookmarkRepositoryTest {
         persistCourseType(firstCourse, CourseType.OTHER, true);
         persistCourseType(secondCourse, CourseType.URBAN, false);
         persistCourseType(deletedCourse, CourseType.TRACK, false);
+        persistCourseType(privateCourse, CourseType.MOUNTAIN_TRAIL, false);
+
+        persistLike(firstCourse, likedByFirst);
+        persistLike(secondCourse, user);
+        persistLike(secondCourse, likedBySecond);
 
         CourseBookmark firstBookmark = persistBookmark(firstCourse, user, sharedCreatedAt);
         CourseBookmark secondBookmark = persistBookmark(secondCourse, user, sharedCreatedAt);
         persistBookmark(deletedCourse, user, LocalDateTime.of(2026, 3, 14, 11, 0));
+        CourseBookmark privateBookmark = persistBookmark(privateCourse, user, LocalDateTime.of(2026, 3, 14, 12, 0));
 
         entityManager.flush();
         entityManager.clear();
@@ -153,6 +179,15 @@ class CourseBookmarkRepositoryTest {
         assertThat(rows)
                 .extracting(BookmarkedCourseRow::difficulty)
                 .containsExactly(Difficulty.HARD, Difficulty.MEDIUM, Difficulty.MEDIUM);
+        assertThat(rows)
+                .extracting(BookmarkedCourseRow::likeCount)
+                .containsExactly(2L, 1L, 1L);
+        assertThat(rows)
+                .extracting(BookmarkedCourseRow::isLiked)
+                .containsExactly(true, false, false);
+        assertThat(rows)
+                .extracting(BookmarkedCourseRow::bookmarkId)
+                .doesNotContain(privateBookmark.getId());
     }
 
     @DisplayName("사용자 북마크 코스 row는 page size + 1개의 북마크까지만 조회한다")
@@ -258,6 +293,12 @@ class CourseBookmarkRepositoryTest {
         setField(bookmark, "createdAt", createdAt);
         entityManager.persist(bookmark);
         return bookmark;
+    }
+
+    private CourseLike persistLike(Course course, User user) {
+        CourseLike courseLike = CourseLike.create(course, user);
+        entityManager.persist(courseLike);
+        return courseLike;
     }
 
     private void setField(Object target, String fieldName, Object value) {
