@@ -1,7 +1,9 @@
 package kr.withrun.was.domain.course.repository.query;
 
+import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import kr.withrun.was.domain.course.dto.PreferredDistanceRange;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.QCourse;
 import kr.withrun.was.domain.course.entity.QCourseDifficulty;
@@ -66,6 +68,55 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
                 .where(course.status.eq(CourseStatus.OFFICIAL)
                         .and(course.deletedAt.isNull())
                         .and(course.coordinates.isNotNull()))
+                .fetch();
+    }
+
+    @Override
+    public List<NearbyCourseCandidateRow> findOfficialNearbyCourseCandidates(List<PreferredDistanceRange> preferredDistanceMs) {
+        QCourse course = QCourse.course;
+        QCourseDifficulty difficulty = QCourseDifficulty.courseDifficulty;
+        QCourseTypeMap courseTypeMap = QCourseTypeMap.courseTypeMap;
+
+        BooleanBuilder preferredDistancePredicate = new BooleanBuilder();
+        for (PreferredDistanceRange preferredDistanceM : preferredDistanceMs) {
+            preferredDistancePredicate.or(course.distanceM.between(preferredDistanceM.min(), preferredDistanceM.max()));
+        }
+
+        BooleanBuilder whereClause = new BooleanBuilder()
+                .and(course.status.eq(CourseStatus.OFFICIAL))
+                .and(course.deletedAt.isNull())
+                .and(course.coordinates.isNotNull());
+
+
+        whereClause.and(preferredDistancePredicate);
+
+        return queryFactory
+                .select(Projections.constructor(
+                        NearbyCourseCandidateRow.class,
+                        course.id,
+                        course.title,
+                        course.status,
+                        course.distanceM,
+                        course.elevationGainM,
+                        course.startLatitude,
+                        course.startLongitude,
+                        course.endLatitude,
+                        course.endLongitude,
+                        course.snapshotImageUrl,
+                        course.coordinates,
+                        difficulty.difficulty,
+                        courseTypeMap.courseType
+                ))
+                .from(course)
+                .leftJoin(difficulty).on(
+                        difficulty.course.eq(course)
+                                .and(difficulty.deletedAt.isNull())
+                )
+                .leftJoin(courseTypeMap).on(
+                        courseTypeMap.course.eq(course)
+                                .and(courseTypeMap.deletedAt.isNull())
+                )
+                .where(whereClause)
                 .fetch();
     }
 }

@@ -13,7 +13,10 @@ import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
+import kr.withrun.was.domain.course.dto.NearbyGhostCoursesRequest;
+import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
 import kr.withrun.was.domain.course.entity.Course;
+import kr.withrun.was.domain.course.repository.CourseBookmarkRepository;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseLikeRepository;
@@ -61,6 +64,7 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final CourseDifficultyRepository courseDifficultyRepository;
     private final CourseTypeMapRepository courseTypeMapRepository;
+    private final CourseBookmarkRepository courseBookmarkRepository;
     private final CourseLikeRepository courseLikeRepository;
     private final CourseReviewRepository courseReviewRepository;
     private final CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
@@ -81,7 +85,20 @@ public class CourseService {
         String nextCursor = hasMore ? toCursor(pageItems.get(pageItems.size() - 1)) : null;
         Integer suggestedNextRadiusM = resolveSuggestedNextRadiusM(request.radiusM(), hasMore);
 
-        return new NearbyCoursesResponse(pageItems, hasMore, nextCursor, suggestedNextRadiusM);
+        return new NearbyCoursesResponse(enrichNearbyCourseItemsWithCounts(pageItems), hasMore, nextCursor, suggestedNextRadiusM);
+    }
+
+    public NearbyGhostCoursesResponse findNearbyGhostCourses(NearbyGhostCoursesRequest request) {
+        int pageSize = resolvePageSize(request.pageSize());
+        List<NearbyCourseItemResponse> sortedItems = findNearbyGhostCourseItems(request);
+        int startIndex = resolveStartIndex(sortedItems, request.cursor());
+        List<NearbyCourseItemResponse> remainingItems = sortedItems.subList(startIndex, sortedItems.size());
+        boolean hasMore = remainingItems.size() > pageSize;
+        List<NearbyCourseItemResponse> pageItems =
+                List.copyOf(remainingItems.subList(0, Math.min(pageSize, remainingItems.size())));
+        String nextCursor = hasMore ? toCursor(pageItems.get(pageItems.size() - 1)) : null;
+
+        return new NearbyGhostCoursesResponse(enrichNearbyCourseItemsWithCounts(pageItems), hasMore, nextCursor);
     }
 
     public CourseSurveyResponse findCourseSurveys() {
@@ -220,6 +237,12 @@ public class CourseService {
     }
 
 
+    /**
+     * request에서 pageSize를 null로 보내면 defalut값으로 치환하기 위한 메서드
+     *
+     * @param pageSize
+     * @return
+     */
     private int resolvePageSize(Integer pageSize) {
         return pageSize == null ? DEFAULT_PAGE_SIZE : pageSize;
     }
@@ -287,6 +310,20 @@ public class CourseService {
                 .flatMap(Optional::stream)
                 .filter(item -> isWithinTargetDistance(item.distanceM(), request.targetDistanceM()))
                 .filter(item -> item.distanceFromUserM() <= request.radiusM())
+                .sorted(
+                        Comparator.comparingInt(NearbyCourseItemResponse::distanceFromUserM)
+                                .thenComparingLong(NearbyCourseItemResponse::courseId)
+                )
+                .toList();
+    }
+
+    public List<NearbyCourseItemResponse> findNearbyGhostCourseItems(NearbyGhostCoursesRequest request) {
+        return courseRepository.findOfficialNearbyCourseCandidates(request.preferredDistanceMs()).stream()
+                .filter(candidate -> candidate.courseId() != null)
+                .collect(Collectors.groupingBy(NearbyCourseCandidateRow::courseId))
+                .values().stream()
+                .map(candidateRows -> toNearbyCourseItem(candidateRows, request.latitude(), request.longitude()))
+                .flatMap(Optional::stream)
                 .sorted(
                         Comparator.comparingInt(NearbyCourseItemResponse::distanceFromUserM)
                                 .thenComparingLong(NearbyCourseItemResponse::courseId)
@@ -368,9 +405,33 @@ public class CourseService {
                         distanceFromUserM.getAsInt(),
                         NearbyCourseItemResponse.DifficultyOption.from(representative.difficulty()),
                         mergeCourseTypes(candidateRows),
+                        0L,
+                        0L,
                         CDN_URL + "/" + representative.snapshotImageUrl()
                 )
         );
+    }
+
+    private List<NearbyCourseItemResponse> enrichNearbyCourseItemsWithCounts(List<NearbyCourseItemResponse> items) {
+        return items.stream()
+                .map(item -> new NearbyCourseItemResponse(
+                        item.courseId(),
+                        item.title(),
+                        item.status(),
+                        item.distanceM(),
+                        item.elevationGainM(),
+                        item.startLatitude(),
+                        item.startLongitude(),
+                        item.endLatitude(),
+                        item.endLongitude(),
+                        item.distanceFromUserM(),
+                        item.difficulty(),
+                        item.courseTypes(),
+                        courseLikeRepository.countByCourseId(item.courseId()),
+                        courseBookmarkRepository.countByCourseId(item.courseId()),
+                        item.snapshotImageUrl()
+                ))
+                .toList();
     }
 
     // 목표 거리와 완전히 일치하는 코스만 찾으면 후보가 너무 적어질 수 있어 허용 오차를 둔다.

@@ -12,6 +12,7 @@ import kr.withrun.was.domain.course.dto.CourseLikeStatusResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.CreateCourseReviewResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
+import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsResponse;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionSplitResponse;
@@ -103,6 +104,19 @@ public final class SuccessApiResponseDocs {
             String message,
             @Schema(description = "주변 코스 목록 데이터")
             NearbyCoursesResponse data
+    ) {
+    }
+
+    @Schema(name = "NearbyGhostCoursesApiResponse", description = "주변 고스트 코스 조회 성공 응답")
+    public record NearbyGhostCoursesApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "주변 고스트 코스 목록 데이터")
+            NearbyGhostCoursesResponse data
     ) {
     }
 

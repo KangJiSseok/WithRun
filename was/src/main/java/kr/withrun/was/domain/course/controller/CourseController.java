@@ -17,6 +17,8 @@ import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
+import kr.withrun.was.domain.course.dto.NearbyGhostCoursesRequest;
+import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
 import kr.withrun.was.domain.course.service.CourseService;
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
@@ -147,6 +149,29 @@ public class CourseController {
             @Valid @ParameterObject @ModelAttribute NearbyCoursesRequest request
     ) {
         return ApiResponse.successEntity(courseService.findNearbyCourses(request));
+    }
+
+    @Operation(
+            summary = "주변 고스트 코스를 조회한다",
+            description = "사용자의 현재 위치와 선호 코스 거리 목록을 기준으로 경쟁 가능한 고스트 코스를 조회한다. cursor에는 이전 응답의 nextCursor 값을 그대로 전달한다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "주변 고스트 코스 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.NearbyGhostCoursesApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "위도, 경도, 선호 거리 목록, pageSize 또는 cursor 값이 유효하지 않음",
+                    content = @Content(schema = @Schema(implementation = ValidationErrorApiResponseDoc.class))
+            )
+    })
+    @GetMapping("/nearby/ghost")
+    public ResponseEntity<ApiResponse<NearbyGhostCoursesResponse>> findNearbyGhostCourses(
+            @Valid @ParameterObject @ModelAttribute NearbyGhostCoursesRequest request
+    ) {
+        return ApiResponse.successEntity(courseService.findNearbyGhostCourses(request));
     }
 
     @Operation(

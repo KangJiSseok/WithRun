@@ -167,6 +167,8 @@ class NearbyCoursesRequestTest {
                         "distanceFromUserM",
                         "difficulty",
                         "courseTypes",
+                        "likeCount",
+                        "bookmarkCount",
                         "snapshotImageUrl"
                 );
     }

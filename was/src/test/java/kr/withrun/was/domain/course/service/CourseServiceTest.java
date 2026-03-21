@@ -8,6 +8,7 @@ import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.entity.Course;
+import kr.withrun.was.domain.course.repository.CourseBookmarkRepository;
 import kr.withrun.was.domain.course.entity.CourseGhostLeaderboard;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
@@ -56,6 +57,9 @@ class CourseServiceTest {
     private CourseTypeMapRepository courseTypeMapRepository;
 
     @Mock
+    private CourseBookmarkRepository courseBookmarkRepository;
+
+    @Mock
     private CourseLikeRepository courseLikeRepository;
 
     @Mock
@@ -72,6 +76,7 @@ class CourseServiceTest {
                 courseRepository,
                 courseDifficultyRepository,
                 courseTypeMapRepository,
+                courseBookmarkRepository,
                 courseLikeRepository,
                 courseReviewRepository,
                 courseGhostLeaderboardRepository
