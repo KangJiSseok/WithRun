@@ -1,7 +1,7 @@
 package kr.withrun.was.domain.course.dto;
 
-
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
@@ -25,16 +25,16 @@ public record NearbyGhostCoursesRequest(
         @DecimalMax(value = "180.0")
         Double longitude,
 
-        @Schema(description = "선호 코스 거리(중복 가능)", example = "3000, 5000", requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = "선호 거리 범위 목록", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotEmpty
-        List<@NotNull @Positive Integer> preferredDistanceMs,
+        List<@Valid PreferredDistanceRange> preferredDistanceMs,
 
-        @Schema(description = "한 번에 조회할 항목 수. 생략 시 서버 기본값 3을 사용한다.", example = "5", minimum = "1", maximum = "10", nullable = true)
+        @Schema(description = "한 번에 조회할 항목 수. 생략 시 기본값 3을 사용합니다.", example = "5", minimum = "1", maximum = "10", nullable = true)
         @Positive
         @Max(10)
         Integer pageSize,
 
-        @Schema(description = "이전 응답의 nextCursor 값을 그대로 전달하는 불투명 페이지네이션 토큰", example = "MzIwOjEy", nullable = true)
+        @Schema(description = "이전 응답의 nextCursor 값", example = "MzIwOjEy", nullable = true)
         String cursor
 ) {
 }

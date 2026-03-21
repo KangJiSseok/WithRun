@@ -3,6 +3,7 @@ package kr.withrun.was.domain.course.repository.query;
 import com.querydsl.core.BooleanBuilder;
 import com.querydsl.core.types.Projections;
 import com.querydsl.jpa.impl.JPAQueryFactory;
+import kr.withrun.was.domain.course.dto.PreferredDistanceRange;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.QCourse;
 import kr.withrun.was.domain.course.entity.QCourseDifficulty;
@@ -71,20 +72,14 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
     }
 
     @Override
-    public List<NearbyCourseCandidateRow> findOfficialNearbyCourseCandidates(List<Integer> preferredDistanceMs) {
-        // 오차 범위 상수값으로 처리
-        final int TARGET_DISTANCE_TOLERANCE_M = 200;
-
+    public List<NearbyCourseCandidateRow> findOfficialNearbyCourseCandidates(List<PreferredDistanceRange> preferredDistanceMs) {
         QCourse course = QCourse.course;
         QCourseDifficulty difficulty = QCourseDifficulty.courseDifficulty;
         QCourseTypeMap courseTypeMap = QCourseTypeMap.courseTypeMap;
 
         BooleanBuilder preferredDistancePredicate = new BooleanBuilder();
-        for (Integer preferredDistanceM : preferredDistanceMs) {
-            int minDistanceM = Math.max(0, preferredDistanceM - TARGET_DISTANCE_TOLERANCE_M);
-            int maxDistanceM = preferredDistanceM + TARGET_DISTANCE_TOLERANCE_M;
-
-            preferredDistancePredicate.or(course.distanceM.between(minDistanceM, maxDistanceM));
+        for (PreferredDistanceRange preferredDistanceM : preferredDistanceMs) {
+            preferredDistancePredicate.or(course.distanceM.between(preferredDistanceM.min(), preferredDistanceM.max()));
         }
 
         BooleanBuilder whereClause = new BooleanBuilder()
