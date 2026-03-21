@@ -666,6 +666,8 @@ class CourseControllerTest {
                                 new NearbyCourseItemResponse.CourseTypeOption("RIVERSIDE", "강변"),
                                 new NearbyCourseItemResponse.CourseTypeOption("PARK", "공원")
                         ),
+                        14L,
+                        8L,
                         "https://example.com/course.jpg"
                 )),
                 true,
@@ -691,6 +693,10 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.items[0].difficulty.label").value("보통"))
                 .andExpect(jsonPath("$.data.items[0].courseTypes[0].data").value("RIVERSIDE"))
                 .andExpect(jsonPath("$.data.items[0].courseTypes[0].label").value("강변"))
+                .andExpect(jsonPath("$.data.items[0].likeCount").value(14L))
+                .andExpect(jsonPath("$.data.items[0].bookmarkCount").value(8L))
+                .andExpect(jsonPath("$.data.items[0].likeCount").value(14L))
+                .andExpect(jsonPath("$.data.items[0].bookmarkCount").value(8L))
                 .andExpect(jsonPath("$.data.hasMore").value(true))
                 .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"));
 
