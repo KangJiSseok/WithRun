@@ -13,6 +13,8 @@ import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
+import kr.withrun.was.domain.course.dto.NearbyGhostCoursesRequest;
+import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
 import kr.withrun.was.domain.course.service.CourseService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
@@ -584,6 +586,121 @@ class CourseControllerTest {
         then(courseService).should(never()).findCourseLeaderboard(any());
     }
 
+    @DisplayName("주변 고스트 코스 조회에서 필수 쿼리 파라미터가 없으면 잘못된 입력 응답을 반환한다")
+    @ParameterizedTest(name = "누락 파라미터: {0}")
+    @ValueSource(strings = {"latitude", "longitude", "preferredDistanceMs"})
+    void returnsInvalidInputValueWhenRequiredGhostQueryParameterIsMissing(String missingParameter) throws Exception {
+        mockMvc.perform(getNearbyGhostCoursesWithout(missingParameter))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()))
+                .andExpect(jsonPath("$.data[0].field").value(missingParameter));
+
+        then(courseService).should(never()).findNearbyGhostCourses(any());
+    }
+
+    @DisplayName("주변 고스트 코스 조회에서 위도 또는 경도가 범위를 벗어나면 잘못된 입력 응답을 반환한다")
+    @ParameterizedTest(name = "잘못된 {0}: {1}")
+    @CsvSource({
+            "latitude,91.0",
+            "latitude,-91.0",
+            "longitude,181.0",
+            "longitude,-181.0"
+    })
+    void returnsInvalidInputValueWhenGhostLatitudeOrLongitudeIsOutOfRange(String parameterName, String invalidValue) throws Exception {
+        mockMvc.perform(getNearbyGhostCoursesWith(parameterName, invalidValue))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()))
+                .andExpect(jsonPath("$.data[0].field").value(parameterName));
+
+        then(courseService).should(never()).findNearbyGhostCourses(any());
+    }
+
+    @DisplayName("주변 고스트 코스 조회에서 pageSize가 유효하지 않으면 잘못된 입력 응답을 반환한다")
+    @ParameterizedTest(name = "pageSize={0}")
+    @ValueSource(strings = {"0", "-1", "11", "abc", "1.5"})
+    void returnsInvalidInputValueWhenGhostPageSizeIsInvalid(String invalidPageSize) throws Exception {
+        mockMvc.perform(nearbyGhostCoursesRequest("37.5665", "126.9780", new String[]{"3000", "5000"}, invalidPageSize, null))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+
+        then(courseService).should(never()).findNearbyGhostCourses(any());
+    }
+
+    @DisplayName("주변 고스트 코스 응답을 성공 응답 형식으로 감싼다")
+    @Test
+    void wrapsNearbyGhostCoursesResponseInSuccessEnvelope() throws Exception {
+        NearbyGhostCoursesRequest request = new NearbyGhostCoursesRequest(
+                37.5665,
+                126.9780,
+                List.of(3000, 5000),
+                3,
+                "bmV4dA"
+        );
+        NearbyGhostCoursesResponse response = new NearbyGhostCoursesResponse(
+                List.of(new NearbyCourseItemResponse(
+                        1L,
+                        "Ghost Han River",
+                        CourseStatus.OFFICIAL,
+                        5000,
+                        35,
+                        37.57,
+                        126.97,
+                        37.58,
+                        126.98,
+                        240,
+                        new NearbyCourseItemResponse.DifficultyOption("MEDIUM", "보통"),
+                        List.of(
+                                new NearbyCourseItemResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                                new NearbyCourseItemResponse.CourseTypeOption("PARK", "공원")
+                        ),
+                        "https://example.com/course.jpg"
+                )),
+                true,
+                "next-cursor"
+        );
+        given(courseService.findNearbyGhostCourses(request)).willReturn(response);
+
+        mockMvc.perform(nearbyGhostCoursesRequest("37.5665", "126.9780", new String[]{"3000", "5000"}, "3", "bmV4dA"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
+                .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
+                .andExpect(jsonPath("$.data.items[0].courseId").value(1L))
+                .andExpect(jsonPath("$.data.items[0].title").value("Ghost Han River"))
+                .andExpect(jsonPath("$.data.items[0].status").value(CourseStatus.OFFICIAL.name()))
+                .andExpect(jsonPath("$.data.items[0].difficulty.data").value("MEDIUM"))
+                .andExpect(jsonPath("$.data.items[0].difficulty.label").value("보통"))
+                .andExpect(jsonPath("$.data.items[0].courseTypes[0].data").value("RIVERSIDE"))
+                .andExpect(jsonPath("$.data.items[0].courseTypes[0].label").value("강변"))
+                .andExpect(jsonPath("$.data.hasMore").value(true))
+                .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"));
+
+        then(courseService).should().findNearbyGhostCourses(request);
+    }
+
+    @DisplayName("주변 고스트 코스 조회에서 선호 거리 목록과 pageSize를 요청 DTO에 바인딩한다")
+    @Test
+    void bindsNearbyGhostCourseQueryParametersToRequestDto() throws Exception {
+        NearbyGhostCoursesRequest request = new NearbyGhostCoursesRequest(
+                37.5665,
+                126.9780,
+                List.of(3000, 5000, 10000),
+                2,
+                null
+        );
+        NearbyGhostCoursesResponse response = new NearbyGhostCoursesResponse(List.of(), false, null);
+        given(courseService.findNearbyGhostCourses(request)).willReturn(response);
+
+        mockMvc.perform(nearbyGhostCoursesRequest("37.5665", "126.9780", new String[]{"3000", "5000", "10000"}, "2", null))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        then(courseService).should().findNearbyGhostCourses(request);
+    }
+
     private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder getNearbyCoursesWithout(
             String missingParameter
     ) {
@@ -631,6 +748,57 @@ class CourseControllerTest {
         }
         if (targetDistanceM != null) {
             requestBuilder.param("targetDistanceM", targetDistanceM);
+        }
+        if (pageSize != null) {
+            requestBuilder.param("pageSize", pageSize);
+        }
+        if (cursor != null) {
+            requestBuilder.param("cursor", cursor);
+        }
+        return requestBuilder;
+    }
+
+    private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder getNearbyGhostCoursesWithout(
+            String missingParameter
+    ) {
+        return nearbyGhostCoursesRequest(
+                "latitude".equals(missingParameter) ? null : "37.5665",
+                "longitude".equals(missingParameter) ? null : "126.9780",
+                "preferredDistanceMs".equals(missingParameter) ? null : new String[]{"3000", "5000"},
+                null,
+                null
+        );
+    }
+
+    private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder getNearbyGhostCoursesWith(
+            String parameterName,
+            String value
+    ) {
+        return nearbyGhostCoursesRequest(
+                "latitude".equals(parameterName) ? value : "37.5665",
+                "longitude".equals(parameterName) ? value : "126.9780",
+                new String[]{"3000", "5000"},
+                null,
+                null
+        );
+    }
+
+    private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder nearbyGhostCoursesRequest(
+            String latitude,
+            String longitude,
+            String[] preferredDistanceMs,
+            String pageSize,
+            String cursor
+    ) {
+        org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder requestBuilder = get("/api/courses/nearby/ghost");
+        if (latitude != null) {
+            requestBuilder.param("latitude", latitude);
+        }
+        if (longitude != null) {
+            requestBuilder.param("longitude", longitude);
+        }
+        if (preferredDistanceMs != null) {
+            requestBuilder.param("preferredDistanceMs", preferredDistanceMs);
         }
         if (pageSize != null) {
             requestBuilder.param("pageSize", pageSize);

@@ -137,6 +137,74 @@ class CourseRepositoryRowTest {
         ));
     }
 
+    @DisplayName("선호 거리 목록과 오차 200m에 맞는 공식 코스 후보만 조회한다")
+    @Test
+    void filtersOfficialNearbyCourseCandidatesByPreferredDistances() {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 3, 11, 3, 0);
+
+        Course matchedCourse = persistCourse("Matched Course", 5000, CourseStatus.OFFICIAL, createdAt);
+        Course lowerBoundaryCourse = persistCourse("Lower Boundary Course", 4800, CourseStatus.OFFICIAL, createdAt);
+        persistCourse("Outside Course", 5201, CourseStatus.OFFICIAL, createdAt);
+        persistCourse("Wrong Status Course", 5000, CourseStatus.COMMUNITY, createdAt);
+
+        List<NearbyCourseCandidateRow> results =
+                courseRepository.findOfficialNearbyCourseCandidates(List.of(5000));
+
+        assertThat(results)
+                .extracting(NearbyCourseCandidateRow::courseId)
+                .containsExactlyInAnyOrder(matchedCourse.getId(), lowerBoundaryCourse.getId());
+    }
+
+    @DisplayName("복수 선호 거리 중 하나에 맞으면 공식 코스 후보로 조회한다")
+    @Test
+    void filtersOfficialNearbyCourseCandidatesByAnyPreferredDistance() {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 3, 11, 4, 0);
+
+        Course shortCourse = persistCourse("Short Course", 3000, CourseStatus.OFFICIAL, createdAt);
+        Course longCourse = persistCourse("Long Course", 9800, CourseStatus.OFFICIAL, createdAt);
+        persistCourse("Unmatched Course", 7000, CourseStatus.OFFICIAL, createdAt);
+
+        List<NearbyCourseCandidateRow> results =
+                courseRepository.findOfficialNearbyCourseCandidates(List.of(3000, 10000));
+
+        assertThat(results)
+                .extracting(NearbyCourseCandidateRow::courseId)
+                .containsExactlyInAnyOrder(shortCourse.getId(), longCourse.getId());
+    }
+
+    private Course persistCourse(
+            String title,
+            int distanceM,
+            CourseStatus status,
+            LocalDateTime createdAt
+    ) {
+        Course course = Course.builder()
+                .title(title)
+                .status(status)
+                .distanceM(distanceM)
+                .elevationGainM(40)
+                .snapshotImageUrl("snapshot-" + title)
+                .startLatitude(37.5665)
+                .startLongitude(126.9780)
+                .endLatitude(37.5700)
+                .endLongitude(126.9820)
+                .coordinates(new Coordinates(List.of(new GeoPoint(37.5665, 126.9780, 12.0))))
+                .build();
+        setCreatedAt(course, createdAt);
+        course = courseRepository.save(course);
+
+        CourseDifficulty courseDifficulty = CourseDifficulty.create(course, Difficulty.MEDIUM);
+        CourseTypeMap courseTypeMap = CourseTypeMap.create(course, CourseType.PARK);
+        setCreatedAt(courseDifficulty, createdAt);
+        setCreatedAt(courseTypeMap, createdAt);
+
+        entityManager.persist(courseDifficulty);
+        entityManager.persist(courseTypeMap);
+        entityManager.flush();
+        entityManager.clear();
+        return course;
+    }
+
     private void setCreatedAt(Object entity, LocalDateTime createdAt) {
         try {
             Field field = entity.getClass().getSuperclass().getDeclaredField("createdAt");
