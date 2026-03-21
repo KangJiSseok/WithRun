@@ -6,6 +6,8 @@ import kr.withrun.was.domain.course.dto.CourseBookmarkAddResponse;
 import kr.withrun.was.domain.course.dto.CourseBookmarkRemoveResponse;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseFilterResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseLikeStatusResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.CreateCourseReviewResponse;
@@ -62,6 +64,32 @@ public final class SuccessApiResponseDocs {
             String message,
             @Schema(description = "코스 상세 데이터")
             CourseDetailResponse data
+    ) {
+    }
+
+    @Schema(name = "CourseGhostDetailApiResponse", description = "코스 고스트 상세 조회 성공 응답")
+    public record CourseGhostDetailApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "코스 고스트 상세 데이터")
+            CourseGhostDetailResponse data
+    ) {
+    }
+
+    @Schema(name = "CourseGhostLeaderboardApiResponse", description = "코스 고스트 리더보드 조회 성공 응답")
+    public record CourseGhostLeaderboardApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "코스 고스트 리더보드 데이터")
+            CourseGhostLeaderboardResponse data
     ) {
     }
 

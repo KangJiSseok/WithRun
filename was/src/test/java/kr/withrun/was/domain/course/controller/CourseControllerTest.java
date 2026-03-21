@@ -2,6 +2,10 @@ package kr.withrun.was.domain.course.controller;
 
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseFilterResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardItemResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
@@ -349,6 +353,75 @@ class CourseControllerTest {
         then(courseService).should().findCourseDetail(courseId);
     }
 
+    @DisplayName("코스 고스트 상세 조회 응답을 성공 응답 포맷으로 감싼다")
+    @Test
+    void wrapsCourseGhostDetailResponseInSuccessEnvelope() throws Exception {
+        long courseId = 12L;
+        long userId = 7L;
+        CourseGhostDetailResponse response = new CourseGhostDetailResponse(
+                courseId,
+                "Han River Ghost",
+                CourseStatus.OFFICIAL,
+                new CourseGhostDetailResponse.DifficultyOption("MEDIUM", "보통"),
+                5200,
+                48,
+                "https://example.com/ghost-course.jpg",
+                37.5661,
+                126.9738,
+                37.5702,
+                126.9814,
+                new Coordinates(List.of(
+                        new GeoPoint(37.5661, 126.9738, 12.3),
+                        new GeoPoint(37.5702, 126.9814, 15.8)
+                )),
+                List.of(new CourseGhostDetailResponse.CourseTypeOption("RIVERSIDE", "강변")),
+                128L,
+                false,
+                false,
+                4.3,
+                new CourseGhostDetailResponse.MyRecord(
+                        205L,
+                        2002L,
+                        1320,
+                        980,
+                        14L,
+                        LocalDateTime.of(2026, 3, 20, 7, 10)
+                )
+        );
+        given(courseService.findCourseGhostDetail(courseId, userId)).willReturn(response);
+
+        mockMvc.perform(get("/api/courses/{courseId}/ghost-detail/{userId}", courseId, userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
+                .andExpect(jsonPath("$.data.courseId").value(courseId))
+                .andExpect(jsonPath("$.data.title").value("Han River Ghost"))
+                .andExpect(jsonPath("$.data.difficulty.data").value("MEDIUM"))
+                .andExpect(jsonPath("$.data.courseTypes[0].data").value("RIVERSIDE"))
+                .andExpect(jsonPath("$.data.myRecord.leaderboardId").value(205L))
+                .andExpect(jsonPath("$.data.myRecord.runningSessionId").value(2002L))
+                .andExpect(jsonPath("$.data.myRecord.point").value(980))
+                .andExpect(jsonPath("$.data.myRecord.rank").value(14));
+
+        then(courseService).should().findCourseGhostDetail(courseId, userId);
+    }
+
+    @DisplayName("없는 코스 고스트 상세 조회는 코스 없음 응답을 반환한다")
+    @Test
+    void returnsCourseNotFoundWhenCourseGhostDetailIsMissing() throws Exception {
+        long courseId = 999L;
+        long userId = 7L;
+        given(courseService.findCourseGhostDetail(courseId, userId))
+                .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
+
+        mockMvc.perform(get("/api/courses/{courseId}/ghost-detail/{userId}", courseId, userId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()));
+
+        then(courseService).should().findCourseGhostDetail(courseId, userId);
+    }
+
     @DisplayName("페이지 크기 쿼리 파라미터를 요청 DTO에 바인딩한다")
     @ParameterizedTest(name = "pageSize={0}")
     @ValueSource(strings = {"2", "10"})
@@ -403,6 +476,86 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.hasNext").value(true));
 
         then(courseService).should().findCourseLeaderboard(request);
+    }
+
+    @DisplayName("코스 고스트 리더보드 조회 응답을 성공 응답 포맷으로 감싼다")
+    @Test
+    void wrapsCourseGhostLeaderboardResponseInSuccessEnvelope() throws Exception {
+        CourseGhostLeaderboardRequest request = new CourseGhostLeaderboardRequest(20, "b3BhcXVlLWN1cnNvcg");
+        CourseGhostLeaderboardResponse response = new CourseGhostLeaderboardResponse(
+                List.of(new CourseGhostLeaderboardItemResponse(
+                        101L,
+                        7L,
+                        "runner-a",
+                        1001L,
+                        1250,
+                        1L,
+                        LocalDateTime.of(2026, 3, 21, 10, 30)
+                )),
+                true,
+                "opaque-cursor"
+        );
+        given(courseService.findCourseGhostLeaderboard(12L, request)).willReturn(response);
+
+        mockMvc.perform(get("/api/courses/{courseId}/ghost-leaderboard", 12L)
+                        .queryParam("size", "20")
+                        .queryParam("cursor", "b3BhcXVlLWN1cnNvcg"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
+                .andExpect(jsonPath("$.data.items[0].leaderboardId").value(101L))
+                .andExpect(jsonPath("$.data.items[0].userId").value(7L))
+                .andExpect(jsonPath("$.data.items[0].nickname").value("runner-a"))
+                .andExpect(jsonPath("$.data.items[0].point").value(1250))
+                .andExpect(jsonPath("$.data.items[0].rank").value(1))
+                .andExpect(jsonPath("$.data.hasMore").value(true))
+                .andExpect(jsonPath("$.data.nextCursor").value("opaque-cursor"));
+
+        then(courseService).should().findCourseGhostLeaderboard(12L, request);
+    }
+
+    @DisplayName("코스 고스트 리더보드 size가 유효하지 않으면 잘못된 입력 응답을 반환한다")
+    @ParameterizedTest(name = "size={0}")
+    @ValueSource(strings = {"0", "-1", "51", "abc", "1.5"})
+    void returnsInvalidInputWhenCourseGhostLeaderboardSizeIsInvalid(String invalidSize) throws Exception {
+        mockMvc.perform(get("/api/courses/{courseId}/ghost-leaderboard", 12L)
+                        .queryParam("size", invalidSize))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+
+        then(courseService).should(never()).findCourseGhostLeaderboard(any(), any());
+    }
+
+    @DisplayName("코스 고스트 리더보드 조회에서 서비스가 커서를 거부하면 잘못된 커서 응답을 반환한다")
+    @Test
+    void returnsInvalidCursorWhenCourseGhostLeaderboardServiceRejectsCursor() throws Exception {
+        CourseGhostLeaderboardRequest request = new CourseGhostLeaderboardRequest(20, "%%%");
+        given(courseService.findCourseGhostLeaderboard(12L, request))
+                .willThrow(new CustomException(ResponseCode.INVALID_CURSOR));
+
+        mockMvc.perform(get("/api/courses/{courseId}/ghost-leaderboard", 12L)
+                        .queryParam("cursor", "%%%"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_CURSOR.getCode()));
+
+        then(courseService).should().findCourseGhostLeaderboard(12L, request);
+    }
+
+    @DisplayName("없는 코스 고스트 리더보드 조회는 코스 없음 응답을 반환한다")
+    @Test
+    void returnsCourseNotFoundWhenCourseGhostLeaderboardCourseIsMissing() throws Exception {
+        CourseGhostLeaderboardRequest request = new CourseGhostLeaderboardRequest(20, null);
+        given(courseService.findCourseGhostLeaderboard(999L, request))
+                .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
+
+        mockMvc.perform(get("/api/courses/{courseId}/ghost-leaderboard", 999L))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()));
+
+        then(courseService).should().findCourseGhostLeaderboard(999L, request);
     }
 
     @DisplayName("코스 리더보드 조회에서 courseId가 없으면 잘못된 입력 응답을 반환한다")
