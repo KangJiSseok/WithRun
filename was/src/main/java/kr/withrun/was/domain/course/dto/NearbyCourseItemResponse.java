@@ -8,12 +8,12 @@ import kr.withrun.was.global.common.type.Difficulty;
 
 import java.util.List;
 
-@Schema(description = "주변 코스 단건 정보")
+@Schema(description = "주변 코스 요약 정보")
 public record NearbyCourseItemResponse(
         @Schema(description = "코스 ID", example = "12")
         Long courseId,
 
-        @Schema(description = "코스 제목", example = "한강 야간 러닝 5K")
+        @Schema(description = "코스 제목", example = "성곽 야간 러닝 5K")
         String title,
 
         @Schema(description = "코스 상태")
@@ -46,14 +46,39 @@ public record NearbyCourseItemResponse(
         @ArraySchema(schema = @Schema(implementation = CourseTypeOption.class), arraySchema = @Schema(description = "코스 유형 목록"))
         List<CourseTypeOption> courseTypes,
 
+        @Schema(description = "코스 좋아요 수", example = "128")
+        Long likeCount,
+
+        @Schema(description = "코스 북마크 수", example = "42")
+        Long bookmarkCount,
+
         @Schema(description = "코스 대표 이미지 URL", example = "https://cdn.withrun.kr/courses/12.png", nullable = true)
         String snapshotImageUrl
 ) {
+    public NearbyCourseItemResponse(
+            Long courseId,
+            String title,
+            CourseStatus status,
+            Integer distanceM,
+            Integer elevationGainM,
+            Double startLatitude,
+            Double startLongitude,
+            Double endLatitude,
+            Double endLongitude,
+            Integer distanceFromUserM,
+            DifficultyOption difficulty,
+            List<CourseTypeOption> courseTypes,
+            String snapshotImageUrl
+    ) {
+        this(courseId, title, status, distanceM, elevationGainM, startLatitude, startLongitude, endLatitude, endLongitude,
+                distanceFromUserM, difficulty, courseTypes, 0L, 0L, snapshotImageUrl);
+    }
+
     @Schema(name = "NearbyCourseDifficultyOption", description = "주변 코스 응답의 난이도 항목")
     public record DifficultyOption(
             @Schema(description = "클라이언트가 사용하는 데이터 값", example = "MEDIUM")
             String data,
-            @Schema(description = "사용자에게 노출하는 라벨", example = "보통")
+            @Schema(description = "사용자에게 노출되는 라벨", example = "보통")
             String label
     ) {
         public static DifficultyOption from(Difficulty difficulty) {
@@ -68,7 +93,7 @@ public record NearbyCourseItemResponse(
     public record CourseTypeOption(
             @Schema(description = "클라이언트가 사용하는 데이터 값", example = "RIVERSIDE")
             String data,
-            @Schema(description = "사용자에게 노출하는 라벨", example = "강변")
+            @Schema(description = "사용자에게 노출되는 라벨", example = "강변")
             String label
     ) {
         public static CourseTypeOption from(CourseType courseType) {

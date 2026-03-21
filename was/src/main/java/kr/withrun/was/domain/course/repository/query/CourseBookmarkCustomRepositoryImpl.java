@@ -28,6 +28,19 @@ public class CourseBookmarkCustomRepositoryImpl implements CourseBookmarkCustomR
     private final JPAQueryFactory queryFactory;
 
     @Override
+    public long countByCourseId(Long courseId) {
+        QCourseBookmark courseBookmark = QCourseBookmark.courseBookmark;
+
+        Long result = queryFactory
+                .select(courseBookmark.count())
+                .from(courseBookmark)
+                .where(courseBookmark.course.id.eq(courseId))
+                .fetchOne();
+
+        return result == null ? 0L : result;
+    }
+
+    @Override
     public Optional<CourseBookmark> findByCourseIdAndUserId(Long courseId, Long userId) {
         QCourseBookmark courseBookmark = QCourseBookmark.courseBookmark;
 
