@@ -1,4 +1,5 @@
 import { RotateCcw, X } from 'lucide-react';
+import { Slider } from 'radix-ui';
 
 import {
   Drawer,
@@ -15,13 +16,13 @@ export type FilterOption = {
 };
 
 export type RunningCourseFilterState = {
-  distance: string[];
+  distanceRange: { min: number; max: number };
   courseType: string[];
   difficulty: string[];
 };
 
 export type CourseFilterCategory = {
-  key: keyof RunningCourseFilterState;
+  key: 'courseType' | 'difficulty';
   label: string;
   options: FilterOption[];
 };
@@ -33,7 +34,8 @@ type RunningCourseFilterDrawerProps = {
   onClose: () => void;
   onApply: () => void;
   onReset: () => void;
-  onChange: (key: keyof RunningCourseFilterState, value: string) => void;
+  onChange: (key: 'courseType' | 'difficulty', value: string) => void;
+  onDistanceRangeChange: (range: { min: number; max: number }) => void;
 };
 
 export function RunningCourseFilterDrawer({
@@ -44,6 +46,7 @@ export function RunningCourseFilterDrawer({
   onApply,
   onReset,
   onChange,
+  onDistanceRangeChange,
 }: RunningCourseFilterDrawerProps) {
   return (
     <Drawer open={isOpen} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
@@ -76,6 +79,35 @@ export function RunningCourseFilterDrawer({
         </DrawerHeader>
 
         <div className="flex max-h-[55vh] flex-col gap-6 overflow-y-auto">
+          {/* 거리 범위 슬라이더 */}
+          <section className="flex flex-col gap-3">
+            <h3 className="body-l-b">거리</h3>
+            <div className="flex flex-col gap-3 px-1">
+              <Slider.Root
+                className="relative flex h-5 w-full touch-none select-none items-center"
+                min={0}
+                max={5000}
+                step={500}
+                value={[values.distanceRange.min, values.distanceRange.max]}
+                onValueChange={([min, max]) =>
+                  onDistanceRangeChange({ min, max })
+                }
+                minStepsBetweenThumbs={1}
+              >
+                <Slider.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-[hsl(var(--border-default))]">
+                  <Slider.Range className="absolute h-full bg-[hsl(var(--primary-1))]" />
+                </Slider.Track>
+                <Slider.Thumb className="block h-5 w-5 rounded-full border-2 border-[hsl(var(--primary-1))] bg-white shadow-md focus-visible:outline-none" />
+                <Slider.Thumb className="block h-5 w-5 rounded-full border-2 border-[hsl(var(--primary-1))] bg-white shadow-md focus-visible:outline-none" />
+              </Slider.Root>
+              <div className="flex justify-between text-sm text-[hsl(var(--text-secondary))]">
+                <span>{(values.distanceRange.min / 1000).toFixed(1)}km</span>
+                <span>{(values.distanceRange.max / 1000).toFixed(1)}km</span>
+              </div>
+            </div>
+          </section>
+
+          {/* 코스 타입 / 난이도 버튼 필터 */}
           {categories.map((category) => (
             <section key={category.key} className="flex flex-col gap-3">
               <h3 className="body-l-b">{category.label}</h3>
