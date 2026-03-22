@@ -449,9 +449,9 @@ class RunningSessionServiceTest {
         assertThat(runningSession.getIsCompleted()).isTrue();
     }
 
-    @DisplayName("완료된 러닝 세션을 커뮤니티 코스로 등록한다")
+    @DisplayName("완료된 러닝 세션을 요청한 모드의 코스로 등록한다")
     @Test
-    void registersCompletedRunningSessionAsCommunityCourse() {
+    void registersCompletedRunningSessionCourseWithRequestedMode() {
         RunningSession runningSession = runningSession(81L, 7L, true, STARTED_AT);
         setField(runningSession, "distanceM", 10000);
         setField(runningSession, "elevationGainM", 120);
@@ -465,6 +465,7 @@ class RunningSessionServiceTest {
         ));
         RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
                 "한강 야간 러닝 10K",
+                "COMMUNITY",
                 "MEDIUM",
                 List.of("RIVERSIDE", "URBAN", "RIVERSIDE"),
                 "course/snapshot.png"
@@ -513,6 +514,57 @@ class RunningSessionServiceTest {
                 .containsOnly(savedCourse);
     }
 
+    @DisplayName("완료된 러닝 세션을 PRIVATE 코스로 등록한다")
+    @Test
+    void registersCompletedRunningSessionCourseAsPrivateCourse() {
+        RunningSession runningSession = runningSession(84L, 7L, true, STARTED_AT);
+        setField(runningSession, "snapshotImageUrl", "snapshots/84.png");
+        setField(runningSession, "coordinates", new Coordinates(
+                List.of(37.566501),
+                List.of(126.978001),
+                List.of(0.0)
+        ));
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "개인 보관 코스",
+                "PRIVATE",
+                "EASY",
+                List.of("RIVERSIDE"),
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(84L)).thenReturn(Optional.of(runningSession));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 503L));
+
+        RegisterRunningSessionCourseResponse response =
+                runningSessionService.registerRunningSessionCourse(84L, request);
+
+        assertThat(response.status()).isEqualTo(CourseStatus.PRIVATE);
+
+        ArgumentCaptor<Course> courseCaptor = ArgumentCaptor.forClass(Course.class);
+        verify(courseRepository).save(courseCaptor.capture());
+        assertThat(courseCaptor.getValue().getStatus()).isEqualTo(CourseStatus.PRIVATE);
+    }
+
+    @DisplayName("지원하지 않는 코스 모드는 등록할 수 없다")
+    @Test
+    void rejectsUnsupportedCourseModeWhenRegisteringRunningSessionCourse() {
+        RunningSession runningSession = runningSession(85L, 7L, true, STARTED_AT);
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "잘못된 모드 코스",
+                "OFFICIAL",
+                "MEDIUM",
+                List.of("RIVERSIDE"),
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(85L)).thenReturn(Optional.of(runningSession));
+
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(85L, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
+
+        verify(courseRepository, never()).save(any(Course.class));
+    }
+
     @DisplayName("요청 이미지 URL이 없으면 러닝 세션 스냅샷을 사용한다")
     @Test
     void fallsBackToRunningSessionSnapshotWhenRequestSnapshotIsMissing() {
@@ -525,6 +577,7 @@ class RunningSessionServiceTest {
         ));
         RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
                 "한강 아침 러닝",
+                "COMMUNITY",
                 "EASY",
                 List.of("RIVERSIDE"),
                 null
@@ -544,6 +597,7 @@ class RunningSessionServiceTest {
         RunningSession runningSession = runningSession(83L, 7L, false, STARTED_AT);
         RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
                 "등록 실패 코스",
+                "COMMUNITY",
                 "MEDIUM",
                 List.of("RIVERSIDE"),
                 null
