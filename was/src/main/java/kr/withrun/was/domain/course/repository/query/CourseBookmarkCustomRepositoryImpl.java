@@ -19,7 +19,9 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Repository
 @RequiredArgsConstructor
@@ -38,6 +40,27 @@ public class CourseBookmarkCustomRepositoryImpl implements CourseBookmarkCustomR
                 .fetchOne();
 
         return result == null ? 0L : result;
+    }
+
+    @Override
+    public Map<Long, Long> countByCourseIds(List<Long> courseIds) {
+        if (courseIds == null || courseIds.isEmpty()) {
+            return Map.of();
+        }
+
+        QCourseBookmark courseBookmark = QCourseBookmark.courseBookmark;
+
+        return queryFactory
+                .select(courseBookmark.course.id, courseBookmark.count())
+                .from(courseBookmark)
+                .where(courseBookmark.course.id.in(courseIds))
+                .groupBy(courseBookmark.course.id)
+                .fetch()
+                .stream()
+                .collect(Collectors.toMap(
+                        tuple -> tuple.get(courseBookmark.course.id),
+                        tuple -> tuple.get(courseBookmark.count())
+                ));
     }
 
     @Override

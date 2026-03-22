@@ -6,10 +6,10 @@ import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
-import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
@@ -44,6 +44,7 @@ import java.util.Arrays;
 import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.OptionalInt;
 import java.util.stream.Collectors;
@@ -494,6 +495,15 @@ public class CourseService {
     }
 
     private List<NearbyCourseItemResponse> enrichNearbyCourseItemsWithCounts(List<NearbyCourseItemResponse> items) {
+        if (items.isEmpty()) return items;
+
+        List<Long> courseIds = items.stream()
+                .map(NearbyCourseItemResponse::courseId)
+                .toList();
+
+        Map<Long, Long> likeCountsByCourseIds = courseLikeRepository.countByCourseIds(courseIds);
+        Map<Long, Long> bookmarkCountsByCourseIds = courseBookmarkRepository.countByCourseIds(courseIds);
+
         return items.stream()
                 .map(item -> new NearbyCourseItemResponse(
                         item.courseId(),
@@ -509,8 +519,8 @@ public class CourseService {
                         item.distanceFromUserM(),
                         item.difficulty(),
                         item.courseTypes(),
-                        courseLikeRepository.countByCourseId(item.courseId()),
-                        courseBookmarkRepository.countByCourseId(item.courseId()),
+                        likeCountsByCourseIds.getOrDefault(item.courseId(), 0L),
+                        bookmarkCountsByCourseIds.getOrDefault(item.courseId(), 0L),
                         item.snapshotImageUrl()
                 ))
                 .toList();
