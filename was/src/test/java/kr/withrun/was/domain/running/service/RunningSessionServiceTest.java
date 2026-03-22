@@ -7,6 +7,7 @@ import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
+import kr.withrun.was.domain.course.service.CourseSignalService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
@@ -108,6 +109,9 @@ class RunningSessionServiceTest {
     @Mock
     private GhostRunningResultService ghostRunningResultService;
 
+    @Mock
+    private CourseSignalService courseSignalService;
+
     private RunningSessionService runningSessionService;
 
     @BeforeEach
@@ -123,7 +127,8 @@ class RunningSessionServiceTest {
                 runningHealthSampleRepository,
                 runningSessionSplitRepository,
                 ghostRunningResultRepository,
-                ghostRunningResultService
+                ghostRunningResultService,
+                courseSignalService
         );
         setField(runningSessionService, "CDN_URL", CDN_BASE_URL);
     }

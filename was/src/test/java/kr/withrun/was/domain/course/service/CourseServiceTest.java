@@ -24,6 +24,7 @@ import kr.withrun.was.domain.course.repository.CourseReviewRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.CourseGhostLeaderboardRankRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCoursePageRow;
+import kr.withrun.was.domain.course.service.recommendation.HybridRecommendationService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
@@ -77,6 +78,9 @@ class CourseServiceTest {
     @Mock
     private CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
 
+    @Mock
+    private HybridRecommendationService hybridRecommendationService;
+
     private CourseService courseService;
 
     @BeforeEach
@@ -88,7 +92,8 @@ class CourseServiceTest {
                 courseBookmarkRepository,
                 courseLikeRepository,
                 courseReviewRepository,
-                courseGhostLeaderboardRepository
+                courseGhostLeaderboardRepository,
+                hybridRecommendationService
         );
         setField(courseService, "CDN_URL", "https://cdn.test");
     }

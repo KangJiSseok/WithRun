@@ -53,6 +53,9 @@ class CourseBookmarkServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CourseSignalService courseSignalService;
+
     private CourseBookmarkService courseBookmarkService;
 
     @BeforeEach
@@ -60,7 +63,8 @@ class CourseBookmarkServiceTest {
         courseBookmarkService = new CourseBookmarkService(
                 courseRepository,
                 courseBookmarkRepository,
-                userRepository
+                userRepository,
+                courseSignalService
         );
     }
 
