@@ -4,6 +4,20 @@ import type {
   CourseType,
 } from '@/shared/types/api.type';
 
+// 코스 설문 선택지 옵션 (GET /meta/course/register)
+export type CourseSurveyOption = {
+  data: string;   // 서버 enum 값 (예: "RIVERSIDE", "EASY", "COMMUNITY")
+  label: string;  // 화면 표시 한국어 (예: "강변", "쉬움", "커뮤니티 코스")
+};
+
+// 코스 설문 선택지 응답 (GET /meta/course/register)
+export type GetCourseSurveysResponse = {
+  courseTypes: CourseSurveyOption[];
+  difficulties: CourseSurveyOption[];
+  mode: CourseSurveyOption[];
+};
+
+
 export type CoordinatePoint = {
   latitude: number;
   longitude: number;

@@ -23,3 +23,6 @@ export type CourseType =
   | 'OTHER';
 // 러닝 모드
 export type RunningMode = 'FREE' | 'COURSE' | 'GHOST';
+// 코스 등록 모드 (개인 저장 or 커뮤니티 공개)
+// 백엔드 survey API에서 선택지로 반환 예정
+export type CourseRegistrationMode = 'PRIVATE' | 'COMMUNITY';

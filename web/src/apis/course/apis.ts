@@ -4,6 +4,7 @@ import type {
   GetNearbyCoursesParams,
   GetNearbyCoursesData,
   CourseDetail,
+  GetCourseSurveysResponse,
 } from './types';
 
 /**
@@ -43,6 +44,17 @@ export const getCourseDetailApi = async (
 ): Promise<ApiResponse<CourseDetail>> => {
   const { data } = await axiosClient.get<ApiResponse<CourseDetail>>(
     `/courses/${courseId}`
+  );
+  return data;
+};
+
+/**
+ * 코스 등록 설문 선택지 조회 API (GET /meta/course/register)
+ */
+export const getCourseSurveys = async (
+): Promise<ApiResponse<GetCourseSurveysResponse>> => {
+  const { data } = await axiosClient.get<ApiResponse<GetCourseSurveysResponse>>(
+    '/meta/course/register'
   );
   return data;
 };
