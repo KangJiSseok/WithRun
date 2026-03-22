@@ -1,12 +1,16 @@
 package kr.withrun.was.domain.course.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
+import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
+
+import java.util.List;
 
 @Schema(description = "주변 코스 조회 조건")
 public record NearbyCoursesRequest(
@@ -22,16 +26,25 @@ public record NearbyCoursesRequest(
         @DecimalMax(value = "180.0")
         Double longitude,
 
+        @NotNull
+        @DecimalMin(value = "-90.0")
+        @DecimalMax(value = "90.0")
+        Double targetLatitude,
+
+        @NotNull
+        @DecimalMin(value = "-180.0")
+        @DecimalMax(value = "180.0")
+        Double targetLongitude,
+
         @Schema(description = "탐색 반경(m). 1000 이상 5000 이하만 허용된다.", example = "3000", minimum = "1000", maximum = "5000", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull
         @Min(1000)
         @Max(5000)
         Integer radiusM,
 
-        @Schema(description = "희망 코스 거리(m). 서버는 +/- 1000m 허용 오차로 후보를 찾는다.", example = "5000", minimum = "1", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull
-        @Positive
-        Integer targetDistanceM,
+        @Schema(description = "선호 거리 범위 목록", requiredMode = Schema.RequiredMode.REQUIRED)
+        @NotEmpty
+        List<@Valid PreferredDistanceRange> preferredDistanceMs,
 
         @Schema(description = "한 번에 조회할 항목 수. 생략 시 서버 기본값 3을 사용한다.", example = "5", minimum = "1", maximum = "10", nullable = true)
         @Positive

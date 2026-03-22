@@ -14,8 +14,8 @@ public final class HaversineDistanceCalculator {
 
     public static OptionalInt calculateMinimumDistanceMeters(
             Coordinates coordinates,
-            double userLatitude,
-            double userLongitude
+            double targetLatitude,
+            double targetLongitude
     ) {
         if (coordinates == null) {
             return OptionalInt.empty();
@@ -37,7 +37,7 @@ public final class HaversineDistanceCalculator {
                 continue;
             }
 
-            int distance = roundToNearestMeter(haversineDistanceMeters(userLatitude, userLongitude, latitude, longitude));
+            int distance = roundToNearestMeter(haversineDistanceMeters(targetLatitude, targetLongitude, latitude, longitude));
             if (minimumDistance == null || distance < minimumDistance) {
                 minimumDistance = distance;
             }

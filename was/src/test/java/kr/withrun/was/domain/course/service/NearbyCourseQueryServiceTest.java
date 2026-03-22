@@ -33,6 +33,7 @@ import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -81,7 +82,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("filters courses outside target distance window")
     @Test
     void filtersCoursesOutsideTargetDistanceWindow() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null, null);
+        NearbyCoursesRequest request = nearbyCoursesRequest(5000, null, null);
         stubCandidates(
                 candidate(2L, 9000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(1L, 11000, coordinatesAtUser(), CourseType.PARK),
@@ -99,15 +100,11 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("filters courses outside requested radius")
     @Test
     void filtersCoursesOutsideRequestedRadius() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null, null);
+        double targetLatitude = USER_LATITUDE + (300 / 111_139d);
+        NearbyCoursesRequest request = nearbyCoursesRequest(targetLatitude, USER_LONGITUDE, 1000, null, null);
         stubCandidates(
-                candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
-                candidate(
-                        2L,
-                        10000,
-                        coordinates(List.of(37.6165), List.of(USER_LONGITUDE)),
-                        CourseType.PARK
-                )
+                candidate(1L, 10000, coordinatesNorthOfUser(300), CourseType.RIVERSIDE),
+                candidate(2L, 10000, coordinatesNorthOfUser(1400), CourseType.PARK)
         );
 
         List<NearbyCourseItemResponse> items = courseService.findNearbyCourseItems(request);
@@ -115,13 +112,13 @@ class NearbyCourseQueryServiceTest {
         assertThat(items)
                 .extracting(NearbyCourseItemResponse::courseId)
                 .containsExactly(1L);
-        assertThat(items.get(0).distanceFromUserM()).isZero();
+        assertThat(items.get(0).distanceFromUserM()).isEqualTo(300);
     }
 
     @DisplayName("calculates minimum distance using all coordinate pairs")
     @Test
     void calculatesMinimumDistanceUsingAllCoordinatePairs() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null, null);
+        NearbyCoursesRequest request = nearbyCoursesRequest(1000, null, null);
         stubCandidates(
                 candidate(
                         1L,
@@ -144,7 +141,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("excludes malformed or empty coordinates")
     @Test
     void excludesMalformedOrEmptyCoordinates() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null, null);
+        NearbyCoursesRequest request = nearbyCoursesRequest(5000, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(2L, 10000, null, CourseType.PARK),
@@ -163,7 +160,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("sorts same distance by course id")
     @Test
     void sortsSameDistanceByCourseId() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null, null);
+        NearbyCoursesRequest request = nearbyCoursesRequest(5000, null, null);
         stubCandidates(
                 candidate(20L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(10L, 10000, coordinatesAtUser(), CourseType.PARK)
@@ -179,7 +176,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("aggregates course types across repository rows per course")
     @Test
     void aggregatesCourseTypesAcrossRepositoryRowsPerCourse() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null, null);
+        NearbyCoursesRequest request = nearbyCoursesRequest(5000, null, null);
         stubCandidates(
                 candidate(7L, 10000, coordinatesAtUser(), CourseType.PARK),
                 candidate(7L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
@@ -200,7 +197,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("returns first three items and next cursor when page size is missing")
     @Test
     void returnsFirstThreeItemsAndNextCursorWhenPageSizeIsMissing() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null, null);
+        NearbyCoursesRequest request = nearbyCoursesRequest(1000, null, null);
         stubCandidates(
                 candidate(15L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(12L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
@@ -223,7 +220,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("returns requested item count when page size is provided")
     @Test
     void returnsRequestedItemCountWhenPageSizeIsProvided() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, 10, null);
+        NearbyCoursesRequest request = nearbyCoursesRequest(1000, 10, null);
         stubCandidates(
                 candidate(15L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(12L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
@@ -251,7 +248,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("resumes strictly after cursor tuple")
     @Test
     void resumesStrictlyAfterCursorTuple() {
-        NearbyCoursesRequest baseRequest = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null, null);
+        NearbyCoursesRequest baseRequest = nearbyCoursesRequest(1000, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(2L, 10000, coordinatesAtUser(), CourseType.PARK),
@@ -262,11 +259,8 @@ class NearbyCourseQueryServiceTest {
 
         List<NearbyCourseItemResponse> sortedItems = courseService.findNearbyCourseItems(baseRequest);
         NearbyCourseItemResponse cursorItem = sortedItems.get(2);
-        NearbyCoursesRequest pagedRequest = new NearbyCoursesRequest(
-                USER_LATITUDE,
-                USER_LONGITUDE,
+        NearbyCoursesRequest pagedRequest = nearbyCoursesRequest(
                 1000,
-                10000,
                 null,
                 NearbyCourseCursorCodec.encode(cursorItem.distanceFromUserM(), cursorItem.courseId())
         );
@@ -283,7 +277,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("throws invalid cursor when cursor cannot be decoded")
     @Test
     void throwsInvalidCursorWhenCursorCannotBeDecoded() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null, "%%%");
+        NearbyCoursesRequest request = nearbyCoursesRequest(1000, null, "%%%");
         stubCandidates();
 
         assertThatThrownBy(() -> findNearbyCourses(request))
@@ -295,7 +289,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("suggests next radius when current radius is exhausted before max radius")
     @Test
     void suggestsNextRadiusWhenCurrentRadiusIsExhaustedBeforeMaxRadius() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1000, 10000, null, null);
+        NearbyCoursesRequest request = nearbyCoursesRequest(1000, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(2L, 10000, coordinatesNorthOfUser(900), CourseType.PARK)
@@ -314,7 +308,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("suggests next radius from arbitrary radius input")
     @Test
     void suggestsNextRadiusFromArbitraryRadiusInput() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 1500, 10000, null, null);
+        NearbyCoursesRequest request = nearbyCoursesRequest(1500, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(2L, 10000, coordinatesNorthOfUser(1400), CourseType.PARK)
@@ -333,7 +327,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("caps suggested next radius at maximum radius")
     @Test
     void capsSuggestedNextRadiusAtMaximumRadius() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 4500, 10000, null, null);
+        NearbyCoursesRequest request = nearbyCoursesRequest(4500, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(2L, 10000, coordinatesNorthOfUser(4400), CourseType.PARK)
@@ -349,7 +343,7 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("keeps suggested next radius null at maximum radius")
     @Test
     void keepsSuggestedNextRadiusNullAtMaximumRadius() {
-        NearbyCoursesRequest request = new NearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, 5000, 10000, null, null);
+        NearbyCoursesRequest request = nearbyCoursesRequest(5000, null, null);
         stubCandidates(
                 candidate(1L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
                 candidate(2L, 10000, coordinatesNorthOfUser(900), CourseType.PARK)
@@ -495,7 +489,14 @@ class NearbyCourseQueryServiceTest {
     }
 
     private void stubCandidates(NearbyCourseCandidateRow... candidates) {
-        when(courseRepository.findOfficialNearbyCourseCandidates()).thenReturn(List.of(candidates));
+        when(courseRepository.findOfficialNearbyCourseCandidates(anyList())).thenAnswer(invocation -> {
+            @SuppressWarnings("unchecked")
+            List<PreferredDistanceRange> preferredDistanceMs = invocation.getArgument(0);
+            return List.of(candidates).stream()
+                    .filter(candidate -> preferredDistanceMs.stream()
+                            .anyMatch(range -> candidate.distanceM() >= range.min() && candidate.distanceM() <= range.max()))
+                    .toList();
+        });
     }
 
     private void stubGhostCandidates(List<PreferredDistanceRange> preferredDistanceMs, NearbyCourseCandidateRow... candidates) {
@@ -508,6 +509,29 @@ class NearbyCourseQueryServiceTest {
 
     private NearbyCoursesResponse findNearbyCourses(NearbyCoursesRequest request) {
         return courseService.findNearbyCourses(request);
+    }
+
+    private NearbyCoursesRequest nearbyCoursesRequest(int radiusM, Integer pageSize, String cursor) {
+        return nearbyCoursesRequest(USER_LATITUDE, USER_LONGITUDE, radiusM, pageSize, cursor);
+    }
+
+    private NearbyCoursesRequest nearbyCoursesRequest(
+            double targetLatitude,
+            double targetLongitude,
+            int radiusM,
+            Integer pageSize,
+            String cursor
+    ) {
+        return new NearbyCoursesRequest(
+                USER_LATITUDE,
+                USER_LONGITUDE,
+                targetLatitude,
+                targetLongitude,
+                radiusM,
+                List.of(range(9000, 11000)),
+                pageSize,
+                cursor
+        );
     }
 
     private NearbyCourseCandidateRow candidate(
