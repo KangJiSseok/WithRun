@@ -15,7 +15,6 @@ export const privateRoutes: RouteObject[] = [
   {
     element: <MainLayout />,
     children: [
-      { path: '/', element: <HomePage /> },
       { path: '/home', element: <HomePage /> },
       { path: '/free-run', element: <FreeRunPage /> },
       { path: '/ghost-run', element: <GhostRunPage /> },
