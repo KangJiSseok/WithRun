@@ -177,6 +177,7 @@ public class RunningSessionService {
         CourseStatus courseStatus = parseCourseStatus(request.mode());
         Difficulty difficulty = parseDifficulty(request.difficulty());
         List<CourseType> courseTypes = parseCourseTypes(request.courseTypes());
+        Coordinates courseCoordinates = buildCourseCoordinates(runningSessionId);
 
         Course course = courseRepository.save(Course.builder()
                 .title(request.title())
@@ -188,7 +189,7 @@ public class RunningSessionService {
                 .startLongitude(runningSession.getStartLongitude())
                 .endLatitude(runningSession.getEndLatitude())
                 .endLongitude(runningSession.getEndLongitude())
-                .coordinates(copyCoordinates(runningSession.getCoordinates()))
+                .coordinates(courseCoordinates)
                 .user(runningSession.getUser())
                 .build());
 
@@ -547,17 +548,12 @@ public class RunningSessionService {
         return requestedSnapshotImageUrl;
     }
 
-    private Coordinates copyCoordinates(Coordinates coordinates) {
-        if (coordinates == null) {
-            return null;
-        }
-
-        List<GeoPoint> copiedPoints = coordinates.values().stream()
-                .map(point -> point == null
-                        ? null
-                        : new GeoPoint(point.latitude(), point.longitude(), point.elevationM()))
+    private Coordinates buildCourseCoordinates(Long runningSessionId) {
+        List<GeoPoint> points = runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
+                .stream()
+                .map(sample -> new GeoPoint(sample.getLatitude(), sample.getLongitude(), sample.getAltitudeM()))
                 .toList();
-        return new Coordinates(copiedPoints);
+        return new Coordinates(points);
     }
 
     private String toCursor(PastRunningSessionHistoryRow row) {
