@@ -7,7 +7,7 @@ import { createMarkerContent } from '@/shared/utils';
 export type CircleMode = 'USER_LOCATION' | 'AREA_NEARBY' | 'AREA_EXPLORE';
 
 // 초기 탐색 반경 (m)
-const DEFAULT_RADIUS_M = 5000;
+const DEFAULT_RADIUS_M = 3000;
 // 기본 지도 레벨
 const DEFAULT_MAP_LEVEL = 7;
 // 서울 시청 (GPS 모두 실패 시 최종 폴백)
