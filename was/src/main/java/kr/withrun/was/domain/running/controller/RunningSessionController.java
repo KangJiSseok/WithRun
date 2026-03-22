@@ -147,7 +147,7 @@ public class RunningSessionController {
 
     @Operation(
             summary = "완료한 러닝 기록을 코스로 등록한다",
-            description = "완료된 러닝 세션 기록을 바탕으로 커뮤니티 코스를 생성한다. 난이도와 코스 유형은 문자열 enum 이름으로 전달하며 snapshotImageUrl 을 비우면 세션 스냅샷을 재사용한다."
+            description = "완료된 러닝 세션 기록을 바탕으로 코스를 생성한다. mode 는 COMMUNITY 또는 PRIVATE 문자열 enum 이름으로 전달하며 난이도와 코스 유형도 문자열 enum 이름으로 전달한다. snapshotImageUrl 을 비우면 세션 스냅샷을 재사용한다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -177,7 +177,7 @@ public class RunningSessionController {
             @PathVariable Long runningSessionId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
-                    description = "코스 제목, 난이도, 코스 유형, 스냅샷 이미지 URL을 담은 요청 본문"
+                    description = "코스 제목, 공개 범위 mode, 난이도, 코스 유형, 스냅샷 이미지 URL을 담은 요청 본문"
             )
             @Valid @RequestBody RegisterRunningSessionCourseRequest request
     ) {

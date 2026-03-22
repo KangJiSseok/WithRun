@@ -174,12 +174,13 @@ public class RunningSessionService {
     ) {
         RunningSession runningSession = getRunningSession(runningSessionId);
         runningSession.validateCourseRegistrable();
+        CourseStatus courseStatus = parseCourseStatus(request.mode());
         Difficulty difficulty = parseDifficulty(request.difficulty());
         List<CourseType> courseTypes = parseCourseTypes(request.courseTypes());
 
         Course course = courseRepository.save(Course.builder()
                 .title(request.title())
-                .status(CourseStatus.COMMUNITY)
+                .status(courseStatus)
                 .distanceM(runningSession.getDistanceM())
                 .elevationGainM(runningSession.getElevationGainM())
                 .snapshotImageUrl(resolveSnapshotImageUrl(request.snapshotImageUrl(), runningSession.getSnapshotImageUrl()))
@@ -508,6 +509,19 @@ public class RunningSessionService {
         } catch (IllegalArgumentException exception) {
             throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    private CourseStatus parseCourseStatus(String rawCourseStatus) {
+        try {
+            CourseStatus courseStatus = CourseStatus.valueOf(rawCourseStatus);
+            if (courseStatus == CourseStatus.COMMUNITY || courseStatus == CourseStatus.PRIVATE) {
+                return courseStatus;
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+        }
+
+        throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
     }
 
     private List<CourseType> parseCourseTypes(List<String> rawCourseTypes) {
