@@ -21,6 +21,7 @@ public class CourseLikeService {
     private final CourseRepository courseRepository;
     private final CourseLikeRepository courseLikeRepository;
     private final UserRepository userRepository;
+    private final CourseSignalService courseSignalService;
 
     @Transactional
     public CourseLikeStatusResponse likeCourse(Long courseId, Long userId) {
@@ -28,7 +29,8 @@ public class CourseLikeService {
         User user = getUser(userId);
 
         if (courseLikeRepository.findByCourseIdAndUserId(courseId, userId).isEmpty()) {
-            courseLikeRepository.save(CourseLike.create(course, user));
+            CourseLike savedCourseLike = courseLikeRepository.save(CourseLike.create(course, user));
+            courseSignalService.recordLike(course, user, savedCourseLike.getId());
         }
 
         long likeCount = courseLikeRepository.countByCourseId(courseId);
@@ -42,7 +44,10 @@ public class CourseLikeService {
         getUser(userId);
 
         courseLikeRepository.findByCourseIdAndUserId(courseId, userId)
-                .ifPresent(courseLikeRepository::delete);
+                .ifPresent(courseLike -> {
+                    courseLikeRepository.delete(courseLike);
+                    courseSignalService.recordUnlike(course);
+                });
 
         long likeCount = courseLikeRepository.countByCourseId(courseId);
         return new CourseLikeStatusResponse(courseId, false, likeCount, course.getStatus());

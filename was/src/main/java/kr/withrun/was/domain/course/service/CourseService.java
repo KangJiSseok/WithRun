@@ -6,6 +6,7 @@ import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;

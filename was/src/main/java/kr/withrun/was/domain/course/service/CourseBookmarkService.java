@@ -38,6 +38,7 @@ public class CourseBookmarkService {
     private final CourseRepository courseRepository;
     private final CourseBookmarkRepository courseBookmarkRepository;
     private final UserRepository userRepository;
+    private final CourseSignalService courseSignalService;
 
     @Transactional
     public CourseBookmarkAddResponse addBookmark(Long courseId, Long userId) {
@@ -57,6 +58,7 @@ public class CourseBookmarkService {
         return courseBookmarkRepository.findByCourseIdAndUserId(courseId, userId)
                 .map(bookmark -> {
                     courseBookmarkRepository.deleteBookmark(courseId, userId);
+                    courseSignalService.recordBookmarkRemoved(bookmark.getCourse());
                     return new CourseBookmarkRemoveResponse(courseId, false);
                 })
                 .orElseGet(() -> new CourseBookmarkRemoveResponse(courseId, false));
@@ -140,6 +142,7 @@ public class CourseBookmarkService {
 
     private CourseBookmarkAddResponse saveBookmark(Course course, User user) {
         CourseBookmark bookmark = courseBookmarkRepository.save(CourseBookmark.create(course, user));
+        courseSignalService.recordBookmarkAdded(course, user, bookmark.getId(), bookmark.getCreatedAt());
         return new CourseBookmarkAddResponse(course.getId(), true, bookmark.getCreatedAt());
     }
 

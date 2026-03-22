@@ -32,6 +32,7 @@ public class CourseReviewService {
     private final CourseReviewRepository courseReviewRepository;
     private final CourseReviewCourseTypeRepository courseReviewCourseTypeRepository;
     private final UserRepository userRepository;
+    private final CourseSignalService courseSignalService;
 
     @Transactional
     public CreateCourseReviewResponse createCourseReview(Long courseId, CreateCourseReviewRequest request) {
@@ -57,6 +58,14 @@ public class CourseReviewService {
                 courseTypes.stream()
                         .map(courseType -> CourseReviewCourseType.create(savedCourseReview, courseType))
                         .toList()
+        );
+        courseSignalService.recordReview(
+                course,
+                user,
+                savedCourseReview.getId(),
+                request.rating(),
+                difficulty,
+                courseTypes
         );
 
         return CreateCourseReviewResponse.from(savedCourseReview, courseTypes);
