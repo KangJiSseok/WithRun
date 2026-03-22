@@ -12,9 +12,25 @@ import type {
 export const getNearbyCoursesApi = async (
   params: GetNearbyCoursesParams
 ): Promise<ApiResponse<GetNearbyCoursesData>> => {
+  const { preferredDistanceMs, ...rest } = params;
   const { data } = await axiosClient.get<ApiResponse<GetNearbyCoursesData>>(
     '/courses/nearby',
-    { params }
+    {
+      params: rest,
+      paramsSerializer: (p) => {
+        const sp = new URLSearchParams();
+        Object.entries(p).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            sp.append(key, String(value));
+          }
+        });
+        preferredDistanceMs.forEach((item, i) => {
+          sp.append(`preferredDistanceMs[${i}].min`, String(item.min));
+          sp.append(`preferredDistanceMs[${i}].max`, String(item.max));
+        });
+        return sp.toString();
+      },
+    }
   );
   return data;
 };
@@ -30,4 +46,3 @@ export const getCourseDetailApi = async (
   );
   return data;
 };
-
