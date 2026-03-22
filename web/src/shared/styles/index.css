@@ -101,9 +101,24 @@
   * {
     @apply border-border outline-ring/50;
   }
+  *::-webkit-scrollbar {
+    width: 4px;
+  }
+  *::-webkit-scrollbar-track {
+    background: transparent;
+  }
+  *::-webkit-scrollbar-thumb {
+    background: rgb(0 0 0 / 0.2);
+    border-radius: 999px;
+  }
   body {
     @apply bg-background text-foreground;
     font-family: var(--font-family-base);
     touch-action: pan-x pan-y;
   }
+}
+
+/* 오버레이 스크롤 유틸리티 (스크롤바가 레이아웃 폭을 차지하지 않음) */
+@utility overflow-y-overlay {
+  overflow-y: overlay;
 }
