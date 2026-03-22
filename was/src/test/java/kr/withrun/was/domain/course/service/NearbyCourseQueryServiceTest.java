@@ -30,10 +30,12 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -77,6 +79,9 @@ class NearbyCourseQueryServiceTest {
                 courseReviewRepository,
                 courseGhostLeaderboardRepository
         );
+
+        lenient().when(courseLikeRepository.countByCourseIds(anyList())).thenReturn(Map.of());
+        lenient().when(courseBookmarkRepository.countByCourseIds(anyList())).thenReturn(Map.of());
     }
 
     @DisplayName("filters courses outside target distance window")
@@ -243,6 +248,34 @@ class NearbyCourseQueryServiceTest {
         assertThat(response.hasMore()).isTrue();
         assertThat(response.nextCursor()).isEqualTo(NearbyCourseCursorCodec.encode(0, 19L));
         assertThat(response.suggestedNextRadiusM()).isNull();
+    }
+
+    @DisplayName("enriches paged nearby courses with batched like and bookmark counts")
+    @Test
+    void enrichesPagedNearbyCoursesWithBatchedLikeAndBookmarkCounts() {
+        NearbyCoursesRequest request = nearbyCoursesRequest(1000, 2, null);
+        stubCandidates(
+                candidate(10L, 10000, coordinatesAtUser(), CourseType.RIVERSIDE),
+                candidate(11L, 10000, coordinatesNorthOfUser(300), CourseType.PARK),
+                candidate(12L, 10000, coordinatesNorthOfUser(600), CourseType.TRACK)
+        );
+        when(courseLikeRepository.countByCourseIds(List.of(10L, 11L)))
+                .thenReturn(Map.of(10L, 7L));
+        when(courseBookmarkRepository.countByCourseIds(List.of(10L, 11L)))
+                .thenReturn(Map.of(11L, 3L));
+
+        NearbyCoursesResponse response = findNearbyCourses(request);
+
+        assertThat(response.items())
+                .extracting(
+                        NearbyCourseItemResponse::courseId,
+                        NearbyCourseItemResponse::likeCount,
+                        NearbyCourseItemResponse::bookmarkCount
+                )
+                .containsExactly(
+                        org.assertj.core.groups.Tuple.tuple(10L, 7L, 0L),
+                        org.assertj.core.groups.Tuple.tuple(11L, 0L, 3L)
+                );
     }
 
     @DisplayName("resumes strictly after cursor tuple")
