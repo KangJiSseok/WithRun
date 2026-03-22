@@ -174,12 +174,14 @@ public class RunningSessionService {
     ) {
         RunningSession runningSession = getRunningSession(runningSessionId);
         runningSession.validateCourseRegistrable();
+        CourseStatus courseStatus = parseCourseStatus(request.mode());
         Difficulty difficulty = parseDifficulty(request.difficulty());
         List<CourseType> courseTypes = parseCourseTypes(request.courseTypes());
+        Coordinates courseCoordinates = buildCourseCoordinates(runningSessionId);
 
         Course course = courseRepository.save(Course.builder()
                 .title(request.title())
-                .status(CourseStatus.COMMUNITY)
+                .status(courseStatus)
                 .distanceM(runningSession.getDistanceM())
                 .elevationGainM(runningSession.getElevationGainM())
                 .snapshotImageUrl(resolveSnapshotImageUrl(request.snapshotImageUrl(), runningSession.getSnapshotImageUrl()))
@@ -187,7 +189,7 @@ public class RunningSessionService {
                 .startLongitude(runningSession.getStartLongitude())
                 .endLatitude(runningSession.getEndLatitude())
                 .endLongitude(runningSession.getEndLongitude())
-                .coordinates(copyCoordinates(runningSession.getCoordinates()))
+                .coordinates(courseCoordinates)
                 .user(runningSession.getUser())
                 .build());
 
@@ -510,6 +512,19 @@ public class RunningSessionService {
         }
     }
 
+    private CourseStatus parseCourseStatus(String rawCourseStatus) {
+        try {
+            CourseStatus courseStatus = CourseStatus.valueOf(rawCourseStatus);
+            if (courseStatus == CourseStatus.COMMUNITY || courseStatus == CourseStatus.PRIVATE) {
+                return courseStatus;
+            }
+        } catch (IllegalArgumentException exception) {
+            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+        }
+
+        throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+    }
+
     private List<CourseType> parseCourseTypes(List<String> rawCourseTypes) {
         LinkedHashSet<CourseType> courseTypes = new LinkedHashSet<>();
         for (String rawCourseType : rawCourseTypes) {
@@ -533,17 +548,12 @@ public class RunningSessionService {
         return requestedSnapshotImageUrl;
     }
 
-    private Coordinates copyCoordinates(Coordinates coordinates) {
-        if (coordinates == null) {
-            return null;
-        }
-
-        List<GeoPoint> copiedPoints = coordinates.values().stream()
-                .map(point -> point == null
-                        ? null
-                        : new GeoPoint(point.latitude(), point.longitude(), point.elevationM()))
+    private Coordinates buildCourseCoordinates(Long runningSessionId) {
+        List<GeoPoint> points = runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
+                .stream()
+                .map(sample -> new GeoPoint(sample.getLatitude(), sample.getLongitude(), sample.getAltitudeM()))
                 .toList();
-        return new Coordinates(copiedPoints);
+        return new Coordinates(points);
     }
 
     private String toCursor(PastRunningSessionHistoryRow row) {

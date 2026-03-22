@@ -449,9 +449,9 @@ class RunningSessionServiceTest {
         assertThat(runningSession.getIsCompleted()).isTrue();
     }
 
-    @DisplayName("완료된 러닝 세션을 커뮤니티 코스로 등록한다")
+    @DisplayName("완료된 러닝 세션을 요청한 모드의 코스로 등록한다")
     @Test
-    void registersCompletedRunningSessionAsCommunityCourse() {
+    void registersCompletedRunningSessionCourseWithRequestedMode() {
         RunningSession runningSession = runningSession(81L, 7L, true, STARTED_AT);
         setField(runningSession, "distanceM", 10000);
         setField(runningSession, "elevationGainM", 120);
@@ -459,17 +459,44 @@ class RunningSessionServiceTest {
         setField(runningSession, "endLatitude", 37.574501);
         setField(runningSession, "endLongitude", 126.989001);
         setField(runningSession, "coordinates", new Coordinates(
-                List.of(37.566501, 37.574501),
-                List.of(126.978001, 126.989001),
-                List.of(0.0, 1.0)
+                List.of(37.574501, 37.566501),
+                List.of(126.989001, 126.978001),
+                List.of(1.0, 0.0)
+        ));
+        RunningGpsSample firstGpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 5),
+                37.566501,
+                126.978001,
+                15.5,
+                3.0,
+                180.0
+        );
+        RunningGpsSample secondGpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 15),
+                37.574501,
+                126.989001,
+                18.2,
+                2.6,
+                184.0
+        );
+        Coordinates expectedCoordinates = new Coordinates(List.of(
+                new GeoPoint(37.566501, 126.978001, 15.5),
+                new GeoPoint(37.574501, 126.989001, 18.2)
         ));
         RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
                 "한강 야간 러닝 10K",
+                "COMMUNITY",
                 "MEDIUM",
                 List.of("RIVERSIDE", "URBAN", "RIVERSIDE"),
                 "course/snapshot.png"
         );
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(81L)).thenReturn(Optional.of(runningSession));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(81L))
+                .thenReturn(List.of(firstGpsSample, secondGpsSample));
         when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 501L));
 
         RegisterRunningSessionCourseResponse response =
@@ -482,18 +509,16 @@ class RunningSessionServiceTest {
         assertThat(response.distanceM()).isEqualTo(10000);
         assertThat(response.elevationGainM()).isEqualTo(120);
         assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.withrun.app/course/snapshot.png");
-        assertThat(response.coordinates()).isEqualTo(new Coordinates(List.of(
-                new GeoPoint(37.566501, 126.978001, 0.0),
-                new GeoPoint(37.574501, 126.989001, 1.0)
-        )));
+        assertThat(response.coordinates()).isEqualTo(expectedCoordinates);
 
         ArgumentCaptor<Course> courseCaptor = ArgumentCaptor.forClass(Course.class);
         verify(courseRepository).save(courseCaptor.capture());
+        verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(81L);
         Course savedCourse = courseCaptor.getValue();
         assertThat(savedCourse.getStatus()).isEqualTo(CourseStatus.COMMUNITY);
         assertThat(savedCourse.getUser()).isEqualTo(runningSession.getUser());
-        assertThat(savedCourse.getCoordinates()).isEqualTo(runningSession.getCoordinates());
-        assertThat(savedCourse.getCoordinates()).isNotSameAs(runningSession.getCoordinates());
+        assertThat(savedCourse.getCoordinates()).isEqualTo(expectedCoordinates);
+        assertThat(savedCourse.getCoordinates()).isNotEqualTo(runningSession.getCoordinates());
 
         ArgumentCaptor<CourseDifficulty> difficultyCaptor = ArgumentCaptor.forClass(CourseDifficulty.class);
         verify(courseDifficultyRepository).save(difficultyCaptor.capture());
@@ -513,29 +538,138 @@ class RunningSessionServiceTest {
                 .containsOnly(savedCourse);
     }
 
+    @DisplayName("완료된 러닝 세션을 PRIVATE 코스로 등록한다")
+    @Test
+    void registersCompletedRunningSessionCourseAsPrivateCourse() {
+        RunningSession runningSession = runningSession(84L, 7L, true, STARTED_AT);
+        setField(runningSession, "snapshotImageUrl", "snapshots/84.png");
+        setField(runningSession, "coordinates", new Coordinates(
+                List.of(37.566501, 37.565901),
+                List.of(126.978001, 126.977501),
+                List.of(0.0, 0.0)
+        ));
+        RunningGpsSample firstGpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 10),
+                37.565901,
+                126.977501,
+                11.8,
+                3.1,
+                175.0
+        );
+        RunningGpsSample secondGpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 20),
+                37.566501,
+                126.978001,
+                12.4,
+                2.8,
+                178.0
+        );
+        Coordinates expectedCoordinates = new Coordinates(List.of(
+                new GeoPoint(37.565901, 126.977501, 11.8),
+                new GeoPoint(37.566501, 126.978001, 12.4)
+        ));
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "개인 보관 코스",
+                "PRIVATE",
+                "EASY",
+                List.of("RIVERSIDE"),
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(84L)).thenReturn(Optional.of(runningSession));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(84L))
+                .thenReturn(List.of(firstGpsSample, secondGpsSample));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 503L));
+
+        RegisterRunningSessionCourseResponse response =
+                runningSessionService.registerRunningSessionCourse(84L, request);
+
+        assertThat(response.status()).isEqualTo(CourseStatus.PRIVATE);
+        assertThat(response.coordinates()).isEqualTo(expectedCoordinates);
+
+        ArgumentCaptor<Course> courseCaptor = ArgumentCaptor.forClass(Course.class);
+        verify(courseRepository).save(courseCaptor.capture());
+        verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(84L);
+        assertThat(courseCaptor.getValue().getStatus()).isEqualTo(CourseStatus.PRIVATE);
+        assertThat(courseCaptor.getValue().getCoordinates()).isEqualTo(expectedCoordinates);
+    }
+
+    @DisplayName("지원하지 않는 코스 모드는 등록할 수 없다")
+    @Test
+    void rejectsUnsupportedCourseModeWhenRegisteringRunningSessionCourse() {
+        RunningSession runningSession = runningSession(85L, 7L, true, STARTED_AT);
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "잘못된 모드 코스",
+                "OFFICIAL",
+                "MEDIUM",
+                List.of("RIVERSIDE"),
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(85L)).thenReturn(Optional.of(runningSession));
+
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(85L, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
+
+        verify(courseRepository, never()).save(any(Course.class));
+    }
+
     @DisplayName("요청 이미지 URL이 없으면 러닝 세션 스냅샷을 사용한다")
     @Test
     void fallsBackToRunningSessionSnapshotWhenRequestSnapshotIsMissing() {
         RunningSession runningSession = runningSession(82L, 7L, true, STARTED_AT);
         setField(runningSession, "snapshotImageUrl", "snapshots/82.png");
         setField(runningSession, "coordinates", new Coordinates(
-                List.of(37.566501),
-                List.of(126.978001),
+                List.of(37.566001),
+                List.of(126.977001),
                 List.of(0.0)
+        ));
+        RunningGpsSample firstGpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 25),
+                37.566501,
+                126.978001,
+                13.1,
+                2.7,
+                179.0
+        );
+        RunningGpsSample secondGpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 35),
+                37.567101,
+                126.978601,
+                13.9,
+                2.5,
+                182.0
+        );
+        Coordinates expectedCoordinates = new Coordinates(List.of(
+                new GeoPoint(37.566501, 126.978001, 13.1),
+                new GeoPoint(37.567101, 126.978601, 13.9)
         ));
         RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
                 "한강 아침 러닝",
+                "COMMUNITY",
                 "EASY",
                 List.of("RIVERSIDE"),
                 null
         );
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(82L)).thenReturn(Optional.of(runningSession));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(82L))
+                .thenReturn(List.of(firstGpsSample, secondGpsSample));
         when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 502L));
 
         RegisterRunningSessionCourseResponse response =
                 runningSessionService.registerRunningSessionCourse(82L, request);
 
         assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.withrun.app/snapshots/82.png");
+        assertThat(response.coordinates()).isEqualTo(expectedCoordinates);
+        verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(82L);
     }
 
     @DisplayName("완료되지 않은 세션은 코스 등록을 거부한다")
@@ -544,6 +678,7 @@ class RunningSessionServiceTest {
         RunningSession runningSession = runningSession(83L, 7L, false, STARTED_AT);
         RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
                 "등록 실패 코스",
+                "COMMUNITY",
                 "MEDIUM",
                 List.of("RIVERSIDE"),
                 null

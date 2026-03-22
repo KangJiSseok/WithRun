@@ -406,7 +406,7 @@ class RunningSessionControllerTest {
 
     @DisplayName("코스 등록 요청에 필수 필드가 없으면 잘못된 입력 응답을 반환한다")
     @ParameterizedTest(name = "누락된 필드: {0}")
-    @ValueSource(strings = {"title", "difficulty", "courseTypes"})
+    @ValueSource(strings = {"title", "mode", "difficulty", "courseTypes"})
     void returnsInvalidInputValueWhenRegisterCourseRequiredFieldIsMissing(String missingField) throws Exception {
         mockMvc.perform(post("/api/running-sessions/{runningSessionId}/register-course", 901L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -680,6 +680,7 @@ class RunningSessionControllerTest {
     private static RegisterRunningSessionCourseRequest validRegisterCourseRequest() {
         return new RegisterRunningSessionCourseRequest(
                 "한강 야간 러닝 10K",
+                "COMMUNITY",
                 "MEDIUM",
                 java.util.List.of("RIVERSIDE", "URBAN"),
                 "https://cdn.example.com/course/snapshot.png"
@@ -690,6 +691,7 @@ class RunningSessionControllerTest {
         return """
                 {
                   "title": "한강 야간 러닝 10K",
+                  "mode": "COMMUNITY",
                   "difficulty": "MEDIUM",
                   "courseTypes": ["RIVERSIDE", "URBAN"],
                   "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
@@ -701,6 +703,7 @@ class RunningSessionControllerTest {
         return switch (missingField) {
             case "title" -> """
                     {
+                      "mode": "COMMUNITY",
                       "difficulty": "MEDIUM",
                       "courseTypes": ["RIVERSIDE", "URBAN"],
                       "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
@@ -709,6 +712,15 @@ class RunningSessionControllerTest {
             case "difficulty" -> """
                     {
                       "title": "한강 야간 러닝 10K",
+                      "mode": "COMMUNITY",
+                      "courseTypes": ["RIVERSIDE", "URBAN"],
+                      "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
+                    }
+                    """;
+            case "mode" -> """
+                    {
+                      "title": "한강 야간 러닝 10K",
+                      "difficulty": "MEDIUM",
                       "courseTypes": ["RIVERSIDE", "URBAN"],
                       "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
                     }
@@ -716,6 +728,7 @@ class RunningSessionControllerTest {
             case "courseTypes" -> """
                     {
                       "title": "한강 야간 러닝 10K",
+                      "mode": "COMMUNITY",
                       "difficulty": "MEDIUM",
                       "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
                     }
