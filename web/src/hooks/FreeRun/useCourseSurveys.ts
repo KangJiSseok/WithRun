@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
-import { getCourseSurveys } from '@/apis/course';
-import type { GetCourseSurveysResponse } from '@/apis/course';
+import { getCourseSurveysApi } from '@/apis';
+import type { GetCourseSurveysResponse } from '@/apis';
 
 export function useCourseSurveys(isOpen: boolean) {
   const [surveyData, setSurveyData] = useState<GetCourseSurveysResponse | null>(null);
@@ -12,7 +12,7 @@ export function useCourseSurveys(isOpen: boolean) {
     async function load() {
       setIsLoading(true);
       try {
-        const res = await getCourseSurveys();
+        const res = await getCourseSurveysApi();
         setSurveyData(res.data);
       } catch {
         setSurveyData(null);
