@@ -8,13 +8,11 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
-import kr.withrun.was.domain.course.dto.CourseFilterResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
-import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesRequest;
@@ -43,39 +41,6 @@ public class CourseController {
 
     public CourseController(CourseService courseService) {
         this.courseService = courseService;
-    }
-
-    @Operation(
-            summary = "코스 설문 항목을 조회한다",
-            description = "코스 유형과 난이도 설문에 사용할 선택 항목 목록을 조회한다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "코스 설문 항목 조회 성공",
-                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CourseSurveyApiResponse.class))
-            )
-    })
-    @GetMapping("/surveys")
-    public ResponseEntity<ApiResponse<CourseSurveyResponse>> findCourseSurveys() {
-        return ApiResponse.successEntity(courseService.findCourseSurveys());
-    }
-
-
-    @Operation(
-            summary = "코스 필터 항목을 조회한다",
-            description = "코스 거리, 코스 유형과 난이도 설문에 사용할 선택 항목 목록을 조회한다."
-    )
-    @ApiResponses({
-            @io.swagger.v3.oas.annotations.responses.ApiResponse(
-                    responseCode = "200",
-                    description = "코스 필터 항목 조회 성공",
-                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CourseFilterApiResponse.class))
-            )
-    })
-    @GetMapping("/filter/normal-run")
-    public ResponseEntity<ApiResponse<CourseFilterResponse>> findCourseFilters() {
-        return ApiResponse.successEntity(courseService.findCourseFilters());
     }
 
     @Operation(

@@ -9,7 +9,8 @@ import kr.withrun.was.domain.course.dto.CourseFilterResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseLikeStatusResponse;
-import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
+import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
+import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.dto.CreateCourseReviewResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
@@ -29,16 +30,29 @@ public final class SuccessApiResponseDocs {
     private SuccessApiResponseDocs() {
     }
 
-    @Schema(name = "CourseSurveyApiResponse", description = "코스 설문 문항 조회 성공 응답")
-    public record CourseSurveyApiResponse(
+    @Schema(name = "CourseRegisterMetaApiResponse", description = "코스 등록 메타 조회 성공 응답")
+    public record CourseRegisterMetaApiResponse(
             @Schema(description = "요청 성공 여부", example = "true")
             boolean success,
             @Schema(description = "성공 응답 코드", example = "S001")
             String code,
             @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
             String message,
-            @Schema(description = "코스 설문 응답 데이터")
-            CourseSurveyResponse data
+            @Schema(description = "코스 등록 메타 응답 데이터")
+            CourseRegisterMetaResponse data
+    ) {
+    }
+
+    @Schema(name = "CourseSurveyMetaApiResponse", description = "설문 메타 조회 성공 응답")
+    public record CourseSurveyMetaApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "설문 메타 응답 데이터")
+            CourseSurveyMetaResponse data
     ) {
     }
 
