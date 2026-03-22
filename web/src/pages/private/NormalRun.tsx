@@ -1,5 +1,5 @@
-import { NormalRunScreen } from '@/features/NormalRun';
+import { NormalRunMapScreen } from '@/features/NormalRun';
 
 export function NormalRunPage() {
-  return <NormalRunScreen />;
+  return <NormalRunMapScreen />;
 }
