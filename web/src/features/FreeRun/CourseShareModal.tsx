@@ -1,6 +1,6 @@
-// 공식 코스 등록 폼 Drawer (바텀 시트)
+// 코스 등록 폼 Drawer (바텀 시트)
 // shadcn Drawer (vaul) 사용 - 스와이프 제스처 및 스크롤 잠금 처리
-// Drawer가 열릴 때 GET /api/courses/surveys로 코스 타입·난이도 선택지를 조회해 렌더링
+// Drawer가 열릴 때 GET /meta/course/register로 코스 타입·난이도·모드 선택지를 조회해 렌더링
 
 import { useState } from 'react';
 import { Button } from '@/shared/components/shadcn/button';
@@ -11,7 +11,7 @@ import {
   DrawerTitle,
 } from '@/shared/components/shadcn/drawer';
 import { cn } from '@/shared/utils';
-import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
+import type { CourseDifficulty, CourseType, CourseRegistrationMode } from '@/shared/types/api.type';
 import { useCourseSurveys } from '@/hooks/FreeRun/useCourseSurveys';
 import { registerCourse } from '@/apis/runningSessions';
 
@@ -24,22 +24,6 @@ type CourseShareModalProps = {
   onClose: () => void;
 };
 
-// 서버 enum 라벨 -> 화면 표시 한국어 매핑
-const COURSE_TYPE_LABEL: Record<string, string> = {
-  RIVERSIDE: '강변',
-  PARK: '공원',
-  MOUNTAIN_TRAIL: '산·둘레길',
-  TRACK: '트랙',
-  URBAN: '도심',
-  OTHER: '기타',
-};
-
-const DIFFICULTY_LABEL: Record<string, string> = {
-  EASY: '쉬움',
-  MEDIUM: '보통',
-  HARD: '어려움',
-};
-
 export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
   const [courseTitle, setCourseTitle] = useState(
     `나의 러닝 ${new Date().toLocaleDateString()}`,
@@ -48,26 +32,23 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
   const [difficultyOverride, setDifficultyOverride] = useState<CourseDifficulty | null>(null);
   // 선택된 코스 타입 목록 (서버 enum 값, 복수 선택 가능)
   const [courseTypes, setCourseTypes] = useState<CourseType[]>([]);
+  const [courseMode, setCourseMode] = useState<CourseRegistrationMode>('COMMUNITY');
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // isOpen: Drawer가 열렸는지 여부를 전달
-  // 훅 내부에서 isOpen이 true가 될 때 GET /courses/surveys API 호출
-  // surveyData - API 응답 (courseTypes, difficulties 배열)
-  // isLoading - 로딩 중 여부 (로딩 중일 때 "로딩 중..." 표시)
+  // isOpen이 true가 될 때 GET /meta/course/register API 호출
+  // surveyData - API 응답 (courseTypes, difficulties, mode 배열)
+  // 각 항목: { data: 서버 enum 값, label: 화면 표시 한국어 }
   const { surveyData, isLoading } = useCourseSurveys(isOpen);
 
-  // 추후 변경: store에서 실제 runningSessionId 읽어오기
-  // const runningSessionId = useFreeRunResultStore((s) => s.runningSessionId) ?? MOCK_RUNNING_SESSION_ID;
   const runningSessionId = useRunningSessionStore((s) => s.runningSessionId) ?? MOCK_RUNNING_SESSION_ID;
   const setCourseId = useRunningSessionStore((s) => s.setCourseId);
 
   // 사용자가 선택한 값이 있으면 그 값, 없으면 API 첫 번째 항목을 기본값으로 사용
-  const difficulty = difficultyOverride ?? (surveyData?.difficulties[0]?.label as CourseDifficulty | undefined);
+  const difficulty = difficultyOverride ?? (surveyData?.difficulties[0]?.data as CourseDifficulty | undefined);
 
-  // 코스 타입 다중 선택 토글 함수
-  function toggleCourseType(label: CourseType) {
+  function toggleCourseType(data: CourseType) {
     setCourseTypes((prev) =>
-      prev.includes(label) ? prev.filter((t) => t !== label) : [...prev, label],
+      prev.includes(data) ? prev.filter((t) => t !== data) : [...prev, data],
     );
   }
 
@@ -79,6 +60,7 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
         title: courseTitle,
         difficulty,
         courseTypes,
+        mode: courseMode,
       });
       setCourseId(res.data.courseId);
       onClose();
@@ -93,7 +75,7 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
         className="bg-[hsl(var(--secondary-2))] border-t border-[hsl(var(--secondary-3))] max-h-[90dvh]"
       >
         <DrawerHeader className="text-left px-6 pt-4 pb-0">
-          <DrawerTitle className="h3-b text-[hsl(var(--text-inverse))]">공식 코스 등록</DrawerTitle>
+          <DrawerTitle className="h3-b text-[hsl(var(--text-inverse))]">코스 등록</DrawerTitle>
         </DrawerHeader>
 
         <div className="overflow-y-auto px-6 pb-8 pt-4 space-y-[var(--space-5)]">
@@ -115,22 +97,43 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
 
           {!isLoading && surveyData && (
             <>
-              {/* 난이도 */}
+              {/* 저장 유형 */}
               <div className="space-y-[var(--space-2)]">
-                <label className="caption-b text-[hsl(var(--text-inverse))]">난이도</label>
+                <label className="caption-b text-[hsl(var(--text-inverse))]">저장 유형</label>
                 <div className="flex gap-2">
-                  {surveyData.difficulties.map(({ label }) => (
+                  {surveyData.mode.map(({ data, label }) => (
                     <button
-                      key={label}
-                      onClick={() => setDifficultyOverride(label as CourseDifficulty)}
+                      key={data}
+                      onClick={() => setCourseMode(data as CourseRegistrationMode)}
                       className={cn(
                         'flex-1 py-2 rounded-xl caption-m transition-colors border',
-                        difficulty === label
+                        courseMode === data
                           ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
                           : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
                       )}
                     >
-                      {DIFFICULTY_LABEL[label] ?? label}
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 난이도 */}
+              <div className="space-y-[var(--space-2)]">
+                <label className="caption-b text-[hsl(var(--text-inverse))]">난이도</label>
+                <div className="flex gap-2">
+                  {surveyData.difficulties.map(({ data, label }) => (
+                    <button
+                      key={data}
+                      onClick={() => setDifficultyOverride(data as CourseDifficulty)}
+                      className={cn(
+                        'flex-1 py-2 rounded-xl caption-m transition-colors border',
+                        difficulty === data
+                          ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
+                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
+                      )}
+                    >
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -143,18 +146,18 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
                   <span className="caption-r text-[hsl(var(--secondary-5))]">(중복 가능)</span>
                 </label>
                 <div className="flex flex-wrap gap-2">
-                  {surveyData.courseTypes.map(({ label }) => (
+                  {surveyData.courseTypes.map(({ data, label }) => (
                     <button
-                      key={label}
-                      onClick={() => toggleCourseType(label as CourseType)}
+                      key={data}
+                      onClick={() => toggleCourseType(data as CourseType)}
                       className={cn(
                         'px-3 py-2 rounded-xl caption-m transition-colors border',
-                        courseTypes.includes(label as CourseType)
+                        courseTypes.includes(data as CourseType)
                           ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
                           : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
                       )}
                     >
-                      {COURSE_TYPE_LABEL[label] ?? label}
+                      {label}
                     </button>
                   ))}
                 </div>
@@ -162,13 +165,13 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
             </>
           )}
 
-          {/* 업로드 버튼 */}
+          {/* 등록 버튼 */}
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
             className="w-full py-4 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] body-b h-auto"
           >
-            {isSubmitting ? '업로드 중...' : '커뮤니티에 업로드'}
+            {isSubmitting ? '등록 중...' : courseMode === 'PRIVATE' ? '개인 코스로 저장' : '커뮤니티에 등록'}
           </Button>
         </div>
       </DrawerContent>

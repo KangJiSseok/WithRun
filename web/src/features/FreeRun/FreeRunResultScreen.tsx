@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Award, Home, MapPin, Activity, Timer, Save, Check, UploadCloud, Heart } from 'lucide-react';
+import { Award, Home, MapPin, Activity, Timer, Check, UploadCloud, Heart } from 'lucide-react';
 import { cn, formatDuration, formatPace } from '@/shared/utils';
 import { CourseShareModal } from './CourseShareModal';
 import { useRunningSessionStore } from '@/stores/runningSession';
@@ -37,12 +37,12 @@ function StatItem({ label, value, unit }: StatItemProps) {
 
 export function FreeRunResultScreen() {
   const navigate = useNavigate();
-  const [isSaved, setIsSaved] = useState(false);
   const [isLiked, setIsLiked] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
 
   const result = useRunningSessionStore((s) => s.result);
   const courseId = useRunningSessionStore((s) => s.courseId);
+  const mode = useRunningSessionStore((s) => s.mode);
 
   const durationSec = result?.durationSec ?? 0;
   const distanceM = result?.distanceM ?? 0;
@@ -71,16 +71,18 @@ export function FreeRunResultScreen() {
     <div className={cn('absolute inset-0 flex flex-col', showShareModal ? 'overflow-hidden' : 'overflow-y-auto')}>
       {/* 헤더 */}
       <div className="relative flex flex-col items-center pt-10 pb-6 px-6">
-        {/* 좋아요 버튼 (추후 API 연동 시 POST /runs/:runId/like 호출로 교체) */}
-        <button
-          onClick={handleLike}
-          className="absolute top-10 right-6 p-2"
-        >
-          <Heart
-            size={26}
-            className={cn(isLiked ? 'fill-red-400 text-red-400' : 'text-[hsl(var(--secondary-5))]')}
-          />
-        </button>
+        {/* 좋아요 버튼 — FREE 모드에서는 표시하지 않음 */}
+        {mode !== 'FREE' && (
+          <button
+            onClick={handleLike}
+            className="absolute top-10 right-6 p-2"
+          >
+            <Heart
+              size={26}
+              className={cn(isLiked ? 'fill-red-400 text-red-400' : 'text-[hsl(var(--secondary-5))]')}
+            />
+          </button>
+        )}
         <div className="p-4 rounded-full bg-primary/20 border border-primary/30 mb-4">
           <Award size={40} className="text-primary" />
         </div>
@@ -173,22 +175,7 @@ export function FreeRunResultScreen() {
           </div>
         </div>
 
-        {/* 코스 저장 버튼 (추후 API 연동 시 POST /courses 호출과 같은 형식으로 교체) */}
-        <button
-          onClick={() => setIsSaved(true)}
-          disabled={isSaved}
-          className={cn(
-            'w-full py-4 rounded-2xl body-b flex items-center justify-center gap-2 transition-colors',
-            isSaved
-              ? 'bg-[hsl(var(--secondary-4))] text-[hsl(var(--secondary-5))] cursor-default'
-              : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))]',
-          )}
-        >
-          {isSaved ? <Check size={18} /> : <Save size={18} />}
-          {isSaved ? '저장 완료' : '코스 저장'}
-        </button>
-        
-        {/* 공식 코스 등록 버튼 */}
+        {/* 코스 등록 버튼 */}
         <button
           onClick={() => setShowShareModal(true)}
           disabled={courseId !== null}
@@ -200,7 +187,7 @@ export function FreeRunResultScreen() {
           )}
         >
           {courseId !== null ? <Check size={18} /> : <UploadCloud size={18} />}
-          {courseId !== null ? '등록 완료' : '공식 코스 등록'}
+          {courseId !== null ? '등록 완료' : '코스 등록'}
         </button>
 
         {/* 홈으로 버튼 */}
