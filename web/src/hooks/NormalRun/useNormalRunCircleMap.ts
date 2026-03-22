@@ -52,7 +52,8 @@ type UseNormalRunCircleMapReturn = {
 
 export function useNormalRunCircleMap(
   courses: CourseItem[],
-  circleMode: CircleMode
+  circleMode: CircleMode,
+  onMapTouched?: () => void
 ): UseNormalRunCircleMapReturn {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
@@ -237,6 +238,7 @@ export function useNormalRunCircleMap(
           latitude: newLatLng.getLat(),
           longitude: newLatLng.getLng(),
         });
+        onMapTouched?.();
       };
       kakao.maps.event.addListener(
         mapRef.current,
@@ -245,7 +247,7 @@ export function useNormalRunCircleMap(
       );
     }
     // mapRef.current는 초기화 후 변경 없음
-  }, [circleMode]);
+  }, [circleMode, onMapTouched]);
 
   // 코스 출발점 마커 업데이트 (courses 변경 시)
   useEffect(() => {

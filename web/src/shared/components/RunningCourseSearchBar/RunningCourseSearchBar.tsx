@@ -4,11 +4,13 @@ import { Input } from '../shadcn/input';
 interface RunningCourseSearchBarProps {
   searchKeyword: string;
   handleSearchKeyword: (searchKeywordText: string) => void;
+  compact?: boolean;
 }
 
 export function RunningCourseSearchBar({
   searchKeyword,
   handleSearchKeyword,
+  compact = false,
 }: RunningCourseSearchBarProps) {
   return (
     <div className="relative flex-1">
@@ -20,7 +22,7 @@ export function RunningCourseSearchBar({
         value={searchKeyword}
         onChange={(event) => handleSearchKeyword(event.target.value)}
         placeholder="코스 이름 검색..."
-        className="h-14 rounded-[var(--radius-xl)] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] pl-11 text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-secondary))]"
+        className={`${compact ? 'h-10' : 'h-14'} rounded-[var(--radius-xl)] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] pl-11 text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-secondary))]`}
       />
     </div>
   );
