@@ -1,6 +1,8 @@
 export function createMarkerContent(label: string, color: string): HTMLElement {
   const wrapper = document.createElement('div');
-  wrapper.style.cssText = 'display:flex;flex-direction:column;align-items:center;gap:4px;';
+  wrapper.style.cssText =
+    'display:flex;flex-direction:column;align-items:center;gap:4px;pointer-events:none;user-select:none;';
+  wrapper.draggable = false;
 
   const dot = document.createElement('div');
   dot.style.cssText = `
