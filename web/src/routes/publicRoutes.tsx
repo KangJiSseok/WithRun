@@ -3,14 +3,13 @@ import type { RouteObject } from 'react-router-dom';
 import { EntryPage } from '@/pages/public/entry';
 import ExamplePublicPage from '@/pages/public/example';
 import { OnboardingPage } from '@/pages/public/onboarding';
-import RiveTestPage from '@/pages/public/rive-test';
 import { FullscreenLayout } from '@/shared/layouts/FullscreenLayout';
 
 export const publicRoutes: RouteObject[] = [
   { path: '/', element: <EntryPage /> },
   { path: '/example', element: <ExamplePublicPage /> },
-  { path: '/rive-test', element: <RiveTestPage /> },
   {
+    // 온보딩은 헤더/하단 탭 없이 보여줘야 해서 전체 화면 레이아웃을 사용한다.
     element: <FullscreenLayout />,
     children: [{ path: '/onboarding', element: <OnboardingPage /> }],
   },
