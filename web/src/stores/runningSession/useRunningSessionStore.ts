@@ -12,11 +12,11 @@ interface RunningResult {
 interface RunningSessionStore {
   runningSessionId: number | null;
   courseId: number | null;
-  runningMode: RunningMode | null;
+  mode: RunningMode | null;
   result: RunningResult | null;
   setRunningSessionId: (id: number) => void;
   setCourseId: (id: number) => void;
-  setRunningMode: (mode: RunningMode) => void;
+  setMode: (mode: RunningMode) => void;
   setResult: (result: RunningResult) => void;
   clear: () => void;
 }
@@ -24,11 +24,11 @@ interface RunningSessionStore {
 export const useRunningSessionStore = create<RunningSessionStore>((set) => ({
   runningSessionId: null,
   courseId: null,
-  runningMode: null,
+  mode: null,
   result: null,
   setRunningSessionId: (id) => set({ runningSessionId: id }),
   setCourseId: (id) => set({ courseId: id }),
-  setRunningMode: (mode) => set({ runningMode: mode }),
+  setMode: (mode) => set({ mode }),
   setResult: (result) => set({ result }),
-  clear: () => set({ runningSessionId: null, courseId: null, runningMode: null, result: null }),
+  clear: () => set({ runningSessionId: null, courseId: null, mode: null, result: null }),
 }));

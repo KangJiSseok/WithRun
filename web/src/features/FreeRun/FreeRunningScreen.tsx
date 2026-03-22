@@ -41,7 +41,6 @@ export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
   const { time, distance, pace, calories, isPaused, togglePause } = useFreeRunning();
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
   const setResult = useRunningSessionStore((s) => s.setResult);
-  const setRunningMode = useRunningSessionStore((s) => s.setRunningMode);
   const runningSessionId = useRunningSessionStore((s) => s.runningSessionId);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -67,7 +66,7 @@ export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
     setLocalResult({ durationSec, distanceM, caloriesKcal: calories, avgPaceSecPerKm });
     setSubmitError(null);
     setIsSubmitting(true);
-    setRunningMode('FREE');
+
 
     try {
       const res = await completeRunningSession(runningSessionId!, {
