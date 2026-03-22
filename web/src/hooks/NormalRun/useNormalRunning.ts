@@ -19,6 +19,8 @@ const MOCK_USER_ID = 1;
 
 // 워치 메시지가 이 시간(ms) 이상 오지 않으면 연결 끊김으로 판단
 const WATCH_TIMEOUT_MS = 3000;
+// GPS 데이터가 이 시간(ms) 이상 오지 않으면 stale로 판단
+const GPS_TIMEOUT_MS = 3000;
 
 // 두 GPS 좌표 간 거리 계산 (Haversine 공식, 단위: km)
 function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
@@ -55,10 +57,17 @@ export function useNormalRunning() {
   const lastSplitTimeRef = useRef(0);
   const lastSplitElevationRef = useRef(0);
   const currentKmHeartRatesRef = useRef<number[]>([]);
+  const lastGpsReceivedAtRef = useRef<number | null>(null);
 
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
   const watchHealthData = useBridgeDataStore((s) => s.watchHealthData);
   const lastWatchMessageAt = useBridgeDataStore((s) => s.lastWatchMessageAt);
+
+  // latest ref 패턴: 헬스 샘플 effect에서 stale closure 없이 최신값 읽기
+  const latestGpsLocationRef = useRef(gpsLocation);
+  latestGpsLocationRef.current = gpsLocation;
+  const latestIsWatchConnectedRef = useRef(isWatchConnected);
+  latestIsWatchConnectedRef.current = isWatchConnected;
 
   // 워치 연결 상태 1초마다 체크
   useEffect(() => {
@@ -100,6 +109,12 @@ export function useNormalRunning() {
     }
   }, [isPaused]);
 
+  // GPS 수신 시각 추적 (isPaused 무관하게 신선도 판단용)
+  useEffect(() => {
+    if (!gpsLocation) return;
+    lastGpsReceivedAtRef.current = Date.now();
+  }, [gpsLocation]);
+
   // GPS 거리 누적 (워치 폴백용으로 항상 계산)
   useEffect(() => {
     if (isPaused || !gpsLocation) return;
@@ -140,7 +155,10 @@ export function useNormalRunning() {
   // 헬스 샘플 누적 + 구간 심박수 추적
   useEffect(() => {
     if (isPaused || !watchHealthData) return;
-    const speedMps = gpsLocation?.speedMps ?? 0;
+    const isGpsStale =
+      lastGpsReceivedAtRef.current === null ||
+      Date.now() - lastGpsReceivedAtRef.current > GPS_TIMEOUT_MS;
+    const speedMps = isGpsStale ? 0 : (latestGpsLocationRef.current?.speedMps ?? 0);
     healthSamplesRef.current.push({
       sampledAt: new Date(watchHealthData.timestamp).toISOString(),
       heartRate: watchHealthData.heartRate,
@@ -148,9 +166,9 @@ export function useNormalRunning() {
       paceSecPerKm: speedMps > 0 ? Math.round(1000 / speedMps) : 0,
       distanceM: watchHealthData.distanceM,
       caloriesKcal: watchHealthData.caloriesKcal,
-      cadenceSpm: isWatchConnected
-        ? (watchHealthData.cadenceSpm ?? gpsLocation?.cadenceSpm ?? 0)
-        : (gpsLocation?.cadenceSpm ?? 0),
+      cadenceSpm: latestIsWatchConnectedRef.current
+        ? (watchHealthData.cadenceSpm ?? latestGpsLocationRef.current?.cadenceSpm ?? 0)
+        : (latestGpsLocationRef.current?.cadenceSpm ?? 0),
     });
     if (watchHealthData.heartRate > 0) {
       currentKmHeartRatesRef.current.push(watchHealthData.heartRate);
