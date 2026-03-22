@@ -37,6 +37,9 @@ public record NearbyCourseItemResponse(
         @Schema(description = "코스 종료 지점 경도", example = "126.9814")
         Double endLongitude,
 
+        @Schema(description = "타겟 위치와 코스 사이의 최소 거리(m)", example = "320")
+        Integer distanceFromTargetM,
+
         @Schema(description = "사용자 현재 위치와 코스 사이의 최소 거리(m)", example = "320")
         Integer distanceFromUserM,
 
@@ -65,13 +68,14 @@ public record NearbyCourseItemResponse(
             Double startLongitude,
             Double endLatitude,
             Double endLongitude,
+            Integer distanceFromTargetM,
             Integer distanceFromUserM,
             DifficultyOption difficulty,
             List<CourseTypeOption> courseTypes,
             String snapshotImageUrl
     ) {
         this(courseId, title, status, distanceM, elevationGainM, startLatitude, startLongitude, endLatitude, endLongitude,
-                distanceFromUserM, difficulty, courseTypes, 0L, 0L, snapshotImageUrl);
+                distanceFromTargetM, distanceFromUserM, difficulty, courseTypes, 0L, 0L, snapshotImageUrl);
     }
 
     @Schema(name = "NearbyCourseDifficultyOption", description = "주변 코스 응답의 난이도 항목")
