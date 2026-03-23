@@ -1,6 +1,5 @@
-import { useDragControls } from 'framer-motion';
 import { useEffect, useRef, useState } from 'react';
-import type { PanInfo } from 'framer-motion';
+import { useDragControls, type PanInfo } from 'motion/react';
 
 export const HANDLE_HEIGHT = 40;
 
