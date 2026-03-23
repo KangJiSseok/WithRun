@@ -1,20 +1,8 @@
 import type {
-  CourseStatus,
   CourseDifficulty,
+  CourseStatus,
   CourseType,
 } from '@/shared/types/api.type';
-
-// 코스 설문 선택지 옵션
-export type CourseSurveyOption = {
-  data: string;
-  label: string;
-};
-
-// 코스 설문 선택지 응답 (GET /courses/surveys)
-export type GetCourseSurveysResponse = {
-  courseTypes: CourseSurveyOption[];
-  difficulties: CourseSurveyOption[];
-};
 
 export type CoordinatePoint = {
   latitude: number;
@@ -27,7 +15,7 @@ export type CourseDetail = {
   courseId: number;
   title: string;
   status: CourseStatus;
-  difficulty: CourseDifficulty | null;
+  difficulty: { data: CourseDifficulty; label: string } | null;
   distanceM: number;
   elevationGainM: number;
   snapshotImageUrl: string | null;
@@ -36,7 +24,7 @@ export type CourseDetail = {
   endLatitude: number;
   endLongitude: number;
   coordinates: CoordinatePoint[];
-  courseTypes: CourseType[];
+  courseTypes: { data: CourseType; label: string }[];
   likeCount: number;
   isLiked: boolean;
   isBookmarked: boolean;
@@ -55,20 +43,23 @@ export type CourseItem = {
   endLatitude: number;
   endLongitude: number;
   distanceFromUserM: number;
-  difficulty: CourseDifficulty | null;
-  courseTypes: CourseType[];
+  distanceFromTargetM: number;
+  difficulty: { data: string; label: string } | null;
+  courseTypes: { data: string; label: string }[];
   snapshotImageUrl: string | null;
-  // 아래 3개는 백엔드에서 누락된 필드값이라 임시로 옵셔널 처리함
-  likeCount?: number;
-  isLiked?: boolean;
-  isBookmarked?: boolean;
+  likeCount: number;
+  bookmarkCount: number;
 };
+
+export type PreferredDistanceM = { min: number; max: number };
 
 export type GetNearbyCoursesParams = {
   latitude: number;
   longitude: number;
+  targetLatitude: number;
+  targetLongitude: number;
   radiusM: number;
-  targetDistanceM: number;
+  preferredDistanceMs: PreferredDistanceM[];
   pageSize?: number;
   cursor?: string;
 };
@@ -78,10 +69,4 @@ export type GetNearbyCoursesData = {
   hasMore: boolean;
   nextCursor: string | null;
   suggestedNextRadiusM: number | null;
-};
-
-export type GetNormalRunCourseFilterData = {
-  courseDistanceTypes: CourseSurveyOption[];
-  courseTypes: CourseSurveyOption[];
-  difficulties: CourseSurveyOption[];
 };

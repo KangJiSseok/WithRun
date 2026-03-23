@@ -6,9 +6,9 @@ import { Button } from '../components/shadcn/button';
 
 export function MainLayout() {
   return (
-    <div className="relative mx-auto flex min-h-screen min-w-[375px] max-w-[430px] items-center justify-center bg-gray-100">
-      <div className="flex min-h-screen w-full flex-col overflow-hidden border bg-white shadow-xl">
-        <header className="flex items-center justify-between px-[var(--space-4)] pt-[var(--space-4)]">
+    <div className="relative mx-auto flex h-dvh min-w-[375px] max-w-[430px] items-center justify-center bg-gray-100">
+      <div className="flex h-dvh w-full flex-col overflow-hidden bg-white shadow-xl">
+        <header className="flex h-16 shrink-0 items-center justify-between px-[var(--space-4)]">
           <Button
             type="button"
             variant="outline"
@@ -28,15 +28,15 @@ export function MainLayout() {
           </Button>
         </header>
 
-        <main className="flex-1 overflow-y-auto px-[var(--space-4)] pb-24 pt-[var(--space-6)]">
+        <main className="flex-1 min-h-0 overflow-y-overlay px-[var(--space-4)] py-[var(--space-6)]">
           <Outlet />
         </main>
 
-        <div className="fixed bottom-6 left-6 right-6 z-overlay flex justify-center">
-          <div className="w-full min-w-[375px] max-w-[430px] px-4">
+        <footer className="shrink-0 w-full h-20 relative z-overlay">
+          <div className="absolute left-0 bottom-0 w-full">
             <BottomNavigation />
           </div>
-        </div>
+        </footer>
       </div>
     </div>
   );

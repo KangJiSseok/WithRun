@@ -1,13 +1,24 @@
-import { getNearbyCoursesApi, type CourseItem } from '@/apis';
+import {
+  getNearbyCoursesApi,
+  type CourseItem,
+  type PreferredDistanceM,
+} from '@/apis';
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
 import { useCallback, useEffect, useState } from 'react';
 
 // 코스 탐색 반경(m) 초기값
-const DEFAULT_RADIUS_M = 1000;
+const DEFAULT_RADIUS_M = 3000;
 // 희망 코스 거리(m) 기본값
-export const DEFAULT_TARGET_DISTANCE_M = 1000;
+export const DEFAULT_TARGET_DISTANCE_M: PreferredDistanceM[] = [
+  {
+    min: 1,
+    max: 5000,
+  },
+];
 
-export const useNormalRunCourses = (targetDistanceM = DEFAULT_TARGET_DISTANCE_M) => {
+export const useNormalRunCourses = (
+  preferredDistanceMs = DEFAULT_TARGET_DISTANCE_M
+) => {
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
   const [normalRunCourses, setNormalRunCourses] = useState<CourseItem[]>([]);
   const [isLoading, setIsLoading] = useState(false);
@@ -29,8 +40,10 @@ export const useNormalRunCourses = (targetDistanceM = DEFAULT_TARGET_DISTANCE_M)
           const { data } = await getNearbyCoursesApi({
             latitude: location.latitude,
             longitude: location.longitude,
+            targetLatitude: location.latitude,
+            targetLongitude: location.longitude,
             radiusM,
-            targetDistanceM,
+            preferredDistanceMs,
             cursor,
           });
 
@@ -42,7 +55,10 @@ export const useNormalRunCourses = (targetDistanceM = DEFAULT_TARGET_DISTANCE_M)
             // 현재 반경 내 다음 페이지 조회
             cursor = data.nextCursor ?? undefined;
           } else {
-            if (data.suggestedNextRadiusM === null || data.nextCursor === null) {
+            if (
+              data.suggestedNextRadiusM === null ||
+              data.nextCursor === null
+            ) {
               // 더 이상 코스 없음 (최대 반경 도달 or nextCursor 없음)
               break;
             }
@@ -61,7 +77,7 @@ export const useNormalRunCourses = (targetDistanceM = DEFAULT_TARGET_DISTANCE_M)
         }
       }
     },
-    [targetDistanceM]
+    [preferredDistanceMs]
   );
 
   useEffect(() => {

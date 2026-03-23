@@ -15,7 +15,7 @@ const ITEMS = [
 
 export function BottomNavigation() {
   return (
-    <nav className="flex items-center justify-between rounded-3xl px-6 py-4 border shadow-sm glass">
+    <nav className="flex items-center justify-between rounded-t-3xl px-6 py-4 border shadow-sm glass">
       {ITEMS.map((item) => {
         const Icon = item.icon;
 

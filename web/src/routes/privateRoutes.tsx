@@ -18,7 +18,6 @@ export const privateRoutes: RouteObject[] = [
       { path: '/', element: <HomePage /> },
       { path: '/home', element: <HomePage /> },
       { path: '/free-run', element: <FreeRunPage /> },
-      { path: '/normal-run', element: <NormalRunPage /> },
       { path: '/ghost-run', element: <GhostRunPage /> },
       { path: '/calendar', element: <CalendarPage /> },
     ],
@@ -26,7 +25,10 @@ export const privateRoutes: RouteObject[] = [
   {
     element: <FullscreenLayout />,
     children: [
+      // free
       { path: '/free-run-session', element: <FreeRunSessionPage /> },
+      // normal
+      { path: '/normal-run', element: <NormalRunPage /> },
       { path: '/normal-run/:courseId', element: <NormalRunDetailPage /> },
       {
         path: '/normal-run-session/:courseId',

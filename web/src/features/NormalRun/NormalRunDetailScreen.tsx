@@ -110,16 +110,16 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
               variant="outline"
               className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
             >
-              {DIFFICULTY_LABEL[course.difficulty]}
+              {DIFFICULTY_LABEL[course.difficulty.data]}
             </Badge>
           )}
           {course.courseTypes.map((type) => (
             <Badge
-              key={type}
+              key={type.data}
               variant="outline"
               className="rounded-full border-[hsl(var(--primary-1)/0.25)] bg-[hsl(var(--primary-1)/0.1)] px-[var(--space-3)] py-[var(--space-1)] text-[hsl(var(--primary-1))]"
             >
-              {COURSE_TYPE_LABEL[type]}
+              {COURSE_TYPE_LABEL[type.data]}
             </Badge>
           ))}
         </div>

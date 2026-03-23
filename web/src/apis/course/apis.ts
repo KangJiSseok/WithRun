@@ -4,8 +4,6 @@ import type {
   GetNearbyCoursesParams,
   GetNearbyCoursesData,
   CourseDetail,
-  GetCourseSurveysResponse,
-  GetNormalRunCourseFilterData,
 } from './types';
 
 /**
@@ -14,9 +12,25 @@ import type {
 export const getNearbyCoursesApi = async (
   params: GetNearbyCoursesParams
 ): Promise<ApiResponse<GetNearbyCoursesData>> => {
+  const { preferredDistanceMs, ...rest } = params;
   const { data } = await axiosClient.get<ApiResponse<GetNearbyCoursesData>>(
     '/courses/nearby',
-    { params }
+    {
+      params: rest,
+      paramsSerializer: (p) => {
+        const sp = new URLSearchParams();
+        Object.entries(p).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            sp.append(key, String(value));
+          }
+        });
+        preferredDistanceMs.forEach((item, i) => {
+          sp.append(`preferredDistanceMs[${i}].min`, String(item.min));
+          sp.append(`preferredDistanceMs[${i}].max`, String(item.max));
+        });
+        return sp.toString();
+      },
+    }
   );
   return data;
 };
@@ -30,28 +44,5 @@ export const getCourseDetailApi = async (
   const { data } = await axiosClient.get<ApiResponse<CourseDetail>>(
     `/courses/${courseId}`
   );
-  return data;
-};
-
-/**
- * 코스 필터 선택지 조회 API (GET /courses/surveys)
- */
-export const getNormalRunCourseFilterApi = async (): Promise<
-  ApiResponse<GetNormalRunCourseFilterData>
-> => {
-  const { data } = await axiosClient.get('/courses/filter/normal-run');
-  return data;
-};
-
-/**
- * 코스 설문 선택지 조회 API (GET /courses/surveys)
- */
-export const getCourseSurveys = async (): Promise<
-  ApiResponse<GetCourseSurveysResponse>
-> => {
-  const { data } =
-    await axiosClient.get<ApiResponse<GetCourseSurveysResponse>>(
-      '/courses/surveys'
-    );
   return data;
 };
