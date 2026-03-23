@@ -3,6 +3,7 @@ package kr.withrun.was.domain.user.controller;
 import jakarta.validation.Valid;
 import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.user.dto.UpdateUserProfileRequest;
+import kr.withrun.was.domain.user.dto.UserProfileResponse;
 import kr.withrun.was.domain.user.service.UserProfileService;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ApiResponse;
@@ -10,6 +11,7 @@ import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -23,6 +25,15 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserProfileController {
 
     private final UserProfileService userProfileService;
+
+    @GetMapping("/profile")
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        return ApiResponse.successEntity(
+                userProfileService.getProfile(resolveUserId(authenticatedUser))
+        );
+    }
 
     @PutMapping("/profile")
     public ResponseEntity<ApiResponse<Void>> updateProfile(
