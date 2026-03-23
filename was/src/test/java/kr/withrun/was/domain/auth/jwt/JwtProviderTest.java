@@ -64,6 +64,8 @@ class JwtProviderTest {
         );
 
         assertThat(authenticatedUser.userId()).isEqualTo(10L);
+        assertThat(authenticatedUser.provider()).isEqualTo("google");
+        assertThat(authenticatedUser.profileCompleted()).isTrue();
     }
 
     @Test
@@ -89,6 +91,18 @@ class JwtProviderTest {
     }
 
     @Test
+    @DisplayName("extracts user id from refresh token")
+    void extractsUserIdFromRefreshToken() {
+        JwtProvider jwtProvider = new JwtProvider(jwtProperties());
+        User user = completedUser(10L);
+        String refreshToken = jwtProvider.generateTokenPair(user, "google").refreshToken();
+
+        Long userId = jwtProvider.extractUserIdFromRefreshToken(refreshToken);
+
+        assertThat(userId).isEqualTo(10L);
+    }
+
+    @Test
     @DisplayName("creates refresh token cookie with configured attributes")
     void createsRefreshTokenCookieWithConfiguredAttributes() {
         JwtProvider jwtProvider = new JwtProvider(jwtProperties());
@@ -102,6 +116,22 @@ class JwtProviderTest {
         assertThat(cookie.getPath()).isEqualTo("/");
         assertThat(cookie.getSameSite()).isEqualTo("Lax");
         assertThat(cookie.getMaxAge().getSeconds()).isEqualTo(1209600L);
+    }
+
+    @Test
+    @DisplayName("expires refresh token cookie with configured attributes")
+    void expiresRefreshTokenCookieWithConfiguredAttributes() {
+        JwtProvider jwtProvider = new JwtProvider(jwtProperties());
+
+        ResponseCookie cookie = jwtProvider.expireRefreshTokenCookie();
+
+        assertThat(cookie.getName()).isEqualTo("refresh_token");
+        assertThat(cookie.getValue()).isEmpty();
+        assertThat(cookie.isHttpOnly()).isTrue();
+        assertThat(cookie.isSecure()).isFalse();
+        assertThat(cookie.getPath()).isEqualTo("/");
+        assertThat(cookie.getSameSite()).isEqualTo("Lax");
+        assertThat(cookie.getMaxAge().getSeconds()).isZero();
     }
 
     @Test

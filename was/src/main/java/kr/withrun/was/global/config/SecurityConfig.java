@@ -10,6 +10,7 @@ import kr.withrun.was.domain.auth.security.RestAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -59,7 +60,11 @@ public class SecurityConfig {
                 // 4. 출입 검문소 규칙 설정 (누구를 들여보내고 누구를 막을지)
                 .authorizeHttpRequests(auth -> auth
                         // 소셜 로그인 관련 주소(/oauth2, /login/oauth2 등)는 로그인 안 한 사람도 100% 무사 통과(permitAll)
-                        .requestMatchers("/oauth2/**", "/login/oauth2/**", "/api/auth/**").permitAll()
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**").permitAll()
+                        // refresh token 쿠키로 access token을 재발급하거나, 쿠키를 비우는 로그아웃은 비로그인 상태에서도 접근 가능해야 합니다.
+                        .requestMatchers(HttpMethod.POST, "/api/auth/reissue", "/api/auth/logout").permitAll()
+                        // 현재 사용자 조회는 access token 인증이 필요합니다.
+                        .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                         // Step 4부터는 "내 프로필 저장" API만 access token 인증을 반드시 거치게 합니다.
                         .requestMatchers("/api/users/me/**").authenticated()
                         // 그 외 나머지 다른 모든 주소도 일단 지금은 무사 통과! 

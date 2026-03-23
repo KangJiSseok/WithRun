@@ -146,6 +146,11 @@ class OAuth2SuccessHandlerTest {
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);
         verify(userRepository).save(userCaptor.capture());
         assertThat(userCaptor.getValue().isProfileCompleted()).isFalse();
+        assertThat(userCaptor.getValue().getNickname()).startsWith("pending-google-");
+        assertThat(userCaptor.getValue().getBirthDate()).isEqualTo(LocalDate.of(1900, 1, 1));
+        assertThat(userCaptor.getValue().getGender()).isEqualTo(Gender.MALE);
+        assertThat(userCaptor.getValue().getHeight()).isEqualTo(1.0);
+        assertThat(userCaptor.getValue().getWeight()).isEqualTo(1.0);
 
         ArgumentCaptor<UserAuthAccount> authAccountCaptor = ArgumentCaptor.forClass(UserAuthAccount.class);
         verify(userAuthAccountRepository).save(authAccountCaptor.capture());

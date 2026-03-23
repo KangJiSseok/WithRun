@@ -30,6 +30,11 @@ import java.time.LocalDate;
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
 public class User extends BaseEntity {
 
+    private static final LocalDate PENDING_BIRTH_DATE = LocalDate.of(1900, 1, 1);
+    private static final Gender PENDING_GENDER = Gender.MALE;
+    private static final double PENDING_HEIGHT_CM = 1.0;
+    private static final double PENDING_WEIGHT_KG = 1.0;
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     @Column(name = "user_id")
@@ -63,6 +68,18 @@ public class User extends BaseEntity {
     // 기존 DB에 사용자 정보가 없다면 
     public static User createPendingSocialUser() {
         User user = new User();
+        user.profileCompleted = false;
+        return user;
+    }
+
+    // 실제 DB에 저장해야 하는 pending 소셜 사용자는 필수 컬럼 제약을 통과할 임시값을 함께 채웁니다.
+    public static User createPendingSocialUser(String temporaryNickname) {
+        User user = new User();
+        user.nickname = temporaryNickname;
+        user.birthDate = PENDING_BIRTH_DATE;
+        user.gender = PENDING_GENDER;
+        user.height = PENDING_HEIGHT_CM;
+        user.weight = PENDING_WEIGHT_KG;
         user.profileCompleted = false;
         return user;
     }
