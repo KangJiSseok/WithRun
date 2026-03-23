@@ -24,6 +24,7 @@ public record UserProfileResponse(
         Double weight
 ) {
     public static UserProfileResponse from(User user) {
+        // pending 사용자는 DB 제약을 위한 임시값을 갖고 있어도 프론트에는 비어 있는 프로필처럼 내려줍니다.
         if (!user.isProfileCompleted()) {
             return new UserProfileResponse(null, null, null, null, null);
         }

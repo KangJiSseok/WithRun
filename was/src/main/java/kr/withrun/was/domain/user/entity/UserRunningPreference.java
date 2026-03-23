@@ -62,6 +62,7 @@ public class UserRunningPreference extends BaseEntity {
             Difficulty preferredDifficulty,
             Double preferredDistanceKm
     ) {
+        // user_id를 PK로 공유하는 1:1 엔티티라 생성 시점에 user를 반드시 함께 묶습니다.
         UserRunningPreference preference = new UserRunningPreference();
         preference.user = user;
         preference.preferredDifficulty = preferredDifficulty;
@@ -93,11 +94,13 @@ public class UserRunningPreference extends BaseEntity {
     }
 
     public void replacePurpose(kr.withrun.was.domain.user.type.Purpose purpose) {
+        // 현재 화면은 목적 1개만 고르므로 기존 값을 비우고 새 값 1개만 유지합니다.
         purposes.clear();
         addPurpose(UserPreferencePurpose.create(purpose));
     }
 
     public void replaceCourseType(kr.withrun.was.domain.course.type.CourseType courseType) {
+        // 추후 다중 선택 요구가 생기면 이 메서드가 가장 먼저 바뀔 지점입니다.
         courseTypes.clear();
         addCourseType(UserPreferenceCourseType.create(courseType));
     }

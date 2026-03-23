@@ -30,6 +30,7 @@ public class UserProfileController {
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
+        // 마이페이지 진입 시 현재 로그인 사용자의 프로필 기본값을 복구하는 용도입니다.
         return ApiResponse.successEntity(
                 userProfileService.getProfile(resolveUserId(authenticatedUser))
         );

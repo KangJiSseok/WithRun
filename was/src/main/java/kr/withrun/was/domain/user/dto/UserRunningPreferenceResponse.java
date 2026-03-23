@@ -28,6 +28,7 @@ public record UserRunningPreferenceResponse(
         CourseType courseType
 ) {
     public static UserRunningPreferenceResponse empty() {
+        // 아직 저장된 기본 설정이 없는 초기 사용자를 위한 기본 응답입니다.
         return new UserRunningPreferenceResponse(null, null, null, null, null);
     }
 
@@ -36,6 +37,7 @@ public record UserRunningPreferenceResponse(
             return empty();
         }
 
+        // 현재 제품 요구사항은 단일 선택이므로 각 컬렉션에서 첫 번째 값만 응답으로 노출합니다.
         return new UserRunningPreferenceResponse(
                 preference.getPurposes().stream()
                         .map(UserPreferencePurpose::getPurpose)

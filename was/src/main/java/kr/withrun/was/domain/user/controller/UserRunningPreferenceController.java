@@ -28,6 +28,7 @@ public class UserRunningPreferenceController {
     public ResponseEntity<ApiResponse<UserRunningPreferenceResponse>> getRunningPreference(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
+        // 홈 탭과 일반 러닝 탭이 공유할 "사용자 기본 설정"을 읽어오는 엔드포인트입니다.
         return ApiResponse.successEntity(
                 userRunningPreferenceService.getRunningPreference(resolveUserId(authenticatedUser))
         );
@@ -38,11 +39,13 @@ public class UserRunningPreferenceController {
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @Valid @RequestBody UpdateUserRunningPreferenceRequest request
     ) {
+        // 화면에서 즉시 바뀐 기본 설정을 계정 단위 기본값으로 저장합니다.
         userRunningPreferenceService.updateRunningPreference(resolveUserId(authenticatedUser), request);
         return ApiResponse.successEntity(ResponseCode.OK);
     }
 
     private Long resolveUserId(AuthenticatedUser authenticatedUser) {
+        // profile API와 동일하게 principal 유실 상황에서도 명확한 401을 보장합니다.
         if (authenticatedUser == null || authenticatedUser.userId() == null) {
             throw new CustomException(ResponseCode.UNAUTHORIZED);
         }

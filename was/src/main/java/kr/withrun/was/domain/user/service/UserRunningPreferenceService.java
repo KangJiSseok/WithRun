@@ -21,6 +21,7 @@ public class UserRunningPreferenceService {
     private final UserRunningPreferenceRepository userRunningPreferenceRepository;
 
     public UserRunningPreferenceResponse getRunningPreference(Long userId) {
+        // 아직 기본 설정을 저장하지 않은 사용자도 있을 수 있어 null-safe 응답으로 변환합니다.
         User user = findUser(userId);
         return UserRunningPreferenceResponse.from(user.getUserRunningPreference());
     }
@@ -31,6 +32,7 @@ public class UserRunningPreferenceService {
         UserRunningPreference runningPreference = user.getUserRunningPreference();
 
         if (runningPreference == null) {
+            // 첫 저장 시에는 사용자와 1:1로 연결된 선호 엔티티를 새로 만듭니다.
             runningPreference = UserRunningPreference.create(
                     user,
                     request.preferredDifficulty(),
@@ -38,6 +40,7 @@ public class UserRunningPreferenceService {
             );
             user.assignRunningPreference(runningPreference);
         } else {
+            // 이후 수정은 거리/난이도 같은 단일 컬럼만 갱신합니다.
             runningPreference.updatePreferredSettings(
                     request.preferredDifficulty(),
                     request.preferredDistanceKm()
@@ -54,6 +57,7 @@ public class UserRunningPreferenceService {
     }
 
     private User findUser(Long userId) {
+        // 조회 API와 수정 API가 같은 사용자 조회 규칙을 쓰도록 내부 메서드로 고정합니다.
         return userRepository.findNotDeletedUser(userId)
                 .orElseThrow(() -> new CustomException(ResponseCode.USER_NOT_FOUND));
     }
