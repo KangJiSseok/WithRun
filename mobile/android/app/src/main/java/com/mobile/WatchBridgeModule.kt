@@ -37,6 +37,7 @@ class WatchBridgeModule(private val reactContext: ReactApplicationContext) :
 
     override fun initialize() {
         super.initialize()
+        isListenerActive = true
         messageClient.addListener(this)
             .addOnSuccessListener {
                 Log.d("WatchBridge", "[init] MessageClient 리스너 등록 성공")
@@ -57,6 +58,7 @@ class WatchBridgeModule(private val reactContext: ReactApplicationContext) :
     }
 
     override fun onCatalystInstanceDestroy() {
+        isListenerActive = false
         messageClient.removeListener(this)
             .addOnSuccessListener { Log.d("WatchBridge", "[destroy] MessageClient 리스너 해제 성공") }
             .addOnFailureListener { e -> Log.e("WatchBridge", "[destroy] MessageClient 리스너 해제 실패: ${e.message}") }
@@ -68,6 +70,11 @@ class WatchBridgeModule(private val reactContext: ReactApplicationContext) :
         // 백그라운드 수신 메시지 임시 저장 (최대 120개 = 약 2분치)
         private val pendingMessages = ConcurrentLinkedQueue<String>()
         private const val MAX_PENDING = 120
+
+        // MessageClient 직접 리스너 활성화 여부
+        // true(포그라운드): WatchBridgeModule이 직접 수신 → WatchListenerService는 skip
+        // false(백그라운드): WatchListenerService만 수신 → pendingMessages에 큐잉
+        @Volatile var isListenerActive = false
 
         fun setContext(context: ReactApplicationContext) {
             appContext = context
