@@ -63,7 +63,10 @@ export function useNormalRunning() {
   const watchHealthData = useBridgeDataStore((s) => s.watchHealthData);
   const lastWatchMessageAt = useBridgeDataStore((s) => s.lastWatchMessageAt);
 
-  // latest ref 패턴: 헬스 샘플 effect에서 stale closure 없이 최신값 읽기
+  // latest ref 패턴: GPS/헬스 샘플 effect에서 stale closure 없이 최신값 읽기
+  // isPaused를 dependency에서 제외하기 위해 ref로 관리 (변경 시 effect 재실행 → 중복 샘플 push 방지)
+  const latestIsPausedRef = useRef(isPaused);
+  latestIsPausedRef.current = isPaused;
   const latestGpsLocationRef = useRef(gpsLocation);
   latestGpsLocationRef.current = gpsLocation;
   const latestIsWatchConnectedRef = useRef(isWatchConnected);
@@ -116,8 +119,9 @@ export function useNormalRunning() {
   }, [gpsLocation]);
 
   // GPS 거리 누적 (워치 폴백용으로 항상 계산)
+  // isPaused를 dependency에서 제외(ref로 읽기): isPaused 변경 시 재실행으로 인한 중복 샘플 방지
   useEffect(() => {
-    if (isPaused || !gpsLocation) return;
+    if (latestIsPausedRef.current || !gpsLocation) return;
 
     const { latitude: lat, longitude: lon } = gpsLocation;
 
@@ -150,11 +154,12 @@ export function useNormalRunning() {
       bearingDeg: gpsLocation.heading ?? 0,
       sampledAt: new Date().toISOString(),
     });
-  }, [gpsLocation, isPaused]);
+  }, [gpsLocation]);
 
   // 헬스 샘플 누적 + 구간 심박수 추적
+  // isPaused를 dependency에서 제외(ref로 읽기): isPaused 변경 시 재실행으로 인한 중복 샘플 방지
   useEffect(() => {
-    if (isPaused || !watchHealthData) return;
+    if (latestIsPausedRef.current || !watchHealthData) return;
     const isGpsStale =
       lastGpsReceivedAtRef.current === null ||
       Date.now() - lastGpsReceivedAtRef.current > GPS_TIMEOUT_MS;
@@ -173,7 +178,7 @@ export function useNormalRunning() {
     if (watchHealthData.heartRate > 0) {
       currentKmHeartRatesRef.current.push(watchHealthData.heartRate);
     }
-  }, [watchHealthData, isPaused]);
+  }, [watchHealthData]);
 
   // distanceKm: 워치 연결 시 워치 데이터 우선, 미연결 시 Haversine 폴백
   const distanceKm =
