@@ -1,5 +1,12 @@
 package kr.withrun.was.global.config;
 
+import com.fasterxml.jackson.databind.ObjectMapper;
+import kr.withrun.was.domain.auth.jwt.JwtProvider;
+import kr.withrun.was.domain.auth.oauth2.handler.OAuth2FailureHandler;
+import kr.withrun.was.domain.auth.oauth2.handler.OAuth2SuccessHandler;
+import kr.withrun.was.domain.auth.oauth2.service.CustomOAuth2UserService;
+import kr.withrun.was.domain.auth.security.JwtAuthenticationFilter;
+import kr.withrun.was.domain.auth.security.RestAuthenticationEntryPoint;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -7,13 +14,10 @@ import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
+import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import kr.withrun.was.domain.auth.oauth2.service.CustomOAuth2UserService;
-import kr.withrun.was.domain.auth.oauth2.handler.OAuth2SuccessHandler;
-import kr.withrun.was.domain.auth.oauth2.handler.OAuth2FailureHandler;
-
 
 import java.util.List;
 
@@ -32,7 +36,11 @@ public class SecurityConfig {
 
     // 건물의 메인 경비실(SecurityFilterChain) 규칙을 설정하는 곳
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(
+            HttpSecurity http,
+            JwtAuthenticationFilter jwtAuthenticationFilter,
+            RestAuthenticationEntryPoint restAuthenticationEntryPoint
+    ) throws Exception {
         http
                 // 1. CSRF (위조 요청 공격) 방어 기능 끄기
                 // 보통 REST API 서버를 만들거나, 별도의 토큰을 쓸 때는 이 기능을 끕니다.
@@ -45,12 +53,15 @@ public class SecurityConfig {
                 // 3. 세션(임시 보관소) 정책
                 // IF_REQUIRED: 스프링이 "필요할 때만" 세션을 만들도록 허락합니다. (소셜 로그인 진행 중에 세션이 필요함)
                 .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.IF_REQUIRED))
-                
+                .exceptionHandling(exception -> exception
+                        .authenticationEntryPoint(restAuthenticationEntryPoint)
+                )
                 // 4. 출입 검문소 규칙 설정 (누구를 들여보내고 누구를 막을지)
                 .authorizeHttpRequests(auth -> auth
                         // 소셜 로그인 관련 주소(/oauth2, /login/oauth2 등)는 로그인 안 한 사람도 100% 무사 통과(permitAll)
-                        // .requestMatchers("/oauth2/**", "/login/oauth2/**", "/api/auth/**").permitAll()
-                        .requestMatchers("/**").permitAll()
+                        .requestMatchers("/oauth2/**", "/login/oauth2/**", "/api/auth/**").permitAll()
+                        // Step 4부터는 "내 프로필 저장" API만 access token 인증을 반드시 거치게 합니다.
+                        .requestMatchers("/api/users/me/**").authenticated()
                         // 그 외 나머지 다른 모든 주소도 일단 지금은 무사 통과! 
                         // (🚨 나중에는 .authenticated()로 바꿔서 "로그인한 사람만 통과"하게 설정해야 합니다)
                         .anyRequest().permitAll()
@@ -64,10 +75,29 @@ public class SecurityConfig {
                 // 6. 사용자 정보 파싱이 끝난 뒤, 기존/신규 사용자 분기와 redirect 처리 수행
                 .successHandler(oAuth2SuccessHandler)
                 .failureHandler(oAuth2FailureHandler)
-);
+                )
+                // UsernamePasswordAuthenticationFilter 전에 JWT를 먼저 읽어야
+                // 컨트롤러에 들어갈 때 @AuthenticationPrincipal이 준비됩니다.
+                .addFilterBefore(jwtAuthenticationFilter, UsernamePasswordAuthenticationFilter.class);
 
 
         return http.build();
+    }
+
+    @Bean
+    public JwtAuthenticationFilter jwtAuthenticationFilter(
+            JwtProvider jwtProvider,
+            RestAuthenticationEntryPoint restAuthenticationEntryPoint
+    ) {
+        // 명시적 @Bean으로 등록해두면 실제 애플리케이션에서는 주입받아 쓰고,
+        // @WebMvcTest 슬라이스 테스트에서는 이 필터가 자동 스캔되지 않아 기존 테스트를 깨지 않습니다.
+        return new JwtAuthenticationFilter(jwtProvider, restAuthenticationEntryPoint);
+    }
+
+    @Bean
+    public RestAuthenticationEntryPoint restAuthenticationEntryPoint(ObjectMapper objectMapper) {
+        // 인증 실패 JSON 직렬화에 공통 ObjectMapper를 재사용합니다.
+        return new RestAuthenticationEntryPoint(objectMapper);
     }
 
     // 🌐 CORS (Cross-Origin Resource Sharing) 세부 규칙 설정

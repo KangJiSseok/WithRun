@@ -1,12 +1,16 @@
 package kr.withrun.was.domain.auth.jwt;
 
 import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import kr.withrun.was.domain.auth.dto.AuthTokenPair;
+import kr.withrun.was.domain.auth.security.AuthenticatedUser;
+import kr.withrun.was.domain.auth.security.JwtAuthenticationException;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.config.JwtProperties;
+import kr.withrun.was.global.response.ResponseCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.http.ResponseCookie;
@@ -14,7 +18,9 @@ import org.springframework.http.ResponseCookie;
 import javax.crypto.SecretKey;
 import java.lang.reflect.Field;
 import java.nio.charset.StandardCharsets;
+import java.time.Instant;
 import java.time.LocalDate;
+import java.util.Date;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -22,6 +28,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 @DisplayName("JwtProvider")
 class JwtProviderTest {
 
+    // 테스트에서는 항상 같은 secret을 써야 토큰 생성/파싱 결과를 예측할 수 있습니다.
     private static final String ACCESS_SECRET = "0123456789abcdef0123456789abcdef";
 
     @Test
@@ -44,6 +51,41 @@ class JwtProviderTest {
         assertThat(refreshClaims.getSubject()).isEqualTo("10");
         assertThat(refreshClaims.get("userId", Long.class)).isEqualTo(10L);
         assertThat(refreshClaims.get("tokenType", String.class)).isEqualTo("refresh");
+    }
+
+    @Test
+    @DisplayName("extracts authenticated user from access token")
+    void extractsAuthenticatedUserFromAccessToken() {
+        JwtProvider jwtProvider = new JwtProvider(jwtProperties());
+        User user = completedUser(10L);
+
+        AuthenticatedUser authenticatedUser = jwtProvider.extractAuthenticatedUser(
+                jwtProvider.generateTokenPair(user, "google").accessToken()
+        );
+
+        assertThat(authenticatedUser.userId()).isEqualTo(10L);
+    }
+
+    @Test
+    @DisplayName("rejects refresh token when extracting authenticated user")
+    void rejectsRefreshTokenWhenExtractingAuthenticatedUser() {
+        JwtProvider jwtProvider = new JwtProvider(jwtProperties());
+        User user = completedUser(10L);
+        String refreshToken = jwtProvider.generateTokenPair(user, "google").refreshToken();
+
+        assertThatThrownBy(() -> jwtProvider.extractAuthenticatedUser(refreshToken))
+                .isInstanceOf(JwtAuthenticationException.class)
+                .extracting(exception -> ((JwtAuthenticationException) exception).getResponseCode())
+                .isEqualTo(ResponseCode.TOKEN_INVALID);
+    }
+
+    @Test
+    @DisplayName("throws when access token is expired")
+    void throwsWhenAccessTokenIsExpired() {
+        JwtProvider jwtProvider = new JwtProvider(jwtProperties());
+
+        assertThatThrownBy(() -> jwtProvider.parseAccessToken(expiredAccessToken(10L)))
+                .isInstanceOf(ExpiredJwtException.class);
     }
 
     @Test
@@ -87,6 +129,7 @@ class JwtProviderTest {
     }
 
     private Claims parseClaims(String token) {
+        // 프로덕션 코드의 parser와 같은 secret으로 직접 파싱해 claim 값을 검증합니다.
         SecretKey secretKey = Keys.hmacShaKeyFor(ACCESS_SECRET.getBytes(StandardCharsets.UTF_8));
         return Jwts.parser()
                 .verifyWith(secretKey)
@@ -95,7 +138,24 @@ class JwtProviderTest {
                 .getPayload();
     }
 
+    private String expiredAccessToken(Long userId) {
+        SecretKey secretKey = Keys.hmacShaKeyFor(ACCESS_SECRET.getBytes(StandardCharsets.UTF_8));
+        Instant now = Instant.now();
+
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .claim("userId", userId)
+                .claim("provider", "google")
+                .claim("profileCompleted", true)
+                .claim("tokenType", "access")
+                .issuedAt(Date.from(now.minusSeconds(120)))
+                .expiration(Date.from(now.minusSeconds(60)))
+                .signWith(secretKey)
+                .compact();
+    }
+
     private User completedUser(Long id) {
+        // 토큰에 profileCompleted=true가 들어가도록, 엔티티 메서드를 사용해 실제 완료 사용자 상태를 만듭니다.
         User user = User.createPendingSocialUser();
         setField(user, "id", id);
         user.completeProfile(
@@ -109,6 +169,7 @@ class JwtProviderTest {
     }
 
     private void setField(Object target, String fieldName, Object value) {
+        // JPA 엔티티의 private id 필드는 테스트에서만 reflection으로 주입합니다.
         Class<?> currentClass = target.getClass();
         while (currentClass != null) {
             try {

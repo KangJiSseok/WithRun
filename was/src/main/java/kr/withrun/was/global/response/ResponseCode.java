@@ -30,6 +30,8 @@ public enum ResponseCode {
     USER_NOT_FOUND("E200", HttpStatus.NOT_FOUND, "사용자를 찾을 수 없습니다.", false),
     USER_ALREADY_EXISTS("E201", HttpStatus.CONFLICT, "이미 존재하는 사용자입니다.", false),
     PASSWORD_MISMATCH("E202", HttpStatus.BAD_REQUEST, "비밀번호가 일치하지 않습니다.", false),
+    // 소셜 온보딩과 프로필 수정에서 다른 사용자의 닉네임과 충돌할 때 사용합니다.
+    NICKNAME_ALREADY_EXISTS("E203", HttpStatus.CONFLICT, "이미 사용 중인 닉네임입니다.", false),
 
     // Course Error
     INVALID_COURSE_COORDINATES_FORMAT("E300", HttpStatus.BAD_REQUEST, "코스 좌표 형식이 올바르지 않습니다.", false),
