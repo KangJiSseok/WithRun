@@ -17,6 +17,8 @@ import org.springframework.mock.web.MockFilterChain;
 import org.springframework.mock.web.MockHttpServletRequest;
 import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.security.core.Authentication;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 
 import javax.crypto.SecretKey;
@@ -25,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.util.Date;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -66,6 +69,32 @@ class JwtAuthenticationFilterTest {
         assertThat(authentication.getPrincipal()).isInstanceOf(AuthenticatedUser.class);
         assertThat(((AuthenticatedUser) authentication.getPrincipal()).userId()).isEqualTo(7L);
         assertThat(response.getStatus()).isEqualTo(200);
+    }
+
+    @Test
+    @DisplayName("세션 인증이 이미 있어도 Authorization 헤더가 있으면 JWT 인증으로 교체한다")
+    void prefersJwtAuthenticationOverExistingSessionAuthentication() throws Exception {
+        SecurityContextHolder.getContext().setAuthentication(
+                UsernamePasswordAuthenticationToken.authenticated(
+                        "oauth2-session-user",
+                        null,
+                        List.of(new SimpleGrantedAuthority("ROLE_USER"))
+                )
+        );
+
+        MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/auth/me");
+        request.addHeader(
+                HttpHeaders.AUTHORIZATION,
+                "Bearer " + jwtProvider.generateTokenPair(completedUser(11L), "google").accessToken()
+        );
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        jwtAuthenticationFilter.doFilter(request, response, new MockFilterChain());
+
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        assertThat(authentication).isNotNull();
+        assertThat(authentication.getPrincipal()).isInstanceOf(AuthenticatedUser.class);
+        assertThat(((AuthenticatedUser) authentication.getPrincipal()).userId()).isEqualTo(11L);
     }
 
     @Test

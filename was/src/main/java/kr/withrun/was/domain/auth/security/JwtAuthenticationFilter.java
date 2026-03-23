@@ -10,6 +10,7 @@ import kr.withrun.was.domain.auth.jwt.JwtProvider;
 import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.security.core.Authentication;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
@@ -55,8 +56,12 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
             return;
         }
 
-        // 앞선 필터에서 이미 인증 객체를 세팅한 경우에는 중복 인증을 피합니다.
-        if (SecurityContextHolder.getContext().getAuthentication() != null) {
+        // OAuth 로그인 직후에는 세션 기반 인증 객체가 먼저 들어올 수 있습니다.
+        // 이 경우에도 Authorization 헤더가 있으면 JWT 인증을 우선 적용해야
+        // API 컨트롤러에서 @AuthenticationPrincipal AuthenticatedUser를 안정적으로 받을 수 있습니다.
+        Authentication existingAuthentication = SecurityContextHolder.getContext().getAuthentication();
+        if (existingAuthentication != null
+                && existingAuthentication.getPrincipal() instanceof AuthenticatedUser) {
             filterChain.doFilter(request, response);
             return;
         }
