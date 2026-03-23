@@ -7,8 +7,6 @@ import {
 } from 'lucide-react';
 import { useState, type ReactNode } from 'react';
 
-import { cn } from '@/shared/utils';
-
 import {
   DEFAULT_ONBOARDING_FORM_STATE,
   ONBOARDING_COURSE_TYPE_OPTIONS,
@@ -16,12 +14,13 @@ import {
   ONBOARDING_GOAL_OPTIONS,
   ONBOARDING_PREFERENCE_OPTIONS,
   ONBOARDING_STEPS,
-} from '../onboarding.constants';
+} from '@/constants/Onboarding';
+import { cn } from '@/shared/utils';
 import type {
   OnboardingFormState,
   OnboardingOption,
   OnboardingStepId,
-} from '../onboarding.types';
+} from '@/types/Onboarding';
 
 type OnboardingFormStepProps = {
   onComplete: () => void;

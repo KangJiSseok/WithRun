@@ -1,4 +1,4 @@
-import { ONBOARDING_STORAGE_KEY } from './onboarding.constants';
+import { ONBOARDING_STORAGE_KEY } from '@/constants/Onboarding';
 
 export function hasCompletedOnboarding(): boolean {
   // 온보딩 완료 여부는 브라우저 저장소에 간단히 남겨 두고 첫 진입 분기에서 재사용한다.

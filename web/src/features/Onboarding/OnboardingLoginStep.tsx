@@ -1,7 +1,7 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
 
-import { ONBOARDING_LOGIN_COPY_TEXTS } from '../onboarding.constants';
+import { ONBOARDING_LOGIN_COPY_TEXTS } from '@/constants/Onboarding';
 
 type OnboardingLoginStepProps = {
   onContinue: () => void;

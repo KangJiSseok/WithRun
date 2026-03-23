@@ -1,6 +1,6 @@
 import { motion } from 'motion/react';
 
-import type { OnboardingCharacterState } from '../onboarding.types';
+import type { OnboardingCharacterState } from '@/types/Onboarding';
 
 type OnboardingCharacterProps = {
   state: OnboardingCharacterState;

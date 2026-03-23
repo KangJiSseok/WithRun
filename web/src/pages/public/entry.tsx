@@ -1,6 +1,6 @@
 import { Navigate } from 'react-router-dom';
 
-import { hasCompletedOnboarding } from '@/features/Onboarding';
+import { hasCompletedOnboarding } from '@/stores/Onboarding';
 
 export function EntryPage() {
   return (

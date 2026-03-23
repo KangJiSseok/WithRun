@@ -4,17 +4,17 @@ import { useNavigate } from 'react-router-dom';
 
 import {
   ONBOARDING_INTRO_DURATION_MS,
-} from './onboarding.constants';
-import { markOnboardingCompleted } from './onboarding-storage';
+} from '@/constants/Onboarding';
+import { markOnboardingCompleted } from '@/stores/Onboarding';
 import type {
   OnboardingCharacterState,
   OnboardingPhase,
-} from './onboarding.types';
-import { OnboardingBackground } from './components/onboarding-background';
-import { OnboardingCharacter } from './components/onboarding-character';
-import { OnboardingFormStep } from './components/onboarding-form-step';
-import { OnboardingIntro } from './components/onboarding-intro';
-import { OnboardingLoginStep } from './components/onboarding-login-step';
+} from '@/types/Onboarding';
+import { OnboardingBackground } from './OnboardingBackground';
+import { OnboardingCharacter } from './OnboardingCharacter';
+import { OnboardingFormStep } from './OnboardingFormStep';
+import { OnboardingIntro } from './OnboardingIntro';
+import { OnboardingLoginStep } from './OnboardingLoginStep';
 
 function getCharacterState(
   phase: OnboardingPhase,

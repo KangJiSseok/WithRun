@@ -2,7 +2,7 @@ import type {
   OnboardingFormState,
   OnboardingOption,
   OnboardingStep,
-} from './onboarding.types';
+} from '@/types/Onboarding';
 
 export const ONBOARDING_STORAGE_KEY = 'withrun:onboarding-complete';
 
