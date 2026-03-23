@@ -1,10 +1,12 @@
 package kr.withrun.was.domain.running.dto;
 
+import com.fasterxml.jackson.annotation.JsonInclude;
 import kr.withrun.was.domain.running.entity.RunningSession;
 
 import java.time.LocalDateTime;
 import java.util.List;
 
+@JsonInclude(JsonInclude.Include.NON_NULL)
 public record RunningSessionDetailResponse(
         Long runningSessionId,
         Long userId,
@@ -19,7 +21,8 @@ public record RunningSessionDetailResponse(
         Integer elevationGainM,
         List<RunningGpsSampleResponse> gpsSamples,
         List<RunningHealthSampleResponse> healthSamples,
-        List<RunningSessionSplitResponse> splits
+        List<RunningSessionSplitResponse> splits,
+        GhostRunningResultResponse ghostRunningResult
 ) {
     public static RunningSessionDetailResponse of(
             RunningSession runningSession,
@@ -27,10 +30,38 @@ public record RunningSessionDetailResponse(
             List<RunningHealthSampleResponse> healthSamples,
             List<RunningSessionSplitResponse> splits
     ) {
+        return of(runningSession, gpsSamples, healthSamples, splits, runningSession.getSnapshotImageUrl(), null);
+    }
+
+    public static RunningSessionDetailResponse of(
+            RunningSession runningSession,
+            List<RunningGpsSampleResponse> gpsSamples,
+            List<RunningHealthSampleResponse> healthSamples,
+            List<RunningSessionSplitResponse> splits,
+            GhostRunningResultResponse ghostRunningResult
+    ) {
+        return of(
+                runningSession,
+                gpsSamples,
+                healthSamples,
+                splits,
+                runningSession.getSnapshotImageUrl(),
+                ghostRunningResult
+        );
+    }
+
+    public static RunningSessionDetailResponse of(
+            RunningSession runningSession,
+            List<RunningGpsSampleResponse> gpsSamples,
+            List<RunningHealthSampleResponse> healthSamples,
+            List<RunningSessionSplitResponse> splits,
+            String snapshotImageUrl,
+            GhostRunningResultResponse ghostRunningResult
+    ) {
         return new RunningSessionDetailResponse(
                 runningSession.getId(),
                 runningSession.getUser().getId(),
-                runningSession.getSnapshotImageUrl(),
+                snapshotImageUrl,
                 runningSession.getStartedAt(),
                 runningSession.getEndedAt(),
                 runningSession.getDistanceM(),
@@ -41,7 +72,8 @@ public record RunningSessionDetailResponse(
                 runningSession.getElevationGainM(),
                 gpsSamples,
                 healthSamples,
-                splits
+                splits,
+                ghostRunningResult
         );
     }
 }

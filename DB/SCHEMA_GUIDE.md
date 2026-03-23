@@ -17,7 +17,7 @@
 - `BaseEntity` 상속 테이블: `created_at`, `updated_at`, `deleted_at`
 - `course_bookmarks`: Entity가 `created_at`만 직접 선언
 - `course_likes`: 감사 컬럼 없음
-- `course_ghost_leaderboard`: 현재 `was` Entity와 별개로 정의된 DB 테이블이며 `created_at`만 사용
+- `course_ghost_leaderboard`: Entity가 `created_at`만 직접 선언합니다.
 
 ## Enum 컬럼 값
 
@@ -28,7 +28,6 @@
 - `time_slot`: `DAWN`, `MORNING`, `AFTERNOON`, `EVENING`
 - `status` (`courses.status`): `OFFICIAL`, `COMMUNITY`, `PRIVATE`
 - `mode`: `FREE`, `COURSE`, `GHOST`
-- `source_device`: `WATCH`, `PHONE`
 - `result_status`: `WIN`, `LOSE`, `DRAW`, `INCOMPLETE`
 
 ## 관계 모델 요약
@@ -67,7 +66,6 @@
   - `birth_date`: 생년월일
   - `gender`: `MALE`, `FEMALE`
   - `height_cm`, `weight_kg`: 신체 정보
-  - `is_active`: 계정 활성 여부
 - 주요 제약:
   - `uq_users_nickname`
   - `chk_users_birth_date`
@@ -238,12 +236,10 @@
   - `sampled_at`: 샘플링 시각
   - `user_id`: 사용자 FK
   - `heart_rate`, `speed_mps`, `pace_sec_per_km`
-  - `distance_m`, `calories_kcal`, `altitude_m`, `cadence_spm`
-  - `source_device`: `WATCH`, `PHONE`
+  - `distance_m`, `calories_kcal`, `cadence_spm`
 - 주요 제약:
   - `fk_running_health_samples_running_session`, `fk_running_health_samples_user` (둘 다 `ON DELETE CASCADE`)
   - `uq_running_health_samples_session_time`
-  - `chk_running_health_samples_source_device`
   - 심박/속도/페이스/거리/칼로리/케이던스 체크
 - 비고:
   - `append-only` raw telemetry table로 사용합니다.
@@ -312,11 +308,10 @@
 
 ### course_likes
 
-- 목적: 사용자-코스 좋아요 상태 저장
+- 목적: 사용자-코스 좋아요 관계 저장
 - 핵심 컬럼:
   - `course_like_id`: PK
   - `course_id`, `user_id`: 코스/사용자 FK
-  - `is_liked`: 좋아요 여부
 - 감사 컬럼:
   - 없음 (`CourseLike` Entity는 `BaseEntity`를 상속하지 않음)
 - 주요 제약:

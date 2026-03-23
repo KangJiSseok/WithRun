@@ -13,7 +13,8 @@ COPY web ./web
 COPY mobile/src/bridge ./mobile/src/bridge
 
 WORKDIR /app/web
-RUN pnpm build
+ARG VITE_MODE=production
+RUN pnpm build --mode ${VITE_MODE}
 
 FROM nginx:alpine
 COPY --from=build /app/web/dist /usr/share/nginx/html

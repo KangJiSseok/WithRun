@@ -1,2 +1,2 @@
-export { Mascot } from './Mascot';
-export type { MascotProps } from './Mascot.types';
+export * from './Mascot';
+export type * from './Mascot.types';

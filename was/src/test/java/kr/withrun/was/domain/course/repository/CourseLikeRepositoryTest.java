@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseLike;
 import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.config.QuerydslConfig;
@@ -17,6 +18,7 @@ import org.springframework.context.annotation.Import;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -83,7 +85,7 @@ class CourseLikeRepositoryTest {
                 .startLongitude(127.0)
                 .endLatitude(37.6)
                 .endLongitude(127.1)
-                .coordinates(null)
+                .coordinates(new Coordinates(List.of(37.5, 37.6), List.of(127.0, 127.1), List.of(10.0, 12.0)))
                 .build();
         setBaseField(course, "createdAt", LocalDateTime.of(2026, 3, 11, (int) createdAtHour, 0));
         entityManager.persist(course);

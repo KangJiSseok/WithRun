@@ -1,4 +1,103 @@
-import type { RunningMode } from '@/shared/types/api.type';
+import type { RunningMode, CourseDifficulty, CourseType, CourseStatus } from '@/shared/types/api.type';
+
+// GPS 샘플 (1초 단위 수집)
+export type GpsSample = {
+  latitude: number;
+  longitude: number;
+  altitudeM: number;
+  accuracyM: number;
+  bearingDeg: number;
+  sampledAt: string; // ISO 8601
+};
+
+// 헬스 샘플 (워치/모바일 1초 단위 수집)
+export type HealthSample = {
+  sampledAt: string; // ISO 8601
+  heartRate: number;
+  speedMps: number;
+  paceSecPerKm: number;
+  distanceM: number;
+  caloriesKcal: number;
+  cadenceSpm: number;
+};
+
+// 1km 단위 구간 기록 (TODO: 추후 구현)
+export type SplitRecord = {
+  userId: number;
+  splitIndex: number;
+  splitDistanceM: number;
+  splitDurationSec: number;
+  splitPaceSecPerKm: number;
+  avgHeartRate: number;
+  elevationGainM: number;
+};
+
+// PATCH /running-sessions/{id} 요청
+export type CompleteRunningSessionRequest = {
+  userId: number;
+  endedAt: string;
+  distanceM: number;
+  caloriesKcal: number;
+  endLatitude: number;
+  endLongitude: number;
+  avgSpeedMps: number;
+  durationSec: number;
+  avgPaceSecPerKm: number;
+  elevationGainM: number; // TODO: 추후 누적 상승 고도 계산 구현
+  distanceGapM: number;   // 일반 러닝 → 0
+  gpsSamples: GpsSample[];
+  healthSamples: HealthSample[];
+  splits: SplitRecord[];  // TODO: 추후 구현
+};
+
+// PATCH /running-sessions/{id} 응답
+export type CompleteRunningSessionResponse = {
+  runningSessionId: number;
+  userId: number;
+  snapshotImageUrl: string | null;
+  startedAt: string;
+  endedAt: string;
+  distanceM: number;
+  durationSec: number;
+  avgSpeedMps: number;
+  avgPaceSecPerKm: number;
+  caloriesKcal: number;
+  elevationGainM: number;
+  gpsSamples: GpsSample[];
+  healthSamples: HealthSample[];
+  splits: SplitRecord[];
+};
+
+// GET /running-sessions/history/past - 과거 러닝 세션 항목
+export type RunningHistoryItem = {
+  runningSessionId: number;
+  startedAt: string;
+  distanceM: number;
+  durationSec: number | null;
+  caloriesKcal: number;
+  snapshotImageUrl: string | null;
+  elevationGainM: number;
+  isCompleted: boolean;
+  runningMode: string;
+  ghostResultStatus: string | null;
+  timeSlot: string;
+};
+
+// GET /running-sessions/history/past 응답
+export type GetRunningHistoryResponse = {
+  items: RunningHistoryItem[];
+  hasMore: boolean;
+  nextCursor: string | null;
+};
+
+// GET /running-sessions/history/past 쿼리 파라미터
+export type GetRunningHistoryParams = {
+  year?: number;
+  month?: number;
+  day?: number;
+  cursor?: string;
+  pageSize?: number;
+};
 
 export type CreateRunningSessionRequest = {
   userId: number;
@@ -17,4 +116,26 @@ export type RunningSessionData = {
   distanceM: number;
   caloriesKcal: number;
   isCompleted: boolean;
+};
+
+export type RegisterCourseRequest = {
+  title: string;
+  difficulty: CourseDifficulty;
+  courseTypes: CourseType[];
+  snapshotImageUrl?: string;
+};
+
+export type RegisterCourseResponse = {
+  courseId: number;
+  title: string;
+  status: CourseStatus;
+  difficulty: CourseDifficulty;
+  distanceM: number;
+  elevationGainM: number;
+  snapshotImageUrl: string | null;
+  startLatitude: number;
+  startLongitude: number;
+  endLatitude: number | null;
+  endLongitude: number | null;
+  coordinates: { latitude: number; longitude: number; elevation: number }[];
 };

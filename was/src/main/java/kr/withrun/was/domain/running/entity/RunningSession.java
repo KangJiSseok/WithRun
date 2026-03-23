@@ -119,7 +119,6 @@ public class RunningSession extends BaseEntity {
             RunningMode mode,
             Course course,
             RunningSession ghostTargetRunningSession,
-            LocalDateTime startedAt,
             Double startLatitude,
             Double startLongitude
     ) {
@@ -128,7 +127,7 @@ public class RunningSession extends BaseEntity {
         runningSession.mode = mode;
         runningSession.course = course;
         runningSession.ghostTargetRunningSession = ghostTargetRunningSession;
-        runningSession.startedAt = startedAt;
+        runningSession.startedAt = LocalDateTime.now();
         runningSession.distanceM = 0;
         runningSession.caloriesKcal = 0;
         runningSession.elevationGainM = 0;
@@ -140,7 +139,6 @@ public class RunningSession extends BaseEntity {
     }
 
     public void complete(
-            LocalDateTime endedAt,
             Integer distanceM,
             Integer caloriesKcal,
             Double endLatitude,
@@ -150,7 +148,7 @@ public class RunningSession extends BaseEntity {
             Integer avgPaceSecPerKm,
             Integer elevationGainM
     ) {
-        this.endedAt = endedAt;
+        this.endedAt = LocalDateTime.now();
         this.distanceM = distanceM;
         this.caloriesKcal = caloriesKcal;
         this.endLatitude = endLatitude;

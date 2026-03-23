@@ -1,16 +1,15 @@
 import type { RouteObject } from 'react-router-dom';
 
 import { CalendarPage } from '@/pages/private/calendar';
-import { CompetitionPage } from '@/pages/private/competition';
-import { FreePage } from '@/pages/private/FreeRun';
-import { FreeRunningPage } from '@/pages/private/FreeRunning';
-import { FreeRunResultPage } from '@/pages/private/FreeRunResult';
+import { FreeRunPage } from '@/pages/private/FreeRunPage';
+import { FreeRunSessionPage } from '@/pages/private/FreeRunSessionPage';
 import { HomePage } from '@/pages/private/home';
 import { NormalRunPage } from '@/pages/private/NormalRun';
 import { NormalRunDetailPage } from '@/pages/private/NormalRunDetail';
-import { NormalRunningPage } from '@/pages/private/NormalRunning';
+import { NormalRunSessionPage } from '@/pages/private/NormalRunSession';
 import { FullscreenLayout } from '@/shared/layouts/FullscreenLayout';
 import { MainLayout } from '@/shared/layouts/MainLayout';
+import { GhostRunPage } from '@/pages/private/GhostRun';
 
 export const privateRoutes: RouteObject[] = [
   {
@@ -18,19 +17,23 @@ export const privateRoutes: RouteObject[] = [
     children: [
       { path: '/', element: <HomePage /> },
       { path: '/home', element: <HomePage /> },
-      { path: '/free', element: <FreePage /> },
-      { path: '/normal', element: <NormalRunPage /> },
-      { path: '/competition', element: <CompetitionPage /> },
+      { path: '/free-run', element: <FreeRunPage /> },
+      { path: '/ghost-run', element: <GhostRunPage /> },
       { path: '/calendar', element: <CalendarPage /> },
     ],
   },
   {
     element: <FullscreenLayout />,
     children: [
-      { path: '/freerun', element: <FreeRunningPage /> },
-      { path: '/freerun-result', element: <FreeRunResultPage /> },
-      { path: '/normal/:courseId', element: <NormalRunDetailPage /> },
-      { path: '/normal/:courseId/running', element: <NormalRunningPage /> },
+      // free
+      { path: '/free-run-session', element: <FreeRunSessionPage /> },
+      // normal
+      { path: '/normal-run', element: <NormalRunPage /> },
+      { path: '/normal-run/:courseId', element: <NormalRunDetailPage /> },
+      {
+        path: '/normal-run-session/:courseId',
+        element: <NormalRunSessionPage />,
+      },
     ],
   },
 ];

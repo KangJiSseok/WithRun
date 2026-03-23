@@ -1,21 +1,22 @@
 package kr.withrun.was.domain.running.controller;
 
+import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
+import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
-import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
-import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
+import kr.withrun.was.domain.running.dto.RunningGpsSampleResponse;
+import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
-import kr.withrun.was.domain.course.type.CourseStatus;
-import kr.withrun.was.domain.course.vo.Coordinates;
-import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
-import kr.withrun.was.global.common.type.TimeSlot;
 import kr.withrun.was.global.common.type.Difficulty;
+import kr.withrun.was.global.common.type.TimeSlot;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.hamcrest.Matchers;
@@ -26,6 +27,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -46,10 +48,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = RunningSessionController.class, properties = "spring.config.import=")
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("러닝 세션 컨트롤러")
 class RunningSessionControllerTest {
 
-    private static final LocalDateTime STARTED_AT = LocalDateTime.of(2026, 3, 12, 6, 30);
 
     static {
         System.setProperty("spring.cloud.aws.parameterstore.enabled", "false");
@@ -77,6 +79,7 @@ class RunningSessionControllerTest {
                 COURSE,
                 300L,
                 null,
+                null,
                 0,
                 0,
                 false
@@ -94,6 +97,7 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.mode").value(COURSE.name()))
                 .andExpect(jsonPath("$.data.courseId").value(300L))
                 .andExpect(jsonPath("$.data.ghostTargetRunningSessionId").value(Matchers.nullValue()))
+                .andExpect(jsonPath("$.data.ghostTargetGpsSamples").value(Matchers.nullValue()))
                 .andExpect(jsonPath("$.data.startedAt").doesNotExist())
                 .andExpect(jsonPath("$.data.distanceM").value(0))
                 .andExpect(jsonPath("$.data.caloriesKcal").value(0))
@@ -102,9 +106,48 @@ class RunningSessionControllerTest {
         then(runningSessionService).should().createRunningSession(request);
     }
 
+    @DisplayName("GHOST 모드 세션 생성 응답은 대상 세션 GPS 샘플을 함께 직렬화한다")
+    @Test
+    void serializesGhostTargetGpsSamplesInCreateResponse() throws Exception {
+        CreateRunningSessionRequest request = ghostCreateRequest();
+        CreateRunningSessionResponse response = new CreateRunningSessionResponse(
+                902L,
+                GHOST,
+                300L,
+                44L,
+                java.util.List.of(
+                        new RunningGpsSampleResponse(
+                                LocalDateTime.parse("2026-03-12T06:30:05"),
+                                37.5665,
+                                126.9780,
+                                12.3,
+                                3.2,
+                                181.0
+                        )
+                ),
+                0,
+                0,
+                false
+        );
+        given(runningSessionService.createRunningSession(request)).willReturn(response);
+
+        mockMvc.perform(post("/api/running-sessions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(ghostCreateRequestBody()))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.data.runningSessionId").value(902L))
+                .andExpect(jsonPath("$.data.mode").value(GHOST.name()))
+                .andExpect(jsonPath("$.data.ghostTargetRunningSessionId").value(44L))
+                .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].sampledAt").value("2026-03-12T06:30:05"))
+                .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].latitude").value(37.5665))
+                .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].longitude").value(126.9780));
+
+        then(runningSessionService).should().createRunningSession(request);
+    }
+
     @DisplayName("필수 요청 필드가 없으면 잘못된 입력 응답을 반환한다")
     @ParameterizedTest(name = "누락된 필드: {0}")
-    @ValueSource(strings = {"userId", "mode", "startedAt", "startLatitude", "startLongitude"})
+    @ValueSource(strings = {"userId", "mode", "startLatitude", "startLongitude"})
     void returnsInvalidInputValueWhenRequiredRequestFieldIsMissing(String missingField) throws Exception {
         mockMvc.perform(post("/api/running-sessions")
                         .contentType(MediaType.APPLICATION_JSON)
@@ -211,24 +254,24 @@ class RunningSessionControllerTest {
     @Test
     void wrapsCompleteRunningSessionResponseInSuccessEnvelope() throws Exception {
         long runningSessionId = 901L;
-        UpdateRunningSessionResponse response = new UpdateRunningSessionResponse(
+        RunningSessionDetailResponse response = new RunningSessionDetailResponse(
                 runningSessionId,
-                true,
-                false,
+                1L,
+                null,
                 LocalDateTime.parse("2026-03-12T06:30:00"),
                 LocalDateTime.parse("2026-03-12T07:12:00"),
                 10023,
-                642,
-                30.0,
-                150.0,
-                11.0,
                 2520,
+                11.0,
                 2,
-                37.5,
-                127.0,
-                3
+                642,
+                3,
+                java.util.List.of(),
+                java.util.List.of(),
+                java.util.List.of(),
+                null
         );
-        given(runningSessionService.completeRunningSession(eq(runningSessionId), any(UpdateRunningSessionRequest.class)))
+        given(runningSessionService.completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class)))
                 .willReturn(response);
 
         mockMvc.perform(patch("/api/running-sessions/{runningSessionId}", runningSessionId)
@@ -239,29 +282,28 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
                 .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
                 .andExpect(jsonPath("$.data.runningSessionId").value(runningSessionId))
-                .andExpect(jsonPath("$.data.isCompleted").value(true))
-                .andExpect(jsonPath("$.data.isPublic").value(false))
+                .andExpect(jsonPath("$.data.userId").value(1L))
                 .andExpect(jsonPath("$.data.startedAt").value("2026-03-12T06:30:00"))
                 .andExpect(jsonPath("$.data.endedAt").value("2026-03-12T07:12:00"))
                 .andExpect(jsonPath("$.data.distanceM").value(10023))
                 .andExpect(jsonPath("$.data.caloriesKcal").value(642))
-                .andExpect(jsonPath("$.data.endLatitude").value(30.0))
-                .andExpect(jsonPath("$.data.endLongitude").value(150.0))
                 .andExpect(jsonPath("$.data.avgSpeedMps").value(11.0))
                 .andExpect(jsonPath("$.data.durationSec").value(2520))
                 .andExpect(jsonPath("$.data.avgPaceSecPerKm").value(2))
-                .andExpect(jsonPath("$.data.startLatitude").value(37.5))
-                .andExpect(jsonPath("$.data.startLongitude").value(127.0))
-                .andExpect(jsonPath("$.data.elevationGainM").value(3));
+                .andExpect(jsonPath("$.data.elevationGainM").value(3))
+                .andExpect(jsonPath("$.data.gpsSamples").isArray())
+                .andExpect(jsonPath("$.data.healthSamples").isArray())
+                .andExpect(jsonPath("$.data.splits").isArray())
+                .andExpect(jsonPath("$.data.ghostRunningResult").doesNotExist());
 
-        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), any(UpdateRunningSessionRequest.class));
+        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class));
     }
 
     @DisplayName("이미 종료된 세션은 충돌 응답을 반환한다")
     @Test
     void returnsConflictWhenRunningSessionIsAlreadyCompleted() throws Exception {
         long runningSessionId = 901L;
-        given(runningSessionService.completeRunningSession(eq(runningSessionId), any(UpdateRunningSessionRequest.class)))
+        given(runningSessionService.completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class)))
                 .willThrow(new CustomException(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED));
 
         mockMvc.perform(patch("/api/running-sessions/{runningSessionId}", runningSessionId)
@@ -271,14 +313,14 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED.getCode()));
 
-        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), any(UpdateRunningSessionRequest.class));
+        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class));
     }
 
     @DisplayName("존재하지 않는 세션은 찾을 수 없음 응답을 반환한다")
     @Test
     void returnsNotFoundWhenRunningSessionDoesNotExist() throws Exception {
         long runningSessionId = 999L;
-        given(runningSessionService.completeRunningSession(eq(runningSessionId), any(UpdateRunningSessionRequest.class)))
+        given(runningSessionService.completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class)))
                 .willThrow(new CustomException(ResponseCode.RUNNING_SESSION_NOT_FOUND));
 
         mockMvc.perform(patch("/api/running-sessions/{runningSessionId}", runningSessionId)
@@ -288,7 +330,7 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.RUNNING_SESSION_NOT_FOUND.getCode()));
 
-        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), any(UpdateRunningSessionRequest.class));
+        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class));
     }
 
     @DisplayName("유효하지 않은 종료 요청은 잘못된 입력 응답을 반환한다")
@@ -309,7 +351,11 @@ class RunningSessionControllerTest {
                                   "avgSpeedMps": 11,
                                   "durationSec": 2520,
                                   "avgPaceSecPerKm": 2,
-                                  "elevationGainM": 3
+                                  "elevationGainM": 3,
+                                  "distanceGapM": 12,
+                                  "gpsSamples": [],
+                                  "healthSamples": [],
+                                  "splits": []
                                 }
                                 """))
                 .andExpect(status().isBadRequest())
@@ -326,7 +372,7 @@ class RunningSessionControllerTest {
                 101L,
                 "한강 야간 러닝 10K",
                 CourseStatus.COMMUNITY,
-                Difficulty.MEDIUM,
+                new RegisterRunningSessionCourseResponse.DifficultyOption("MEDIUM", "보통"),
                 10000,
                 120,
                 "https://cdn.example.com/course/snapshot.png",
@@ -350,7 +396,8 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.message").value(ResponseCode.CREATED.getMessage()))
                 .andExpect(jsonPath("$.data.courseId").value(101L))
                 .andExpect(jsonPath("$.data.status").value(CourseStatus.COMMUNITY.name()))
-                .andExpect(jsonPath("$.data.difficulty").value(Difficulty.MEDIUM.name()))
+                .andExpect(jsonPath("$.data.difficulty.data").value("MEDIUM"))
+                .andExpect(jsonPath("$.data.difficulty.label").value("보통"))
                 .andExpect(jsonPath("$.data.coordinates[0].latitude").value(37.566501))
                 .andExpect(jsonPath("$.data.coordinates[0].elevationM").value(0.0));
 
@@ -359,7 +406,7 @@ class RunningSessionControllerTest {
 
     @DisplayName("코스 등록 요청에 필수 필드가 없으면 잘못된 입력 응답을 반환한다")
     @ParameterizedTest(name = "누락된 필드: {0}")
-    @ValueSource(strings = {"title", "difficulty", "courseTypes"})
+    @ValueSource(strings = {"title", "mode", "difficulty", "courseTypes"})
     void returnsInvalidInputValueWhenRegisterCourseRequiredFieldIsMissing(String missingField) throws Exception {
         mockMvc.perform(post("/api/running-sessions/{runningSessionId}/register-course", 901L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -499,11 +546,11 @@ class RunningSessionControllerTest {
     }
 
     private static CreateRunningSessionRequest validCreateRequest() {
-        return new CreateRunningSessionRequest(1L, COURSE, 300L, null, STARTED_AT, 30.0, 176.0);
+        return new CreateRunningSessionRequest(1L, COURSE, 300L, null, 30.0, 176.0);
     }
 
     private static CreateRunningSessionRequest ghostCreateRequest() {
-        return new CreateRunningSessionRequest(1L, GHOST, 300L, 44L, STARTED_AT, 30.0, 176.0);
+        return new CreateRunningSessionRequest(1L, GHOST, 300L, 44L, 30.0, 176.0);
     }
 
     private static String validCreateRequestBody() {
@@ -633,6 +680,7 @@ class RunningSessionControllerTest {
     private static RegisterRunningSessionCourseRequest validRegisterCourseRequest() {
         return new RegisterRunningSessionCourseRequest(
                 "한강 야간 러닝 10K",
+                "COMMUNITY",
                 "MEDIUM",
                 java.util.List.of("RIVERSIDE", "URBAN"),
                 "https://cdn.example.com/course/snapshot.png"
@@ -643,6 +691,7 @@ class RunningSessionControllerTest {
         return """
                 {
                   "title": "한강 야간 러닝 10K",
+                  "mode": "COMMUNITY",
                   "difficulty": "MEDIUM",
                   "courseTypes": ["RIVERSIDE", "URBAN"],
                   "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
@@ -654,6 +703,7 @@ class RunningSessionControllerTest {
         return switch (missingField) {
             case "title" -> """
                     {
+                      "mode": "COMMUNITY",
                       "difficulty": "MEDIUM",
                       "courseTypes": ["RIVERSIDE", "URBAN"],
                       "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
@@ -662,6 +712,15 @@ class RunningSessionControllerTest {
             case "difficulty" -> """
                     {
                       "title": "한강 야간 러닝 10K",
+                      "mode": "COMMUNITY",
+                      "courseTypes": ["RIVERSIDE", "URBAN"],
+                      "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
+                    }
+                    """;
+            case "mode" -> """
+                    {
+                      "title": "한강 야간 러닝 10K",
+                      "difficulty": "MEDIUM",
                       "courseTypes": ["RIVERSIDE", "URBAN"],
                       "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
                     }
@@ -669,6 +728,7 @@ class RunningSessionControllerTest {
             case "courseTypes" -> """
                     {
                       "title": "한강 야간 러닝 10K",
+                      "mode": "COMMUNITY",
                       "difficulty": "MEDIUM",
                       "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
                     }
@@ -689,7 +749,11 @@ class RunningSessionControllerTest {
                   "avgSpeedMps": 11,
                   "durationSec": 2520,
                   "avgPaceSecPerKm": 2,
-                  "elevationGainM": 3
+                  "elevationGainM": 3,
+                  "distanceGapM": 12,
+                  "gpsSamples": [],
+                  "healthSamples": [],
+                  "splits": []
                 }
                 """;
     }

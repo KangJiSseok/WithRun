@@ -4,6 +4,7 @@ import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseDifficulty;
 import kr.withrun.was.domain.course.entity.CourseTypeMap;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
+import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.type.CourseStatus;
@@ -17,15 +18,16 @@ import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
+import kr.withrun.was.domain.running.dto.RunningGpsSampleResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
+import kr.withrun.was.domain.running.entity.RunningGpsSample;
 import kr.withrun.was.domain.running.entity.RunningSession;
+import kr.withrun.was.domain.running.repository.GhostRunningResultRepository;
 import kr.withrun.was.domain.running.repository.RunningGpsSampleRepository;
 import kr.withrun.was.domain.running.repository.RunningHealthSampleRepository;
-import kr.withrun.was.domain.running.repository.GhostRunningResultRepository;
 import kr.withrun.was.domain.running.repository.RunningSessionRepository;
 import kr.withrun.was.domain.running.repository.RunningSessionSplitRepository;
-import kr.withrun.was.domain.running.repository.query.dto.GhostRunningResultRow;
 import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
@@ -50,6 +52,7 @@ import java.lang.reflect.Constructor;
 import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -69,6 +72,7 @@ import static org.mockito.Mockito.when;
 @DisplayName("러닝 세션 서비스")
 class RunningSessionServiceTest {
 
+    private static final String CDN_BASE_URL = "https://cdn.withrun.app";
     private static final LocalDateTime STARTED_AT = LocalDateTime.of(2026, 3, 12, 6, 30);
 
     @Mock
@@ -82,6 +86,9 @@ class RunningSessionServiceTest {
 
     @Mock
     private CourseDifficultyRepository courseDifficultyRepository;
+
+    @Mock
+    private CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
 
     @Mock
     private CourseTypeMapRepository courseTypeMapRepository;
@@ -98,21 +105,27 @@ class RunningSessionServiceTest {
     @Mock
     private GhostRunningResultRepository ghostRunningResultRepository;
 
+    @Mock
+    private GhostRunningResultService ghostRunningResultService;
+
     private RunningSessionService runningSessionService;
 
     @BeforeEach
     void setUp() {
         runningSessionService = new RunningSessionService(
-                ghostRunningResultRepository,
                 runningSessionRepository,
-                runningGpsSampleRepository,
-                runningHealthSampleRepository,
-                runningSessionSplitRepository,
                 userRepository,
                 courseRepository,
                 courseDifficultyRepository,
-                courseTypeMapRepository
+                courseGhostLeaderboardRepository,
+                courseTypeMapRepository,
+                runningGpsSampleRepository,
+                runningHealthSampleRepository,
+                runningSessionSplitRepository,
+                ghostRunningResultRepository,
+                ghostRunningResultService
         );
+        setField(runningSessionService, "CDN_URL", CDN_BASE_URL);
     }
 
     @DisplayName("서비스는 클래스 기본 readOnly와 쓰기 메서드 트랜잭션을 함께 사용한다")
@@ -142,7 +155,7 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 901L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(1L, FREE, null, null, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(1L, FREE, null, null, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -153,7 +166,7 @@ class RunningSessionServiceTest {
         assertThat(savedSession.getCourse()).isNull();
         assertThat(savedSession.getGhostTargetRunningSession()).isNull();
         assertThat(savedSession.getMode()).isEqualTo(FREE);
-        assertThat(savedSession.getStartedAt()).isEqualTo(STARTED_AT);
+        assertThat(savedSession.getStartedAt()).isNotNull();
         assertThat(savedSession.getDistanceM()).isZero();
         assertThat(savedSession.getCaloriesKcal()).isZero();
         assertThat(savedSession.getIsCompleted()).isFalse();
@@ -179,7 +192,7 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 902L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(2L, COURSE, 300L, null, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(2L, COURSE, 300L, null, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -211,7 +224,7 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 903L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(3L, GHOST, 301L, 44L, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(3L, GHOST, 301L, 44L, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -231,13 +244,59 @@ class RunningSessionServiceTest {
         assertThat(response.isCompleted()).isFalse();
     }
 
+    @DisplayName("GHOST 모드 시작 응답은 대상 세션의 GPS 샘플을 포함한다")
+    @Test
+    void includesGhostTargetGpsSamplesInGhostCreateResponse() {
+        User user = user(30L);
+        Course course = course(306L, CourseStatus.OFFICIAL);
+        RunningSession ghostTarget = completedRunningSession(57L);
+        RunningGpsSample firstGpsSample = gpsSample(
+                ghostTarget,
+                99L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 5),
+                37.5665,
+                126.9780,
+                12.3,
+                3.2,
+                181.0
+        );
+        RunningGpsSample secondGpsSample = gpsSample(
+                ghostTarget,
+                99L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 15),
+                37.5667,
+                126.9782,
+                12.8,
+                2.9,
+                184.0
+        );
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(ghostTarget.getId()))
+                .thenReturn(Optional.of(ghostTarget));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 904L));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(ghostTarget.getId()))
+                .thenReturn(List.of(firstGpsSample, secondGpsSample));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(30L, GHOST, 306L, 57L, 30.0, 176.0)
+        );
+
+        assertThat(recordComponentNames(CreateRunningSessionResponse.class)).contains("ghostTargetGpsSamples");
+        assertThat(invokeAccessor(response, "ghostTargetGpsSamples")).isEqualTo(List.of(
+                RunningGpsSampleResponse.from(firstGpsSample),
+                RunningGpsSampleResponse.from(secondGpsSample)
+        ));
+        verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(57L);
+    }
+
     @DisplayName("없는 사용자는 USER_NOT_FOUND 예외를 던진다")
     @Test
     void throwsUserNotFoundWhenUserDoesNotExist() {
         when(userRepository.findNotDeletedUser(10L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(10L, FREE, null, null, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(10L, FREE, null, null, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -250,7 +309,7 @@ class RunningSessionServiceTest {
         stubUser(user(11L));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(11L, COURSE, null, null, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(11L, COURSE, null, null, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -268,7 +327,7 @@ class RunningSessionServiceTest {
         when(courseRepository.findNotDeletedCourse(communityCourse.getId())).thenReturn(Optional.of(communityCourse));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(12L, COURSE, 302L, null, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(12L, COURSE, 302L, null, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -286,7 +345,7 @@ class RunningSessionServiceTest {
         when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(13L, GHOST, 303L, null, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(13L, GHOST, 303L, null, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -305,7 +364,7 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(55L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(14L, GHOST, 304L, 55L, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(14L, GHOST, 304L, 55L, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -326,7 +385,7 @@ class RunningSessionServiceTest {
                 .thenReturn(Optional.of(incompleteGhostTarget));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(15L, GHOST, 305L, 56L, STARTED_AT, 30.0, 176.0)
+                new CreateRunningSessionRequest(15L, GHOST, 305L, 56L, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -335,49 +394,12 @@ class RunningSessionServiceTest {
         verify(runningSessionRepository, never()).save(any(RunningSession.class));
     }
 
-    @DisplayName("종료 요청이 유효하면 세션을 완료 상태로 확정한다")
-    @Test
-    void completesRunningSessionWhenRequestIsValid() {
-        RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
-        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
-        when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
-
-        UpdateRunningSessionResponse response = runningSessionService.completeRunningSession(1L, request);
-
-        assertThat(response).isEqualTo(new UpdateRunningSessionResponse(
-                1L,
-                true,
-                false,
-                LocalDateTime.parse("2026-03-12T06:30:00"),
-                LocalDateTime.parse("2026-03-12T07:12:00"),
-                10023,
-                642,
-                30.0,
-                150.0,
-                11.0,
-                2520,
-                2,
-                37.5,
-                127.0,
-                3
-        ));
-        assertThat(runningSession.getIsCompleted()).isTrue();
-        assertThat(runningSession.getEndedAt()).isEqualTo(LocalDateTime.of(2026, 3, 12, 7, 12, 0));
-        assertThat(runningSession.getDistanceM()).isEqualTo(10023);
-        assertThat(runningSession.getCaloriesKcal()).isEqualTo(642);
-        assertThat(runningSession.getEndLatitude()).isEqualTo(30.0);
-        assertThat(runningSession.getEndLongitude()).isEqualTo(150.0);
-        assertThat(runningSession.getAvgSpeedMps()).isEqualTo(11.0);
-        assertThat(runningSession.getDurationSec()).isEqualTo(2520);
-        assertThat(runningSession.getAvgPaceSecPerKm()).isEqualTo(2);
-        assertThat(runningSession.getElevationGainM()).isEqualTo(3);
-    }
 
     @DisplayName("세션 소유 사용자와 요청 사용자 ID가 다르면 세션 없음으로 처리한다")
     @Test
     void treatsDifferentUserAsRunningSessionNotFound() {
         RunningSession runningSession = runningSession(1L, 2L, false, STARTED_AT);
-        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
+        UpdateRunningSessionRequest request = validUpdateRequest(1L);
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
         assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
@@ -390,7 +412,7 @@ class RunningSessionServiceTest {
     @Test
     void rejectsAlreadyCompletedRunningSession() {
         RunningSession runningSession = runningSession(1L, 1L, true, STARTED_AT);
-        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
+        UpdateRunningSessionRequest request = validUpdateRequest(1L);
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
         assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
@@ -402,7 +424,7 @@ class RunningSessionServiceTest {
     @DisplayName("존재하지 않는 세션은 종료할 수 없다")
     @Test
     void throwsRunningSessionNotFoundWhenSessionDoesNotExist() {
-        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T07:12:00");
+        UpdateRunningSessionRequest request = validUpdateRequest(1L);
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
@@ -411,41 +433,70 @@ class RunningSessionServiceTest {
                 .isEqualTo(ResponseCode.RUNNING_SESSION_NOT_FOUND);
     }
 
-    @DisplayName("종료 시각이 시작 시각보다 빨라도 현재 요청 값을 그대로 반영한다")
+    @DisplayName("종료 시각은 요청값 대신 서버 현재 시각으로 반영한다")
     @Test
-    void appliesEndedAtEvenWhenItIsBeforeStartedAt() {
+    void appliesCurrentTimeForEndedAt() {
         RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
-        UpdateRunningSessionRequest request = validUpdateRequest(1L, "2026-03-12T06:20:00");
+        UpdateRunningSessionRequest request = validUpdateRequest(1L);
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
 
+        LocalDateTime beforeComplete = LocalDateTime.now();
         UpdateRunningSessionResponse response = runningSessionService.completeRunningSession(1L, request);
+        LocalDateTime afterComplete = LocalDateTime.now();
 
-        assertThat(response.endedAt()).isEqualTo(LocalDateTime.of(2026, 3, 12, 6, 20, 0));
-        assertThat(runningSession.getEndedAt()).isEqualTo(LocalDateTime.of(2026, 3, 12, 6, 20, 0));
+        assertThat(response.endedAt()).isBetween(beforeComplete, afterComplete);
+        assertThat(runningSession.getEndedAt()).isEqualTo(response.endedAt());
         assertThat(runningSession.getIsCompleted()).isTrue();
     }
 
-    @DisplayName("완료된 러닝 세션을 커뮤니티 코스로 등록한다")
+    @DisplayName("완료된 러닝 세션을 요청한 모드의 코스로 등록한다")
     @Test
-    void registersCompletedRunningSessionAsCommunityCourse() {
+    void registersCompletedRunningSessionCourseWithRequestedMode() {
         RunningSession runningSession = runningSession(81L, 7L, true, STARTED_AT);
         setField(runningSession, "distanceM", 10000);
         setField(runningSession, "elevationGainM", 120);
-        setField(runningSession, "snapshotImageUrl", "https://cdn.withrun.app/snapshots/81.png");
+        setField(runningSession, "snapshotImageUrl", "snapshots/81.png");
         setField(runningSession, "endLatitude", 37.574501);
         setField(runningSession, "endLongitude", 126.989001);
         setField(runningSession, "coordinates", new Coordinates(
-                List.of(37.566501, 37.574501),
-                List.of(126.978001, 126.989001),
-                List.of(0.0, 1.0)
+                List.of(37.574501, 37.566501),
+                List.of(126.989001, 126.978001),
+                List.of(1.0, 0.0)
+        ));
+        RunningGpsSample firstGpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 5),
+                37.566501,
+                126.978001,
+                15.5,
+                3.0,
+                180.0
+        );
+        RunningGpsSample secondGpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 15),
+                37.574501,
+                126.989001,
+                18.2,
+                2.6,
+                184.0
+        );
+        Coordinates expectedCoordinates = new Coordinates(List.of(
+                new GeoPoint(37.566501, 126.978001, 15.5),
+                new GeoPoint(37.574501, 126.989001, 18.2)
         ));
         RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
                 "한강 야간 러닝 10K",
+                "COMMUNITY",
                 "MEDIUM",
                 List.of("RIVERSIDE", "URBAN", "RIVERSIDE"),
-                "https://cdn.example.com/course/snapshot.png"
+                "course/snapshot.png"
         );
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(81L)).thenReturn(Optional.of(runningSession));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(81L))
+                .thenReturn(List.of(firstGpsSample, secondGpsSample));
         when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 501L));
 
         RegisterRunningSessionCourseResponse response =
@@ -454,22 +505,20 @@ class RunningSessionServiceTest {
         assertThat(response.courseId()).isEqualTo(501L);
         assertThat(response.title()).isEqualTo("한강 야간 러닝 10K");
         assertThat(response.status()).isEqualTo(CourseStatus.COMMUNITY);
-        assertThat(response.difficulty()).isEqualTo(Difficulty.MEDIUM);
+        assertThat(response.difficulty()).isEqualTo(new RegisterRunningSessionCourseResponse.DifficultyOption("MEDIUM", "보통"));
         assertThat(response.distanceM()).isEqualTo(10000);
         assertThat(response.elevationGainM()).isEqualTo(120);
-        assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.example.com/course/snapshot.png");
-        assertThat(response.coordinates()).isEqualTo(new Coordinates(List.of(
-                new GeoPoint(37.566501, 126.978001, 0.0),
-                new GeoPoint(37.574501, 126.989001, 1.0)
-        )));
+        assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.withrun.app/course/snapshot.png");
+        assertThat(response.coordinates()).isEqualTo(expectedCoordinates);
 
         ArgumentCaptor<Course> courseCaptor = ArgumentCaptor.forClass(Course.class);
         verify(courseRepository).save(courseCaptor.capture());
+        verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(81L);
         Course savedCourse = courseCaptor.getValue();
         assertThat(savedCourse.getStatus()).isEqualTo(CourseStatus.COMMUNITY);
         assertThat(savedCourse.getUser()).isEqualTo(runningSession.getUser());
-        assertThat(savedCourse.getCoordinates()).isEqualTo(runningSession.getCoordinates());
-        assertThat(savedCourse.getCoordinates()).isNotSameAs(runningSession.getCoordinates());
+        assertThat(savedCourse.getCoordinates()).isEqualTo(expectedCoordinates);
+        assertThat(savedCourse.getCoordinates()).isNotEqualTo(runningSession.getCoordinates());
 
         ArgumentCaptor<CourseDifficulty> difficultyCaptor = ArgumentCaptor.forClass(CourseDifficulty.class);
         verify(courseDifficultyRepository).save(difficultyCaptor.capture());
@@ -489,29 +538,138 @@ class RunningSessionServiceTest {
                 .containsOnly(savedCourse);
     }
 
+    @DisplayName("완료된 러닝 세션을 PRIVATE 코스로 등록한다")
+    @Test
+    void registersCompletedRunningSessionCourseAsPrivateCourse() {
+        RunningSession runningSession = runningSession(84L, 7L, true, STARTED_AT);
+        setField(runningSession, "snapshotImageUrl", "snapshots/84.png");
+        setField(runningSession, "coordinates", new Coordinates(
+                List.of(37.566501, 37.565901),
+                List.of(126.978001, 126.977501),
+                List.of(0.0, 0.0)
+        ));
+        RunningGpsSample firstGpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 10),
+                37.565901,
+                126.977501,
+                11.8,
+                3.1,
+                175.0
+        );
+        RunningGpsSample secondGpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 20),
+                37.566501,
+                126.978001,
+                12.4,
+                2.8,
+                178.0
+        );
+        Coordinates expectedCoordinates = new Coordinates(List.of(
+                new GeoPoint(37.565901, 126.977501, 11.8),
+                new GeoPoint(37.566501, 126.978001, 12.4)
+        ));
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "개인 보관 코스",
+                "PRIVATE",
+                "EASY",
+                List.of("RIVERSIDE"),
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(84L)).thenReturn(Optional.of(runningSession));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(84L))
+                .thenReturn(List.of(firstGpsSample, secondGpsSample));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 503L));
+
+        RegisterRunningSessionCourseResponse response =
+                runningSessionService.registerRunningSessionCourse(84L, request);
+
+        assertThat(response.status()).isEqualTo(CourseStatus.PRIVATE);
+        assertThat(response.coordinates()).isEqualTo(expectedCoordinates);
+
+        ArgumentCaptor<Course> courseCaptor = ArgumentCaptor.forClass(Course.class);
+        verify(courseRepository).save(courseCaptor.capture());
+        verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(84L);
+        assertThat(courseCaptor.getValue().getStatus()).isEqualTo(CourseStatus.PRIVATE);
+        assertThat(courseCaptor.getValue().getCoordinates()).isEqualTo(expectedCoordinates);
+    }
+
+    @DisplayName("지원하지 않는 코스 모드는 등록할 수 없다")
+    @Test
+    void rejectsUnsupportedCourseModeWhenRegisteringRunningSessionCourse() {
+        RunningSession runningSession = runningSession(85L, 7L, true, STARTED_AT);
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "잘못된 모드 코스",
+                "OFFICIAL",
+                "MEDIUM",
+                List.of("RIVERSIDE"),
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(85L)).thenReturn(Optional.of(runningSession));
+
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(85L, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
+
+        verify(courseRepository, never()).save(any(Course.class));
+    }
+
     @DisplayName("요청 이미지 URL이 없으면 러닝 세션 스냅샷을 사용한다")
     @Test
     void fallsBackToRunningSessionSnapshotWhenRequestSnapshotIsMissing() {
         RunningSession runningSession = runningSession(82L, 7L, true, STARTED_AT);
-        setField(runningSession, "snapshotImageUrl", "https://cdn.withrun.app/snapshots/82.png");
+        setField(runningSession, "snapshotImageUrl", "snapshots/82.png");
         setField(runningSession, "coordinates", new Coordinates(
-                List.of(37.566501),
-                List.of(126.978001),
+                List.of(37.566001),
+                List.of(126.977001),
                 List.of(0.0)
+        ));
+        RunningGpsSample firstGpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 25),
+                37.566501,
+                126.978001,
+                13.1,
+                2.7,
+                179.0
+        );
+        RunningGpsSample secondGpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 35),
+                37.567101,
+                126.978601,
+                13.9,
+                2.5,
+                182.0
+        );
+        Coordinates expectedCoordinates = new Coordinates(List.of(
+                new GeoPoint(37.566501, 126.978001, 13.1),
+                new GeoPoint(37.567101, 126.978601, 13.9)
         ));
         RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
                 "한강 아침 러닝",
+                "COMMUNITY",
                 "EASY",
                 List.of("RIVERSIDE"),
                 null
         );
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(82L)).thenReturn(Optional.of(runningSession));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(82L))
+                .thenReturn(List.of(firstGpsSample, secondGpsSample));
         when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 502L));
 
         RegisterRunningSessionCourseResponse response =
                 runningSessionService.registerRunningSessionCourse(82L, request);
 
         assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.withrun.app/snapshots/82.png");
+        assertThat(response.coordinates()).isEqualTo(expectedCoordinates);
+        verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(82L);
     }
 
     @DisplayName("완료되지 않은 세션은 코스 등록을 거부한다")
@@ -520,6 +678,7 @@ class RunningSessionServiceTest {
         RunningSession runningSession = runningSession(83L, 7L, false, STARTED_AT);
         RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
                 "등록 실패 코스",
+                "COMMUNITY",
                 "MEDIUM",
                 List.of("RIVERSIDE"),
                 null
@@ -555,7 +714,7 @@ class RunningSessionServiceTest {
                         7000,
                         2100,
                         420,
-                        "https://cdn.withrun.app/snapshots/121.png",
+                        "snapshots/121.png",
                         40,
                         true,
                         RunningMode.GHOST,
@@ -690,10 +849,9 @@ class RunningSessionServiceTest {
         return runningSession;
     }
 
-    private UpdateRunningSessionRequest validUpdateRequest(Long userId, String endedAt) {
+    private UpdateRunningSessionRequest validUpdateRequest(Long userId) {
         return new UpdateRunningSessionRequest(
                 userId,
-                LocalDateTime.parse(endedAt),
                 10023,
                 642,
                 30.0,
@@ -702,6 +860,42 @@ class RunningSessionServiceTest {
                 2520,
                 2,
                 3
+        );
+    }
+
+    private List<String> recordComponentNames(Class<?> type) {
+        return Arrays.stream(type.getRecordComponents())
+                .map(java.lang.reflect.RecordComponent::getName)
+                .toList();
+    }
+
+    private Object invokeAccessor(Object target, String accessorName) {
+        try {
+            return target.getClass().getMethod(accessorName).invoke(target);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Failed to invoke accessor " + accessorName, exception);
+        }
+    }
+
+    private RunningGpsSample gpsSample(
+            RunningSession runningSession,
+            Long userId,
+            LocalDateTime sampledAt,
+            Double latitude,
+            Double longitude,
+            Double altitudeM,
+            Double accuracyM,
+            Double bearingDeg
+    ) {
+        return RunningGpsSample.create(
+                user(userId),
+                runningSession,
+                bearingDeg,
+                accuracyM,
+                altitudeM,
+                longitude,
+                latitude,
+                sampledAt
         );
     }
 

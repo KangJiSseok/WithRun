@@ -1,29 +1,42 @@
 package kr.withrun.was.domain.course.service;
 
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseFilterResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardItemResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
-import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
+import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
+import kr.withrun.was.domain.course.dto.NearbyGhostCoursesRequest;
+import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
 import kr.withrun.was.domain.course.entity.Course;
-import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
+import kr.withrun.was.domain.course.repository.CourseBookmarkRepository;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
+import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseLikeRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseReviewRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.CourseGhostLeaderboardRankRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
+import kr.withrun.was.domain.course.type.CourseDistanceType;
+import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.util.CourseGhostLeaderboardCursorCodec;
 import kr.withrun.was.domain.course.util.HaversineDistanceCalculator;
 import kr.withrun.was.domain.course.util.NearbyCourseCursorCodec;
 import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -40,8 +53,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CourseService {
 
+    @Value("${app.cdn.base-url}")
+    private String CDN_URL;
     // 목표 거리 허용 오차는 +- 1km로 두고 비슷한 길이의 코스만 후보로 남긴다.
-    private static final int TARGET_DISTANCE_TOLERANCE_M = 1000;
     // 요청 페이지 크기가 없으면 기본으로 3개를 내려준다.
     private static final int DEFAULT_PAGE_SIZE = 3;
     // 반경은 최대 5km까지만 점진적으로 확장한다.
@@ -51,6 +65,7 @@ public class CourseService {
     private final CourseRepository courseRepository;
     private final CourseDifficultyRepository courseDifficultyRepository;
     private final CourseTypeMapRepository courseTypeMapRepository;
+    private final CourseBookmarkRepository courseBookmarkRepository;
     private final CourseLikeRepository courseLikeRepository;
     private final CourseReviewRepository courseReviewRepository;
     private final CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
@@ -71,22 +86,57 @@ public class CourseService {
         String nextCursor = hasMore ? toCursor(pageItems.get(pageItems.size() - 1)) : null;
         Integer suggestedNextRadiusM = resolveSuggestedNextRadiusM(request.radiusM(), hasMore);
 
-        return new NearbyCoursesResponse(pageItems, hasMore, nextCursor, suggestedNextRadiusM);
+        return new NearbyCoursesResponse(enrichNearbyCourseItemsWithCounts(pageItems), hasMore, nextCursor, suggestedNextRadiusM);
     }
 
-    public CourseSurveyResponse findCourseSurveys() {
-        return new CourseSurveyResponse(
+    public NearbyGhostCoursesResponse findNearbyGhostCourses(NearbyGhostCoursesRequest request) {
+        int pageSize = resolvePageSize(request.pageSize());
+        List<NearbyCourseItemResponse> sortedItems = findNearbyGhostCourseItems(request);
+        int startIndex = resolveStartIndex(sortedItems, request.cursor());
+        List<NearbyCourseItemResponse> remainingItems = sortedItems.subList(startIndex, sortedItems.size());
+        boolean hasMore = remainingItems.size() > pageSize;
+        List<NearbyCourseItemResponse> pageItems =
+                List.copyOf(remainingItems.subList(0, Math.min(pageSize, remainingItems.size())));
+        String nextCursor = hasMore ? toCursor(pageItems.get(pageItems.size() - 1)) : null;
+
+        return new NearbyGhostCoursesResponse(enrichNearbyCourseItemsWithCounts(pageItems), hasMore, nextCursor);
+    }
+
+    public CourseRegisterMetaResponse findCourseRegisterMeta() {
+        return new CourseRegisterMetaResponse(
                 Arrays.stream(CourseType.values())
-                        .map(courseType -> new CourseSurveyResponse.CourseSurveyListResponse(
-                                courseType.getIndex(),
-                                courseType.getLabel()
-                        ))
+                        .map(CourseRegisterMetaResponse.CourseTypeOption::from)
+                        .toList(),
+                List.of(CourseStatus.COMMUNITY, CourseStatus.PRIVATE).stream()
+                        .map(CourseRegisterMetaResponse.ModeOption::from)
                         .toList(),
                 Arrays.stream(Difficulty.values())
-                        .map(difficulty -> new CourseSurveyResponse.CourseSurveyListResponse(
-                                difficulty.getIndex(),
-                                difficulty.getLabel()
-                        ))
+                        .map(CourseRegisterMetaResponse.DifficultyOption::from)
+                        .toList()
+        );
+    }
+
+    public CourseSurveyMetaResponse findSurveyMeta() {
+        return new CourseSurveyMetaResponse(
+                Arrays.stream(CourseType.values())
+                        .map(CourseSurveyMetaResponse.CourseTypeOption::from)
+                        .toList(),
+                Arrays.stream(Difficulty.values())
+                        .map(CourseSurveyMetaResponse.DifficultyOption::from)
+                        .toList()
+        );
+    }
+
+    public CourseFilterResponse findCourseFilters() {
+        return new CourseFilterResponse(
+                Arrays.stream(CourseDistanceType.values())
+                        .map(CourseFilterResponse.CourseDistanceTypeOption::from)
+                        .toList(),
+                Arrays.stream(CourseType.values())
+                        .map(CourseFilterResponse.CourseTypeOption::from)
+                        .toList(),
+                Arrays.stream(Difficulty.values())
+                        .map(CourseFilterResponse.DifficultyOption::from)
                         .toList()
         );
     }
@@ -98,22 +148,40 @@ public class CourseService {
                 course.getId(),
                 course.getTitle(),
                 course.getStatus(),
-                courseDifficultyRepository.findDifficultyByCourseId(courseId)
-                        .orElse(null),
+                CourseDetailResponse.DifficultyOption.from(courseDifficultyRepository.findDifficultyByCourseId(courseId)
+                        .orElse(null)),
                 course.getDistanceM(),
                 course.getElevationGainM(),
-                course.getSnapshotImageUrl(),
+                CDN_URL + "/" + course.getSnapshotImageUrl(),
                 course.getStartLatitude(),
                 course.getStartLongitude(),
                 course.getEndLatitude(),
                 course.getEndLongitude(),
                 course.getCoordinates(),
-                courseTypeMapRepository.findCourseTypesByCourseId(courseId),
+                courseTypeMapRepository.findCourseTypesByCourseId(courseId).stream()
+                        .map(CourseDetailResponse.CourseTypeOption::from)
+                        .toList(),
                 courseLikeRepository.countByCourseId(courseId),
                 // TODO: 인증에서 userId를 전달받는 방식이 정해지면 isLiked/isBookmarked를 사용자 기준으로 계산하도록 수정해야 한다.
                 false,
                 false,
                 courseReviewRepository.findAverageRatingByCourseId(courseId)
+        );
+    }
+
+    public CourseGhostDetailResponse findCourseGhostDetail(Long courseId, Long userId) {
+        Course course = getCourse(courseId);
+
+        return CourseGhostDetailResponse.of(
+                course,
+                courseDifficultyRepository.findDifficultyByCourseId(courseId)
+                        .orElse(null),
+                courseTypeMapRepository.findCourseTypesByCourseId(courseId),
+                courseLikeRepository.countByCourseId(courseId),
+                false,
+                false,
+                courseReviewRepository.findAverageRatingByCourseId(courseId),
+                findMyGhostRecord(courseId, userId)
         );
     }
 
@@ -152,6 +220,31 @@ public class CourseService {
         );
     }
 
+    public CourseGhostLeaderboardResponse findCourseGhostLeaderboard(Long courseId, CourseGhostLeaderboardRequest request) {
+        getCourse(courseId);
+
+        List<CourseGhostLeaderboardRankRow> rows = courseGhostLeaderboardRepository.findRankedRowsByCourseId(courseId);
+        int startIndex = resolveGhostLeaderboardStartIndex(rows, request.cursor());
+        List<CourseGhostLeaderboardRankRow> remainingRows = rows.subList(startIndex, rows.size());
+        boolean hasMore = remainingRows.size() > request.size();
+        List<CourseGhostLeaderboardRankRow> pageRows = List.copyOf(remainingRows.subList(0, Math.min(request.size(), remainingRows.size())));
+        String nextCursor = hasMore ? toGhostLeaderboardCursor(pageRows.getLast()) : null;
+
+        List<CourseGhostLeaderboardItemResponse> items = pageRows.stream()
+                .map(row -> new CourseGhostLeaderboardItemResponse(
+                        row.leaderboardId(),
+                        row.userId(),
+                        row.nickname(),
+                        row.runningSessionId(),
+                        row.point(),
+                        row.rank(),
+                        row.createdAt()
+                ))
+                .toList();
+
+        return new CourseGhostLeaderboardResponse(items, hasMore, nextCursor);
+    }
+
     private Course getCourse(Long courseId) {
         Course course = courseRepository.findNotDeletedCourse(courseId)
                 .orElseThrow(() -> new CustomException(ResponseCode.COURSE_NOT_FOUND));
@@ -159,8 +252,62 @@ public class CourseService {
     }
 
 
+    /**
+     * request에서 pageSize를 null로 보내면 defalut값으로 치환하기 위한 메서드
+     *
+     * @param pageSize
+     * @return
+     */
     private int resolvePageSize(Integer pageSize) {
         return pageSize == null ? DEFAULT_PAGE_SIZE : pageSize;
+    }
+
+    private CourseGhostDetailResponse.MyRecord findMyGhostRecord(Long courseId, Long userId) {
+        return courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(userId, courseId)
+                .map(leaderboard -> new CourseGhostDetailResponse.MyRecord(
+                        leaderboard.getId(),
+                        leaderboard.getRunningSession().getId(),
+                        leaderboard.getRunningSession().getDurationSec(),
+                        leaderboard.getPoint(),
+                        findRank(courseId, leaderboard.getId()),
+                        leaderboard.getCreatedAt()
+                ))
+                .orElse(null);
+    }
+
+    private Long findRank(Long courseId, Long leaderboardId) {
+        return courseGhostLeaderboardRepository.findRankedRowsByCourseId(courseId).stream()
+                .filter(row -> row.leaderboardId().equals(leaderboardId))
+                .map(CourseGhostLeaderboardRankRow::rank)
+                .findFirst()
+                .orElse(null);
+    }
+
+    private int resolveGhostLeaderboardStartIndex(List<CourseGhostLeaderboardRankRow> rows, String cursor) {
+        if (cursor == null) {
+            return 0;
+        }
+
+        CourseGhostLeaderboardCursorCodec.CursorPayload payload = CourseGhostLeaderboardCursorCodec.decode(cursor);
+        for (int index = 0; index < rows.size(); index++) {
+            if (isStrictlyAfter(rows.get(index), payload)) {
+                return index;
+            }
+        }
+
+        return rows.size();
+    }
+
+    private boolean isStrictlyAfter(
+            CourseGhostLeaderboardRankRow row,
+            CourseGhostLeaderboardCursorCodec.CursorPayload payload
+    ) {
+        return row.point() < payload.point()
+                || (row.point().equals(payload.point()) && row.leaderboardId() > payload.leaderboardId());
+    }
+
+    private String toGhostLeaderboardCursor(CourseGhostLeaderboardRankRow row) {
+        return CourseGhostLeaderboardCursorCodec.encode(row.point(), row.leaderboardId());
     }
 
     /**
@@ -170,14 +317,39 @@ public class CourseService {
      * 사용자와 가장 가까운 지점 거리, 목표 거리 적합 여부, 현재 탐색 반경을 순서대로 적용한다.
      */
     public List<NearbyCourseItemResponse> findNearbyCourseItems(NearbyCoursesRequest request) {
-        return courseRepository.findOfficialNearbyCourseCandidates().stream()
+        return courseRepository.findOfficialNearbyCourseCandidates(request.preferredDistanceMs()).stream()
+                .filter(candidate -> candidate.courseId() != null)
+                .collect(Collectors.groupingBy(NearbyCourseCandidateRow::courseId))
+                .values().stream()
+                .map(candidateRows -> toNearbyCourseTargetItem(
+                        candidateRows,
+                        request.targetLatitude(),
+                        request.targetLongitude()
+                ))
+                .flatMap(Optional::stream)
+                .filter(item -> item.distanceFromTargetM() <= request.radiusM()) //코스와 반경으로 필터링 로직
+                //코스와 유저사이의 거리를 넣는 로직
+                .map(item -> toNearbyCourseItem(
+                        item.candidateRows(),
+                        item.distanceFromTargetM(),
+                        request.latitude(),
+                        request.longitude()
+                ))
+                .flatMap(Optional::stream)
+                .sorted(
+                        Comparator.comparingInt(NearbyCourseItemResponse::distanceFromUserM)
+                                .thenComparingLong(NearbyCourseItemResponse::courseId)
+                )
+                .toList();
+    }
+
+    public List<NearbyCourseItemResponse> findNearbyGhostCourseItems(NearbyGhostCoursesRequest request) {
+        return courseRepository.findOfficialNearbyCourseCandidates(request.preferredDistanceMs()).stream()
                 .filter(candidate -> candidate.courseId() != null)
                 .collect(Collectors.groupingBy(NearbyCourseCandidateRow::courseId))
                 .values().stream()
                 .map(candidateRows -> toNearbyCourseItem(candidateRows, request.latitude(), request.longitude()))
                 .flatMap(Optional::stream)
-                .filter(item -> isWithinTargetDistance(item.distanceM(), request.targetDistanceM()))
-                .filter(item -> item.distanceFromUserM() <= request.radiusM())
                 .sorted(
                         Comparator.comparingInt(NearbyCourseItemResponse::distanceFromUserM)
                                 .thenComparingLong(NearbyCourseItemResponse::courseId)
@@ -227,8 +399,8 @@ public class CourseService {
     /**
      * 동일 코스에 속한 후보 행들 중 대표 정보를 뽑아 응답 객체를 만든다.
      * <p>
-     * 코스 좌표 전체를 기준으로 사용자의 현재 위치와 가장 가까운 지점을 계산하고,
-     * 그 값이 있어야만 주변 코스로 노출한다.
+     * 코스 좌표 전체를 기준으로 사용자의 현재 위치와 가장가까운 지점을 계산하고,
+     * * 그 값이 있어야만 주변 코스로 노출한다.
      */
     private Optional<NearbyCourseItemResponse> toNearbyCourseItem(
             List<NearbyCourseCandidateRow> candidateRows,
@@ -245,44 +417,119 @@ public class CourseService {
             return Optional.empty();
         }
 
-        return Optional.of(
-                new NearbyCourseItemResponse(
-                        representative.courseId(),
-                        representative.title(),
-                        representative.status(),
-                        representative.distanceM(),
-                        representative.elevationGainM(),
-                        representative.startLatitude(),
-                        representative.startLongitude(),
-                        representative.endLatitude(),
-                        representative.endLongitude(),
-                        distanceFromUserM.getAsInt(),
-                        representative.difficulty(),
-                        mergeCourseTypes(candidateRows),
-                        representative.snapshotImageUrl()
-                )
+        return Optional.of(buildNearbyCourseItem(
+                representative,
+                candidateRows,
+                distanceFromUserM.getAsInt(),
+                distanceFromUserM.getAsInt()
+        ));
+    }
+
+    private Optional<NearbyCourseTargetItem> toNearbyCourseTargetItem(
+            List<NearbyCourseCandidateRow> candidateRows,
+            double targetLatitude,
+            double targetLongitude
+    ) {
+        NearbyCourseCandidateRow representative = candidateRows.getFirst();
+        OptionalInt distanceFromTargetM = HaversineDistanceCalculator.calculateMinimumDistanceMeters(
+                representative.coordinates(),
+                targetLatitude,
+                targetLongitude
+        );
+        if (distanceFromTargetM.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(new NearbyCourseTargetItem(candidateRows, distanceFromTargetM.getAsInt()));
+    }
+
+    private Optional<NearbyCourseItemResponse> toNearbyCourseItem(
+            List<NearbyCourseCandidateRow> candidateRows,
+            int distanceFromTargetM,
+            double userLatitude,
+            double userLongitude
+    ) {
+        NearbyCourseCandidateRow representative = candidateRows.getFirst();
+        OptionalInt distanceFromUserM = HaversineDistanceCalculator.calculateMinimumDistanceMeters(
+                representative.coordinates(),
+                userLatitude,
+                userLongitude
+        );
+        if (distanceFromUserM.isEmpty()) {
+            return Optional.empty();
+        }
+
+        return Optional.of(buildNearbyCourseItem(
+                representative,
+                candidateRows,
+                distanceFromTargetM,
+                distanceFromUserM.getAsInt()
+        ));
+    }
+
+    private NearbyCourseItemResponse buildNearbyCourseItem(
+            NearbyCourseCandidateRow representative,
+            List<NearbyCourseCandidateRow> candidateRows,
+            int distanceFromTargetM,
+            int distanceFromUserM
+    ) {
+        return new NearbyCourseItemResponse(
+                representative.courseId(),
+                representative.title(),
+                representative.status(),
+                representative.distanceM(),
+                representative.elevationGainM(),
+                representative.startLatitude(),
+                representative.startLongitude(),
+                representative.endLatitude(),
+                representative.endLongitude(),
+                distanceFromTargetM,
+                distanceFromUserM,
+                NearbyCourseItemResponse.DifficultyOption.from(representative.difficulty()),
+                mergeCourseTypes(candidateRows),
+                0L,
+                0L,
+                CDN_URL + "/" + representative.snapshotImageUrl()
         );
     }
 
-    // 목표 거리와 완전히 일치하는 코스만 찾으면 후보가 너무 적어질 수 있어 허용 오차를 둔다.
-    private boolean isWithinTargetDistance(Integer courseDistanceM, int targetDistanceM) {
-        if (courseDistanceM == null) {
-            return false;
-        }
-
-        int minimumDistanceM = targetDistanceM - TARGET_DISTANCE_TOLERANCE_M;
-        int maximumDistanceM = targetDistanceM + TARGET_DISTANCE_TOLERANCE_M;
-        return courseDistanceM >= minimumDistanceM && courseDistanceM <= maximumDistanceM;
+    private List<NearbyCourseItemResponse> enrichNearbyCourseItemsWithCounts(List<NearbyCourseItemResponse> items) {
+        return items.stream()
+                .map(item -> new NearbyCourseItemResponse(
+                        item.courseId(),
+                        item.title(),
+                        item.status(),
+                        item.distanceM(),
+                        item.elevationGainM(),
+                        item.startLatitude(),
+                        item.startLongitude(),
+                        item.endLatitude(),
+                        item.endLongitude(),
+                        item.distanceFromTargetM(),
+                        item.distanceFromUserM(),
+                        item.difficulty(),
+                        item.courseTypes(),
+                        courseLikeRepository.countByCourseId(item.courseId()),
+                        courseBookmarkRepository.countByCourseId(item.courseId()),
+                        item.snapshotImageUrl()
+                ))
+                .toList();
     }
 
+    // 목표 거리와 완전히 일치하는 코스만 찾으면 후보가 너무 적어질 수 있어 허용 오차를 둔다.
     // 같은 코스가 여러 타입으로 조회될 수 있으므로 중복 없이 하나의 리스트로 합친다.
-    private List<CourseType> mergeCourseTypes(List<NearbyCourseCandidateRow> candidateRows) {
+    private List<NearbyCourseItemResponse.CourseTypeOption> mergeCourseTypes(List<NearbyCourseCandidateRow> candidateRows) {
         EnumSet<CourseType> courseTypes = EnumSet.noneOf(CourseType.class);
         for (NearbyCourseCandidateRow candidateRow : candidateRows) {
             if (candidateRow.courseType() != null) {
                 courseTypes.add(candidateRow.courseType());
             }
         }
-        return List.copyOf(courseTypes);
+        return courseTypes.stream()
+                .map(NearbyCourseItemResponse.CourseTypeOption::from)
+                .toList();
+    }
+
+    private record NearbyCourseTargetItem(List<NearbyCourseCandidateRow> candidateRows, int distanceFromTargetM) {
     }
 }

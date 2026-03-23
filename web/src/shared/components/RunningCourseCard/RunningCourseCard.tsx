@@ -4,23 +4,7 @@ import type { MouseEvent } from 'react';
 import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
 import { Card, CardContent } from '@/shared/components/shadcn/card';
-import type { CourseItem } from '@/apis/courses';
-import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
-
-const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
-  EASY: '쉬움',
-  MEDIUM: '보통',
-  HARD: '어려움',
-};
-
-const COURSE_TYPE_LABEL: Record<CourseType, string> = {
-  URBAN: '도심',
-  PARK: '공원',
-  RIVERSIDE: '한강변',
-  MOUNTAIN_TRAIL: '산/둘레길',
-  TRACK: '트랙',
-  OTHER: '기타',
-};
+import type { CourseItem } from '@/apis/course';
 
 type RunningCourseCardProps = {
   course: CourseItem;
@@ -49,11 +33,13 @@ export function RunningCourseCard({
       <div className="relative h-44 overflow-hidden">
         <img
           src={
-            course.snapshotImageUrl ??
-            'https://placehold.co/430x176/e8e8e8/cccccc'
+            course.snapshotImageUrl
+              ? `http://${course.snapshotImageUrl}`
+              : 'https://placehold.co/430x176/e8e8e8/cccccc'
           }
           alt={course.title}
-          className="absolute inset-0 h-full w-full object-cover"
+          draggable={false}
+          className="absolute inset-0 h-full w-full object-fit"
         />
 
         <div className="absolute left-5 top-5 z-raised">
@@ -95,9 +81,7 @@ export function RunningCourseCard({
           <div className="flex items-center gap-[var(--space-1)] text-[hsl(var(--primary-1))]">
             <Heart size={18} fill="currentColor" />
             <span className="body-l-b">
-              {course.likeCount != null
-                ? course.likeCount.toLocaleString()
-                : '-'}
+              {course.likeCount.toLocaleString()}
             </span>
           </div>
         </div>
@@ -108,7 +92,7 @@ export function RunningCourseCard({
               variant="outline"
               className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
             >
-              {DIFFICULTY_LABEL[course.difficulty]}
+              {course.difficulty.label}
             </Badge>
           )}
           <Badge
@@ -119,11 +103,11 @@ export function RunningCourseCard({
           </Badge>
           {course.courseTypes.map((type) => (
             <Badge
-              key={type}
+              key={type.data}
               variant="outline"
               className="rounded-full border-[hsl(var(--primary-1)/0.25)] bg-[hsl(var(--primary-1)/0.1)] px-[var(--space-3)] py-[var(--space-1)] text-[hsl(var(--primary-1))]"
             >
-              {COURSE_TYPE_LABEL[type]}
+              {type.label}
             </Badge>
           ))}
         </div>

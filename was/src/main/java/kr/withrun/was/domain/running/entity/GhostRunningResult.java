@@ -20,6 +20,7 @@ import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 
@@ -48,12 +49,15 @@ public class GhostRunningResult extends BaseEntity {
     @Column(name = "result_status", nullable = false, length = 16)
     private GhostResultStatus resultStatus;
 
+    @Column(name = "point", nullable = false)
+    private Integer point = 0;
+
     @Column(name = "time_gap_sec", nullable = false)
     private Integer timeGapSec = 0;
 
     @Column(name = "distance_gap_m", nullable = false)
     private Integer distanceGapM = 0;
-    
+
     @OneToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
             name = "running_session_id",
@@ -88,5 +92,46 @@ public class GhostRunningResult extends BaseEntity {
         if (distanceGapM == null) {
             distanceGapM = 0;
         }
+        if (point == null) {
+            point = 0;
+        }
+    }
+
+    @Builder
+    private GhostRunningResult(
+            GhostResultStatus resultStatus,
+            int point,
+            int timeGapSec,
+            int distanceGapM,
+            RunningSession runningSession,
+            RunningSession ghostTargetRunningSession,
+            User targetUser
+    ) {
+        this.resultStatus = resultStatus;
+        this.point = point;
+        this.timeGapSec = timeGapSec;
+        this.distanceGapM = distanceGapM;
+        this.runningSession = runningSession;
+        this.ghostTargetRunningSession = ghostTargetRunningSession;
+        this.targetUser = targetUser;
+    }
+
+    public static GhostRunningResult create(GhostResultStatus resultStatus,
+                                            int point,
+                                            int timeGapSec,
+                                            int distanceGapM,
+                                            RunningSession runningSession,
+                                            RunningSession ghostTargetRunningSession,
+                                            User targetUser
+    ) {
+        return GhostRunningResult.builder()
+                .resultStatus(resultStatus)
+                .point(point)
+                .timeGapSec(timeGapSec)
+                .distanceGapM(distanceGapM)
+                .runningSession(runningSession)
+                .ghostTargetRunningSession(ghostTargetRunningSession)
+                .targetUser(targetUser)
+                .build();
     }
 }

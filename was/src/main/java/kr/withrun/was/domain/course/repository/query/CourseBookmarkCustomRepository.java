@@ -9,7 +9,9 @@ import java.util.Optional;
 
 public interface CourseBookmarkCustomRepository {
 
-    Optional<CourseBookmark> findBookmark(Long courseId, Long userId);
+    long countByCourseId(Long courseId);
+
+    Optional<CourseBookmark> findByCourseIdAndUserId(Long courseId, Long userId);
 
     List<BookmarkedCourseRow> findBookmarkedCourseRows(Long userId, LocalDateTime cursorBookmarkedAt, Long cursorBookmarkId, int pageSize);
 

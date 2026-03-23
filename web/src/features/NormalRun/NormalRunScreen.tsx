@@ -1,239 +1,224 @@
-import { Filter, MapPin } from 'lucide-react';
-import { useMemo, useState } from 'react';
+import { Filter, Home } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useCallback, useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
+import type { CourseItem } from '@/apis';
 import {
-  RunningFilterModal,
-  type RunningFilterState,
-} from './RunningFilterModal';
-import { RunningGuideModal } from '@/shared/components/RunningGuideModal';
+  RunningCourseCard,
+  RunningCourseFilterDrawer,
+  RunningCourseSearchBar,
+} from '@/shared/components';
 import { Button } from '@/shared/components/shadcn/button';
-import { Tabs, TabsList, TabsTrigger } from '@/shared/components/shadcn/tabs';
-import { RunningCourseCard } from '@/shared/components/RunningCourseCard';
-import RunningCourseSearchBar from '@/shared/components/RunningCourseSearchBar/RunningCourseSearchBar';
-import { useNormalRunCourses } from '@/hooks/NormalRun/useNormalRunCourses';
-import { INITIAL_FILTERS } from '@/constants/NormalRun';
-import type { ActiveCourseTab, CourseDifficulty, CourseType } from '@/shared/types/api.type';
-
-const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
-  EASY: '쉬움',
-  MEDIUM: '보통',
-  HARD: '어려움',
-};
-
-const COURSE_TYPE_LABEL: Record<CourseType, string> = {
-  URBAN: '도심',
-  PARK: '공원',
-  RIVERSIDE: '한강변',
-  MOUNTAIN_TRAIL: '산/둘레길',
-  TRACK: '트랙',
-  OTHER: '기타',
-};
+import {
+  useNormalRunCircleMap,
+  type CircleMode,
+} from '@/hooks/NormalRun/useNormalRunCircleMap';
+import { useNormalRunMapCourses } from '@/hooks/NormalRun/useNormalRunMapCourses';
+import { useNormalRunMapFilter } from '@/hooks/NormalRun/useNormalRunMapFilter';
+import {
+  useNormalRunBottomSheet,
+  HANDLE_HEIGHT,
+} from '@/hooks/NormalRun/useNormalRunBottomSheet';
+import { NormalRunRadialMenu } from './NormalRunRadialMenu';
 
 export function NormalRunScreen() {
   const navigate = useNavigate();
-  const { normalRunCourses, isLoading } = useNormalRunCourses();
-
-  const [showGuide, setShowGuide] = useState(() => {
-    return !localStorage.getItem('running-guide-seen');
-  });
-  const [activeTab, setActiveTab] = useState<ActiveCourseTab>('OFFICIAL');
   const [searchKeyword, setSearchKeyword] = useState('');
-  const [showFilterModal, setShowFilterModal] = useState(false);
-  const [filters, setFilters] = useState<RunningFilterState>(INITIAL_FILTERS);
-  // TODO : 북마크 API 연결 후 제거 (API 연결 전 UI 토글용 임시 오버라이드)
-  const [bookmarkOverrides, setBookmarkOverrides] = useState<Record<number, boolean>>({});
+  const [circleMode, setCircleMode] = useState<CircleMode>('USER_LOCATION');
+  const [mapCourses, setMapCourses] = useState<CourseItem[]>([]);
 
-  // API의 isBookmarked 값에 사용자 토글 오버라이드를 합성해 최종 북마크 Set 생성
-  const savedCourses = useMemo(
-    () =>
-      new Set(
-        normalRunCourses
-          .filter((c) => bookmarkOverrides[c.courseId] ?? c.isBookmarked ?? false)
-          .map((c) => c.courseId),
-      ),
-    [normalRunCourses, bookmarkOverrides],
+  const {
+    showFilterDrawer,
+    setShowFilterDrawer,
+    filters,
+    preferredDistanceMs,
+    categories,
+    handleFilterChange,
+    handleDistanceRangeChange,
+    handleResetFilters,
+    applyFilters,
+  } = useNormalRunMapFilter();
+
+  const {
+    sheetRef,
+    sheetHeight,
+    isSheetExpanded,
+    isDragging,
+    dragControls,
+    collapse,
+    expand,
+    startDrag,
+    handleDragEnd,
+  } = useNormalRunBottomSheet();
+
+  const { containerRef, center, radiusM } = useNormalRunCircleMap(
+    mapCourses,
+    circleMode,
+    collapse
   );
 
-  function handleCloseGuide() {
-    localStorage.setItem('running-guide-seen', 'true');
-    setShowGuide(false);
-  }
+  const { courses, isLoading, hasMore, loadMore } = useNormalRunMapCourses(
+    center,
+    radiusM,
+    preferredDistanceMs
+  );
 
-  function handleSearchKeyword(value: string) {
-    setSearchKeyword(value);
-  }
+  useEffect(() => {
+    setMapCourses(courses);
+  }, [courses]);
 
-  // TODO : 북마크 API 연결 로직으로 바꿔야함(지금은 UI만 변경되도록 만들어짐)
-  function handleToggleSave(courseId: number) {
-    setBookmarkOverrides((prev) => ({
-      ...prev,
-      [courseId]: !savedCourses.has(courseId),
-    }));
-  }
+  useEffect(() => {
+    if (!isLoading && courses.length > 0) {
+      expand();
+    }
+  }, [isLoading, courses.length]);
 
-  function handleFilterChange(key: keyof RunningFilterState, value: string) {
-    setFilters((prev) => {
-      if (value === '전체') {
-        return { ...prev, [key]: [] };
-      }
+  useEffect(() => {
+    document.body.style.overflow = 'hidden';
+    return () => {
+      document.body.style.overflow = '';
+    };
+  }, []);
 
-      const nextValues = new Set(prev[key]);
-      if (nextValues.has(value)) {
-        nextValues.delete(value);
-      } else {
-        nextValues.add(value);
-      }
-
-      return { ...prev, [key]: Array.from(nextValues) };
-    });
-  }
-
-  function handleResetFilters() {
-    setFilters(INITIAL_FILTERS);
-  }
-
-  const filteredCourses = normalRunCourses.filter((course) => {
-    if (course.status !== activeTab) return false;
-
+  const filteredCourses = courses.filter((course) => {
     const keyword = searchKeyword.trim().toLowerCase();
-    if (keyword && !course.title.toLowerCase().includes(keyword)) return false;
-
-    if (filters.distance.length > 0) {
-      const distanceKm = course.distanceM / 1000;
-      const matchesDistance = filters.distance.some((f) => {
-        if (f === '5km 미만') return distanceKm < 5;
-        if (f === '5km - 10km') return distanceKm >= 5 && distanceKm <= 10;
-        return f === '10km 이상' && distanceKm > 10;
-      });
-      if (!matchesDistance) return false;
-    }
-
-    if (filters.courseType.length > 0) {
-      const labels = course.courseTypes.map((t) => COURSE_TYPE_LABEL[t]);
-      if (!labels.some((label) => filters.courseType.includes(label))) return false;
-    }
-
-    if (filters.difficulty.length > 0 && course.difficulty != null) {
-      if (!filters.difficulty.includes(DIFFICULTY_LABEL[course.difficulty])) return false;
-    }
-
-    return true;
+    return !keyword || course.title.toLowerCase().includes(keyword);
   });
 
+  const handleScroll = useCallback(
+    (e: React.UIEvent<HTMLDivElement>) => {
+      const el = e.currentTarget;
+      if (
+        el.scrollHeight - el.scrollTop - el.clientHeight < 80 &&
+        hasMore &&
+        !isLoading
+      ) {
+        loadMore();
+      }
+    },
+    [hasMore, isLoading, loadMore]
+  );
+
   return (
-    <>
-      <div className="flex flex-col gap-[var(--space-6)] pb-[var(--space-6)]">
-        <header className="flex flex-col gap-[var(--space-6)]">
-          <div className="flex items-center gap-[var(--space-3)]">
-            <MapPin size={28} className="text-[hsl(var(--primary-1))]" />
-            <h1 className="h2-b text-[hsl(var(--text-primary))]">
-              일반 러닝 코스
-            </h1>
+    <div className="relative h-dvh w-full overflow-hidden">
+      {/* 카카오맵 컨테이너 */}
+      <div ref={containerRef} className="h-full w-full" style={{ touchAction: 'none' }} />
+
+      {/* 플로팅 검색바 (좌상단) */}
+      <div
+        className="absolute left-4 top-4 z-10 flex items-center gap-2"
+        style={{ right: '104px' }}
+      >
+        <Button
+          type="button"
+          variant="outline"
+          size="icon"
+          onClick={() => navigate('/home')}
+          className="h-10 w-10 shrink-0 rounded-full border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-lg"
+        >
+          <Home size={18} />
+        </Button>
+        <RunningCourseSearchBar
+          searchKeyword={searchKeyword}
+          handleSearchKeyword={setSearchKeyword}
+          compact
+        />
+      </div>
+
+      {/* 필터 버튼 */}
+      <div className="absolute right-4 top-4 z-20">
+        <button
+          onClick={() => setShowFilterDrawer(true)}
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-lg"
+        >
+          <Filter size={18} />
+        </button>
+      </div>
+
+      {/* Radial Menu */}
+      <NormalRunRadialMenu
+        circleMode={circleMode}
+        onCircleModeChange={setCircleMode}
+      />
+
+      {/* 드래그 가능한 바텀시트 */}
+      <motion.div
+        ref={sheetRef}
+        drag="y"
+        dragControls={dragControls}
+        dragListener={false}
+        dragConstraints={{ top: 0, bottom: sheetHeight - HANDLE_HEIGHT }}
+        dragElastic={0}
+        dragMomentum={false}
+        animate={{ y: isSheetExpanded ? 0 : sheetHeight - HANDLE_HEIGHT }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+        onDragEnd={handleDragEnd}
+        className="absolute bottom-0 left-0 right-0 z-10 flex max-h-[60dvh] flex-col rounded-t-[var(--radius-2xl)] bg-[hsl(var(--surface-default))] shadow-[0_-4px_20px_rgba(0,0,0,0.12)]"
+      >
+        {/* 핸들 바 (터치 타겟) */}
+        <div
+          className="flex cursor-grab items-center justify-center active:cursor-grabbing"
+          style={{ touchAction: 'none' }}
+          onPointerDown={startDrag}
+        >
+          <div className="py-[var(--space-5)]">
+            <div className="h-1 w-10 rounded-full bg-[hsl(var(--border-default))]" />
           </div>
+        </div>
 
-          <div className="flex items-center gap-[var(--space-3)]">
-            <RunningCourseSearchBar
-              searchKeyword={searchKeyword}
-              handleSearchKeyword={handleSearchKeyword}
-            />
-            <Button
-              type="button"
-              variant="outline"
-              size="icon"
-              onClick={() => setShowFilterModal(true)}
-              className="h-14 w-14 rounded-[var(--radius-xl)] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))]"
-            >
-              <Filter size={20} />
-            </Button>
-          </div>
-
-          <Tabs
-            value={activeTab}
-            onValueChange={(value) => setActiveTab(value as ActiveCourseTab)}
-            className="w-full"
-          >
-            <TabsList className="h-auto w-full justify-start gap-[var(--space-4)] rounded-none border-b border-[hsl(var(--border-default))] bg-transparent p-0">
-              <TabsTrigger
-                value="OFFICIAL"
-                className="rounded-none border-b-2 border-transparent px-0 pb-[var(--space-2)] pt-0 body-l-b text-[hsl(var(--text-secondary))] shadow-none data-[state=active]:border-transparent data-[state=active]:border-b-2 data-[state=active]:border-b-[hsl(var(--primary-1))] data-[state=active]:bg-transparent data-[state=active]:text-[hsl(var(--primary-1))]"
-              >
-                공식 코스
-              </TabsTrigger>
-              <TabsTrigger
-                value="COMMUNITY"
-                className="rounded-none border-b-2 border-transparent px-0 pb-[var(--space-2)] pt-0 body-l-b text-[hsl(var(--text-secondary))] shadow-none data-[state=active]:border-transparent data-[state=active]:border-b-2 data-[state=active]:border-b-[hsl(var(--primary-1))] data-[state=active]:bg-transparent data-[state=active]:text-[hsl(var(--primary-1))]"
-              >
-                커뮤니티 코스
-              </TabsTrigger>
-            </TabsList>
-          </Tabs>
-        </header>
-
-        <section className="flex flex-col gap-[var(--space-4)]">
-          {isLoading ? (
-            <div className="flex h-40 items-center justify-center">
+        {/* 스크롤 가능한 코스 리스트 */}
+        <div
+          className={`flex-1 overflow-y-auto px-(--space-5) py-(--space-4) ${isDragging ? 'pointer-events-none' : ''}`}
+          style={{ touchAction: 'pan-y' }}
+          onScroll={handleScroll}
+        >
+          {isLoading && courses.length === 0 ? (
+            <div className="flex h-24 items-center justify-center">
               <p className="body-r text-[hsl(var(--text-secondary))]">
                 코스를 불러오는 중입니다...
               </p>
             </div>
+          ) : filteredCourses.length === 0 ? (
+            <div className="flex h-24 flex-col items-center justify-center rounded-xl border border-[hsl(var(--border-default))] px-[var(--space-5)] text-center">
+              <p className="body-l-b text-[hsl(var(--text-primary))]">
+                검색 결과가 없습니다
+              </p>
+              <p className="body-r text-[hsl(var(--text-secondary))]">
+                지도에서 탐색 범위를 넓혀보세요.
+              </p>
+            </div>
           ) : (
-            <>
+            <div className="flex flex-col gap-[var(--space-4)]">
               {filteredCourses.map((course) => (
                 <RunningCourseCard
                   key={course.courseId}
                   course={course}
-                  isSaved={savedCourses.has(course.courseId)}
-                  onClick={() => navigate(`/normal/${course.courseId}`)}
-                  onToggleSave={handleToggleSave}
+                  isSaved={false}
+                  onClick={() => navigate(`/normal-run/${course.courseId}`)}
+                  onToggleSave={() => {}}
                 />
               ))}
-
-              {filteredCourses.length === 0 && (
-                <div className="flex h-40 flex-col items-center justify-center rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-[var(--space-5)] text-center">
-                  <p className="body-l-b text-[hsl(var(--text-primary))]">
-                    검색 결과가 없습니다
-                  </p>
-                  <p className="body-r text-[hsl(var(--text-secondary))]">
-                    코스 이름을 바꿔 검색하거나 필터를 초기화해보세요.
-                  </p>
-                </div>
+              {isLoading && (
+                <p className="body-r py-4 text-center text-[hsl(var(--text-secondary))]">
+                  불러오는 중...
+                </p>
               )}
-            </>
+            </div>
           )}
-        </section>
-      </div>
+        </div>
+      </motion.div>
 
-      <RunningGuideModal
-        isOpen={showGuide}
-        onClose={handleCloseGuide}
-        steps={[
-          {
-            title: '일반 러닝 코스',
-            content:
-              '공식 코스와 커뮤니티 코스를 둘 다 찾아보고 지금 바로 출발해보세요.',
-          },
-          {
-            title: '목표에 맞게',
-            content:
-              "'일반 모드'에서 내 목적에 맞는 코스를 골라 천천히 페이스를 맞출 수 있습니다.",
-          },
-          {
-            title: '기록 경쟁은',
-            content:
-              '일반 모드는 기록 경쟁 점수 중심이 아니라, 완주 경험 중심으로 달릴 수 있어요.',
-          },
-        ]}
-      />
-
-      <RunningFilterModal
-        isOpen={showFilterModal}
+      <RunningCourseFilterDrawer
+        isOpen={showFilterDrawer}
+        categories={categories}
         values={filters}
-        onClose={() => setShowFilterModal(false)}
-        onApply={() => setShowFilterModal(false)}
+        onClose={() => setShowFilterDrawer(false)}
+        onApply={applyFilters}
         onReset={handleResetFilters}
         onChange={handleFilterChange}
+        onDistanceRangeChange={handleDistanceRangeChange}
       />
-    </>
+    </div>
   );
 }

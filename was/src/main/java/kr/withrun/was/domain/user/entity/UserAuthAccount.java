@@ -1,5 +1,7 @@
 package kr.withrun.was.domain.user.entity;
 
+// User와 소셜 로그인 계정 정보를 연결해서 저장하는 JPA 엔티티 파일
+// 어떤 사용자와 연결됐는지, 구글인지 카카오인지, 그 소셜 서비스 안에서 고유 ID가 뭔지를 담음
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.FetchType;
@@ -14,8 +16,6 @@ import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
-
-import java.time.LocalDateTime;
 
 @Getter
 @Entity
@@ -53,4 +53,20 @@ public class UserAuthAccount extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_user_auth_accounts_user")
     )
     private User user;
+
+    public static UserAuthAccount create(
+            User user,
+            String provider,
+            String providerUserId,
+            String email,
+            String profileImageUrl
+    ) {
+        UserAuthAccount account = new UserAuthAccount();
+        account.user = user;
+        account.provider = provider;
+        account.providerUserId = providerUserId;
+        account.email = email;
+        account.profileImageUrl = profileImageUrl;
+        return account;
+    }
 }

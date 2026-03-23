@@ -5,5 +5,4 @@ import kr.withrun.was.domain.course.repository.query.CourseGhostLeaderboardCusto
 import org.springframework.data.jpa.repository.JpaRepository;
 
 public interface CourseGhostLeaderboardRepository extends JpaRepository<CourseGhostLeaderboard, Long>, CourseGhostLeaderboardCustomRepository {
-
 }

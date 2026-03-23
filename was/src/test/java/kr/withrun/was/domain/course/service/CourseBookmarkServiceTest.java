@@ -71,7 +71,7 @@ class CourseBookmarkServiceTest {
         User user = user(20L);
         CourseBookmark savedBookmark = bookmark(30L, course, user, LocalDateTime.of(2026, 3, 11, 4, 0));
         stubCourseAndUser(course, user);
-        when(courseBookmarkRepository.findBookmark(course.getId(), user.getId())).thenReturn(Optional.empty());
+        when(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), user.getId())).thenReturn(Optional.empty());
         when(courseBookmarkRepository.save(any(CourseBookmark.class))).thenReturn(savedBookmark);
 
         CourseBookmarkAddResponse response = courseBookmarkService.addBookmark(course.getId(), user.getId());
@@ -88,7 +88,7 @@ class CourseBookmarkServiceTest {
         User user = user(21L);
         CourseBookmark existingBookmark = bookmark(31L, course, user, LocalDateTime.of(2026, 3, 11, 5, 0));
         stubCourseAndUser(course, user);
-        when(courseBookmarkRepository.findBookmark(course.getId(), user.getId()))
+        when(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), user.getId()))
                 .thenReturn(Optional.of(existingBookmark));
 
         CourseBookmarkAddResponse response = courseBookmarkService.addBookmark(course.getId(), user.getId());
@@ -106,7 +106,7 @@ class CourseBookmarkServiceTest {
         User user = user(22L);
         CourseBookmark existingBookmark = bookmark(32L, course, user, LocalDateTime.of(2026, 3, 11, 6, 0));
         stubCourseAndUser(course, user);
-        when(courseBookmarkRepository.findBookmark(course.getId(), user.getId()))
+        when(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), user.getId()))
                 .thenReturn(Optional.of(existingBookmark));
 
         CourseBookmarkRemoveResponse response = courseBookmarkService.removeBookmark(course.getId(), user.getId());
@@ -122,7 +122,7 @@ class CourseBookmarkServiceTest {
         Course course = course(13L);
         User user = user(23L);
         stubCourseAndUser(course, user);
-        when(courseBookmarkRepository.findBookmark(course.getId(), user.getId())).thenReturn(Optional.empty());
+        when(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), user.getId())).thenReturn(Optional.empty());
 
         CourseBookmarkRemoveResponse response = courseBookmarkService.removeBookmark(course.getId(), user.getId());
 
@@ -147,7 +147,9 @@ class CourseBookmarkServiceTest {
                         50,
                         Difficulty.HARD,
                         CourseType.PARK,
-                        "snapshot-12"
+                        "snapshot-12",
+                        9L,
+                        true
                 ),
                 bookmarkedCourseRow(
                         101L,
@@ -159,7 +161,9 @@ class CourseBookmarkServiceTest {
                         20,
                         Difficulty.MEDIUM,
                         CourseType.RIVERSIDE,
-                        "snapshot-11"
+                        "snapshot-11",
+                        4L,
+                        false
                 ),
                 bookmarkedCourseRow(
                         101L,
@@ -171,7 +175,9 @@ class CourseBookmarkServiceTest {
                         20,
                         Difficulty.MEDIUM,
                         CourseType.PARK,
-                        "snapshot-11"
+                        "snapshot-11",
+                        4L,
+                        false
                 )
         ));
 
@@ -185,9 +191,11 @@ class CourseBookmarkServiceTest {
         assertThat(firstItem.bookmarkId()).isEqualTo(102L);
         assertThat(firstItem.bookmarkedAt()).isEqualTo(LocalDateTime.of(2026, 3, 14, 10, 30));
         assertThat(firstItem.courseId()).isEqualTo(12L);
+        assertThat(firstItem.difficulty()).isEqualTo(new BookmarkedCourseItemResponse.DifficultyOption("HARD", "어려움"));
+        assertThat(firstItem.likeCount()).isEqualTo(9L);
+        assertThat(firstItem.isLiked()).isTrue();
         assertThat(firstItem.isBookmarked()).isTrue();
-        assertThat(firstItem.isRunnable()).isTrue();
-        assertThat(firstItem.courseTypes()).containsExactly(CourseType.PARK);
+        assertThat(firstItem.courseTypes()).containsExactly(new BookmarkedCourseItemResponse.CourseTypeOption("PARK", "공원"));
         assertThat(response.hasMore()).isTrue();
         assertThat(response.nextCursor()).isNotBlank();
     }
@@ -213,7 +221,9 @@ class CourseBookmarkServiceTest {
                         20,
                         Difficulty.MEDIUM,
                         CourseType.PARK,
-                        "snapshot-11"
+                        "snapshot-11",
+                        3L,
+                        false
                 ),
                 bookmarkedCourseRow(
                         101L,
@@ -225,7 +235,9 @@ class CourseBookmarkServiceTest {
                         20,
                         Difficulty.MEDIUM,
                         CourseType.RIVERSIDE,
-                        "snapshot-11"
+                        "snapshot-11",
+                        3L,
+                        false
                 )
         ));
 
@@ -243,8 +255,13 @@ class CourseBookmarkServiceTest {
         BookmarkedCourseItemResponse item = response.items().getFirst();
         assertThat(item.bookmarkId()).isEqualTo(101L);
         assertThat(item.status()).isEqualTo(CourseStatus.COMMUNITY);
-        assertThat(item.courseTypes()).containsExactly(CourseType.RIVERSIDE, CourseType.PARK);
-        assertThat(item.isRunnable()).isFalse();
+        assertThat(item.likeCount()).isEqualTo(3L);
+        assertThat(item.isLiked()).isFalse();
+        assertThat(item.difficulty()).isEqualTo(new BookmarkedCourseItemResponse.DifficultyOption("MEDIUM", "보통"));
+        assertThat(item.courseTypes()).containsExactly(
+                new BookmarkedCourseItemResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                new BookmarkedCourseItemResponse.CourseTypeOption("PARK", "공원")
+        );
         assertThat(response.hasMore()).isFalse();
         assertThat(response.nextCursor()).isNull();
     }
@@ -323,7 +340,7 @@ class CourseBookmarkServiceTest {
         CourseBookmark savedBookmark = bookmark(38L, course, user, LocalDateTime.of(2026, 3, 11, 7, 0));
         when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
         when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
-        when(courseBookmarkRepository.findBookmark(course.getId(), user.getId())).thenReturn(Optional.empty());
+        when(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), user.getId())).thenReturn(Optional.empty());
         when(courseBookmarkRepository.save(any(CourseBookmark.class))).thenReturn(savedBookmark);
 
         CourseBookmarkAddResponse response = courseBookmarkService.addBookmark(course.getId(), user.getId());
@@ -363,7 +380,9 @@ class CourseBookmarkServiceTest {
             Integer elevationGainM,
             Difficulty difficulty,
             CourseType courseType,
-            String snapshotImageUrl
+            String snapshotImageUrl,
+            Long likeCount,
+            boolean isLiked
     ) {
         return new BookmarkedCourseRow(
                 bookmarkId,
@@ -376,6 +395,8 @@ class CourseBookmarkServiceTest {
                 difficulty,
                 courseType,
                 snapshotImageUrl,
+                likeCount,
+                isLiked,
                 true
         );
     }

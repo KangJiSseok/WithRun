@@ -5,10 +5,15 @@ import kr.withrun.was.domain.course.dto.BookmarkedCoursesResponse;
 import kr.withrun.was.domain.course.dto.CourseBookmarkAddResponse;
 import kr.withrun.was.domain.course.dto.CourseBookmarkRemoveResponse;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseFilterResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
+import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseLikeStatusResponse;
-import kr.withrun.was.domain.course.dto.CourseSurveyResponse;
+import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
+import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.dto.CreateCourseReviewResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
+import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionDetailsResponse;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionSplitResponse;
@@ -25,16 +30,42 @@ public final class SuccessApiResponseDocs {
     private SuccessApiResponseDocs() {
     }
 
-    @Schema(name = "CourseSurveyApiResponse", description = "코스 설문 문항 조회 성공 응답")
-    public record CourseSurveyApiResponse(
+    @Schema(name = "CourseRegisterMetaApiResponse", description = "코스 등록 메타 조회 성공 응답")
+    public record CourseRegisterMetaApiResponse(
             @Schema(description = "요청 성공 여부", example = "true")
             boolean success,
             @Schema(description = "성공 응답 코드", example = "S001")
             String code,
             @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
             String message,
-            @Schema(description = "코스 설문 응답 데이터")
-            CourseSurveyResponse data
+            @Schema(description = "코스 등록 메타 응답 데이터")
+            CourseRegisterMetaResponse data
+    ) {
+    }
+
+    @Schema(name = "CourseSurveyMetaApiResponse", description = "설문 메타 조회 성공 응답")
+    public record CourseSurveyMetaApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "설문 메타 응답 데이터")
+            CourseSurveyMetaResponse data
+    ) {
+    }
+
+    @Schema(name = "CourseFilterApiResponse", description = "코스 필터 조회 성공 응답")
+    public record CourseFilterApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "코스 필터 응답 데이터")
+            CourseFilterResponse data
     ) {
     }
 
@@ -51,6 +82,32 @@ public final class SuccessApiResponseDocs {
     ) {
     }
 
+    @Schema(name = "CourseGhostDetailApiResponse", description = "코스 고스트 상세 조회 성공 응답")
+    public record CourseGhostDetailApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "코스 고스트 상세 데이터")
+            CourseGhostDetailResponse data
+    ) {
+    }
+
+    @Schema(name = "CourseGhostLeaderboardApiResponse", description = "코스 고스트 리더보드 조회 성공 응답")
+    public record CourseGhostLeaderboardApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "코스 고스트 리더보드 데이터")
+            CourseGhostLeaderboardResponse data
+    ) {
+    }
+
     @Schema(name = "NearbyCoursesApiResponse", description = "주변 코스 조회 성공 응답")
     public record NearbyCoursesApiResponse(
             @Schema(description = "요청 성공 여부", example = "true")
@@ -61,6 +118,19 @@ public final class SuccessApiResponseDocs {
             String message,
             @Schema(description = "주변 코스 목록 데이터")
             NearbyCoursesResponse data
+    ) {
+    }
+
+    @Schema(name = "NearbyGhostCoursesApiResponse", description = "주변 고스트 코스 조회 성공 응답")
+    public record NearbyGhostCoursesApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "주변 고스트 코스 목록 데이터")
+            NearbyGhostCoursesResponse data
     ) {
     }
 
@@ -98,7 +168,7 @@ public final class SuccessApiResponseDocs {
             String code,
             @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
             String message,
-            @Schema(description = "북마크한 코스 목록 데이터")
+            @Schema(description = "북마크한 코스 목록 데이터. 각 항목에는 누적 좋아요 수와 현재 사용자 좋아요 여부가 포함된다.")
             BookmarkedCoursesResponse data
     ) {
     }

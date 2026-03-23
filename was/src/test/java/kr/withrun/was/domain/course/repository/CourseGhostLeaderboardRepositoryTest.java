@@ -94,23 +94,27 @@ class CourseGhostLeaderboardRepositoryTest {
         assertThat(courseGhostLeaderboardRepository.countByCourseId(course.getId())).isEqualTo(4L);
     }
 
-    @DisplayName("삭제된 리더보드 항목은 count에서 제외한다")
+    @DisplayName("코스 기준 전체 고스트 리더보드를 정렬과 rank를 유지한 채 조회한다")
     @Test
-    void excludesDeletedLeaderboardRowsFromCount() {
-        Course course = persistCourse("Deleted Row Course");
-        User user = persistUser("runner-delete");
-        CourseGhostLeaderboard leaderboard = persistLeaderboard(
-                course,
-                user,
-                120,
-                LocalDateTime.of(2026, 3, 18, 11, 0)
-        );
-        leaderboard.delete();
+    void findsAllRankedRowsByCourseId() {
+        Course course = persistCourse("Leader Course");
+        User userA = persistUser("runner-a");
+        User userB = persistUser("runner-b");
+        User userC = persistUser("runner-c");
+
+        persistLeaderboard(course, userA, 500, LocalDateTime.of(2026, 3, 18, 10, 0));
+        persistLeaderboard(course, userB, 300, LocalDateTime.of(2026, 3, 18, 10, 1));
+        persistLeaderboard(course, userC, 300, LocalDateTime.of(2026, 3, 18, 10, 2));
 
         entityManager.flush();
         entityManager.clear();
 
-        assertThat(courseGhostLeaderboardRepository.countByCourseId(course.getId())).isZero();
+        List<CourseGhostLeaderboardRankRow> rows = courseGhostLeaderboardRepository.findRankedRowsByCourseId(course.getId());
+
+        assertThat(rows).hasSize(3);
+        assertThat(rows).extracting(CourseGhostLeaderboardRankRow::point).containsExactly(500, 300, 300);
+        assertThat(rows).extracting(CourseGhostLeaderboardRankRow::rank).containsExactly(1L, 2L, 2L);
+        assertThat(rows).extracting(CourseGhostLeaderboardRankRow::nickname).containsExactly("runner-a", "runner-b", "runner-c");
     }
 
     private Course persistCourse(String title) {
@@ -155,7 +159,6 @@ class CourseGhostLeaderboardRepositoryTest {
                 RunningMode.COURSE,
                 course,
                 null,
-                startedAt,
                 37.5,
                 127.0
         );

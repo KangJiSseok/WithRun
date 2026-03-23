@@ -4,8 +4,10 @@ import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.ResponseCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.validation.BeanPropertyBindingResult;
 import org.springframework.validation.BindException;
 import org.springframework.validation.FieldError;
@@ -95,6 +97,18 @@ class GlobalExceptionHandlerTest {
         assertThat(response.getBody().getData()).hasSize(1);
         assertThat(response.getBody().getData().getFirst().field()).isEqualTo("size");
         assertThat(response.getBody().getData().getFirst().rejectedValue()).isEqualTo("abc");
+    }
+
+    @DisplayName("없는 경로 요청은 리소스 없음 응답을 반환한다")
+    @Test
+    void returnsEntityNotFoundForNoResourceFoundException() {
+        NoResourceFoundException exception = new NoResourceFoundException(HttpMethod.GET, "/api/courses/surveys");
+
+        ResponseEntity<ApiResponse<Void>> response = globalExceptionHandler.handleNoResourceFoundException(exception);
+
+        assertThat(response.getStatusCode()).isEqualTo(ResponseCode.ENTITY_NOT_FOUND.getStatus());
+        assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getCode()).isEqualTo(ResponseCode.ENTITY_NOT_FOUND.getCode());
     }
 
     private BindException bindExceptionWith(FieldError fieldError) {

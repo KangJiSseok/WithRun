@@ -9,7 +9,6 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 
 import java.lang.reflect.RecordComponent;
-import java.time.LocalDateTime;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -25,7 +24,6 @@ class UpdateRunningSessionRequestTest {
         assertThat(componentNamesOf(UpdateRunningSessionRequest.class))
                 .containsExactly(
                         "userId",
-                        "endedAt",
                         "distanceM",
                         "caloriesKcal",
                         "endLatitude",
@@ -51,7 +49,6 @@ class UpdateRunningSessionRequestTest {
         Set<ConstraintViolation<UpdateRunningSessionRequest>> violations = validate(
                 new UpdateRunningSessionRequest(
                         null,
-                        LocalDateTime.parse("2026-03-12T07:12:00"),
                         10023,
                         642,
                         30.0,
@@ -66,15 +63,6 @@ class UpdateRunningSessionRequestTest {
         assertOnlyViolationOn(violations, "userId");
     }
 
-    @DisplayName("종료 시각이 없으면 거부한다")
-    @Test
-    void rejectsMissingEndedAt() {
-        Set<ConstraintViolation<UpdateRunningSessionRequest>> violations = validate(
-                new UpdateRunningSessionRequest(1L, null, 10023, 642, 30.0, 150.0, 11.0, 2520, 2, 3)
-        );
-
-        assertOnlyViolationOn(violations, "endedAt");
-    }
 
     @DisplayName("음수 누적값은 거부한다")
     @ParameterizedTest(name = "distanceM={0}")
@@ -83,7 +71,6 @@ class UpdateRunningSessionRequestTest {
         Set<ConstraintViolation<UpdateRunningSessionRequest>> violations = validate(
                 new UpdateRunningSessionRequest(
                         1L,
-                        LocalDateTime.parse("2026-03-12T07:12:00"),
                         distanceM,
                         642,
                         30.0,
@@ -105,7 +92,6 @@ class UpdateRunningSessionRequestTest {
         Set<ConstraintViolation<UpdateRunningSessionRequest>> violations = validate(
                 new UpdateRunningSessionRequest(
                         1L,
-                        LocalDateTime.parse("2026-03-12T07:12:00"),
                         10023,
                         642,
                         30.0,
@@ -127,7 +113,6 @@ class UpdateRunningSessionRequestTest {
         Set<ConstraintViolation<UpdateRunningSessionRequest>> violations = validate(
                 new UpdateRunningSessionRequest(
                         1L,
-                        LocalDateTime.parse("2026-03-12T07:12:00"),
                         10023,
                         642,
                         endLatitude,
@@ -149,7 +134,6 @@ class UpdateRunningSessionRequestTest {
         Set<ConstraintViolation<UpdateRunningSessionRequest>> violations = validate(
                 new UpdateRunningSessionRequest(
                         1L,
-                        LocalDateTime.parse("2026-03-12T07:12:00"),
                         10023,
                         642,
                         30.0,
@@ -190,7 +174,6 @@ class UpdateRunningSessionRequestTest {
     private UpdateRunningSessionRequest validRequest() {
         return new UpdateRunningSessionRequest(
                 1L,
-                LocalDateTime.parse("2026-03-12T07:12:00"),
                 10023,
                 642,
                 30.0,

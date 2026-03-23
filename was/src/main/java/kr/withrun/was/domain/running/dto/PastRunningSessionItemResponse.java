@@ -35,13 +35,17 @@ public record PastRunningSessionItemResponse(
 ) {
 
     public static PastRunningSessionItemResponse from(PastRunningSessionHistoryRow row) {
+        return from(row, row.snapshotImageUrl());
+    }
+
+    public static PastRunningSessionItemResponse from(PastRunningSessionHistoryRow row, String snapshotImageUrl) {
         return new PastRunningSessionItemResponse(
                 row.runningSessionId(),
                 row.startedAt(),
                 row.distanceM(),
                 row.durationSec(),
                 row.caloriesKcal(),
-                row.snapshotImageUrl(),
+                snapshotImageUrl,
                 row.elevationGainM(),
                 Boolean.TRUE.equals(row.isCompleted()),
                 row.runningMode(),

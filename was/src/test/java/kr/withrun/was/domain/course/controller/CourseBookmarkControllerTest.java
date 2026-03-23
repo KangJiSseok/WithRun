@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 import kr.withrun.was.domain.course.dto.BookmarkedCourseItemResponse;
 import kr.withrun.was.domain.course.dto.BookmarkedCoursesRequest;
@@ -37,6 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @WebMvcTest(controllers = CourseBookmarkController.class, properties = "spring.config.import=")
+@AutoConfigureMockMvc(addFilters = false)
 @DisplayName("코스 북마크 컨트롤러")
 class CourseBookmarkControllerTest {
 
@@ -111,9 +113,13 @@ class CourseBookmarkControllerTest {
                         CourseStatus.OFFICIAL,
                         10000,
                         35,
-                        Difficulty.MEDIUM,
-                        List.of(CourseType.RIVERSIDE, CourseType.PARK),
+                        new BookmarkedCourseItemResponse.DifficultyOption("MEDIUM", "보통"),
+                        List.of(
+                                new BookmarkedCourseItemResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                                new BookmarkedCourseItemResponse.CourseTypeOption("PARK", "공원")
+                        ),
                         "https://example.com/course.jpg",
+                        23L,
                         true,
                         true
                 )),
@@ -134,9 +140,13 @@ class CourseBookmarkControllerTest {
                 .andExpect(jsonPath("$.data.items[0].courseId").value(42L))
                 .andExpect(jsonPath("$.data.items[0].title").value("Han River"))
                 .andExpect(jsonPath("$.data.items[0].status").value(CourseStatus.OFFICIAL.name()))
-                .andExpect(jsonPath("$.data.items[0].courseTypes[0]").value(CourseType.RIVERSIDE.name()))
+                .andExpect(jsonPath("$.data.items[0].difficulty.data").value("MEDIUM"))
+                .andExpect(jsonPath("$.data.items[0].difficulty.label").value("보통"))
+                .andExpect(jsonPath("$.data.items[0].courseTypes[0].data").value("RIVERSIDE"))
+                .andExpect(jsonPath("$.data.items[0].courseTypes[0].label").value("강변"))
+                .andExpect(jsonPath("$.data.items[0].likeCount").value(23L))
+                .andExpect(jsonPath("$.data.items[0].isLiked").value(true))
                 .andExpect(jsonPath("$.data.items[0].isBookmarked").value(true))
-                .andExpect(jsonPath("$.data.items[0].isRunnable").value(true))
                 .andExpect(jsonPath("$.data.hasMore").value(true))
                 .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"));
 

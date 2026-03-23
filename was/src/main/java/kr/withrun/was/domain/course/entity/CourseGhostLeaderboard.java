@@ -14,9 +14,7 @@ import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.user.entity.User;
-import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
-import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import org.springframework.data.annotation.CreatedDate;
@@ -35,7 +33,7 @@ import java.time.LocalDateTime;
         )
 )
 @NoArgsConstructor(access = AccessLevel.PROTECTED)
-public class CourseGhostLeaderboard extends BaseEntity {
+public class CourseGhostLeaderboard {
 
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
@@ -73,7 +71,6 @@ public class CourseGhostLeaderboard extends BaseEntity {
     )
     private RunningSession runningSession;
 
-    @Builder
     private CourseGhostLeaderboard(
             User user,
             Course course,
@@ -92,12 +89,16 @@ public class CourseGhostLeaderboard extends BaseEntity {
             RunningSession runningSession,
             Integer point
     ) {
-        return CourseGhostLeaderboard.builder()
-                .user(user)
-                .course(course)
-                .runningSession(runningSession)
-                .point(point)
-                .build();
+        return new CourseGhostLeaderboard(user, course, runningSession, point);
+    }
+
+    public void updatePoint(Integer point) {
+        this.point = point == null ? 0 : point;
+    }
+
+    public void updatePointAndRunningSession(Integer point, RunningSession runningSession) {
+        updatePoint(point);
+        this.runningSession = runningSession;
     }
 
 }

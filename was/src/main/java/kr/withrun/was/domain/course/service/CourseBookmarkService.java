@@ -10,7 +10,6 @@ import kr.withrun.was.domain.course.entity.CourseBookmark;
 import kr.withrun.was.domain.course.repository.CourseBookmarkRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.query.dto.BookmarkedCourseRow;
-import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.util.BookmarkedCourseCursorCodec;
 import kr.withrun.was.domain.user.entity.User;
@@ -18,10 +17,10 @@ import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.time.LocalDateTime;
 import java.util.EnumSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -33,6 +32,9 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CourseBookmarkService {
 
+    @Value("${app.cdn.base-url}")
+    private String CDN_URL;
+
     private final CourseRepository courseRepository;
     private final CourseBookmarkRepository courseBookmarkRepository;
     private final UserRepository userRepository;
@@ -42,7 +44,7 @@ public class CourseBookmarkService {
         Course course = getCourse(courseId);
         User user = getUser(userId);
 
-        return courseBookmarkRepository.findBookmark(courseId, userId)
+        return courseBookmarkRepository.findByCourseIdAndUserId(courseId, userId)
                 .map(bookmark -> new CourseBookmarkAddResponse(courseId, true, bookmark.getCreatedAt()))
                 .orElseGet(() -> saveBookmark(course, user));
     }
@@ -52,7 +54,7 @@ public class CourseBookmarkService {
         getCourse(courseId);
         getUser(userId);
 
-        return courseBookmarkRepository.findBookmark(courseId, userId)
+        return courseBookmarkRepository.findByCourseIdAndUserId(courseId, userId)
                 .map(bookmark -> {
                     courseBookmarkRepository.deleteBookmark(courseId, userId);
                     return new CourseBookmarkRemoveResponse(courseId, false);
@@ -64,7 +66,7 @@ public class CourseBookmarkService {
         getUser(userId);
 
         List<BookmarkedCourseRow> rows = fetchBookmarkedCourseRows(userId, request);
-        List<BookmarkedCourseItemResponse> items =  groupBookmarkedCourseItems(rows);
+        List<BookmarkedCourseItemResponse> items = groupBookmarkedCourseItems(rows);
         int pageSize = request.size();
         boolean hasMore = items.size() > pageSize;
         List<BookmarkedCourseItemResponse> pagedItems = hasMore
@@ -111,22 +113,25 @@ public class CourseBookmarkService {
                 representative.status(),
                 representative.distanceM(),
                 representative.elevationGainM(),
-                representative.difficulty(),
+                BookmarkedCourseItemResponse.DifficultyOption.from(representative.difficulty()),
                 mergeCourseTypes(rows),
-                representative.snapshotImageUrl(),
-                true,
-                representative.status() == CourseStatus.OFFICIAL
+                CDN_URL + "/" + representative.snapshotImageUrl(),
+                representative.likeCount(),
+                Boolean.TRUE.equals(representative.isLiked()),
+                true
         );
     }
 
-    private List<CourseType> mergeCourseTypes(List<BookmarkedCourseRow> rows) {
+    private List<BookmarkedCourseItemResponse.CourseTypeOption> mergeCourseTypes(List<BookmarkedCourseRow> rows) {
         EnumSet<CourseType> courseTypes = EnumSet.noneOf(CourseType.class);
         for (BookmarkedCourseRow row : rows) {
             if (row.courseType() != null) {
                 courseTypes.add(row.courseType());
             }
         }
-        return List.copyOf(courseTypes);
+        return courseTypes.stream()
+                .map(BookmarkedCourseItemResponse.CourseTypeOption::from)
+                .toList();
     }
 
     private String toCursor(BookmarkedCourseItemResponse item) {

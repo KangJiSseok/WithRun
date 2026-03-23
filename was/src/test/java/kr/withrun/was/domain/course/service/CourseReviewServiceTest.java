@@ -76,8 +76,11 @@ class CourseReviewServiceTest {
         assertThat(response.courseReviewId()).isEqualTo(savedReview.getId());
         assertThat(response.courseId()).isEqualTo(course.getId());
         assertThat(response.rating()).isEqualTo(5);
-        assertThat(response.courseTypes()).containsExactly(CourseType.RIVERSIDE, CourseType.URBAN);
-        assertThat(response.submittedDifficulty()).isEqualTo(Difficulty.MEDIUM);
+        assertThat(response.courseTypes()).containsExactly(
+                new CreateCourseReviewResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                new CreateCourseReviewResponse.CourseTypeOption("URBAN", "도심")
+        );
+        assertThat(response.submittedDifficulty()).isEqualTo(new CreateCourseReviewResponse.DifficultyOption("MEDIUM", "보통"));
         assertThat(response.createdAt()).isEqualTo(savedReview.getCreatedAt());
 
         ArgumentCaptor<List<CourseReviewCourseType>> courseTypesCaptor = ArgumentCaptor.forClass(List.class);

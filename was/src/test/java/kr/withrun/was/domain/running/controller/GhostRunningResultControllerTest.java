@@ -12,6 +12,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
 import java.time.LocalDateTime;
 
@@ -21,6 +22,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
+@AutoConfigureMockMvc(addFilters = false)
 @WebMvcTest(controllers = GhostRunningResultController.class, properties = "spring.config.import=")
 @DisplayName("고스트 러닝 결과 컨트롤러")
 class GhostRunningResultControllerTest {
@@ -52,6 +54,7 @@ class GhostRunningResultControllerTest {
                 345L,
                 202L,
                 GhostResultStatus.WIN,
+                2140,
                 14,
                 32,
                 LocalDateTime.of(2026, 3, 8, 8, 15)
@@ -68,6 +71,7 @@ class GhostRunningResultControllerTest {
                 .andExpect(jsonPath("$.data.ghostTargetRunningSessionId").value(345L))
                 .andExpect(jsonPath("$.data.targetUserId").value(202L))
                 .andExpect(jsonPath("$.data.resultStatus").value(GhostResultStatus.WIN.name()))
+                .andExpect(jsonPath("$.data.point").value(2140))
                 .andExpect(jsonPath("$.data.timeGapSec").value(14))
                 .andExpect(jsonPath("$.data.distanceGapM").value(32))
                 .andExpect(jsonPath("$.data.createdAt").value("2026-03-08T08:15:00"));

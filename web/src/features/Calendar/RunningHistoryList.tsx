@@ -1,5 +1,5 @@
 import { useInfiniteScroll } from '@/shared/hooks';
-import type { RunningSession } from '@/shared/apis/Calendar';
+import type { RunningHistoryItem } from '@/apis/runningSessions';
 
 const TIME_SLOT_LABEL: Record<string, string> = {
   DAWN: '새벽',
@@ -37,7 +37,7 @@ function formatPace(distanceM: number, durationSec: number | null): string {
 
 interface RunningHistoryListProps {
   title: string;
-  items: RunningSession[];
+  items: RunningHistoryItem[];
   isLoading: boolean;
   hasMore: boolean;
   isLoadingMore: boolean;

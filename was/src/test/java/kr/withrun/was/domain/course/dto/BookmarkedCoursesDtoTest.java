@@ -3,6 +3,7 @@ package kr.withrun.was.domain.course.dto;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+import kr.withrun.was.domain.course.type.CourseStatus;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -12,10 +13,6 @@ import java.lang.reflect.RecordComponent;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Set;
-
-import kr.withrun.was.domain.course.type.CourseStatus;
-import kr.withrun.was.domain.course.type.CourseType;
-import kr.withrun.was.global.common.type.Difficulty;
 
 import static org.assertj.core.api.Assertions.assertThat;
 
@@ -76,8 +73,9 @@ class BookmarkedCoursesDtoTest {
                         "difficulty",
                         "courseTypes",
                         "snapshotImageUrl",
-                        "isBookmarked",
-                        "isRunnable"
+                        "likeCount",
+                        "isLiked",
+                        "isBookmarked"
                 );
     }
 
@@ -99,9 +97,13 @@ class BookmarkedCoursesDtoTest {
                 CourseStatus.OFFICIAL,
                 10000,
                 35,
-                Difficulty.MEDIUM,
-                List.of(CourseType.RIVERSIDE, CourseType.PARK),
+                new BookmarkedCourseItemResponse.DifficultyOption("MEDIUM", "보통"),
+                List.of(
+                        new BookmarkedCourseItemResponse.CourseTypeOption("RIVERSIDE", "강변"),
+                        new BookmarkedCourseItemResponse.CourseTypeOption("PARK", "공원")
+                ),
                 "https://example.com/course.jpg",
+                17L,
                 true,
                 true
         );
@@ -110,6 +112,8 @@ class BookmarkedCoursesDtoTest {
         assertThat(response.items()).containsExactly(item);
         assertThat(response.hasMore()).isTrue();
         assertThat(response.nextCursor()).isEqualTo("next-cursor");
+        assertThat(item.likeCount()).isEqualTo(17L);
+        assertThat(item.isLiked()).isTrue();
     }
 
     private Set<ConstraintViolation<BookmarkedCoursesRequest>> validate(BookmarkedCoursesRequest request) {

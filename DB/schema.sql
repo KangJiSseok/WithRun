@@ -6,7 +6,6 @@ CREATE TABLE users (
   gender VARCHAR(16) NOT NULL,
   height_cm NUMERIC(5, 2) NOT NULL,
   weight_kg NUMERIC(5, 2) NOT NULL,
-  is_active BOOLEAN NOT NULL DEFAULT TRUE,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
@@ -223,9 +222,9 @@ CREATE TABLE running_sessions (
   CONSTRAINT chk_running_sessions_elevation
     CHECK (elevation_gain_m >= 0),
   CONSTRAINT chk_running_sessions_start_lat
-    CHECK (start_latitude start_latitude BETWEEN -90 AND 90),
+    CHECK (start_latitude BETWEEN -90 AND 90),
   CONSTRAINT chk_running_sessions_start_lng
-    CHECK (start_longitude start_longitude BETWEEN -180 AND 180),
+    CHECK (start_longitude BETWEEN -180 AND 180),
   CONSTRAINT chk_running_sessions_end_lat
     CHECK (end_latitude IS NULL OR end_latitude BETWEEN -90 AND 90),
   CONSTRAINT chk_running_sessions_end_lng
@@ -279,9 +278,7 @@ CREATE TABLE running_health_samples (
   pace_sec_per_km INTEGER,
   distance_m INTEGER,
   calories_kcal NUMERIC(8, 2),
-  altitude_m NUMERIC(7, 2),
   cadence_spm SMALLINT,
-  source_device VARCHAR(32) NOT NULL DEFAULT 'WATCH',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
@@ -294,8 +291,6 @@ CREATE TABLE running_health_samples (
     REFERENCES users (user_id)
     ON DELETE CASCADE,
   CONSTRAINT uq_running_health_samples_session_time UNIQUE (running_session_id, sampled_at),
-  CONSTRAINT chk_running_health_samples_source_device
-    CHECK (source_device IN ('WATCH', 'PHONE')),
   CONSTRAINT chk_running_health_samples_heart_rate CHECK (heart_rate IS NULL OR heart_rate BETWEEN 20 AND 260),
   CONSTRAINT chk_running_health_samples_speed CHECK (speed_mps IS NULL OR speed_mps >= 0),
   CONSTRAINT chk_running_health_samples_pace CHECK (pace_sec_per_km IS NULL OR pace_sec_per_km > 0),
@@ -395,7 +390,6 @@ CREATE TABLE course_likes (
   course_like_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   course_id BIGINT NOT NULL,
   user_id BIGINT NOT NULL,
-  is_liked BOOLEAN NOT NULL DEFAULT TRUE,
   CONSTRAINT fk_course_likes_course
     FOREIGN KEY (course_id)
     REFERENCES courses (course_id)
