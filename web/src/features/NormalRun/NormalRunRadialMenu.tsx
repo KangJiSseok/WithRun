@@ -1,5 +1,5 @@
 import { MapPin } from 'lucide-react';
-import { AnimatePresence, motion } from 'framer-motion';
+import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 
 import type { CircleMode } from '@/hooks/NormalRun/useNormalRunCircleMap';
