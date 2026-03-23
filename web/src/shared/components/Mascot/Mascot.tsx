@@ -31,9 +31,11 @@ function Bull() {
     const speed = 15;
 
     if (leftArm.current) leftArm.current.rotation.x = Math.sin(t * speed) * 0.8;
-    if (rightArm.current) rightArm.current.rotation.x = Math.cos(t * speed) * 0.8;
+    if (rightArm.current)
+      rightArm.current.rotation.x = Math.cos(t * speed) * 0.8;
     if (leftLeg.current) leftLeg.current.rotation.x = Math.cos(t * speed) * 0.8;
-    if (rightLeg.current) rightLeg.current.rotation.x = Math.sin(t * speed) * 0.8;
+    if (rightLeg.current)
+      rightLeg.current.rotation.x = Math.sin(t * speed) * 0.8;
 
     if (group.current) {
       group.current.position.y = Math.sin(t * speed * 2) * 0.1 - 0.5;
@@ -164,7 +166,13 @@ export function Mascot({ className }: MascotProps) {
         <PerspectiveCamera makeDefault position={[0, 0, 4.5]} />
         <ambientLight intensity={0.8} />
         <pointLight position={[10, 10, 10]} intensity={1.5} />
-        <spotLight position={[-10, 10, 5]} angle={0.3} penumbra={1} intensity={1} color={COLORS.brandRed} />
+        <spotLight
+          position={[-10, 10, 5]}
+          angle={0.3}
+          penumbra={1}
+          intensity={1}
+          color={COLORS.brandRed}
+        />
         <Bull />
       </Canvas>
     </div>

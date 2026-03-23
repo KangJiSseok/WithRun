@@ -6,7 +6,7 @@ interface RunningCourseSearchBarProps {
   handleSearchKeyword: (searchKeywordText: string) => void;
 }
 
-export default function RunningCourseSearchBar({
+export function RunningCourseSearchBar({
   searchKeyword,
   handleSearchKeyword,
 }: RunningCourseSearchBarProps) {

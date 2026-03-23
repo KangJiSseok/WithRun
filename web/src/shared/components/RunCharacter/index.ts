@@ -1,2 +1,2 @@
-export { RunCharacter } from './RunCharacter';
-export type { RunCharacterProps } from './RunCharacter.types';
+export * from './RunCharacter';
+export type * from './RunCharacter.types';

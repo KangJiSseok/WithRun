@@ -9,68 +9,45 @@ import {
 } from '@/shared/components/shadcn/drawer';
 import { Button } from '@/shared/components/shadcn/button';
 
-const DISTANCE_OPTIONS = ['전체', '5km 미만', '5km - 10km', '10km 이상'];
-const COURSE_TYPE_OPTIONS = [
-  '전체',
-  '도심',
-  '공원',
-  '한강변',
-  '산/둘레길',
-  '트랙',
-  '기타',
-];
-const DIFFICULTY_OPTIONS = ['전체', '쉬움', '보통', '어려움'];
+export type FilterOption = {
+  value: string;
+  label: string;
+};
 
-export type RunningFilterState = {
+export type RunningCourseFilterState = {
   distance: string[];
   courseType: string[];
   difficulty: string[];
 };
 
-type FilterCategory = {
-  key: keyof RunningFilterState;
+export type CourseFilterCategory = {
+  key: keyof RunningCourseFilterState;
   label: string;
-  options: string[];
+  options: FilterOption[];
 };
 
-type RunningFilterModalProps = {
+type RunningCourseFilterDrawerProps = {
   isOpen: boolean;
-  values: RunningFilterState;
+  categories: CourseFilterCategory[];
+  values: RunningCourseFilterState;
   onClose: () => void;
   onApply: () => void;
   onReset: () => void;
-  onChange: (key: keyof RunningFilterState, value: string) => void;
+  onChange: (key: keyof RunningCourseFilterState, value: string) => void;
 };
 
-const FILTER_CATEGORIES: FilterCategory[] = [
-  {
-    key: 'distance',
-    label: '거리',
-    options: DISTANCE_OPTIONS,
-  },
-  {
-    key: 'courseType',
-    label: '코스 타입',
-    options: COURSE_TYPE_OPTIONS,
-  },
-  {
-    key: 'difficulty',
-    label: '난이도',
-    options: DIFFICULTY_OPTIONS,
-  },
-];
-
-export function RunningFilterModal({
+export function RunningCourseFilterDrawer({
   isOpen,
+  categories,
   values,
   onClose,
   onApply,
   onReset,
   onChange,
-}: RunningFilterModalProps) {
+}: RunningCourseFilterDrawerProps) {
   return (
     <Drawer open={isOpen} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DrawerContent className="border-[hsl(var(--border-default)/0.1)] bg-[hsl(var(--surface-default))] px-6 pb-6 z-modal">
+      <DrawerContent className="z-modal border-[hsl(var(--border-default)/0.1)] bg-[hsl(var(--surface-default))] px-6 pb-6">
         <DrawerHeader className="gap-3 px-0 text-left">
           <div className="flex items-center justify-between">
             <DrawerTitle className="h3-b">상세 필터</DrawerTitle>
@@ -99,7 +76,7 @@ export function RunningFilterModal({
         </DrawerHeader>
 
         <div className="flex max-h-[55vh] flex-col gap-6 overflow-y-auto">
-          {FILTER_CATEGORIES.map((category) => (
+          {categories.map((category) => (
             <section key={category.key} className="flex flex-col gap-3">
               <h3 className="body-l-b">{category.label}</h3>
 
@@ -107,24 +84,24 @@ export function RunningFilterModal({
                 {category.options.map((option) => {
                   const valuesForCategory = values[category.key];
                   const isActive =
-                    option === '전체'
+                    option.value === '전체'
                       ? valuesForCategory.length === 0
-                      : valuesForCategory.includes(option);
+                      : valuesForCategory.includes(option.value);
 
                   return (
                     <Button
-                      key={option}
+                      key={option.value}
                       type="button"
                       variant="outline"
                       size="sm"
-                      onClick={() => onChange(category.key, option)}
+                      onClick={() => onChange(category.key, option.value)}
                       className={
                         isActive
                           ? 'rounded-full border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
                           : 'rounded-full'
                       }
                     >
-                      {option}
+                      {option.label}
                     </Button>
                   );
                 })}

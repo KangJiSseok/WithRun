@@ -49,11 +49,12 @@ export function RunningCourseCard({
       <div className="relative h-44 overflow-hidden">
         <img
           src={
-            course.snapshotImageUrl ??
-            'https://placehold.co/430x176/e8e8e8/cccccc'
+            course.snapshotImageUrl
+              ? `http://${course.snapshotImageUrl}`
+              : 'https://placehold.co/430x176/e8e8e8/cccccc'
           }
           alt={course.title}
-          className="absolute inset-0 h-full w-full object-cover"
+          className="absolute inset-0 h-full w-full object-fit"
         />
 
         <div className="absolute left-5 top-5 z-raised">
