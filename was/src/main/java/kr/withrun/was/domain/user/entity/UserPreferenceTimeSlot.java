@@ -49,4 +49,10 @@ public class UserPreferenceTimeSlot extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_user_preference_time_slot_user_running_preference")
     )
     private UserRunningPreference userRunningPreference;
+
+    public static UserPreferenceTimeSlot create(TimeSlot timeSlot) {
+        UserPreferenceTimeSlot preferenceTimeSlot = new UserPreferenceTimeSlot();
+        preferenceTimeSlot.timeSlot = timeSlot;
+        return preferenceTimeSlot;
+    }
 }

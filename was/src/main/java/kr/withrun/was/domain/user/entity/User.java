@@ -116,4 +116,8 @@ public class User extends BaseEntity {
         this.profileCompleted = true;
     }
 
+    public void assignRunningPreference(UserRunningPreference userRunningPreference) {
+        this.userRunningPreference = userRunningPreference;
+    }
+
 }

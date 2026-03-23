@@ -57,6 +57,26 @@ public class UserRunningPreference extends BaseEntity {
     @OneToMany(mappedBy = "userRunningPreference", cascade = CascadeType.ALL, orphanRemoval = true)
     private final List<UserPreferenceTimeSlot> timeSlots = new ArrayList<>();
 
+    public static UserRunningPreference create(
+            User user,
+            Difficulty preferredDifficulty,
+            Double preferredDistanceKm
+    ) {
+        UserRunningPreference preference = new UserRunningPreference();
+        preference.user = user;
+        preference.preferredDifficulty = preferredDifficulty;
+        preference.preferredDistanceKm = preferredDistanceKm;
+        return preference;
+    }
+
+    public void updatePreferredSettings(
+            Difficulty preferredDifficulty,
+            Double preferredDistanceKm
+    ) {
+        this.preferredDifficulty = preferredDifficulty;
+        this.preferredDistanceKm = preferredDistanceKm;
+    }
+
     public void addPurpose(UserPreferencePurpose purpose) {
         purposes.add(purpose);
         purpose.setUserRunningPreference(this);
@@ -70,5 +90,20 @@ public class UserRunningPreference extends BaseEntity {
     public void addTimeSlot(UserPreferenceTimeSlot timeSlot) {
         timeSlots.add(timeSlot);
         timeSlot.setUserRunningPreference(this);
+    }
+
+    public void replacePurpose(kr.withrun.was.domain.user.type.Purpose purpose) {
+        purposes.clear();
+        addPurpose(UserPreferencePurpose.create(purpose));
+    }
+
+    public void replaceCourseType(kr.withrun.was.domain.course.type.CourseType courseType) {
+        courseTypes.clear();
+        addCourseType(UserPreferenceCourseType.create(courseType));
+    }
+
+    public void replaceTimeSlot(kr.withrun.was.global.common.type.TimeSlot timeSlot) {
+        timeSlots.clear();
+        addTimeSlot(UserPreferenceTimeSlot.create(timeSlot));
     }
 }
