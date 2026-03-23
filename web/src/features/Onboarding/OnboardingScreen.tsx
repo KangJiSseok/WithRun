@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom';
 import {
   ONBOARDING_INTRO_DURATION_MS,
 } from '@/constants/Onboarding';
-import { markOnboardingCompleted } from '@/stores/Onboarding';
+import { useOnboardingStore } from '@/stores/Onboarding';
 import type {
   OnboardingCharacterState,
   OnboardingPhase,
@@ -34,6 +34,9 @@ function getCharacterState(
 
 export function OnboardingScreen() {
   const navigate = useNavigate();
+  const markOnboardingCompleted = useOnboardingStore(
+    (state) => state.markOnboardingCompleted,
+  );
   const [phase, setPhase] = useState<OnboardingPhase>('intro');
 
   useEffect(() => {
