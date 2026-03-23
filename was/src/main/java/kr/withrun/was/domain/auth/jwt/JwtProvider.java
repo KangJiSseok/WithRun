@@ -44,6 +44,7 @@ public class JwtProvider {
     }
 
     public ResponseCookie expireRefreshTokenCookie() {
+        // 로그아웃 시에는 같은 이름/속성의 빈 쿠키를 내려 기존 refresh token을 덮어씁니다.
         return ResponseCookie.from(jwtProperties.getRefreshCookieName(), "")
                 .httpOnly(true)
                 .secure(jwtProperties.isRefreshCookieSecure())
@@ -89,6 +90,7 @@ public class JwtProvider {
             throw new JwtAuthenticationException(ResponseCode.TOKEN_INVALID, "userId claim is missing");
         }
 
+        // 재발급은 userId만 있으면 되므로 refresh token에서는 최소 식별자만 꺼냅니다.
         return userId;
     }
 

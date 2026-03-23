@@ -121,6 +121,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private String buildTemporaryNickname(String provider, String providerUserId) {
+        // pending user 저장 시 닉네임 unique/length 제약에 걸리지 않도록 provider 식별자를 기반으로 임시 닉네임을 만듭니다.
         String normalizedProvider = provider == null
                 ? "social"
                 : provider.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");

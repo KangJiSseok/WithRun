@@ -34,6 +34,7 @@ public class AuthService {
     private final JwtProperties jwtProperties;
 
     public AuthMeResponse getCurrentUser(AuthenticatedUser authenticatedUser) {
+        // JWT 필터가 넣어준 현재 사용자 정보가 없으면 "로그인 안 됨"으로 간주합니다.
         if (authenticatedUser == null || authenticatedUser.userId() == null) {
             throw new CustomException(ResponseCode.UNAUTHORIZED);
         }
@@ -69,6 +70,7 @@ public class AuthService {
             throw new CustomException(ResponseCode.UNAUTHORIZED);
         }
 
+        // 여러 쿠키 중 refresh token 이름과 일치하는 값만 골라냅니다.
         return Arrays.stream(cookies)
                 .filter(cookie -> jwtProperties.getRefreshCookieName().equals(cookie.getName()))
                 .map(Cookie::getValue)
@@ -81,6 +83,7 @@ public class AuthService {
         try {
             return jwtProvider.extractUserIdFromRefreshToken(refreshToken);
         } catch (ExpiredJwtException exception) {
+            // 재로그인 대신 재발급 분기를 태울 수 있도록 만료와 위조를 구분합니다.
             throw new CustomException(ResponseCode.TOKEN_EXPIRED);
         } catch (JwtAuthenticationException exception) {
             throw new CustomException(exception.getResponseCode());

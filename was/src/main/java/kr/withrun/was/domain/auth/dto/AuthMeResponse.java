@@ -36,6 +36,7 @@ public record AuthMeResponse(
     public static AuthMeResponse from(User user, AuthenticatedUser authenticatedUser) {
         boolean profileCompleted = user.isProfileCompleted();
 
+        // pending user는 DB 필수값 때문에 임시 데이터를 들고 있어도, 프론트에는 아직 비어있는 프로필처럼 보여줍니다.
         return new AuthMeResponse(
                 user.getId(),
                 authenticatedUser.provider(),
