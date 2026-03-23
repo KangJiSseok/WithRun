@@ -9,23 +9,12 @@
 // 모바일 폴백: 케이던스(가속도계), 거리(Haversine)
 
 import { useState, useEffect, useCallback, useRef } from 'react';
+
 import { useBridgeDataStore } from '@/bridge';
+import { haversineKm, formatTime } from '@/shared/utils';
 
 // 워치 메시지가 이 시간(ms) 이상 오지 않으면 연결 끊김으로 판단
 const WATCH_TIMEOUT_MS = 3000;
-
-// 두 GPS 좌표 간 거리 계산 (Haversine 공식)
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
 
 export function useFreeRunning() {
   const [isPaused, setIsPaused] = useState(false);
@@ -83,9 +72,14 @@ export function useFreeRunning() {
     }
   }, [isPaused]);
 
+  // latest-ref 패턴: isPaused 변경 시 GPS effect 재실행으로 인한 중복 샘플 방지
+  const latestIsPausedRef = useRef(isPaused);
+  latestIsPausedRef.current = isPaused;
+
   // GPS 거리 누적 (워치 폴백용으로 항상 계산)
+  // isPaused를 dep에서 제외(ref로 읽기): isPaused 변경 시 재실행으로 인한 중복 샘플 방지
   useEffect(() => {
-    if (isPaused || !gpsLocation) return;
+    if (latestIsPausedRef.current || !gpsLocation) return;
 
     const { latitude: lat, longitude: lon } = gpsLocation;
 
@@ -98,7 +92,7 @@ export function useFreeRunning() {
     }
 
     prevGpsRef.current = { lat, lon };
-  }, [gpsLocation, isPaused]);
+  }, [gpsLocation]);
 
   // ── 출력값 계산 ────────────────────────────────────────────────
 
@@ -131,16 +125,6 @@ export function useFreeRunning() {
   const distanceKm = isWatchConnected && watchHealthData && watchHealthData.distanceM > 0
     ? watchHealthData.distanceM / 1000
     : haversineDistanceKm;
-
-  const formatTime = (s: number) => {
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = s % 60;
-    if (h > 0) {
-      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-    }
-    return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-  };
 
   const togglePause = useCallback(() => setIsPaused((prev) => !prev), []);
 
