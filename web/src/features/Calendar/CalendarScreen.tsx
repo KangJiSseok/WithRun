@@ -32,26 +32,26 @@ export function CalendarScreen() {
     goPrev,
     goNext,
     today,
-    showCalendar,
-    setShowCalendar,
+    isCalendarOpen,
+    setIsCalendarOpen,
   } = useCalendar();
 
   // 상단 요약 통계
   // - 달력 닫힘: "전체 요약" + lifetime 데이터
   // - 달력 열림: "월별 요약" + monthly 데이터
-  const summaryLabel = showCalendar ? '월별 요약' : '전체 요약';
-  const summaryRunCount = showCalendar
+  const summaryLabel = isCalendarOpen ? '월별 요약' : '전체 요약';
+  const summaryRunCount = isCalendarOpen
     ? (monthlyData?.monthlyRunCount ?? null)
     : (summaryData?.lifetimeRunCount ?? null);
-  const summaryDistanceM = showCalendar
+  const summaryDistanceM = isCalendarOpen
     ? (monthlyData?.monthlyDistanceM ?? null)
     : (summaryData?.lifetimeDistanceM ?? null);
 
   // 러닝 기록 리스트 제목
-  // - 날짜 선택됨: "3월 9일 활동" (달력 열림/닫힘 모두 유지)
+  // - 날짜 선택됨: "3월 9일 활동" (달력 열릴 때만)
   // - 달력 열림 + 날짜 미선택: "2026년 3월 활동"
   // - 달력 닫힘 + 날짜 미선택: "전체 기록"
-  const historyTitle = !showCalendar
+  const historyTitle = !isCalendarOpen
     ? '전체 기록'
     : selectedDate
       ? formatDayTitle(selectedDate)
@@ -82,14 +82,14 @@ export function CalendarScreen() {
         type="button"
         onClick={() => {
           // selectedDate 유지 -> 달력 다시 열면 이전 선택 날짜 & RunningHistoryList(일별) 복원
-          setShowCalendar((prev) => !prev);
+          setIsCalendarOpen((prev) => !prev);
         }}
         className="w-full flex justify-between items-center p-[var(--space-3)] rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--surface-subtle))] transition-colors"
       >
-        <span className="body-b">{showCalendar ? '달력 숨기기' : '달력 보기'}</span>
+        <span className="body-b">{isCalendarOpen ? '달력 숨기기' : '달력 보기'}</span>
         <ChevronDown
           size={20}
-          className={cn('transition-transform duration-300', showCalendar && 'rotate-180')}
+          className={cn('transition-transform duration-300', isCalendarOpen && 'rotate-180')}
         />
       </button>
 
@@ -97,7 +97,7 @@ export function CalendarScreen() {
       <div
         className={cn(
           'grid transition-all duration-300 ease-in-out',
-          showCalendar ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+          isCalendarOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
         )}
       >
         <div className="overflow-hidden">
@@ -143,7 +143,7 @@ export function CalendarScreen() {
         items={historyData?.items ?? []}
         isLoading={isHistoryLoading}
         // useCalendar에서 isScrollLoading, loadMore 받아
-        // RunningHisoryList에 전달
+        // RunningHistoryList에 전달
         hasMore={historyData?.hasMore ?? false}
         isScrollLoading={isScrollLoading}
         onLoadMore={loadMore}
