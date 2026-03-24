@@ -25,8 +25,6 @@ import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.RunningGpsSampleResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
-import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
-import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.RunningGpsSample;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.repository.GhostRunningResultRepository;
@@ -152,7 +150,7 @@ class RunningSessionServiceTest {
                 .getDeclaredMethod("createRunningSession", CreateRunningSessionRequest.class)
                 .getAnnotation(Transactional.class);
         Transactional completeTransactional = RunningSessionService.class
-                .getDeclaredMethod("completeRunningSession", Long.class, UpdateRunningSessionRequest.class)
+                .getDeclaredMethod("completeRunningSession", Long.class, CompleteRunningSessionRequest.class)
                 .getAnnotation(Transactional.class);
 
         assertThat(classTransactional).isNotNull();
@@ -411,12 +409,26 @@ class RunningSessionServiceTest {
     }
 
 
+    @DisplayName("레거시 업데이트 기반 종료 API와 요청 DTO는 제거되어야 한다")
+    @Test
+    void doesNotExposeLegacyUpdateCompletionApi() {
+        assertThat(Arrays.stream(RunningSessionService.class.getDeclaredMethods())
+                .filter(method -> method.getName().equals("completeRunningSession"))
+                .flatMap(method -> Arrays.stream(method.getParameterTypes()))
+                .map(Class::getSimpleName)
+                .toList()).doesNotContain("UpdateRunningSessionRequest");
+
+        assertThatThrownBy(() -> Class.forName("kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest"))
+                .isInstanceOf(ClassNotFoundException.class);
+    }
+
     @DisplayName("세션 소유 사용자와 요청 사용자 ID가 다르면 세션 없음으로 처리한다")
     @Test
     void treatsDifferentUserAsRunningSessionNotFound() {
         RunningSession runningSession = runningSession(1L, 2L, false, STARTED_AT);
-        UpdateRunningSessionRequest request = validUpdateRequest(1L);
+        CompleteRunningSessionRequest request = validCompleteRequest(1L);
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
+        when(userRepository.findNotDeletedUser(1L)).thenReturn(Optional.of(user(1L)));
 
         assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
                 .isInstanceOf(CustomException.class)
@@ -428,8 +440,9 @@ class RunningSessionServiceTest {
     @Test
     void rejectsAlreadyCompletedRunningSession() {
         RunningSession runningSession = runningSession(1L, 1L, true, STARTED_AT);
-        UpdateRunningSessionRequest request = validUpdateRequest(1L);
+        CompleteRunningSessionRequest request = validCompleteRequest(1L);
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
+        when(userRepository.findNotDeletedUser(1L)).thenReturn(Optional.of(user(1L)));
 
         assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
                 .isInstanceOf(CustomException.class)
@@ -440,7 +453,7 @@ class RunningSessionServiceTest {
     @DisplayName("존재하지 않는 세션은 종료할 수 없다")
     @Test
     void throwsRunningSessionNotFoundWhenSessionDoesNotExist() {
-        UpdateRunningSessionRequest request = validUpdateRequest(1L);
+        CompleteRunningSessionRequest request = validCompleteRequest(1L);
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
@@ -453,11 +466,15 @@ class RunningSessionServiceTest {
     @Test
     void appliesCurrentTimeForEndedAt() {
         RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
-        UpdateRunningSessionRequest request = validUpdateRequest(1L);
+        CompleteRunningSessionRequest request = validCompleteRequest(1L);
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
+        when(userRepository.findNotDeletedUser(1L)).thenReturn(Optional.of(user(1L)));
+        when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningHealthSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningSessionSplitRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         LocalDateTime beforeComplete = LocalDateTime.now();
-        UpdateRunningSessionResponse response = runningSessionService.completeRunningSession(1L, request);
+        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(1L, request);
         LocalDateTime afterComplete = LocalDateTime.now();
 
         assertThat(response.endedAt()).isBetween(beforeComplete, afterComplete);
@@ -890,20 +907,6 @@ class RunningSessionServiceTest {
         setField(runningSession, "user", user(userId));
         setField(runningSession, "mode", RunningMode.FREE);
         return runningSession;
-    }
-
-    private UpdateRunningSessionRequest validUpdateRequest(Long userId) {
-        return new UpdateRunningSessionRequest(
-                userId,
-                10023,
-                642,
-                30.0,
-                150.0,
-                11.0,
-                2520,
-                2,
-                3
-        );
     }
 
     private CompleteRunningSessionRequest validCompleteRequest(Long userId) {

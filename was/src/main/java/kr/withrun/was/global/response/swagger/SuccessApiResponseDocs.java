@@ -21,7 +21,6 @@ import kr.withrun.was.domain.running.dto.GhostRunningResultResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
-import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarMonthlyResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
 import kr.withrun.was.domain.auth.dto.AuthMeResponse;
@@ -237,19 +236,6 @@ public final class SuccessApiResponseDocs {
             String message,
             @Schema(description = "저장된 러닝 세션 상세 데이터")
             CreateRunningSessionDetailsResponse data
-    ) {
-    }
-
-    @Schema(name = "UpdateRunningSessionApiResponse", description = "러닝 세션 종료 성공 응답")
-    public record UpdateRunningSessionApiResponse(
-            @Schema(description = "요청 성공 여부", example = "true")
-            boolean success,
-            @Schema(description = "성공 응답 코드", example = "S001")
-            String code,
-            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
-            String message,
-            @Schema(description = "종료된 러닝 세션 데이터")
-            UpdateRunningSessionResponse data
     ) {
     }
 

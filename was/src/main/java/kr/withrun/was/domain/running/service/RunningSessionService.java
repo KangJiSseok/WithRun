@@ -29,8 +29,6 @@ import kr.withrun.was.domain.running.dto.RunningGpsSampleResponse;
 import kr.withrun.was.domain.running.dto.RunningHealthSampleResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionSplitResponse;
-import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
-import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.GhostRunningResult;
 import kr.withrun.was.domain.running.entity.RunningGpsSample;
 import kr.withrun.was.domain.running.entity.RunningHealthSample;
@@ -105,28 +103,6 @@ public class RunningSessionService {
         return CreateRunningSessionResponse.from(savedRunningSession, ghostTargetGpsSamples);
     }
 
-    @Transactional
-    public UpdateRunningSessionResponse completeRunningSession(Long runningSessionId, UpdateRunningSessionRequest request) {
-        RunningSession runningSession = getRunningSession(runningSessionId);
-        runningSession.validateOwner(request.userId());
-        runningSession.validateCompletable();
-
-        runningSession.complete(
-                request.distanceM(),
-                request.caloriesKcal(),
-                request.endLatitude(),
-                request.endLongitude(),
-                request.avgSpeedMps(),
-                request.durationSec(),
-                request.avgPaceSecPerKm(),
-                request.elevationGainM()
-        );
-        recordCourseCompletionIfEligible(runningSession, request.userId());
-        upsertUserCalendar(runningSession);
-        return UpdateRunningSessionResponse.from(runningSession);
-    }
-
-    @Transactional
     public RunningSessionDetailResponse completeRunningSession(Long runningSessionId, CompleteRunningSessionRequest request) {
         RunningSession runningSession = getRunningSession(runningSessionId);
         User user = getUser(request.userId());
