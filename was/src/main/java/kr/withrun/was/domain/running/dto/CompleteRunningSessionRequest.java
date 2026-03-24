@@ -46,12 +46,12 @@ public record CompleteRunningSessionRequest(
 
         @Schema(description = "총 러닝 시간(초)", example = "1925", minimum = "1", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull
-        @Positive
+        @PositiveOrZero
         Integer durationSec,
 
         @Schema(description = "평균 페이스(sec/km)", example = "362", minimum = "1", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull
-        @Positive
+        @PositiveOrZero
         Integer avgPaceSecPerKm,
 
         @Schema(description = "누적 상승고도(m)", example = "46", minimum = "0", requiredMode = Schema.RequiredMode.REQUIRED)
