@@ -10,10 +10,13 @@ import kr.withrun.was.domain.course.repository.CourseLikeRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseReviewRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
-import kr.withrun.was.domain.course.repository.query.dto.NearbyCoursePageRow;
+import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
+import kr.withrun.was.domain.course.service.recommendation.CourseRecommendationScore;
+import kr.withrun.was.domain.course.service.recommendation.HybridRecommendationService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
+import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.global.common.type.Difficulty;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -53,6 +56,9 @@ class NearbyCourseQueryServiceTest {
     @Mock
     private CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
 
+    @Mock
+    private HybridRecommendationService hybridRecommendationService;
+
     private CourseService courseService;
 
     @BeforeEach
@@ -64,85 +70,70 @@ class NearbyCourseQueryServiceTest {
                 courseBookmarkRepository,
                 courseLikeRepository,
                 courseReviewRepository,
-                courseGhostLeaderboardRepository
+                courseGhostLeaderboardRepository,
+                hybridRecommendationService
         );
         setField(courseService, "CDN_URL", "https://cdn.test");
+        setField(courseService, "nearbyRecommendedCount", 1);
     }
 
     @Test
-    @DisplayName("페이지 row 조회 결과를 주변 코스 응답으로 변환한다")
-    void returnsPagedNearbyCoursesFromRepositoryPageRows() {
+    @DisplayName("후보 코스에 하이브리드 점수를 적용해 페이지 응답을 반환한다")
+    void returnsPagedNearbyCoursesFromHybridScoredCandidates() {
         NearbyCoursesRequest request = request(3000, 0, 2);
-        List<NearbyCoursePageRow> rows = List.of(
-                pageRow(10L, 150, 100, Difficulty.EASY, "snapshot-10"),
-                pageRow(20L, 220, 180, Difficulty.MEDIUM, "snapshot-20")
+        List<NearbyCourseCandidateRow> rows = List.of(
+                candidateRow(10L, CourseType.RIVERSIDE, Difficulty.EASY, 37.5700, 126.9820, "snapshot-10"),
+                candidateRow(20L, CourseType.PARK, Difficulty.MEDIUM, 37.5710, 126.9830, "snapshot-20")
         );
 
-        when(courseRepository.findNearbyCoursePageRows(
-                request.preferredDistanceMs(),
-                request.targetLatitude(),
-                request.targetLongitude(),
-                request.latitude(),
-                request.longitude(),
-                request.sortBy(),
-                request.radiusM(),
-                request.page(),
-                request.size()
-        )).thenReturn(rows);
-        when(courseRepository.countNearbyCourses(
-                request.preferredDistanceMs(),
-                request.targetLatitude(),
-                request.targetLongitude(),
-                request.radiusM()
-        )).thenReturn(5L);
-        when(courseTypeMapRepository.findCourseTypesByCourseId(10L)).thenReturn(List.of(CourseType.RIVERSIDE));
-        when(courseTypeMapRepository.findCourseTypesByCourseId(20L)).thenReturn(List.of(CourseType.PARK));
-        when(courseLikeRepository.countByCourseIds(List.of(10L, 20L))).thenReturn(Map.of(10L, 3L, 20L, 7L));
-        when(courseBookmarkRepository.countByCourseIds(List.of(10L, 20L))).thenReturn(Map.of(10L, 1L, 20L, 2L));
+        when(courseRepository.findNearbyCourseCandidates(request.preferredDistanceMs())).thenReturn(rows);
+        when(hybridRecommendationService.scoreNearbyCourses(
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq(request.radiusM()),
+                org.mockito.ArgumentMatchers.anyList()
+        )).thenReturn(Map.of(
+                10L, new CourseRecommendationScore(10L, 0.5, 0.5, 0.5, 0.0, 0.5, 0.40),
+                20L, new CourseRecommendationScore(20L, 0.7, 0.7, 0.7, 0.0, 0.7, 0.80)
+        ));
+        when(courseLikeRepository.countByCourseIds(List.of(20L, 10L))).thenReturn(Map.of(10L, 3L, 20L, 7L));
+        when(courseBookmarkRepository.countByCourseIds(List.of(20L, 10L))).thenReturn(Map.of(10L, 1L, 20L, 2L));
 
-        NearbyCoursesResponse response = courseService.findNearbyCourses(request);
+        NearbyCoursesResponse response = courseService.findNearbyCourses(request, null);
 
         assertThat(response.page()).isEqualTo(0);
         assertThat(response.size()).isEqualTo(2);
-        assertThat(response.totalElements()).isEqualTo(5L);
-        assertThat(response.totalPages()).isEqualTo(3);
-        assertThat(response.hasNext()).isTrue();
+        assertThat(response.totalElements()).isEqualTo(2L);
+        assertThat(response.totalPages()).isEqualTo(1);
+        assertThat(response.hasNext()).isFalse();
         assertThat(response.items()).hasSize(2);
-        assertThat(response.items().getFirst().courseId()).isEqualTo(10L);
-        assertThat(response.items().getFirst().likeCount()).isEqualTo(3L);
-        assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(1L);
-        assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("https://cdn.test/snapshot-10");
+        assertThat(response.items().getFirst().courseId()).isEqualTo(20L);
+        assertThat(response.items().getFirst().isRecommended()).isTrue();
+        assertThat(response.items().getFirst().likeCount()).isEqualTo(7L);
+        assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(2L);
+        assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("https://cdn.test/snapshot-20");
+        assertThat(response.items().get(1).isRecommended()).isFalse();
     }
 
     @Test
-    @DisplayName("마지막 페이지에 도달하면 다음 탐색 반경을 제안한다")
-    void suggestsLargerRadiusWhenLastPageIsReached() {
-        NearbyCoursesRequest request = request(3000, 0, 3);
-        List<NearbyCoursePageRow> rows = List.of(pageRow(10L, 150, 100, Difficulty.EASY, "snapshot-10"));
+    @DisplayName("페이지 범위를 넘기면 빈 목록을 반환하고 hasNext 는 false다")
+    void returnsEmptyPageWhenPageOutOfRange() {
+        NearbyCoursesRequest request = request(3000, 1, 3);
+        List<NearbyCourseCandidateRow> rows = List.of(
+                candidateRow(10L, CourseType.RIVERSIDE, Difficulty.EASY, 37.5700, 126.9820, "snapshot-10")
+        );
 
-        when(courseRepository.findNearbyCoursePageRows(
-                request.preferredDistanceMs(),
-                request.targetLatitude(),
-                request.targetLongitude(),
-                request.latitude(),
-                request.longitude(),
-                request.sortBy(),
-                request.radiusM(),
-                request.page(),
-                request.size()
-        )).thenReturn(rows);
-        when(courseRepository.countNearbyCourses(
-                request.preferredDistanceMs(),
-                request.targetLatitude(),
-                request.targetLongitude(),
-                request.radiusM()
-        )).thenReturn(1L);
-        when(courseTypeMapRepository.findCourseTypesByCourseId(10L)).thenReturn(List.of(CourseType.RIVERSIDE));
-        when(courseLikeRepository.countByCourseIds(List.of(10L))).thenReturn(Map.of());
-        when(courseBookmarkRepository.countByCourseIds(List.of(10L))).thenReturn(Map.of());
+        when(courseRepository.findNearbyCourseCandidates(request.preferredDistanceMs())).thenReturn(rows);
+        when(hybridRecommendationService.scoreNearbyCourses(
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq(request.radiusM()),
+                org.mockito.ArgumentMatchers.anyList()
+        )).thenReturn(Map.of(
+                10L, new CourseRecommendationScore(10L, 0.5, 0.5, 0.5, 0.0, 0.5, 0.50)
+        ));
 
-        NearbyCoursesResponse response = courseService.findNearbyCourses(request);
+        NearbyCoursesResponse response = courseService.findNearbyCourses(request, null);
 
+        assertThat(response.items()).isEmpty();
         assertThat(response.hasNext()).isFalse();
     }
 
@@ -150,33 +141,26 @@ class NearbyCourseQueryServiceTest {
     @DisplayName("인기순 정렬 요청도 정상 처리한다")
     void supportsPopularSortForNearbyCourses() {
         NearbyCoursesRequest request = request(3000, NearbyCourseSortBy.POPULAR, 0, 2);
-        List<NearbyCoursePageRow> rows = List.of(pageRow(20L, 220, 180, Difficulty.MEDIUM, "snapshot-20"));
+        List<NearbyCourseCandidateRow> rows = List.of(
+                candidateRow(20L, CourseType.PARK, Difficulty.MEDIUM, 37.5700, 126.9820, "snapshot-20")
+        );
 
-        when(courseRepository.findNearbyCoursePageRows(
-                request.preferredDistanceMs(),
-                request.targetLatitude(),
-                request.targetLongitude(),
-                request.latitude(),
-                request.longitude(),
-                request.sortBy(),
-                request.radiusM(),
-                request.page(),
-                request.size()
-        )).thenReturn(rows);
-        when(courseRepository.countNearbyCourses(
-                request.preferredDistanceMs(),
-                request.targetLatitude(),
-                request.targetLongitude(),
-                request.radiusM()
-        )).thenReturn(1L);
-        when(courseTypeMapRepository.findCourseTypesByCourseId(20L)).thenReturn(List.of(CourseType.PARK));
+        when(courseRepository.findNearbyCourseCandidates(request.preferredDistanceMs())).thenReturn(rows);
+        when(hybridRecommendationService.scoreNearbyCourses(
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq(request.radiusM()),
+                org.mockito.ArgumentMatchers.anyList()
+        )).thenReturn(Map.of(
+                20L, new CourseRecommendationScore(20L, 0.7, 0.7, 0.7, 0.0, 0.7, 0.70)
+        ));
         when(courseLikeRepository.countByCourseIds(List.of(20L))).thenReturn(Map.of(20L, 7L));
         when(courseBookmarkRepository.countByCourseIds(List.of(20L))).thenReturn(Map.of(20L, 2L));
 
-        NearbyCoursesResponse response = courseService.findNearbyCourses(request);
+        NearbyCoursesResponse response = courseService.findNearbyCourses(request, null);
 
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().getFirst().courseId()).isEqualTo(20L);
+        assertThat(response.items().getFirst().isRecommended()).isTrue();
         assertThat(response.items().getFirst().likeCount()).isEqualTo(7L);
         assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(2L);
     }
@@ -199,27 +183,32 @@ class NearbyCourseQueryServiceTest {
         );
     }
 
-    private NearbyCoursePageRow pageRow(
+    private NearbyCourseCandidateRow candidateRow(
             Long courseId,
-            int distanceFromTargetM,
-            int distanceFromUserM,
+            CourseType courseType,
             Difficulty difficulty,
+            double latitude,
+            double longitude,
             String snapshotImageUrl
     ) {
-        return new NearbyCoursePageRow(
+        return new NearbyCourseCandidateRow(
                 courseId,
                 "Course " + courseId,
                 CourseStatus.OFFICIAL,
                 5000,
                 120,
-                37.5665,
-                126.9780,
+                latitude,
+                longitude,
                 37.5700,
                 126.9820,
                 snapshotImageUrl,
+                new Coordinates(
+                        List.of(latitude, latitude + 0.0001),
+                        List.of(longitude, longitude + 0.0001),
+                        List.of(0.0, 0.0)
+                ),
                 difficulty,
-                distanceFromTargetM,
-                distanceFromUserM
+                courseType
         );
     }
 

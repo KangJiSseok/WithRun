@@ -78,7 +78,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()))
                 .andExpect(jsonPath("$.data[0].field").value(missingParameter));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("위도나 경도가 범위를 벗어나면 잘못된 입력 응답을 반환한다")
@@ -100,7 +100,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()))
                 .andExpect(jsonPath("$.data[0].field").value(parameterName));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("반경이 허용 범위를 벗어나면 잘못된 반경 응답을 반환한다")
@@ -121,7 +121,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_RADIUS.getCode()));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("반경이 정수가 아니면 잘못된 반경 응답을 반환한다")
@@ -142,7 +142,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_RADIUS.getCode()));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("목표 거리가 유효하지 않으면 잘못된 목표 거리 응답을 반환한다")
@@ -163,7 +163,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("목표 거리가 정수가 아니면 잘못된 목표 거리 응답을 반환한다")
@@ -184,7 +184,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("페이지 크기가 유효하지 않으면 잘못된 입력 응답을 반환한다")
@@ -205,7 +205,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("서비스가 커서를 거부하면 잘못된 커서 응답을 반환한다")
@@ -226,7 +226,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("주변 코스 응답을 성공 응답 포맷으로 감싼다")
@@ -273,7 +273,7 @@ class CourseControllerTest {
                 2,
                 true
         );
-        given(courseService.findNearbyCourses(request)).willReturn(response);
+        given(courseService.findNearbyCourses(request, null)).willReturn(response);
 
         mockMvc.perform(nearbyCoursesRequest(
                         "37.5665",
@@ -302,7 +302,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.totalPages").value(2))
                 .andExpect(jsonPath("$.data.hasNext").value(true));
 
-        then(courseService).should().findNearbyCourses(request);
+        then(courseService).should().findNearbyCourses(request, null);
     }
 
     @DisplayName("코스 상세 조회 응답을 성공 응답 포맷으로 감싼다")
@@ -461,7 +461,7 @@ class CourseControllerTest {
                 Integer.parseInt(pageSize)
         );
         NearbyCoursesResponse response = new NearbyCoursesResponse(List.of(), 0, Integer.parseInt(pageSize), 0L, 0, false);
-        given(courseService.findNearbyCourses(request)).willReturn(response);
+        given(courseService.findNearbyCourses(request, null)).willReturn(response);
 
         mockMvc.perform(nearbyCoursesRequest(
                         "37.5665",
@@ -476,7 +476,7 @@ class CourseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        then(courseService).should().findNearbyCourses(request);
+        then(courseService).should().findNearbyCourses(request, null);
     }
 
     @Test
@@ -496,7 +496,7 @@ class CourseControllerTest {
                 3
         );
         NearbyCoursesResponse response = new NearbyCoursesResponse(List.of(), 0, 3, 0L, 0, false);
-        given(courseService.findNearbyCourses(request)).willReturn(response);
+        given(courseService.findNearbyCourses(request, null)).willReturn(response);
 
         mockMvc.perform(nearbyCoursesRequest(
                         "37.5665",
@@ -512,7 +512,7 @@ class CourseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        then(courseService).should().findNearbyCourses(request);
+        then(courseService).should().findNearbyCourses(request, null);
     }
 
     @DisplayName("코스 리더보드 조회 응답을 성공 응답 포맷으로 감싼다")
@@ -754,6 +754,7 @@ class CourseControllerTest {
                                 new NearbyCourseItemResponse.CourseTypeOption("RIVERSIDE", "강변"),
                                 new NearbyCourseItemResponse.CourseTypeOption("PARK", "공원")
                         ),
+                        false,
                         14L,
                         8L,
                         "https://example.com/course.jpg"
