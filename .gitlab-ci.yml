@@ -83,6 +83,8 @@ deploy_test:
     name: test
   script:
     - cp deploy/compose/docker-compose.test.yml "$TEST_DEPLOY_DIR/"
+    - mkdir -p "$TEST_DEPLOY_DIR/nginx"
+    - cp deploy/nginx/default.test.conf "$TEST_DEPLOY_DIR/nginx/"
     - cd "$TEST_DEPLOY_DIR"
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
     - docker compose -f docker-compose.test.yml pull
