@@ -1,5 +1,6 @@
 import { useCallback, useRef } from 'react'
 import { StyleSheet } from 'react-native'
+import { SafeAreaView } from 'react-native-safe-area-context'
 import { WebView as BridgeWebView, postMessage, useWatchBridge, useGpsLocation, useCadence } from '@/bridge'
 import type { GpsLocation, WatchHealthData } from '@/bridge'
 import useWebUri from './hooks/useWebUri'
@@ -29,7 +30,11 @@ export default function WebViewScreen() {
   useGpsLocation(handleGpsLocation)
   useCadence(handleCadence)
 
-  return <BridgeWebView style={styles.container} source={{ uri }} />
+  return (
+    <SafeAreaView style={styles.container}>
+      <BridgeWebView style={styles.container} source={{ uri }} />
+    </SafeAreaView>
+  )
 }
 
 const styles = StyleSheet.create({
