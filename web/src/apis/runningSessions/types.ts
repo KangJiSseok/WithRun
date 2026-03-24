@@ -40,11 +40,12 @@ export type CreateRunningSessionRequest = {
   startLongitude: number; // -180 ~ 180
 };
 
-export type RunningSessionData = {
+export type CreateRunningSessionResponse = {
   runningSessionId: number;
   mode: RunningMode;
   courseId: number | null;
   ghostTargetRunningSessionId: number | null;
+  ghostTargetGpsSamples: GpsSample[] | null;
   distanceM: number;
   caloriesKcal: number;
   isCompleted: boolean;

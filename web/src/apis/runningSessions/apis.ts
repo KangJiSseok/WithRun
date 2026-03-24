@@ -2,7 +2,7 @@ import axiosClient from '@/shared/libs/axiosClient';
 import type { ApiResponse } from '@/shared/types/api.type';
 import type {
   CreateRunningSessionRequest,
-  RunningSessionData,
+  CreateRunningSessionResponse,
   CompleteRunningSessionRequest,
   CompleteRunningSessionResponse,
   RegisterCourseRequest,
@@ -19,8 +19,8 @@ import type {
  */
 export const createRunningSession = async (
   body: CreateRunningSessionRequest
-): Promise<ApiResponse<RunningSessionData>> => {
-  const { data } = await axiosClient.post<ApiResponse<RunningSessionData>>(
+): Promise<ApiResponse<CreateRunningSessionResponse>> => {
+  const { data } = await axiosClient.post<ApiResponse<CreateRunningSessionResponse>>(
     '/running-sessions',
     body
   );
