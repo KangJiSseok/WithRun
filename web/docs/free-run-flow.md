@@ -181,14 +181,14 @@ NormalRunSessionPage
 | **배경** | 단색 (`bg-secondary-foreground`) | 지도 위 오버레이 |
 | **통계 위치** | 상단 카드 3개 | 상단 오버레이 (지도 위) |
 | **타이머** | 중앙 크게 (포커스) | 하단 컨트롤 영역 |
-| **PATCH 실패 처리** | 재시도 / 결과 보기 버튼 | 홈으로 navigate + `clearAll()` |
-| **비정상 종료 처리** | **없음** | useEffect cleanup → fire-and-forget PATCH |
+| **PATCH 실패 처리** | `navigate('/free-run')` | 홈으로 navigate + `clearAll()` |
+| **비정상 종료 처리** | useEffect cleanup → fire-and-forget PATCH | useEffect cleanup → fire-and-forget PATCH |
 
 ---
 
 ## 4단계 — 종료 → PATCH
 
-### FreeRun: `FreeRunningScreen.handleStop()`
+### FreeRun: `FreeRunningScreen.handleStop()` + 비정상 종료
 
 ```
 종료 버튼 (일시정지 상태에서만 표시)
@@ -198,8 +198,6 @@ NormalRunSessionPage
        │    ├─ distanceM    ← distance(km) × 1000
        │    ├─ avgSpeedMps  ← distanceM / durationSec
        │    └─ avgPaceSecPerKm ← 1000 / avgSpeedMps (0이면 임시값 300)
-       │
-       ├─ setLocalResult(built)  ← 서버 실패 대비 로컬값 보관
        │
        └─ PATCH /running-sessions/{runningSessionId}
             요청: {
@@ -213,9 +211,26 @@ NormalRunSessionPage
               healthSamples: [],    ← 미구현
               splits: [],           ← 미구현
             }
-            ├─ 성공 → onFinish(res.data) → phase = 'result'
-            └─ 실패 → 재시도 / 결과 보기 버튼 (localResult로 결과 진입 가능)
+            ├─ 성공 → completedRef.current = true → onFinish(res.data) → phase = 'result'
+            └─ 실패 → navigate('/free-run')
+
+비정상 종료 (앱 이탈 / 뒤로가기)
+  → useEffect cleanup (마운트 시 등록)
+       ├─ completedRef.current === true → skip (정상 완료 이미 처리됨)
+       ├─ runningSessionId === null     → skip
+       └─ latestValuesRef / latestGpsRef 에서 최신값 읽어 fire-and-forget PATCH
+            .catch(() => {}) — 실패해도 무시
 ```
+
+> **`completedRef` 역할:**
+> `handleStop` 성공 시 `true`로 설정 → cleanup이 중복 PATCH를 보내지 않도록 방어.
+> PATCH 실패 시에는 `false`를 유지한 채 `/free-run`으로 이동하므로,
+> 컴포넌트 언마운트 시 cleanup이 fire-and-forget PATCH를 한 번 더 시도해 서버 세션을 완료한다.
+
+> **"latest ref" 패턴:**
+> useEffect cleanup 클로저는 마운트 시점의 값을 캡처한다.
+> `latestValuesRef.current = { time, distance, calories }`를 매 렌더마다 갱신하면
+> cleanup이 언마운트 직전의 최신 러닝 데이터를 읽을 수 있다.
 
 ### NormalRun: `NormalRunSessionScreen.handleStopRunning()`
 
@@ -245,7 +260,7 @@ NormalRunSessionPage
 | **gpsSamples** | `[]` (미구현) | 실제 수집 배열 |
 | **healthSamples** | `[]` (미구현) | 실제 수집 배열 |
 | **splits** | `[]` (미구현) | 실제 수집 배열 |
-| **실패 처리** | 재시도 / 로컬값으로 결과 진입 | store 초기화 후 홈으로 이동 |
+| **실패 처리** | `navigate('/free-run')` | store 초기화 후 홈으로 이동 |
 
 ---
 
@@ -327,8 +342,8 @@ FreeRun                                  NormalRun
 /free-run-session                        /normal-run-session/:courseId
   단색 배경                                카카오 지도 오버레이 (코스 경로 표시)
   useFreeRunning() — 현재값만 유지         useNormalRunning() — 배열 누적 수집
-  PATCH 실패: 재시도 / 로컬값 결과 진입    PATCH 실패: 홈으로 이동
-  비정상 종료 처리: 없음                   비정상 종료: cleanup fire-and-forget
+  PATCH 실패: 홈으로 이동                  PATCH 실패: 홈으로 이동
+  비정상 종료: cleanup fire-and-forget     비정상 종료: cleanup fire-and-forget
 
 [결과]
   props로 result 전달                     store에서 result 읽음
@@ -363,18 +378,9 @@ useFreeRunning() 안에 추가 필요
   splits: SplitData[]           ← 1km 달성마다 push
 ```
 
-### 비정상 종료 처리
+### ~~비정상 종료 처리~~ → 완료
 
-NormalRun처럼 `useEffect` cleanup에 fire-and-forget PATCH 추가 필요:
-
-```ts
-// FreeRunningScreen에 추가 필요
-useEffect(() => {
-  return () => {
-    // 러닝 중 이탈 시 세션 강제 종료
-  };
-}, []);
-```
+`FreeRunningScreen`에 NormalRun과 동일한 패턴 추가 완료.
 
 ### 결과 화면
 
