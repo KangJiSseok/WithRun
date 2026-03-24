@@ -7,28 +7,31 @@ import { HomePage } from '@/pages/private/home';
 import { NormalRunPage } from '@/pages/private/NormalRun';
 import { NormalRunDetailPage } from '@/pages/private/NormalRunDetail';
 import { NormalRunSessionPage } from '@/pages/private/NormalRunSession';
-import { FullscreenLayout } from '@/shared/layouts/FullscreenLayout';
 import { MainLayout } from '@/shared/layouts/MainLayout';
 import { GhostRunPage } from '@/pages/private/GhostRun';
 
 export const privateRoutes: RouteObject[] = [
   {
-    element: <MainLayout />,
+    element: <MainLayout showTopNav showBottomNav />,
     children: [
       { path: '/home', element: <HomePage /> },
-      { path: '/free-run', element: <FreeRunPage /> },
-      { path: '/ghost-run', element: <GhostRunPage /> },
+
       { path: '/calendar', element: <CalendarPage /> },
     ],
   },
   {
-    element: <FullscreenLayout />,
+    element: <MainLayout showBottomNav fullScreen />,
     children: [
-      // free
-      { path: '/free-run-session', element: <FreeRunSessionPage /> },
-      // normal
       { path: '/normal-run', element: <NormalRunPage /> },
       { path: '/normal-run/:courseId', element: <NormalRunDetailPage /> },
+      { path: '/free-run', element: <FreeRunPage /> },
+      { path: '/ghost-run', element: <GhostRunPage /> },
+    ],
+  },
+  {
+    element: <MainLayout fullScreen />,
+    children: [
+      { path: '/free-run-session', element: <FreeRunSessionPage /> },
       {
         path: '/normal-run-session/:courseId',
         element: <NormalRunSessionPage />,

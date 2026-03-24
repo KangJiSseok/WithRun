@@ -1,12 +1,12 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDragControls, type PanInfo } from 'motion/react';
 
-export const HANDLE_HEIGHT = 40;
-
 export const useNormalRunBottomSheet = () => {
   const sheetRef = useRef<HTMLDivElement>(null);
+  const headerRef = useRef<HTMLDivElement>(null);
   const [sheetHeight, setSheetHeight] = useState(0);
-  const [isSheetExpanded, setIsSheetExpanded] = useState(true);
+  const [headerHeight, setHeaderHeight] = useState(80);
+  const [isSheetExpanded, setIsSheetExpanded] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
   const dragControls = useDragControls();
 
@@ -16,6 +16,16 @@ export const useNormalRunBottomSheet = () => {
       setSheetHeight(entry.contentRect.height);
     });
     observer.observe(sheetRef.current);
+    return () => observer.disconnect();
+  }, []);
+
+  // 바텀시트 헤더 사이즈 계산용 ref observer
+  useEffect(() => {
+    if (!headerRef.current) return;
+    const observer = new ResizeObserver(([entry]) => {
+      setHeaderHeight(entry.contentRect.height);
+    });
+    observer.observe(headerRef.current);
     return () => observer.disconnect();
   }, []);
 
@@ -34,7 +44,7 @@ export const useNormalRunBottomSheet = () => {
 
   function handleDragEnd(_: unknown, info: PanInfo) {
     setIsDragging(false);
-    const mid = (sheetHeight - HANDLE_HEIGHT) / 2;
+    const mid = (sheetHeight - headerHeight) / 2;
     if (info.offset.y > mid || info.velocity.y > 500) {
       setIsSheetExpanded(false);
     } else {
@@ -44,7 +54,9 @@ export const useNormalRunBottomSheet = () => {
 
   return {
     sheetRef,
+    headerRef,
     sheetHeight,
+    headerHeight,
     isSheetExpanded,
     isDragging,
     dragControls,

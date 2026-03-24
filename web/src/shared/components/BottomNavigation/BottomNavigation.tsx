@@ -13,43 +13,53 @@ const ITEMS = [
 // to는 라우터가 페이지 이동하려고 씀
 // NavLink 안에 요소가 2개 들어가야 한다 (아이콘용 태그 + 텍스트용 태그)
 
+// 하단 네비게이션 높이 상수
+export const BOTTOM_NAV_HEIGHT = 80;
+
 export function BottomNavigation() {
   return (
-    <nav className="flex items-center justify-between rounded-t-3xl px-6 py-4 border shadow-sm glass">
-      {ITEMS.map((item) => {
-        const Icon = item.icon;
+    <div className="fixed flex left-0 bottom-0 w-full z-overlay">
+      <div
+        style={{ height: BOTTOM_NAV_HEIGHT }}
+        className="flex mx-auto min-w-[375px] max-w-[430px] w-full px-6 py-2 shadow-sm border-t bg-white"
+      >
+        <nav className="flex-1 flex items-center justify-between">
+          {ITEMS.map((item) => {
+            const Icon = item.icon;
 
-        return (
-          <NavLink
-            key={item.to}
-            to={item.to}
-            className="flex flex-col items-center gap-1 px-2 py-1"
-          >
-            {({ isActive }) => (
-              <>
-                <div
-                  className={
-                    isActive
-                      ? 'rounded-full bg-primary p-2 text-primary-foreground'
-                      : 'rounded-full p-2 text-muted-foreground'
-                  }
-                >
-                  <Icon size={20} />
-                </div>
-                <span
-                  className={
-                    isActive
-                      ? 'text-xs font-semibold text-primary'
-                      : 'text-xs text-muted-foreground'
-                  }
-                >
-                  {item.label}
-                </span>
-              </>
-            )}
-          </NavLink>
-        );
-      })}
-    </nav>
+            return (
+              <NavLink
+                key={item.to}
+                to={item.to}
+                className="flex flex-col items-center gap-1 "
+              >
+                {({ isActive }) => (
+                  <>
+                    <div
+                      className={
+                        isActive
+                          ? 'rounded-full bg-primary p-2 text-primary-foreground'
+                          : 'rounded-full p-2 text-muted-foreground'
+                      }
+                    >
+                      <Icon className="w-full" />
+                    </div>
+                    <span
+                      className={
+                        isActive
+                          ? 'text-xs font-semibold text-primary'
+                          : 'text-xs text-muted-foreground'
+                      }
+                    >
+                      {item.label}
+                    </span>
+                  </>
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
+      </div>
+    </div>
   );
 }
