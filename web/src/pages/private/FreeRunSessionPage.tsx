@@ -1,16 +1,20 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FreeRunningScreen, FreeRunResultScreen } from '@/features/FreeRun';
 import { useRunningSession } from '@/shared/hooks';
-import { useRunningSessionStore } from '@/stores/runningSession';
+
+interface RunningResult {
+  durationSec: number;
+  distanceM: number;
+  caloriesKcal: number;
+  avgPaceSecPerKm: number;
+}
 
 export function FreeRunSessionPage() {
   const [phase, setPhase] = useState<'running' | 'result'>('running');
-  const clear = useRunningSessionStore((s) => s.clear);
-  const { sessionReady, error, retry } = useRunningSession({ mode: 'FREE' });
+  const [result, setResult] = useState<RunningResult | null>(null);
+  const [courseId, setCourseId] = useState<number | null>(null);
 
-  useEffect(() => {
-    clear();
-  }, []);
+  const { sessionReady, error, retry, runningSessionId } = useRunningSession({ mode: 'FREE' });
 
   if (error) {
     return (
@@ -31,6 +35,24 @@ export function FreeRunSessionPage() {
     );
   }
 
-  if (phase === 'result') return <FreeRunResultScreen />;
-  return <FreeRunningScreen onFinish={() => setPhase('result')} />;
+  if (phase === 'result') {
+    return (
+      <FreeRunResultScreen
+        result={result}
+        courseId={courseId}
+        runningSessionId={runningSessionId}
+        onCourseRegistered={setCourseId}
+      />
+    );
+  }
+
+  return (
+    <FreeRunningScreen
+      runningSessionId={runningSessionId}
+      onFinish={(r) => {
+        setResult(r);
+        setPhase('result');
+      }}
+    />
+  );
 }

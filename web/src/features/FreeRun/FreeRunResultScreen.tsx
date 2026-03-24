@@ -1,21 +1,25 @@
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Award, Home, MapPin, Activity, Timer, Check, UploadCloud, Heart } from 'lucide-react';
+import { Award, Home, MapPin, Activity, Timer, Check, UploadCloud } from 'lucide-react';
 import { cn, formatDuration, formatPace } from '@/shared/utils';
 import { CourseShareModal } from './CourseShareModal';
-import { useRunningSessionStore } from '@/stores/runningSession';
 import { useGeneratePaceData } from '@/hooks/FreeRun/useGeneratePaceData';
-import { likeCourse } from '@/apis/courseLike';
+import type { RunningResult } from './FreeRunningScreen';
 
 // 회원 시스템 구현 전 임시 mock 유저
 // 추후 변경 시 => auth context에서 실제 유저 정보 받아오기
 const MOCK_USER = { name: '러너' };
-const MOCK_USER_ID = 1;
 
 // 심박수 mock 데이터 (워치 연동 예정)
 // 추후 변경 시 => state.heartRate로 대체 (min, avg, max 계산해서 저장)
 const MOCK_HEART_RATE = { min: 118, avg: 142, max: 168 };
 
+interface FreeRunResultScreenProps {
+  result: RunningResult | null;
+  courseId: number | null;
+  runningSessionId: number | null;
+  onCourseRegistered: (courseId: number) => void;
+}
 
 interface StatItemProps {
   label: string;
@@ -33,31 +37,14 @@ function StatItem({ label, value, unit }: StatItemProps) {
   );
 }
 
-
-
-export function FreeRunResultScreen() {
+export function FreeRunResultScreen({ result, courseId, runningSessionId, onCourseRegistered }: FreeRunResultScreenProps) {
   const navigate = useNavigate();
-  const [isLiked, setIsLiked] = useState(false);
   const [showShareModal, setShowShareModal] = useState(false);
-
-  const result = useRunningSessionStore((s) => s.result);
-  const courseId = useRunningSessionStore((s) => s.courseId);
-  const mode = useRunningSessionStore((s) => s.mode);
 
   const durationSec = result?.durationSec ?? 0;
   const distanceM = result?.distanceM ?? 0;
   const caloriesKcal = result?.caloriesKcal ?? 0;
   const avgPaceSecPerKm = result?.avgPaceSecPerKm ?? 0;
-
-  // courseId가 있을 때만 API 호출, 없으면 로컬 토글만 (코스 등록 전 상태)
-  async function handleLike() {
-    if (courseId) {
-      const res = await likeCourse(courseId, MOCK_USER_ID);
-      setIsLiked(res.data.isLiked);
-    } else {
-      setIsLiked((prev) => !prev);
-    }
-  }
 
   const time = formatDuration(durationSec);
   const distance = (distanceM / 1000).toFixed(2);
@@ -71,18 +58,6 @@ export function FreeRunResultScreen() {
     <div className={cn('absolute inset-0 flex flex-col', showShareModal ? 'overflow-hidden' : 'overflow-y-auto')}>
       {/* 헤더 */}
       <div className="relative flex flex-col items-center pt-10 pb-6 px-6">
-        {/* 좋아요 버튼 — FREE 모드에서는 표시하지 않음 */}
-        {mode !== 'FREE' && (
-          <button
-            onClick={handleLike}
-            className="absolute top-10 right-6 p-2"
-          >
-            <Heart
-              size={26}
-              className={cn(isLiked ? 'fill-red-400 text-red-400' : 'text-[hsl(var(--secondary-5))]')}
-            />
-          </button>
-        )}
         <div className="p-4 rounded-full bg-primary/20 border border-primary/30 mb-4">
           <Award size={40} className="text-primary" />
         </div>
@@ -204,6 +179,8 @@ export function FreeRunResultScreen() {
       <CourseShareModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
+        runningSessionId={runningSessionId}
+        onRegistered={onCourseRegistered}
       />
     </div>
   );

@@ -1,7 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useBridgeDataStore } from '@/bridge';
 import { createRunningSession } from '@/apis';
-import { useRunningSessionStore } from '@/stores/runningSession';
 
 // 회원 시스템 구현 전 임시 mock 유저
 const MOCK_USER_ID = 1;
@@ -17,6 +16,7 @@ type UseRunningSessionParams =
 export function useRunningSession(params: UseRunningSessionParams) {
   const [sessionReady, setSessionReady] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [runningSessionId, setRunningSessionId] = useState<number | null>(null);
 
   // StrictMode 이중 마운트 및 gpsLocation 재갱신 시 중복 호출 방지
   const calledRef = useRef(false);
@@ -24,8 +24,6 @@ export function useRunningSession(params: UseRunningSessionParams) {
   const [retryCount, setRetryCount] = useState(0);
 
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
-  const setRunningSessionId = useRunningSessionStore((s) => s.setRunningSessionId);
-  const setMode = useRunningSessionStore((s) => s.setMode);
 
   useEffect(() => {
     // 중복 호출 방어
@@ -45,7 +43,6 @@ export function useRunningSession(params: UseRunningSessionParams) {
         });
         if (!cancelled) {
           setRunningSessionId(res.data.runningSessionId);
-          setMode(res.data.mode);
         }
       } catch {
         if (!cancelled) setError('서버 연결에 실패했습니다. 다시 시도해주세요.');
@@ -76,14 +73,16 @@ export function useRunningSession(params: UseRunningSessionParams) {
       cancelled = true;
       clearTimeout(timeout);
     };
-  }, [gpsLocation, setRunningSessionId, setMode, retryCount]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [gpsLocation, retryCount]); // params는 매 렌더마다 새 객체이므로 의도적으로 제외
 
   const retry = () => {
     calledRef.current = false;
     setError(null);
     setSessionReady(false);
+    setRunningSessionId(null);
     setRetryCount((c) => c + 1);
   };
 
-  return { sessionReady, error, retry };
+  return { sessionReady, error, retry, runningSessionId };
 }

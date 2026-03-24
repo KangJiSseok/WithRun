@@ -4,7 +4,6 @@ import { useState } from 'react';
 import { Pause, Play, Square } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import { useFreeRunning } from '@/hooks/FreeRun/useFreeRunning';
-import { useRunningSessionStore } from '@/stores/runningSession';
 import { useBridgeDataStore } from '@/bridge';
 import { completeRunningSession } from '@/apis';
 
@@ -17,8 +16,16 @@ function parseDurationSec(formatted: string): number {
   return parts[0] * 60 + parts[1];
 }
 
+export interface RunningResult {
+  durationSec: number;
+  distanceM: number;
+  caloriesKcal: number;
+  avgPaceSecPerKm: number;
+}
+
 interface FreeRunningScreenProps {
-  onFinish: () => void;
+  runningSessionId: number | null;
+  onFinish: (result: RunningResult) => void;
 }
 
 interface StatCardProps {
@@ -37,20 +44,13 @@ function StatCard({ label, value, unit }: StatCardProps) {
   );
 }
 
-export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
+export function FreeRunningScreen({ runningSessionId, onFinish }: FreeRunningScreenProps) {
   const { time, distance, pace, calories, isPaused, togglePause } = useFreeRunning();
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
-  const setResult = useRunningSessionStore((s) => s.setResult);
-  const runningSessionId = useRunningSessionStore((s) => s.runningSessionId);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [submitError, setSubmitError] = useState<string | null>(null);
-  const [localResult, setLocalResult] = useState<{
-    durationSec: number;
-    distanceM: number;
-    caloriesKcal: number;
-    avgPaceSecPerKm: number;
-  } | null>(null);
+  const [localResult, setLocalResult] = useState<RunningResult | null>(null);
 
   const buildPayload = () => {
     const durationSec = parseDurationSec(time);
@@ -63,7 +63,8 @@ export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
 
   const handleStop = async () => {
     const { durationSec, distanceM, avgSpeedMps, avgPaceSecPerKm } = buildPayload();
-    setLocalResult({ durationSec, distanceM, caloriesKcal: calories, avgPaceSecPerKm });
+    const built: RunningResult = { durationSec, distanceM, caloriesKcal: calories, avgPaceSecPerKm };
+    setLocalResult(built);
     setSubmitError(null);
     setIsSubmitting(true);
 
@@ -84,13 +85,12 @@ export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
         healthSamples: [],
         splits: [],
       });
-      setResult({
+      onFinish({
         durationSec: res.data.durationSec,
         distanceM: res.data.distanceM,
         caloriesKcal: res.data.caloriesKcal,
         avgPaceSecPerKm: res.data.avgPaceSecPerKm,
       });
-      onFinish();
     } catch {
       setSubmitError('서버 연결에 실패했습니다.');
     } finally {
@@ -100,8 +100,7 @@ export function FreeRunningScreen({ onFinish }: FreeRunningScreenProps) {
 
   const handleForceFinish = () => {
     if (!localResult) return;
-    setResult(localResult);
-    onFinish();
+    onFinish(localResult);
   };
 
   return (

@@ -15,16 +15,14 @@ import type { CourseDifficulty, CourseType, CourseRegistrationMode } from '@/sha
 import { useCourseSurveys } from '@/hooks/FreeRun/useCourseSurveys';
 import { registerCourse } from '@/apis/runningSessions';
 
-// 추후 변경: createRunningSession 응답에서 받아온 runningSessionId를 store에서 읽어오기
-const MOCK_RUNNING_SESSION_ID = 17;
-import { useRunningSessionStore } from '@/stores/runningSession';
-
 type CourseShareModalProps = {
   isOpen: boolean;
   onClose: () => void;
+  runningSessionId: number | null;
+  onRegistered: (courseId: number) => void;
 };
 
-export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
+export function CourseShareModal({ isOpen, onClose, runningSessionId, onRegistered }: CourseShareModalProps) {
   const [courseTitle, setCourseTitle] = useState(
     `나의 러닝 ${new Date().toLocaleDateString()}`,
   );
@@ -40,9 +38,6 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
   // 각 항목: { data: 서버 enum 값, label: 화면 표시 한국어 }
   const { surveyData, isLoading } = useCourseSurveys(isOpen);
 
-  const runningSessionId = useRunningSessionStore((s) => s.runningSessionId) ?? MOCK_RUNNING_SESSION_ID;
-  const setCourseId = useRunningSessionStore((s) => s.setCourseId);
-
   // 사용자가 선택한 값이 있으면 그 값, 없으면 API 첫 번째 항목을 기본값으로 사용
   const difficulty = difficultyOverride ?? (surveyData?.difficulties[0]?.data as CourseDifficulty | undefined);
 
@@ -53,7 +48,7 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
   }
 
   async function handleSubmit() {
-    if (!difficulty) return;
+    if (!difficulty || !runningSessionId) return;
     setIsSubmitting(true);
     try {
       const res = await registerCourse(runningSessionId, {
@@ -62,7 +57,7 @@ export function CourseShareModal({ isOpen, onClose }: CourseShareModalProps) {
         courseTypes,
         mode: courseMode,
       });
-      setCourseId(res.data.courseId);
+      onRegistered(res.data.courseId);
       onClose();
     } finally {
       setIsSubmitting(false);
