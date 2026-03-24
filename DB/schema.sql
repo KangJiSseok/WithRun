@@ -274,11 +274,7 @@ CREATE TABLE running_health_samples (
   sampled_at TIMESTAMP NOT NULL,
   user_id BIGINT NOT NULL,
   heart_rate SMALLINT,
-  speed_mps NUMERIC(6, 3),
-  pace_sec_per_km INTEGER,
-  distance_m INTEGER,
   calories_kcal NUMERIC(8, 2),
-  cadence_spm SMALLINT,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
@@ -292,11 +288,7 @@ CREATE TABLE running_health_samples (
     ON DELETE CASCADE,
   CONSTRAINT uq_running_health_samples_session_time UNIQUE (running_session_id, sampled_at),
   CONSTRAINT chk_running_health_samples_heart_rate CHECK (heart_rate IS NULL OR heart_rate BETWEEN 20 AND 260),
-  CONSTRAINT chk_running_health_samples_speed CHECK (speed_mps IS NULL OR speed_mps >= 0),
-  CONSTRAINT chk_running_health_samples_pace CHECK (pace_sec_per_km IS NULL OR pace_sec_per_km > 0),
-  CONSTRAINT chk_running_health_samples_distance CHECK (distance_m IS NULL OR distance_m >= 0),
-  CONSTRAINT chk_running_health_samples_calories CHECK (calories_kcal IS NULL OR calories_kcal >= 0),
-  CONSTRAINT chk_running_health_samples_cadence CHECK (cadence_spm IS NULL OR cadence_spm >= 0)
+  CONSTRAINT chk_running_health_samples_calories CHECK (calories_kcal IS NULL OR calories_kcal >= 0)
 );
 
 -- Append-only 1-second GPS coordinate samples.
@@ -312,6 +304,10 @@ CREATE TABLE running_gps_samples (
   altitude_m NUMERIC(7, 2),
   accuracy_m NUMERIC(6, 2),
   bearing_deg NUMERIC(6, 2),
+  speed_mps NUMERIC(6, 3),
+  pace_sec_per_km INTEGER,
+  distance_m INTEGER,
+  cadence_spm SMALLINT,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
@@ -327,7 +323,11 @@ CREATE TABLE running_gps_samples (
   CONSTRAINT chk_running_gps_samples_lat CHECK (latitude BETWEEN -90 AND 90),
   CONSTRAINT chk_running_gps_samples_lng CHECK (longitude BETWEEN -180 AND 180),
   CONSTRAINT chk_running_gps_samples_accuracy CHECK (accuracy_m IS NULL OR accuracy_m >= 0),
-  CONSTRAINT chk_running_gps_samples_bearing CHECK (bearing_deg IS NULL OR (bearing_deg >= 0 AND bearing_deg < 360))
+  CONSTRAINT chk_running_gps_samples_bearing CHECK (bearing_deg IS NULL OR (bearing_deg >= 0 AND bearing_deg < 360)),
+  CONSTRAINT chk_running_gps_samples_speed CHECK (speed_mps IS NULL OR speed_mps >= 0),
+  CONSTRAINT chk_running_gps_samples_pace CHECK (pace_sec_per_km IS NULL OR pace_sec_per_km > 0),
+  CONSTRAINT chk_running_gps_samples_distance CHECK (distance_m IS NULL OR distance_m >= 0),
+  CONSTRAINT chk_running_gps_samples_cadence CHECK (cadence_spm IS NULL OR cadence_spm >= 0)
 );
 
 -- Per-course ghost leaderboard rows keyed by user, course, and source session.

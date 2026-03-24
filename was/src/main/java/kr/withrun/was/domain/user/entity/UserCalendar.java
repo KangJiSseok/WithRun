@@ -11,6 +11,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import jakarta.persistence.UniqueConstraint;
+import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import lombok.AccessLevel;
 import lombok.Getter;
@@ -67,4 +68,37 @@ public class UserCalendar extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_user_calendars_user")
     )
     private User user;
+
+    public static UserCalendar create(User user, LocalDate calendarDate) {
+        UserCalendar userCalendar = new UserCalendar();
+        userCalendar.user = user;
+        userCalendar.calendarDate = calendarDate;
+        return userCalendar;
+    }
+
+    public void recordCompletedRun(
+            RunningMode runningMode,
+            Integer distanceM,
+            Integer durationSec,
+            Integer caloriesKcal,
+            String representativeSnapshotUrl
+    ) {
+        this.totalDistanceM += zeroIfNull(distanceM);
+        this.totalDurationSec += zeroIfNull(durationSec);
+        this.totalCaloriesKcal += zeroIfNull(caloriesKcal);
+
+        switch (runningMode) {
+            case COURSE -> this.courseRunCount++;
+            case FREE -> this.freeRunCount++;
+            case GHOST -> this.ghostRunCount++;
+        }
+
+        if (representativeSnapshotUrl != null && !representativeSnapshotUrl.isBlank()) {
+            this.representativeSnapshotUrl = representativeSnapshotUrl;
+        }
+    }
+
+    private static int zeroIfNull(Integer value) {
+        return value == null ? 0 : value;
+    }
 }

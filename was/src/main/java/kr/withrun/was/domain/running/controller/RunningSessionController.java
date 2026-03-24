@@ -184,9 +184,35 @@ public class RunningSessionController {
         return ApiResponse.successEntity(CREATED, runningSessionService.registerRunningSessionCourse(runningSessionId, request));
     }
 
+    @Operation(
+            summary = "러닝 세션 상세를 조회한다",
+            description = "러닝 세션의 요약 정보와 GPS 샘플, 건강 샘플, 스플릿, 고스트 결과를 함께 조회한다. 응답의 isCompleted 는 세션 종료 여부를 나타낸다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "러닝 세션 상세 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.RunningSessionDetailApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "runningSessionId 또는 요청 본문 값이 유효하지 않음",
+                    content = @Content(schema = @Schema(implementation = ValidationErrorApiResponseDoc.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "러닝 세션을 찾을 수 없거나 소유자가 아님",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+            )
+    })
     @GetMapping("/{runningSessionId}/detail")
     public ResponseEntity<ApiResponse<RunningSessionDetailResponse>> findRunningSessionDetail(
+            @Parameter(description = "상세 조회할 러닝 세션 ID", example = "91")
             @PathVariable @Positive Long runningSessionId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    description = "상세 조회를 요청하는 사용자 정보를 담은 요청 본문"
+            )
             @Valid @RequestBody RunningSessionDetailRequest request
     ) {
         return ApiResponse.successEntity(runningSessionService.findRunningSessionDetail(runningSessionId, request.userId()));

@@ -74,6 +74,18 @@ public class RunningGpsSample extends BaseEntity {
     @Column(name = "bearing_deg")
     private Double bearingDeg;
 
+    @Column(name = "speed_mps")
+    private Double speedMps;
+
+    @Column(name = "pace_sec_per_km")
+    private Integer paceSecPerKm;
+
+    @Column(name = "distance_m")
+    private Integer distanceM;
+
+    @Column(name = "cadence_spm")
+    private Short cadenceSpm;
+
     @Builder
     private RunningGpsSample (
             Double bearingDeg,
@@ -81,6 +93,10 @@ public class RunningGpsSample extends BaseEntity {
             Double altitudeM,
             Double longitude,
             Double latitude,
+            Double speedMps,
+            Integer paceSecPerKm,
+            Integer distanceM,
+            Short cadenceSpm,
             User user,
             RunningSession runningSession,
             LocalDateTime sampledAt,
@@ -91,6 +107,10 @@ public class RunningGpsSample extends BaseEntity {
         this.altitudeM = altitudeM;
         this.longitude = longitude;
         this.latitude = latitude;
+        this.speedMps = speedMps;
+        this.paceSecPerKm = paceSecPerKm;
+        this.distanceM = distanceM;
+        this.cadenceSpm = cadenceSpm;
         this.user = user;
         this.runningSession = runningSession;
         this.sampledAt = sampledAt;
@@ -106,6 +126,10 @@ public class RunningGpsSample extends BaseEntity {
      * @param altitudeM 고도 (미터)
      * @param longitude 경도 (소수)
      * @param latitude 위도 (소수)
+     * @param speedMps 순간 속도 (m/s)
+     * @param paceSecPerKm 순간 페이스 (sec/km)
+     * @param distanceM 누적 거리 (m)
+     * @param cadenceSpm 케이던스 (spm)
      * @param user
      * @param runningSession
      * @param sampledAt GPS 로그 수집 시간
@@ -119,6 +143,10 @@ public class RunningGpsSample extends BaseEntity {
             Double altitudeM,
             Double longitude,
             Double latitude,
+            Double speedMps,
+            Integer paceSecPerKm,
+            Integer distanceM,
+            Short cadenceSpm,
             LocalDateTime sampledAt
     ) {
         return RunningGpsSample.builder()
@@ -127,6 +155,10 @@ public class RunningGpsSample extends BaseEntity {
                 .altitudeM(altitudeM)
                 .longitude(longitude)
                 .latitude(latitude)
+                .speedMps(speedMps)
+                .paceSecPerKm(paceSecPerKm)
+                .distanceM(distanceM)
+                .cadenceSpm(cadenceSpm)
                 .user(user)
                 .runningSession(runningSession)
                 .sampledAt(sampledAt)

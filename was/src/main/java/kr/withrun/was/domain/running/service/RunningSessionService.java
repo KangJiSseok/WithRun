@@ -29,8 +29,6 @@ import kr.withrun.was.domain.running.dto.RunningGpsSampleResponse;
 import kr.withrun.was.domain.running.dto.RunningHealthSampleResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionSplitResponse;
-import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
-import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.GhostRunningResult;
 import kr.withrun.was.domain.running.entity.RunningGpsSample;
 import kr.withrun.was.domain.running.entity.RunningHealthSample;
@@ -46,7 +44,9 @@ import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.domain.running.util.PastRunningSessionCursorCodec;
 import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
+import kr.withrun.was.domain.user.entity.UserCalendar;
 import kr.withrun.was.domain.user.entity.User;
+import kr.withrun.was.domain.user.repository.UserCalendarRepository;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
@@ -56,6 +56,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDate;
 import java.util.LinkedHashSet;
 import java.util.List;
 
@@ -69,6 +70,7 @@ public class RunningSessionService {
 
     private final RunningSessionRepository runningSessionRepository;
     private final UserRepository userRepository;
+    private final UserCalendarRepository userCalendarRepository;
     private final CourseRepository courseRepository;
     private final CourseDifficultyRepository courseDifficultyRepository;
     private final CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
@@ -102,27 +104,6 @@ public class RunningSessionService {
     }
 
     @Transactional
-    public UpdateRunningSessionResponse completeRunningSession(Long runningSessionId, UpdateRunningSessionRequest request) {
-        RunningSession runningSession = getRunningSession(runningSessionId);
-        runningSession.validateOwner(request.userId());
-        runningSession.validateCompletable();
-
-        runningSession.complete(
-                request.distanceM(),
-                request.caloriesKcal(),
-                request.endLatitude(),
-                request.endLongitude(),
-                request.avgSpeedMps(),
-                request.durationSec(),
-                request.avgPaceSecPerKm(),
-                request.elevationGainM()
-        );
-        recordCourseCompletionIfEligible(runningSession, request.userId());
-
-        return UpdateRunningSessionResponse.from(runningSession);
-    }
-
-    @Transactional
     public RunningSessionDetailResponse completeRunningSession(Long runningSessionId, CompleteRunningSessionRequest request) {
         RunningSession runningSession = getRunningSession(runningSessionId);
         User user = getUser(request.userId());
@@ -140,6 +121,7 @@ public class RunningSessionService {
                 request.elevationGainM()
         );
         recordCourseCompletionIfEligible(runningSession, user);
+        upsertUserCalendar(runningSession);
 
         List<RunningGpsSample> savedGpsSamples = saveGpsSamples(runningSession, user, request.gpsSamples());
         List<RunningHealthSample> savedHealthSamples = saveHealthSamples(runningSession, user, request.healthSamples());
@@ -312,6 +294,24 @@ public class RunningSessionService {
         return savedGhostRunningResult;
     }
 
+    private void upsertUserCalendar(RunningSession runningSession) {
+        LocalDate calendarDate = runningSession.getEndedAt().toLocalDate();
+        UserCalendar userCalendar = userCalendarRepository.findByUserIdAndCalendarDateAndDeletedAtIsNull(
+                        runningSession.getUser().getId(),
+                        calendarDate
+                )
+                .orElseGet(() -> UserCalendar.create(runningSession.getUser(), calendarDate));
+
+        userCalendar.recordCompletedRun(
+                runningSession.getMode(),
+                runningSession.getDistanceM(),
+                runningSession.getDurationSec(),
+                runningSession.getCaloriesKcal(),
+                runningSession.getSnapshotImageUrl()
+        );
+        userCalendarRepository.save(userCalendar);
+    }
+
     private Difficulty resolveGhostDifficulty(RunningSession runningSession, RunningSession targetSession) {
         Long courseId = runningSession.getCourse() != null
                 ? runningSession.getCourse().getId()
@@ -387,6 +387,10 @@ public class RunningSessionService {
                         request.altitudeM(),
                         request.longitude(),
                         request.latitude(),
+                        request.speedMps(),
+                        request.paceSecPerKm(),
+                        request.distanceM(),
+                        request.cadenceSpm(),
                         request.sampledAt()
                 ))
                 .toList();
@@ -403,11 +407,7 @@ public class RunningSessionService {
                         user,
                         runningSession,
                         request.heartRate(),
-                        request.speedMps(),
-                        request.paceSecPerKm(),
-                        request.distanceM(),
                         request.caloriesKcal(),
-                        request.cadenceSpm(),
                         request.sampledAt()
                 ))
                 .toList();

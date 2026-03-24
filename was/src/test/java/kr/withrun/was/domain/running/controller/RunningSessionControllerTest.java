@@ -12,6 +12,7 @@ import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.RunningGpsSampleResponse;
+import kr.withrun.was.domain.running.dto.RunningHealthSampleResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
@@ -26,6 +27,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
@@ -37,6 +39,7 @@ import java.time.LocalDateTime;
 
 import static kr.withrun.was.domain.running.type.RunningMode.COURSE;
 import static kr.withrun.was.domain.running.type.RunningMode.GHOST;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.BDDMockito.given;
@@ -122,7 +125,11 @@ class RunningSessionControllerTest {
                                 126.9780,
                                 12.3,
                                 3.2,
-                                181.0
+                                181.0,
+                                null,
+                                null,
+                                null,
+                                null
                         )
                 ),
                 0,
@@ -255,6 +262,7 @@ class RunningSessionControllerTest {
     void wrapsCompleteRunningSessionResponseInSuccessEnvelope() throws Exception {
         long runningSessionId = 901L;
         RunningSessionDetailResponse response = new RunningSessionDetailResponse(
+                true,
                 runningSessionId,
                 1L,
                 null,
@@ -266,8 +274,23 @@ class RunningSessionControllerTest {
                 2,
                 642,
                 3,
-                java.util.List.of(),
-                java.util.List.of(),
+                java.util.List.of(new RunningGpsSampleResponse(
+                        LocalDateTime.parse("2026-03-12T06:31:30"),
+                        37.5665,
+                        126.9780,
+                        21.5,
+                        5.2,
+                        182.0,
+                        3.45,
+                        289,
+                        1250,
+                        (short) 174
+                )),
+                java.util.List.of(new RunningHealthSampleResponse(
+                        LocalDateTime.parse("2026-03-12T06:31:30"),
+                        (short) 152,
+                        84.5
+                )),
                 java.util.List.of(),
                 null
         );
@@ -290,13 +313,31 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.avgSpeedMps").value(11.0))
                 .andExpect(jsonPath("$.data.durationSec").value(2520))
                 .andExpect(jsonPath("$.data.avgPaceSecPerKm").value(2))
+                .andExpect(jsonPath("$.data.isCompleted").value(true))
                 .andExpect(jsonPath("$.data.elevationGainM").value(3))
-                .andExpect(jsonPath("$.data.gpsSamples").isArray())
-                .andExpect(jsonPath("$.data.healthSamples").isArray())
+                .andExpect(jsonPath("$.data.gpsSamples[0].sampledAt").value("2026-03-12T06:31:30"))
+                .andExpect(jsonPath("$.data.gpsSamples[0].speedMps").value(3.45))
+                .andExpect(jsonPath("$.data.gpsSamples[0].paceSecPerKm").value(289))
+                .andExpect(jsonPath("$.data.gpsSamples[0].distanceM").value(1250))
+                .andExpect(jsonPath("$.data.gpsSamples[0].cadenceSpm").value(174))
+                .andExpect(jsonPath("$.data.healthSamples[0].sampledAt").value("2026-03-12T06:31:30"))
+                .andExpect(jsonPath("$.data.healthSamples[0].heartRate").value(152))
+                .andExpect(jsonPath("$.data.healthSamples[0].caloriesKcal").value(84.5))
+                .andExpect(jsonPath("$.data.healthSamples[0].speedMps").doesNotExist())
                 .andExpect(jsonPath("$.data.splits").isArray())
                 .andExpect(jsonPath("$.data.ghostRunningResult").doesNotExist());
 
-        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class));
+        ArgumentCaptor<CompleteRunningSessionRequest> requestCaptor = ArgumentCaptor.forClass(CompleteRunningSessionRequest.class);
+        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), requestCaptor.capture());
+
+        CompleteRunningSessionRequest capturedRequest = requestCaptor.getValue();
+        assertThat(capturedRequest.gpsSamples()).hasSize(1);
+        assertThat(capturedRequest.healthSamples()).hasSize(1);
+        assertThat(capturedRequest.gpsSamples().getFirst().speedMps()).isEqualTo(3.45);
+        assertThat(capturedRequest.gpsSamples().getFirst().paceSecPerKm()).isEqualTo(289);
+        assertThat(capturedRequest.gpsSamples().getFirst().distanceM()).isEqualTo(1250);
+        assertThat(capturedRequest.gpsSamples().getFirst().cadenceSpm()).isEqualTo((short) 174);
+        assertThat(capturedRequest.healthSamples().getFirst().caloriesKcal()).isEqualTo(84.5);
     }
 
     @DisplayName("이미 종료된 세션은 충돌 응답을 반환한다")
@@ -331,6 +372,45 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.RUNNING_SESSION_NOT_FOUND.getCode()));
 
         then(runningSessionService).should().completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class));
+    }
+
+    @DisplayName("러닝 세션 상세 조회 응답은 완료 여부를 포함한다")
+    @Test
+    void wrapsRunningSessionDetailResponseWithCompletionState() throws Exception {
+        long runningSessionId = 777L;
+        RunningSessionDetailResponse response = new RunningSessionDetailResponse(
+                true,
+                runningSessionId,
+                1L,
+                "https://cdn.withrun.app/snapshots/777.png",
+                LocalDateTime.parse("2026-03-12T06:30:00"),
+                LocalDateTime.parse("2026-03-12T07:12:00"),
+                10023,
+                2520,
+                11.0,
+                2,
+                642,
+                3,
+                java.util.List.of(),
+                java.util.List.of(),
+                java.util.List.of(),
+                null
+        );
+        given(runningSessionService.findRunningSessionDetail(runningSessionId, 1L)).willReturn(response);
+
+        mockMvc.perform(get("/api/running-sessions/{runningSessionId}/detail", runningSessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": 1
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.runningSessionId").value(runningSessionId))
+                .andExpect(jsonPath("$.data.isCompleted").value(true));
+
+        then(runningSessionService).should().findRunningSessionDetail(runningSessionId, 1L);
     }
 
     @DisplayName("유효하지 않은 종료 요청은 잘못된 입력 응답을 반환한다")
@@ -751,8 +831,27 @@ class RunningSessionControllerTest {
                   "avgPaceSecPerKm": 2,
                   "elevationGainM": 3,
                   "distanceGapM": 12,
-                  "gpsSamples": [],
-                  "healthSamples": [],
+                  "gpsSamples": [
+                    {
+                      "latitude": 37.5665,
+                      "longitude": 126.9780,
+                      "altitudeM": 21.5,
+                      "accuracyM": 5.2,
+                      "bearingDeg": 182.0,
+                      "speedMps": 3.45,
+                      "paceSecPerKm": 289,
+                      "distanceM": 1250,
+                      "cadenceSpm": 174,
+                      "sampledAt": "2026-03-12T06:31:30"
+                    }
+                  ],
+                  "healthSamples": [
+                    {
+                      "sampledAt": "2026-03-12T06:31:30",
+                      "heartRate": 152,
+                      "caloriesKcal": 84.5
+                    }
+                  ],
                   "splits": []
                 }
                 """;
