@@ -1,9 +1,9 @@
 import { useEffect, useState } from 'react';
-import { getCourseSurveysApi } from '@/apis';
-import type { GetCourseSurveysResponse } from '@/apis';
+import { getCourseRegisterMetaApi } from '@/apis';
+import type { GetCourseRegisterMetaResponse } from '@/apis';
 
 export function useCourseSurveys(isOpen: boolean) {
-  const [surveyData, setSurveyData] = useState<GetCourseSurveysResponse | null>(null);
+  const [surveyData, setSurveyData] = useState<GetCourseRegisterMetaResponse | null>(null);
   const [isLoading, setIsLoading] = useState(false);
 
   // Drawer가 열릴 때마다 설문 선택지 조회
@@ -12,7 +12,7 @@ export function useCourseSurveys(isOpen: boolean) {
     async function load() {
       setIsLoading(true);
       try {
-        const res = await getCourseSurveysApi();
+        const res = await getCourseRegisterMetaApi();
         setSurveyData(res.data);
       } catch {
         setSurveyData(null);
