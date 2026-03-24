@@ -5,6 +5,7 @@ import com.querydsl.core.types.dsl.NumberExpression;
 import com.querydsl.jpa.impl.JPAQueryFactory;
 import kr.withrun.was.domain.user.entity.QUser;
 import kr.withrun.was.domain.user.entity.QUserCalendar;
+import kr.withrun.was.domain.user.entity.UserCalendar;
 import kr.withrun.was.domain.user.repository.query.dto.UserCalendarDailySummaryRow;
 import kr.withrun.was.domain.user.repository.query.dto.UserCalendarSummaryRow;
 import lombok.RequiredArgsConstructor;
@@ -12,12 +13,30 @@ import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 @RequiredArgsConstructor
 public class UserCalendarCustomRepositoryImpl implements UserCalendarCustomRepository {
 
     private final JPAQueryFactory queryFactory;
+
+    @Override
+    public Optional<UserCalendar> findByUserIdAndCalendarDateAndDeletedAtIsNull(Long userId, LocalDate calendarDate) {
+        QUser user = QUser.user;
+        QUserCalendar userCalendar = QUserCalendar.userCalendar;
+
+        return Optional.ofNullable(queryFactory
+                .selectFrom(userCalendar)
+                .join(userCalendar.user, user)
+                .where(
+                        user.id.eq(userId),
+                        user.deletedAt.isNull(),
+                        userCalendar.calendarDate.eq(calendarDate),
+                        userCalendar.deletedAt.isNull()
+                )
+                .fetchOne());
+    }
 
     @Override
     public UserCalendarSummaryRow findSummaryRow(Long userId) {
