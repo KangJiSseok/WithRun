@@ -45,20 +45,8 @@ public class RunningHealthSample extends BaseEntity {
     @Column(name = "heart_rate")
     private Short heartRate;
 
-    @Column(name = "speed_mps")
-    private Double speedMps;
-
-    @Column(name = "pace_sec_per_km")
-    private Integer paceSecPerKm;
-
-    @Column(name = "distance_m")
-    private Integer distanceM;
-
     @Column(name = "calories_kcal")
     private Double caloriesKcal;
-
-    @Column(name = "cadence_spm")
-    private Short cadenceSpm;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -81,22 +69,14 @@ public class RunningHealthSample extends BaseEntity {
             Long id,
             LocalDateTime sampledAt,
             Short heartRate,
-            Double speedMps,
-            Integer paceSecPerKm,
-            Integer distanceM,
             Double caloriesKcal,
-            Short cadenceSpm,
             RunningSession runningSession,
             User user
     ) {
         this.id = id;
         this.sampledAt = sampledAt;
         this.heartRate = heartRate;
-        this.speedMps = speedMps;
-        this.paceSecPerKm = paceSecPerKm;
-        this.distanceM = distanceM;
         this.caloriesKcal = caloriesKcal;
-        this.cadenceSpm = cadenceSpm;
         this.runningSession = runningSession;
         this.user = user;
     }
@@ -105,21 +85,13 @@ public class RunningHealthSample extends BaseEntity {
             User user,
             RunningSession runningSession,
             Short heartRate,
-            Double speedMps,
-            Integer paceSecPerKm,
-            Integer distanceM,
             Double caloriesKcal,
-            Short cadenceSpm,
             LocalDateTime sampledAt
     ) {
         return RunningHealthSample.builder()
                 .sampledAt(sampledAt)
                 .heartRate(heartRate)
-                .speedMps(speedMps)
-                .paceSecPerKm(paceSecPerKm)
-                .distanceM(distanceM)
                 .caloriesKcal(caloriesKcal)
-                .cadenceSpm(cadenceSpm)
                 .runningSession(runningSession)
                 .user(user)
                 .build();

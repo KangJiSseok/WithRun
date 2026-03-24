@@ -386,6 +386,10 @@ public class RunningSessionService {
                         request.altitudeM(),
                         request.longitude(),
                         request.latitude(),
+                        request.speedMps(),
+                        request.paceSecPerKm(),
+                        request.distanceM(),
+                        request.cadenceSpm(),
                         request.sampledAt()
                 ))
                 .toList();
@@ -402,11 +406,7 @@ public class RunningSessionService {
                         user,
                         runningSession,
                         request.heartRate(),
-                        request.speedMps(),
-                        request.paceSecPerKm(),
-                        request.distanceM(),
                         request.caloriesKcal(),
-                        request.cadenceSpm(),
                         request.sampledAt()
                 ))
                 .toList();

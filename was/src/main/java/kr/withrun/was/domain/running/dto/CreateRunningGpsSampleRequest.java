@@ -27,6 +27,18 @@ public record CreateRunningGpsSampleRequest (
         @Schema(description = "방위각(도)", example = "182.0", requiredMode = Schema.RequiredMode.REQUIRED)
         Double bearingDeg,
 
+        @Schema(description = "순간 속도(m/s)", example = "3.45", nullable = true)
+        Double speedMps,
+
+        @Schema(description = "순간 페이스(초/km)", example = "289", nullable = true)
+        Integer paceSecPerKm,
+
+        @Schema(description = "누적 거리(m)", example = "1250", nullable = true)
+        Integer distanceM,
+
+        @Schema(description = "케이던스(spm)", example = "174", nullable = true)
+        Short cadenceSpm,
+
         @NotNull
         @Schema(description = "샘플 수집 시각", example = "2026-03-18T06:31:30", requiredMode = Schema.RequiredMode.REQUIRED)
         LocalDateTime sampledAt

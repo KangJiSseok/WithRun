@@ -12,19 +12,7 @@ public record CreateRunningHealthSampleRequest (
         @Schema(description = "심박수(bpm)", example = "152", nullable = true)
         Short heartRate,
 
-        @Schema(description = "순간 속도(m/s)", example = "3.45", nullable = true)
-        Double speedMps,
-
-        @Schema(description = "순간 페이스(초/km)", example = "289", nullable = true)
-        Integer paceSecPerKm,
-
-        @Schema(description = "누적 거리(m)", example = "1250", nullable = true)
-        Integer distanceM,
-        
         @Schema(description = "누적 소모 칼로리(kcal)", example = "84.5", nullable = true)
-        Double caloriesKcal,
-
-        @Schema(description = "케이던스(spm)", example = "174", nullable = true)
-        Short cadenceSpm
+        Double caloriesKcal
 ) {
 }
