@@ -24,6 +24,7 @@ import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.RunningGpsSampleResponse;
+import kr.withrun.was.domain.running.dto.RunningHealthSampleResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.entity.RunningGpsSample;
 import kr.withrun.was.domain.running.entity.RunningSession;
@@ -272,7 +273,11 @@ class RunningSessionServiceTest {
                 126.9780,
                 12.3,
                 3.2,
-                181.0
+                181.0,
+                null,
+                null,
+                null,
+                null
         );
         RunningGpsSample secondGpsSample = gpsSample(
                 ghostTarget,
@@ -282,7 +287,11 @@ class RunningSessionServiceTest {
                 126.9782,
                 12.8,
                 2.9,
-                184.0
+                184.0,
+                null,
+                null,
+                null,
+                null
         );
         stubUser(user);
         when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
@@ -482,6 +491,38 @@ class RunningSessionServiceTest {
         assertThat(runningSession.getIsCompleted()).isTrue();
     }
 
+    @DisplayName("상세 종료 응답은 주행 지표를 GPS 샘플에 담고 건강 샘플은 생체 정보만 유지한다")
+    @Test
+    void mapsRunningMetricsOntoGpsSamplesWhenCompletingRunningSession() {
+        RunningSession runningSession = runningSession(92L, 1L, false, STARTED_AT);
+        CompleteRunningSessionRequest request = validCompleteRequest(1L);
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(92L)).thenReturn(Optional.of(runningSession));
+        when(userRepository.findNotDeletedUser(1L)).thenReturn(Optional.of(user(1L)));
+        when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningHealthSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningSessionSplitRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(92L, request);
+
+        assertThat(response.gpsSamples()).containsExactly(new RunningGpsSampleResponse(
+                LocalDateTime.of(2026, 3, 18, 6, 31, 30),
+                37.5665,
+                126.9780,
+                21.5,
+                5.2,
+                182.0,
+                3.45,
+                289,
+                1250,
+                (short) 174
+        ));
+        assertThat(response.healthSamples()).containsExactly(new RunningHealthSampleResponse(
+                LocalDateTime.of(2026, 3, 18, 6, 31, 30),
+                (short) 152,
+                84.5
+        ));
+    }
+
     @DisplayName("상세 종료는 오늘 러닝을 캘린더에 기록한다")
     @Test
     void recordsRunInUserCalendarWhenCompletingDetailedRunningSession() {
@@ -531,7 +572,11 @@ class RunningSessionServiceTest {
                 126.978001,
                 15.5,
                 3.0,
-                180.0
+                180.0,
+                null,
+                null,
+                null,
+                null
         );
         RunningGpsSample secondGpsSample = gpsSample(
                 runningSession,
@@ -541,7 +586,11 @@ class RunningSessionServiceTest {
                 126.989001,
                 18.2,
                 2.6,
-                184.0
+                184.0,
+                null,
+                null,
+                null,
+                null
         );
         Coordinates expectedCoordinates = new Coordinates(List.of(
                 new GeoPoint(37.566501, 126.978001, 15.5),
@@ -616,7 +665,11 @@ class RunningSessionServiceTest {
                 126.977501,
                 11.8,
                 3.1,
-                175.0
+                175.0,
+                null,
+                null,
+                null,
+                null
         );
         RunningGpsSample secondGpsSample = gpsSample(
                 runningSession,
@@ -626,7 +679,11 @@ class RunningSessionServiceTest {
                 126.978001,
                 12.4,
                 2.8,
-                178.0
+                178.0,
+                null,
+                null,
+                null,
+                null
         );
         Coordinates expectedCoordinates = new Coordinates(List.of(
                 new GeoPoint(37.565901, 126.977501, 11.8),
@@ -696,7 +753,11 @@ class RunningSessionServiceTest {
                 126.978001,
                 13.1,
                 2.7,
-                179.0
+                179.0,
+                null,
+                null,
+                null,
+                null
         );
         RunningGpsSample secondGpsSample = gpsSample(
                 runningSession,
@@ -706,7 +767,11 @@ class RunningSessionServiceTest {
                 126.978601,
                 13.9,
                 2.5,
-                182.0
+                182.0,
+                null,
+                null,
+                null,
+                null
         );
         Coordinates expectedCoordinates = new Coordinates(List.of(
                 new GeoPoint(37.566501, 126.978001, 13.1),
@@ -927,16 +992,16 @@ class RunningSessionServiceTest {
                         21.5,
                         5.2,
                         182.0,
+                        3.45,
+                        289,
+                        1250,
+                        (short) 174,
                         LocalDateTime.of(2026, 3, 18, 6, 31, 30)
                 )),
                 List.of(new CreateRunningHealthSampleRequest(
                         LocalDateTime.of(2026, 3, 18, 6, 31, 30),
                         (short) 152,
-                        3.45,
-                        289,
-                        1250,
-                        84.5,
-                        (short) 174
+                        84.5
                 )),
                 List.of(new CreateRunningSessionSplitRequest(
                         userId,
@@ -972,7 +1037,11 @@ class RunningSessionServiceTest {
             Double longitude,
             Double altitudeM,
             Double accuracyM,
-            Double bearingDeg
+            Double bearingDeg,
+            Double speedMps,
+            Integer paceSecPerKm,
+            Integer distanceM,
+            Short cadenceSpm
     ) {
         return RunningGpsSample.create(
                 user(userId),
@@ -982,6 +1051,10 @@ class RunningSessionServiceTest {
                 altitudeM,
                 longitude,
                 latitude,
+                speedMps,
+                paceSecPerKm,
+                distanceM,
+                cadenceSpm,
                 sampledAt
         );
     }
