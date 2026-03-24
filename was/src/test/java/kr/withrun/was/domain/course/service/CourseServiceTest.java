@@ -4,6 +4,11 @@ import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
+import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
+import kr.withrun.was.domain.course.dto.NearbyGhostCoursesRequest;
+import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
+import kr.withrun.was.domain.course.dto.PreferredDistanceRange;
 import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
@@ -18,8 +23,11 @@ import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseReviewRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.CourseGhostLeaderboardRankRow;
+import kr.withrun.was.domain.course.repository.query.dto.NearbyCoursePageRow;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
+import kr.withrun.was.domain.course.type.NearbyGhostCourseSortBy;
 import kr.withrun.was.domain.course.util.CourseGhostLeaderboardCursorCodec;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.running.entity.RunningSession;
@@ -82,6 +90,7 @@ class CourseServiceTest {
                 courseReviewRepository,
                 courseGhostLeaderboardRepository
         );
+        setField(courseService, "CDN_URL", "https://cdn.test");
     }
 
     @DisplayName("코스 상세 조회는 좌표와 메타 정보를 함께 반환한다")
@@ -327,6 +336,170 @@ class CourseServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
+    }
+
+    @Test
+    void returnsNearbyCoursesWithOffsetPagination() {
+        NearbyCoursesRequest request = new NearbyCoursesRequest(
+                37.5665,
+                126.9780,
+                37.5700,
+                126.9820,
+                3000,
+                List.of(new PreferredDistanceRange(1, 5000)),
+                NearbyCourseSortBy.DISTANCE,
+                1,
+                2
+        );
+        List<NearbyCoursePageRow> rows = List.of(
+                new NearbyCoursePageRow(
+                        11L,
+                        "Course 11",
+                        CourseStatus.OFFICIAL,
+                        5000,
+                        120,
+                        37.5665,
+                        126.9780,
+                        37.5700,
+                        126.9820,
+                        "snapshot-11",
+                        Difficulty.EASY,
+                        210,
+                        150
+                ),
+                new NearbyCoursePageRow(
+                        12L,
+                        "Course 12",
+                        CourseStatus.OFFICIAL,
+                        4200,
+                        90,
+                        37.5670,
+                        126.9790,
+                        37.5710,
+                        126.9830,
+                        "snapshot-12",
+                        Difficulty.MEDIUM,
+                        260,
+                        180
+                )
+        );
+
+        when(courseRepository.findNearbyCoursePageRows(
+                request.preferredDistanceMs(),
+                request.targetLatitude(),
+                request.targetLongitude(),
+                request.latitude(),
+                request.longitude(),
+                request.sortBy(),
+                request.radiusM(),
+                request.page(),
+                request.size()
+        )).thenReturn(rows);
+        when(courseRepository.countNearbyCourses(
+                request.preferredDistanceMs(),
+                request.targetLatitude(),
+                request.targetLongitude(),
+                request.radiusM()
+        )).thenReturn(5L);
+        when(courseTypeMapRepository.findCourseTypesByCourseId(11L)).thenReturn(List.of(CourseType.RIVERSIDE));
+        when(courseTypeMapRepository.findCourseTypesByCourseId(12L)).thenReturn(List.of(CourseType.PARK));
+        when(courseLikeRepository.countByCourseIds(List.of(11L, 12L))).thenReturn(java.util.Map.of(11L, 4L, 12L, 6L));
+        when(courseBookmarkRepository.countByCourseIds(List.of(11L, 12L))).thenReturn(java.util.Map.of(11L, 2L, 12L, 1L));
+
+        NearbyCoursesResponse response = courseService.findNearbyCourses(request);
+
+        assertThat(response.page()).isEqualTo(1);
+        assertThat(response.size()).isEqualTo(2);
+        assertThat(response.totalElements()).isEqualTo(5L);
+        assertThat(response.totalPages()).isEqualTo(3);
+        assertThat(response.hasNext()).isTrue();
+        assertThat(response.items()).hasSize(2);
+        assertThat(response.items().getFirst().courseId()).isEqualTo(11L);
+        assertThat(response.items().getFirst().likeCount()).isEqualTo(4L);
+        assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(2L);
+        assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("https://cdn.test/snapshot-11");
+    }
+
+    @Test
+    void returnsNearbyGhostCoursesWithOffsetPagination() {
+        NearbyGhostCoursesRequest request = new NearbyGhostCoursesRequest(
+                37.5665,
+                126.9780,
+                37.5700,
+                126.9820,
+                3000,
+                List.of(new PreferredDistanceRange(1, 5000)),
+                NearbyGhostCourseSortBy.GHOST_RUN_COUNT,
+                0,
+                2
+        );
+        List<NearbyCoursePageRow> rows = List.of(
+                new NearbyCoursePageRow(
+                        21L,
+                        "Ghost Course 21",
+                        CourseStatus.OFFICIAL,
+                        5000,
+                        120,
+                        37.5665,
+                        126.9780,
+                        37.5700,
+                        126.9820,
+                        "snapshot-21",
+                        Difficulty.EASY,
+                        180,
+                        140
+                ),
+                new NearbyCoursePageRow(
+                        22L,
+                        "Ghost Course 22",
+                        CourseStatus.OFFICIAL,
+                        4200,
+                        90,
+                        37.5670,
+                        126.9790,
+                        37.5710,
+                        126.9830,
+                        "snapshot-22",
+                        Difficulty.MEDIUM,
+                        240,
+                        170
+                )
+        );
+
+        when(courseRepository.findNearbyGhostCoursePageRows(
+                request.preferredDistanceMs(),
+                request.targetLatitude(),
+                request.targetLongitude(),
+                request.latitude(),
+                request.longitude(),
+                request.sortBy(),
+                request.radiusM(),
+                request.page(),
+                request.size()
+        )).thenReturn(rows);
+        when(courseRepository.countNearbyGhostCourses(
+                request.preferredDistanceMs(),
+                request.targetLatitude(),
+                request.targetLongitude(),
+                request.radiusM()
+        )).thenReturn(2L);
+        when(courseTypeMapRepository.findCourseTypesByCourseId(21L)).thenReturn(List.of(CourseType.RIVERSIDE));
+        when(courseTypeMapRepository.findCourseTypesByCourseId(22L)).thenReturn(List.of(CourseType.PARK));
+        when(courseLikeRepository.countByCourseIds(List.of(21L, 22L))).thenReturn(java.util.Map.of(21L, 5L, 22L, 7L));
+        when(courseBookmarkRepository.countByCourseIds(List.of(21L, 22L))).thenReturn(java.util.Map.of(21L, 1L, 22L, 3L));
+
+        NearbyGhostCoursesResponse response = courseService.findNearbyGhostCourses(request);
+
+        assertThat(response.page()).isEqualTo(0);
+        assertThat(response.size()).isEqualTo(2);
+        assertThat(response.totalElements()).isEqualTo(2L);
+        assertThat(response.totalPages()).isEqualTo(1);
+        assertThat(response.hasNext()).isFalse();
+        assertThat(response.items()).hasSize(2);
+        assertThat(response.items().getFirst().courseId()).isEqualTo(21L);
+        assertThat(response.items().getFirst().likeCount()).isEqualTo(5L);
+        assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(1L);
+        assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("https://cdn.test/snapshot-21");
     }
 
     private Course course(Long id) {
