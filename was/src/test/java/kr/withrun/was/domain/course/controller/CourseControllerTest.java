@@ -305,6 +305,74 @@ class CourseControllerTest {
         then(courseService).should().findNearbyCourses(request, null);
     }
 
+    @DisplayName("추천 코스 조회 응답을 성공 응답 포맷으로 감싼다")
+    @Test
+    void wrapsRecommendedNearbyCoursesResponseInSuccessEnvelope() throws Exception {
+        NearbyCoursesRequest request = new NearbyCoursesRequest(
+                37.5665,
+                126.9780,
+                37.5700,
+                126.9820,
+                3000,
+                List.of(
+                        new PreferredDistanceRange(1, 3000),
+                        new PreferredDistanceRange(3001, 5000)
+                ),
+                NearbyCourseSortBy.DISTANCE,
+                1,
+                2
+        );
+        NearbyCoursesResponse response = new NearbyCoursesResponse(
+                List.of(new NearbyCourseItemResponse(
+                        99L,
+                        "Recommended Course",
+                        CourseStatus.OFFICIAL,
+                        8000,
+                        22,
+                        37.57,
+                        126.97,
+                        37.58,
+                        126.98,
+                        180,
+                        120,
+                        new NearbyCourseItemResponse.DifficultyOption("EASY", "쉬움"),
+                        List.of(new NearbyCourseItemResponse.CourseTypeOption("PARK", "공원")),
+                        true,
+                        12L,
+                        3L,
+                        "https://example.com/recommended.jpg"
+                )),
+                0,
+                1,
+                1L,
+                1,
+                false
+        );
+        given(courseService.findRecommendedNearbyCourses(request, null)).willReturn(response);
+
+        mockMvc.perform(get("/api/courses/nearby/recommended")
+                        .param("latitude", "37.5665")
+                        .param("longitude", "126.9780")
+                        .param("targetLatitude", "37.5700")
+                        .param("targetLongitude", "126.9820")
+                        .param("radiusM", "3000")
+                        .param("preferredDistanceMs[0].min", "1")
+                        .param("preferredDistanceMs[0].max", "3000")
+                        .param("preferredDistanceMs[1].min", "3001")
+                        .param("preferredDistanceMs[1].max", "5000")
+                        .param("sortBy", "DISTANCE")
+                        .param("page", "1")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items[0].courseId").value(99L))
+                .andExpect(jsonPath("$.data.items[0].isRecommended").value(true))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.hasNext").value(false));
+
+        then(courseService).should().findRecommendedNearbyCourses(request, null);
+    }
+
     @DisplayName("코스 상세 조회 응답을 성공 응답 포맷으로 감싼다")
     @ParameterizedTest(name = "courseId={0}")
     @ValueSource(longs = {1L, 25L})

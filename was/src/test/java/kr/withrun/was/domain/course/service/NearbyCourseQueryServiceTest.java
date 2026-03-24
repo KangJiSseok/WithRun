@@ -10,7 +10,7 @@ import kr.withrun.was.domain.course.repository.CourseLikeRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseReviewRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
-import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
+import kr.withrun.was.domain.course.repository.query.dto.NearbyRecommendationCandidateRow;
 import kr.withrun.was.domain.course.service.recommendation.CourseRecommendationScore;
 import kr.withrun.was.domain.course.service.recommendation.HybridRecommendationService;
 import kr.withrun.was.domain.course.type.CourseStatus;
@@ -74,19 +74,25 @@ class NearbyCourseQueryServiceTest {
                 hybridRecommendationService
         );
         setField(courseService, "CDN_URL", "https://cdn.test");
-        setField(courseService, "nearbyRecommendedCount", 1);
     }
 
     @Test
-    @DisplayName("후보 코스에 하이브리드 점수를 적용해 페이지 응답을 반환한다")
+    @DisplayName("후보 코스에 하이브리드 점수를 적용해 추천 코스 응답을 반환한다")
     void returnsPagedNearbyCoursesFromHybridScoredCandidates() {
         NearbyCoursesRequest request = request(3000, 0, 2);
-        List<NearbyCourseCandidateRow> rows = List.of(
+        List<NearbyRecommendationCandidateRow> rows = List.of(
                 candidateRow(10L, CourseType.RIVERSIDE, Difficulty.EASY, 37.5700, 126.9820, "snapshot-10"),
                 candidateRow(20L, CourseType.PARK, Difficulty.MEDIUM, 37.5710, 126.9830, "snapshot-20")
         );
 
-        when(courseRepository.findNearbyCourseCandidates(request.preferredDistanceMs())).thenReturn(rows);
+        when(courseRepository.findNearbyRecommendationCandidates(
+                request.preferredDistanceMs(),
+                request.targetLatitude(),
+                request.targetLongitude(),
+                request.latitude(),
+                request.longitude(),
+                request.radiusM()
+        )).thenReturn(rows);
         when(hybridRecommendationService.scoreNearbyCourses(
                 org.mockito.ArgumentMatchers.isNull(),
                 org.mockito.ArgumentMatchers.eq(request.radiusM()),
@@ -98,7 +104,7 @@ class NearbyCourseQueryServiceTest {
         when(courseLikeRepository.countByCourseIds(List.of(20L, 10L))).thenReturn(Map.of(10L, 3L, 20L, 7L));
         when(courseBookmarkRepository.countByCourseIds(List.of(20L, 10L))).thenReturn(Map.of(10L, 1L, 20L, 2L));
 
-        NearbyCoursesResponse response = courseService.findNearbyCourses(request, null);
+        NearbyCoursesResponse response = courseService.findRecommendedNearbyCourses(request, null);
 
         assertThat(response.page()).isEqualTo(0);
         assertThat(response.size()).isEqualTo(2);
@@ -111,18 +117,25 @@ class NearbyCourseQueryServiceTest {
         assertThat(response.items().getFirst().likeCount()).isEqualTo(7L);
         assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(2L);
         assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("https://cdn.test/snapshot-20");
-        assertThat(response.items().get(1).isRecommended()).isFalse();
+        assertThat(response.items().get(1).isRecommended()).isTrue();
     }
 
     @Test
-    @DisplayName("페이지 범위를 넘기면 빈 목록을 반환하고 hasNext 는 false다")
+    @DisplayName("추천 코스 조회는 요청 페이지와 무관하게 추천 목록만 반환한다")
     void returnsEmptyPageWhenPageOutOfRange() {
         NearbyCoursesRequest request = request(3000, 1, 3);
-        List<NearbyCourseCandidateRow> rows = List.of(
+        List<NearbyRecommendationCandidateRow> rows = List.of(
                 candidateRow(10L, CourseType.RIVERSIDE, Difficulty.EASY, 37.5700, 126.9820, "snapshot-10")
         );
 
-        when(courseRepository.findNearbyCourseCandidates(request.preferredDistanceMs())).thenReturn(rows);
+        when(courseRepository.findNearbyRecommendationCandidates(
+                request.preferredDistanceMs(),
+                request.targetLatitude(),
+                request.targetLongitude(),
+                request.latitude(),
+                request.longitude(),
+                request.radiusM()
+        )).thenReturn(rows);
         when(hybridRecommendationService.scoreNearbyCourses(
                 org.mockito.ArgumentMatchers.isNull(),
                 org.mockito.ArgumentMatchers.eq(request.radiusM()),
@@ -131,21 +144,30 @@ class NearbyCourseQueryServiceTest {
                 10L, new CourseRecommendationScore(10L, 0.5, 0.5, 0.5, 0.0, 0.5, 0.50)
         ));
 
-        NearbyCoursesResponse response = courseService.findNearbyCourses(request, null);
+        NearbyCoursesResponse response = courseService.findRecommendedNearbyCourses(request, null);
 
-        assertThat(response.items()).isEmpty();
+        assertThat(response.page()).isEqualTo(0);
+        assertThat(response.size()).isEqualTo(1);
+        assertThat(response.items()).hasSize(1);
         assertThat(response.hasNext()).isFalse();
     }
 
     @Test
-    @DisplayName("인기순 정렬 요청도 정상 처리한다")
+    @DisplayName("인기순 정렬 요청도 추천 코스 계산은 정상 처리한다")
     void supportsPopularSortForNearbyCourses() {
         NearbyCoursesRequest request = request(3000, NearbyCourseSortBy.POPULAR, 0, 2);
-        List<NearbyCourseCandidateRow> rows = List.of(
+        List<NearbyRecommendationCandidateRow> rows = List.of(
                 candidateRow(20L, CourseType.PARK, Difficulty.MEDIUM, 37.5700, 126.9820, "snapshot-20")
         );
 
-        when(courseRepository.findNearbyCourseCandidates(request.preferredDistanceMs())).thenReturn(rows);
+        when(courseRepository.findNearbyRecommendationCandidates(
+                request.preferredDistanceMs(),
+                request.targetLatitude(),
+                request.targetLongitude(),
+                request.latitude(),
+                request.longitude(),
+                request.radiusM()
+        )).thenReturn(rows);
         when(hybridRecommendationService.scoreNearbyCourses(
                 org.mockito.ArgumentMatchers.isNull(),
                 org.mockito.ArgumentMatchers.eq(request.radiusM()),
@@ -156,7 +178,7 @@ class NearbyCourseQueryServiceTest {
         when(courseLikeRepository.countByCourseIds(List.of(20L))).thenReturn(Map.of(20L, 7L));
         when(courseBookmarkRepository.countByCourseIds(List.of(20L))).thenReturn(Map.of(20L, 2L));
 
-        NearbyCoursesResponse response = courseService.findNearbyCourses(request, null);
+        NearbyCoursesResponse response = courseService.findRecommendedNearbyCourses(request, null);
 
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().getFirst().courseId()).isEqualTo(20L);
@@ -183,7 +205,7 @@ class NearbyCourseQueryServiceTest {
         );
     }
 
-    private NearbyCourseCandidateRow candidateRow(
+    private NearbyRecommendationCandidateRow candidateRow(
             Long courseId,
             CourseType courseType,
             Difficulty difficulty,
@@ -191,7 +213,7 @@ class NearbyCourseQueryServiceTest {
             double longitude,
             String snapshotImageUrl
     ) {
-        return new NearbyCourseCandidateRow(
+        return new NearbyRecommendationCandidateRow(
                 courseId,
                 "Course " + courseId,
                 CourseStatus.OFFICIAL,
@@ -208,7 +230,9 @@ class NearbyCourseQueryServiceTest {
                         List.of(0.0, 0.0)
                 ),
                 difficulty,
-                courseType
+                courseType,
+                250,
+                120
         );
     }
 

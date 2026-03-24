@@ -5,7 +5,7 @@ import kr.withrun.was.domain.course.dto.PreferredDistanceRange;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseDifficulty;
 import kr.withrun.was.domain.course.entity.CourseTypeMap;
-import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
+import kr.withrun.was.domain.course.repository.query.dto.NearbyRecommendationCandidateRow;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
@@ -81,10 +81,10 @@ class CourseRepositoryRowTest {
         entityManager.flush();
         entityManager.clear();
 
-        List<NearbyCourseCandidateRow> results = courseRepository.findNearbyCourseCandidates();
+        List<NearbyRecommendationCandidateRow> results = findNearbyRecommendationCandidates(null);
 
         assertThat(results).hasSize(1);
-        NearbyCourseCandidateRow row = results.getFirst();
+        NearbyRecommendationCandidateRow row = results.getFirst();
         assertThat(row.courseId()).isEqualTo(course.getId());
         assertThat(row.coordinates()).isEqualTo(coordinates);
         assertThat(row.difficulty()).isEqualTo(Difficulty.MEDIUM);
@@ -126,10 +126,10 @@ class CourseRepositoryRowTest {
         );
         entityManager.clear();
 
-        List<NearbyCourseCandidateRow> results = courseRepository.findNearbyCourseCandidates();
+        List<NearbyRecommendationCandidateRow> results = findNearbyRecommendationCandidates(null);
 
         assertThat(results).hasSize(1);
-        NearbyCourseCandidateRow row = results.getFirst();
+        NearbyRecommendationCandidateRow row = results.getFirst();
         assertThat(row.coordinates()).isEqualTo(new Coordinates(
                 List.of(
                         new GeoPoint(37.5665, 126.9780, 12.0),
@@ -148,11 +148,11 @@ class CourseRepositoryRowTest {
         persistCourse("Outside Course", 5201, CourseStatus.OFFICIAL, createdAt);
         Course communityCourse = persistCourse("Community Course", 5000, CourseStatus.COMMUNITY, createdAt);
 
-        List<NearbyCourseCandidateRow> results =
-                courseRepository.findNearbyCourseCandidates(List.of(new PreferredDistanceRange(4800, 5200)));
+        List<NearbyRecommendationCandidateRow> results =
+                findNearbyRecommendationCandidates(List.of(new PreferredDistanceRange(4800, 5200)));
 
         assertThat(results)
-                .extracting(NearbyCourseCandidateRow::courseId)
+                .extracting(NearbyRecommendationCandidateRow::courseId)
                 .containsExactlyInAnyOrder(matchedCourse.getId(), lowerBoundaryCourse.getId(), communityCourse.getId());
     }
 
@@ -165,15 +165,28 @@ class CourseRepositoryRowTest {
         Course longCourse = persistCourse("Long Course", 9800, CourseStatus.OFFICIAL, createdAt);
         persistCourse("Unmatched Course", 7000, CourseStatus.OFFICIAL, createdAt);
 
-        List<NearbyCourseCandidateRow> results =
-                courseRepository.findNearbyCourseCandidates(List.of(
+        List<NearbyRecommendationCandidateRow> results =
+                findNearbyRecommendationCandidates(List.of(
                         new PreferredDistanceRange(2800, 3200),
                         new PreferredDistanceRange(9600, 10000)
                 ));
 
         assertThat(results)
-                .extracting(NearbyCourseCandidateRow::courseId)
+                .extracting(NearbyRecommendationCandidateRow::courseId)
                 .containsExactlyInAnyOrder(shortCourse.getId(), longCourse.getId());
+    }
+
+    private List<NearbyRecommendationCandidateRow> findNearbyRecommendationCandidates(
+            List<PreferredDistanceRange> preferredDistanceMs
+    ) {
+        return courseRepository.findNearbyRecommendationCandidates(
+                preferredDistanceMs,
+                37.5665,
+                126.9780,
+                37.5665,
+                126.9780,
+                3000
+        );
     }
 
     private Course persistCourse(
