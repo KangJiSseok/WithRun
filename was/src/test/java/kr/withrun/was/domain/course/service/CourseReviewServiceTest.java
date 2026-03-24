@@ -54,6 +54,9 @@ class CourseReviewServiceTest {
     @Mock
     private UserRepository userRepository;
 
+    @Mock
+    private CourseSignalService courseSignalService;
+
     @InjectMocks
     private CourseReviewService courseReviewService;
 

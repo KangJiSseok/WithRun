@@ -14,8 +14,8 @@ class NearbyCourseCursorCodecTest {
     @DisplayName("같은 입력은 항상 같은 값으로 인코딩한다")
     @Test
     void encodesDeterministicallyForSameInput() {
-        String first = NearbyCourseCursorCodec.encode(123, 456L);
-        String second = NearbyCourseCursorCodec.encode(123, 456L);
+        String first = NearbyCourseCursorCodec.encode(0.123456, 123, 456L);
+        String second = NearbyCourseCursorCodec.encode(0.123456, 123, 456L);
 
         assertThat(first).isEqualTo(second);
     }
@@ -23,10 +23,11 @@ class NearbyCourseCursorCodecTest {
     @DisplayName("인코딩한 커서를 원래 키 값으로 디코딩한다")
     @Test
     void decodesEncodedCursorBackToOriginalKeys() {
-        String cursor = NearbyCourseCursorCodec.encode(321, 654L);
+        String cursor = NearbyCourseCursorCodec.encode(0.321, 321, 654L);
 
         NearbyCourseCursorCodec.CursorPayload payload = NearbyCourseCursorCodec.decode(cursor);
 
+        assertThat(payload.lastScaledScore()).isEqualTo(NearbyCourseCursorCodec.scaleScore(0.321));
         assertThat(payload.lastDistanceFromUserM()).isEqualTo(321);
         assertThat(payload.lastCourseId()).isEqualTo(654L);
     }

@@ -8,6 +8,7 @@ import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
+import kr.withrun.was.domain.course.service.CourseSignalService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
@@ -77,6 +78,7 @@ public class RunningSessionService {
     private final RunningSessionSplitRepository runningSessionSplitRepository;
     private final GhostRunningResultRepository ghostRunningResultRepository;
     private final GhostRunningResultService ghostRunningResultService;
+    private final CourseSignalService courseSignalService;
 
     @Transactional
     public CreateRunningSessionResponse createRunningSession(CreateRunningSessionRequest request) {
@@ -115,6 +117,7 @@ public class RunningSessionService {
                 request.avgPaceSecPerKm(),
                 request.elevationGainM()
         );
+        recordCourseCompletionIfEligible(runningSession, request.userId());
 
         return UpdateRunningSessionResponse.from(runningSession);
     }
@@ -136,6 +139,7 @@ public class RunningSessionService {
                 request.avgPaceSecPerKm(),
                 request.elevationGainM()
         );
+        recordCourseCompletionIfEligible(runningSession, user);
 
         List<RunningGpsSample> savedGpsSamples = saveGpsSamples(runningSession, user, request.gpsSamples());
         List<RunningHealthSample> savedHealthSamples = saveHealthSamples(runningSession, user, request.healthSamples());
@@ -197,6 +201,7 @@ public class RunningSessionService {
         courseTypeMapRepository.saveAll(courseTypes.stream()
                 .map(courseType -> CourseTypeMap.create(course, courseType))
                 .toList());
+        courseSignalService.upsertCourseFeature(course, difficulty, courseTypes);
 
         return RegisterRunningSessionCourseResponse.from(
                 course,
@@ -558,5 +563,24 @@ public class RunningSessionService {
 
     private String toCursor(PastRunningSessionHistoryRow row) {
         return PastRunningSessionCursorCodec.encode(row.startedAt(), row.runningSessionId());
+    }
+
+    private void recordCourseCompletionIfEligible(RunningSession runningSession, Long userId) {
+        if (runningSession.getCourse() == null || userId == null) {
+            return;
+        }
+        User user = getUser(userId);
+        recordCourseCompletionIfEligible(runningSession, user);
+    }
+
+    private void recordCourseCompletionIfEligible(RunningSession runningSession, User user) {
+        if (runningSession.getCourse() == null || user == null) {
+            return;
+        }
+        courseSignalService.recordCompletion(
+                runningSession.getCourse(),
+                user,
+                runningSession.getId()
+        );
     }
 }

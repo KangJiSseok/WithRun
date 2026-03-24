@@ -46,11 +46,14 @@ class CourseLikeServiceTest {
     @Mock
     private User user;
 
+    @Mock
+    private CourseSignalService courseSignalService;
+
     private CourseLikeService courseLikeService;
 
     @BeforeEach
     void setUp() {
-        courseLikeService = new CourseLikeService(courseRepository, courseLikeRepository, userRepository);
+        courseLikeService = new CourseLikeService(courseRepository, courseLikeRepository, userRepository, courseSignalService);
     }
 
     @DisplayName("서비스는 클래스 기본 readOnly와 쓰기 메서드 트랜잭션을 함께 사용한다")

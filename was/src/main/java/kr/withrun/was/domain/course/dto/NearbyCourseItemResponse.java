@@ -52,6 +52,9 @@ public record NearbyCourseItemResponse(
         )
         List<CourseTypeOption> courseTypes,
 
+        @Schema(description = "하이브리드 추천 코스 여부", example = "true")
+        boolean isRecommended,
+
         @Schema(description = "코스 좋아요 수", example = "128")
         Long likeCount,
 
@@ -78,7 +81,7 @@ public record NearbyCourseItemResponse(
             String snapshotImageUrl
     ) {
         this(courseId, title, status, distanceM, elevationGainM, startLatitude, startLongitude, endLatitude, endLongitude,
-                distanceFromTargetM, distanceFromUserM, difficulty, courseTypes, 0L, 0L, snapshotImageUrl);
+                distanceFromTargetM, distanceFromUserM, difficulty, courseTypes, false, 0L, 0L, snapshotImageUrl);
     }
 
     @Schema(name = "NearbyCourseDifficultyOption", description = "주변 코스 응답의 난이도 항목")

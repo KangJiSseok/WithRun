@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
@@ -24,6 +25,7 @@ import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -105,9 +107,33 @@ public class CourseController {
     })
     @GetMapping("/nearby")
     public ResponseEntity<ApiResponse<NearbyCoursesResponse>> findNearbyCourses(
-            @Valid @ParameterObject @ModelAttribute NearbyCoursesRequest request
+            @Valid @ParameterObject @ModelAttribute NearbyCoursesRequest request, @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return ApiResponse.successEntity(courseService.findNearbyCourses(request));
+        return ApiResponse.successEntity(courseService.findNearbyCourses(request, user));
+    }
+
+    @Operation(
+            summary = "추천 코스 조회",
+            description = "동일 요청 조건으로 추천 코스 3개를 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "추천 코스 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.RecommendedNearbyCoursesApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 추천 코스 조회 요청",
+                    content = @Content(schema = @Schema(implementation = ValidationErrorApiResponseDoc.class))
+            )
+    })
+    @GetMapping("/nearby/recommended")
+    public ResponseEntity<ApiResponse<NearbyCoursesResponse>> findRecommendedNearbyCourses(
+            @Valid @ParameterObject @ModelAttribute NearbyCoursesRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return ApiResponse.successEntity(courseService.findRecommendedNearbyCourses(request, user));
     }
 
     @Operation(

@@ -195,6 +195,7 @@ class NearbyCoursesRequestTest {
                         "distanceFromUserM",
                         "difficulty",
                         "courseTypes",
+                        "isRecommended",
                         "likeCount",
                         "bookmarkCount",
                         "snapshotImageUrl"

@@ -78,7 +78,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()))
                 .andExpect(jsonPath("$.data[0].field").value(missingParameter));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("위도나 경도가 범위를 벗어나면 잘못된 입력 응답을 반환한다")
@@ -100,7 +100,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()))
                 .andExpect(jsonPath("$.data[0].field").value(parameterName));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("반경이 허용 범위를 벗어나면 잘못된 반경 응답을 반환한다")
@@ -121,7 +121,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_RADIUS.getCode()));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("반경이 정수가 아니면 잘못된 반경 응답을 반환한다")
@@ -142,7 +142,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_RADIUS.getCode()));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("목표 거리가 유효하지 않으면 잘못된 목표 거리 응답을 반환한다")
@@ -163,7 +163,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("목표 거리가 정수가 아니면 잘못된 목표 거리 응답을 반환한다")
@@ -184,7 +184,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("페이지 크기가 유효하지 않으면 잘못된 입력 응답을 반환한다")
@@ -205,7 +205,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("서비스가 커서를 거부하면 잘못된 커서 응답을 반환한다")
@@ -226,7 +226,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
 
-        then(courseService).should(never()).findNearbyCourses(any());
+        then(courseService).should(never()).findNearbyCourses(any(), any());
     }
 
     @DisplayName("주변 코스 응답을 성공 응답 포맷으로 감싼다")
@@ -273,7 +273,7 @@ class CourseControllerTest {
                 2,
                 true
         );
-        given(courseService.findNearbyCourses(request)).willReturn(response);
+        given(courseService.findNearbyCourses(request, null)).willReturn(response);
 
         mockMvc.perform(nearbyCoursesRequest(
                         "37.5665",
@@ -302,7 +302,75 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.totalPages").value(2))
                 .andExpect(jsonPath("$.data.hasNext").value(true));
 
-        then(courseService).should().findNearbyCourses(request);
+        then(courseService).should().findNearbyCourses(request, null);
+    }
+
+    @DisplayName("추천 코스 조회 응답을 성공 응답 포맷으로 감싼다")
+    @Test
+    void wrapsRecommendedNearbyCoursesResponseInSuccessEnvelope() throws Exception {
+        NearbyCoursesRequest request = new NearbyCoursesRequest(
+                37.5665,
+                126.9780,
+                37.5700,
+                126.9820,
+                3000,
+                List.of(
+                        new PreferredDistanceRange(1, 3000),
+                        new PreferredDistanceRange(3001, 5000)
+                ),
+                NearbyCourseSortBy.DISTANCE,
+                1,
+                2
+        );
+        NearbyCoursesResponse response = new NearbyCoursesResponse(
+                List.of(new NearbyCourseItemResponse(
+                        99L,
+                        "Recommended Course",
+                        CourseStatus.OFFICIAL,
+                        8000,
+                        22,
+                        37.57,
+                        126.97,
+                        37.58,
+                        126.98,
+                        180,
+                        120,
+                        new NearbyCourseItemResponse.DifficultyOption("EASY", "쉬움"),
+                        List.of(new NearbyCourseItemResponse.CourseTypeOption("PARK", "공원")),
+                        true,
+                        12L,
+                        3L,
+                        "https://example.com/recommended.jpg"
+                )),
+                0,
+                1,
+                1L,
+                1,
+                false
+        );
+        given(courseService.findRecommendedNearbyCourses(request, null)).willReturn(response);
+
+        mockMvc.perform(get("/api/courses/nearby/recommended")
+                        .param("latitude", "37.5665")
+                        .param("longitude", "126.9780")
+                        .param("targetLatitude", "37.5700")
+                        .param("targetLongitude", "126.9820")
+                        .param("radiusM", "3000")
+                        .param("preferredDistanceMs[0].min", "1")
+                        .param("preferredDistanceMs[0].max", "3000")
+                        .param("preferredDistanceMs[1].min", "3001")
+                        .param("preferredDistanceMs[1].max", "5000")
+                        .param("sortBy", "DISTANCE")
+                        .param("page", "1")
+                        .param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.items[0].courseId").value(99L))
+                .andExpect(jsonPath("$.data.items[0].isRecommended").value(true))
+                .andExpect(jsonPath("$.data.totalElements").value(1))
+                .andExpect(jsonPath("$.data.hasNext").value(false));
+
+        then(courseService).should().findRecommendedNearbyCourses(request, null);
     }
 
     @DisplayName("코스 상세 조회 응답을 성공 응답 포맷으로 감싼다")
@@ -461,7 +529,7 @@ class CourseControllerTest {
                 Integer.parseInt(pageSize)
         );
         NearbyCoursesResponse response = new NearbyCoursesResponse(List.of(), 0, Integer.parseInt(pageSize), 0L, 0, false);
-        given(courseService.findNearbyCourses(request)).willReturn(response);
+        given(courseService.findNearbyCourses(request, null)).willReturn(response);
 
         mockMvc.perform(nearbyCoursesRequest(
                         "37.5665",
@@ -476,7 +544,7 @@ class CourseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        then(courseService).should().findNearbyCourses(request);
+        then(courseService).should().findNearbyCourses(request, null);
     }
 
     @Test
@@ -496,7 +564,7 @@ class CourseControllerTest {
                 3
         );
         NearbyCoursesResponse response = new NearbyCoursesResponse(List.of(), 0, 3, 0L, 0, false);
-        given(courseService.findNearbyCourses(request)).willReturn(response);
+        given(courseService.findNearbyCourses(request, null)).willReturn(response);
 
         mockMvc.perform(nearbyCoursesRequest(
                         "37.5665",
@@ -512,7 +580,7 @@ class CourseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        then(courseService).should().findNearbyCourses(request);
+        then(courseService).should().findNearbyCourses(request, null);
     }
 
     @DisplayName("코스 리더보드 조회 응답을 성공 응답 포맷으로 감싼다")
@@ -754,6 +822,7 @@ class CourseControllerTest {
                                 new NearbyCourseItemResponse.CourseTypeOption("RIVERSIDE", "강변"),
                                 new NearbyCourseItemResponse.CourseTypeOption("PARK", "공원")
                         ),
+                        false,
                         14L,
                         8L,
                         "https://example.com/course.jpg"
