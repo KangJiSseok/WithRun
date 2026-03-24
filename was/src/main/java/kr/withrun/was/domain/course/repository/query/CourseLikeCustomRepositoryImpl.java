@@ -5,6 +5,10 @@ import kr.withrun.was.domain.course.entity.QCourseLike;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
+import java.util.List;
+import java.util.Map;
+import java.util.stream.Collectors;
+
 @Repository
 @RequiredArgsConstructor
 public class CourseLikeCustomRepositoryImpl implements CourseLikeCustomRepository {
@@ -22,5 +26,24 @@ public class CourseLikeCustomRepositoryImpl implements CourseLikeCustomRepositor
                 .fetchOne();
 
         return result == null ? 0L : result;
+    }
+
+    @Override
+    public Map<Long, Long> countByCourseIds(List<Long> courseIds) {
+        if (courseIds.isEmpty()) return Map.of();
+
+        QCourseLike courseLike = QCourseLike.courseLike;
+
+        return queryFactory
+                .select(courseLike.course.id, courseLike.count())
+                .from(courseLike)
+                .where(courseLike.course.id.in(courseIds))
+                .groupBy(courseLike.course.id)
+                .fetch()
+                .stream()
+                .collect(Collectors.toMap(
+                        tuple -> tuple.get(courseLike.course.id),
+                        tuple -> tuple.get(courseLike.count())
+                ));
     }
 }

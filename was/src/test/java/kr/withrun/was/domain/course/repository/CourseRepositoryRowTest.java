@@ -81,7 +81,7 @@ class CourseRepositoryRowTest {
         entityManager.flush();
         entityManager.clear();
 
-        List<NearbyCourseCandidateRow> results = courseRepository.findOfficialNearbyCourseCandidates();
+        List<NearbyCourseCandidateRow> results = courseRepository.findNearbyCourseCandidates();
 
         assertThat(results).hasSize(1);
         NearbyCourseCandidateRow row = results.getFirst();
@@ -126,7 +126,7 @@ class CourseRepositoryRowTest {
         );
         entityManager.clear();
 
-        List<NearbyCourseCandidateRow> results = courseRepository.findOfficialNearbyCourseCandidates();
+        List<NearbyCourseCandidateRow> results = courseRepository.findNearbyCourseCandidates();
 
         assertThat(results).hasSize(1);
         NearbyCourseCandidateRow row = results.getFirst();
@@ -140,25 +140,25 @@ class CourseRepositoryRowTest {
 
     @DisplayName("선호 거리 목록과 오차 200m에 맞는 공식 코스 후보만 조회한다")
     @Test
-    void filtersOfficialNearbyCourseCandidatesByPreferredDistances() {
+    void filtersNearbyCourseCandidatesByPreferredDistances() {
         LocalDateTime createdAt = LocalDateTime.of(2026, 3, 11, 3, 0);
 
         Course matchedCourse = persistCourse("Matched Course", 5000, CourseStatus.OFFICIAL, createdAt);
         Course lowerBoundaryCourse = persistCourse("Lower Boundary Course", 4800, CourseStatus.OFFICIAL, createdAt);
         persistCourse("Outside Course", 5201, CourseStatus.OFFICIAL, createdAt);
-        persistCourse("Wrong Status Course", 5000, CourseStatus.COMMUNITY, createdAt);
+        Course communityCourse = persistCourse("Community Course", 5000, CourseStatus.COMMUNITY, createdAt);
 
         List<NearbyCourseCandidateRow> results =
-                courseRepository.findOfficialNearbyCourseCandidates(List.of(new PreferredDistanceRange(4800, 5200)));
+                courseRepository.findNearbyCourseCandidates(List.of(new PreferredDistanceRange(4800, 5200)));
 
         assertThat(results)
                 .extracting(NearbyCourseCandidateRow::courseId)
-                .containsExactlyInAnyOrder(matchedCourse.getId(), lowerBoundaryCourse.getId());
+                .containsExactlyInAnyOrder(matchedCourse.getId(), lowerBoundaryCourse.getId(), communityCourse.getId());
     }
 
     @DisplayName("복수 선호 거리 중 하나에 맞으면 공식 코스 후보로 조회한다")
     @Test
-    void filtersOfficialNearbyCourseCandidatesByAnyPreferredDistance() {
+    void filtersNearbyCourseCandidatesByAnyPreferredDistance() {
         LocalDateTime createdAt = LocalDateTime.of(2026, 3, 11, 4, 0);
 
         Course shortCourse = persistCourse("Short Course", 3000, CourseStatus.OFFICIAL, createdAt);
@@ -166,7 +166,7 @@ class CourseRepositoryRowTest {
         persistCourse("Unmatched Course", 7000, CourseStatus.OFFICIAL, createdAt);
 
         List<NearbyCourseCandidateRow> results =
-                courseRepository.findOfficialNearbyCourseCandidates(List.of(
+                courseRepository.findNearbyCourseCandidates(List.of(
                         new PreferredDistanceRange(2800, 3200),
                         new PreferredDistanceRange(9600, 10000)
                 ));

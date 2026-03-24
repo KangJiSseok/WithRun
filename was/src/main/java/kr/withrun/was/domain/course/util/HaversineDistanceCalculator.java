@@ -50,6 +50,21 @@ public final class HaversineDistanceCalculator {
         return OptionalInt.of(minimumDistance);
     }
 
+    public static OptionalInt calculateDistanceMeters(
+            Double startLatitude,
+            Double startLongitude,
+            double targetLatitude,
+            double targetLongitude
+    ) {
+        if (startLatitude == null || startLongitude == null) {
+            return OptionalInt.empty();
+        }
+
+        return OptionalInt.of(roundToNearestMeter(
+                haversineDistanceMeters(targetLatitude, targetLongitude, startLatitude, startLongitude)
+        ));
+    }
+
     private static double haversineDistanceMeters(
             double startLatitude,
             double startLongitude,
