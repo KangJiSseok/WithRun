@@ -1,5 +1,5 @@
 import { Pause, Play, Square } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { NormalRunMap } from './NormalRunMap';
@@ -43,8 +43,15 @@ type NormalRunSessionScreenProps = {
 
 export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenProps) {
   const navigate = useNavigate();
-  const { time, distance, pace, calories, isPaused, togglePause, getCollectedData } =
-    useNormalRunning();
+
+  // forceStopRef: handleStopRunning ↔ useNormalRunning 순환 의존 해소
+  const forceStopRef = useRef<() => void>(() => {});
+
+  const { time, distance, pace, calories, isPaused, togglePause, getCollectedData, isDeviating, deviationSec } =
+    useNormalRunning({
+      courseCoordinates: courseDetail.coordinates,
+      onForceStop: useCallback(() => forceStopRef.current(), []),
+    });
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
 
   const session = useNormalRunSessionStore((s) => s.session);
@@ -79,7 +86,7 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
     };
   }, []);
 
-  const handleStopRunning = async () => {
+  const handleStopRunning = useCallback(async () => {
     if (isEnding || !session) return;
     setIsEnding(true);
     const data = getCollectedData();
@@ -99,7 +106,10 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
     } finally {
       setIsEnding(false);
     }
-  };
+  }, [isEnding, session, getCollectedData, gpsLocation, setResult, clearAll, navigate]);
+
+  // forceStopRef를 항상 최신 handleStopRunning으로 유지
+  forceStopRef.current = handleStopRunning;
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -117,6 +127,15 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
           sub={<span className="text-primary">🔥</span>}
         />
       </div>
+
+      {/* 코스 이탈 경고 배너 */}
+      {isDeviating && !isPaused && (
+        <div className="absolute top-28 left-0 right-0 z-sticky flex justify-center">
+          <div className="rounded-full bg-destructive px-4 py-2 text-white body-b">
+            코스 이탈 중 · {deviationSec}s / 10s
+          </div>
+        </div>
+      )}
 
       {/* 하단 그라데이션 + 컨트롤 */}
       <div className="absolute bottom-0 left-0 right-0 z-sticky">

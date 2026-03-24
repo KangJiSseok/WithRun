@@ -16,15 +16,31 @@ import { useRunningTimer } from '@/shared/hooks/Running/useRunningTimer';
 import { useRunningGps } from '@/shared/hooks/Running/useRunningGps';
 import { useRunningHealth } from '@/shared/hooks/Running/useRunningHealth';
 import { useRunningSplits } from '@/shared/hooks/Running/useRunningSplits';
+import { useNormalRunCourseDeviation } from './useNormalRunCourseDeviation';
+import type { CoordinatePoint } from '@/apis/course';
 
-export function useNormalRunning() {
+interface UseNormalRunningParams {
+  courseCoordinates: CoordinatePoint[];
+  onForceStop: () => void;
+}
+
+export function useNormalRunning({ courseCoordinates, onForceStop }: UseNormalRunningParams) {
   const { durationSec, formattedTime, isPaused, togglePause } = useRunningTimer();
 
+  const { isDeviating, deviationSec } = useNormalRunCourseDeviation({
+    courseCoordinates,
+    isPaused,
+    onForceStop,
+  });
+
+  // 이탈 중에도 데이터 수집 중단 (코스 데이터 오염 방지)
+  const shouldPauseCollection = isPaused || isDeviating;
+
   const { haversineDistanceKm, elevationGainMRef, gpsSamplesRef } =
-    useRunningGps({ isPaused });
+    useRunningGps({ isPaused: shouldPauseCollection });
 
   const { isWatchConnected, watchHealthData, healthSamplesRef, currentKmHeartRatesRef } =
-    useRunningHealth({ isPaused });
+    useRunningHealth({ isPaused: shouldPauseCollection });
 
   // 표시값 계산용: GPS Doppler 속도·케이던스 (데이터 수집은 GPS 훅에서 담당)
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
@@ -38,7 +54,7 @@ export function useNormalRunning() {
   const { splitsRef } = useRunningSplits({
     distanceKm,
     durationSec,
-    isPaused,
+    isPaused: shouldPauseCollection,
     elevationGainMRef,
     currentKmHeartRatesRef,
   });
@@ -95,5 +111,7 @@ export function useNormalRunning() {
     isPaused,
     togglePause,
     getCollectedData,
+    isDeviating,
+    deviationSec,
   };
 }
