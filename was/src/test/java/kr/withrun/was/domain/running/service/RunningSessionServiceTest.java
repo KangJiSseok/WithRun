@@ -489,6 +489,24 @@ class RunningSessionServiceTest {
         assertThat(response.endedAt()).isBetween(beforeComplete, afterComplete);
         assertThat(runningSession.getEndedAt()).isEqualTo(response.endedAt());
         assertThat(runningSession.getIsCompleted()).isTrue();
+        assertThat(response.isCompleted()).isTrue();
+    }
+
+    @DisplayName("상세 조회 응답은 러닝 세션 완료 여부를 포함한다")
+    @Test
+    void includesCompletionStateInRunningSessionDetailResponse() {
+        RunningSession runningSession = runningSession(93L, 1L, true, STARTED_AT);
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(93L)).thenReturn(Optional.of(runningSession));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(93L)).thenReturn(List.of());
+        when(runningHealthSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(93L)).thenReturn(List.of());
+        when(runningSessionSplitRepository.findByRunningSessionIdOrderBySplitIndexAsc(93L)).thenReturn(List.of());
+        when(ghostRunningResultRepository.findByRunningSessionIdAndDeletedAtIsNull(93L)).thenReturn(Optional.empty());
+        setField(runningSession, "snapshotImageUrl", "snapshots/93.png");
+
+        RunningSessionDetailResponse response = runningSessionService.findRunningSessionDetail(93L, 1L);
+
+        assertThat(response.isCompleted()).isTrue();
+        assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.withrun.app/snapshots/93.png");
     }
 
     @DisplayName("상세 종료 응답은 주행 지표를 GPS 샘플에 담고 건강 샘플은 생체 정보만 유지한다")

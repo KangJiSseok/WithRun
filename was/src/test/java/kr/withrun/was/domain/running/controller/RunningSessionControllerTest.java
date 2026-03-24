@@ -262,6 +262,7 @@ class RunningSessionControllerTest {
     void wrapsCompleteRunningSessionResponseInSuccessEnvelope() throws Exception {
         long runningSessionId = 901L;
         RunningSessionDetailResponse response = new RunningSessionDetailResponse(
+                true,
                 runningSessionId,
                 1L,
                 null,
@@ -312,6 +313,7 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.avgSpeedMps").value(11.0))
                 .andExpect(jsonPath("$.data.durationSec").value(2520))
                 .andExpect(jsonPath("$.data.avgPaceSecPerKm").value(2))
+                .andExpect(jsonPath("$.data.isCompleted").value(true))
                 .andExpect(jsonPath("$.data.elevationGainM").value(3))
                 .andExpect(jsonPath("$.data.gpsSamples[0].sampledAt").value("2026-03-12T06:31:30"))
                 .andExpect(jsonPath("$.data.gpsSamples[0].speedMps").value(3.45))
@@ -370,6 +372,45 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.RUNNING_SESSION_NOT_FOUND.getCode()));
 
         then(runningSessionService).should().completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class));
+    }
+
+    @DisplayName("러닝 세션 상세 조회 응답은 완료 여부를 포함한다")
+    @Test
+    void wrapsRunningSessionDetailResponseWithCompletionState() throws Exception {
+        long runningSessionId = 777L;
+        RunningSessionDetailResponse response = new RunningSessionDetailResponse(
+                true,
+                runningSessionId,
+                1L,
+                "https://cdn.withrun.app/snapshots/777.png",
+                LocalDateTime.parse("2026-03-12T06:30:00"),
+                LocalDateTime.parse("2026-03-12T07:12:00"),
+                10023,
+                2520,
+                11.0,
+                2,
+                642,
+                3,
+                java.util.List.of(),
+                java.util.List.of(),
+                java.util.List.of(),
+                null
+        );
+        given(runningSessionService.findRunningSessionDetail(runningSessionId, 1L)).willReturn(response);
+
+        mockMvc.perform(get("/api/running-sessions/{runningSessionId}/detail", runningSessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                  "userId": 1
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.runningSessionId").value(runningSessionId))
+                .andExpect(jsonPath("$.data.isCompleted").value(true));
+
+        then(runningSessionService).should().findRunningSessionDetail(runningSessionId, 1L);
     }
 
     @DisplayName("유효하지 않은 종료 요청은 잘못된 입력 응답을 반환한다")
