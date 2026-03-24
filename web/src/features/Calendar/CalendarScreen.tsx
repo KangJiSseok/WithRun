@@ -17,12 +17,13 @@ export function CalendarScreen() {
   const {
     year,
     month,
-    data,
-    isLoading,
+    monthlyData,
+    isMonthlyLoading,
     summaryData,
+    isSummaryLoading,
     historyData,
     isHistoryLoading,
-    isLoadingMore,
+    isScrollLoading,
     loadMore,
     selectedDate,
     toggleDate,
@@ -40,10 +41,10 @@ export function CalendarScreen() {
   // - 달력 열림: "월별 요약" + monthly 데이터
   const summaryLabel = showCalendar ? '월별 요약' : '전체 요약';
   const summaryRunCount = showCalendar
-    ? (data?.monthlyRunCount ?? null)
+    ? (monthlyData?.monthlyRunCount ?? null)
     : (summaryData?.lifetimeRunCount ?? null);
   const summaryDistanceM = showCalendar
-    ? (data?.monthlyDistanceM ?? null)
+    ? (monthlyData?.monthlyDistanceM ?? null)
     : (summaryData?.lifetimeDistanceM ?? null);
 
   // 러닝 기록 리스트 제목
@@ -65,6 +66,7 @@ export function CalendarScreen() {
       <StreakCard
         currentStreakDays={summaryData?.currentStreakDays ?? null}
         longestStreakDays={summaryData?.longestStreakDays ?? null}
+        isLoading={isSummaryLoading}
       />
 
       {/* 요약 통계 (달력 상태에 따라 전체/월별 전환) */}
@@ -72,6 +74,7 @@ export function CalendarScreen() {
         label={summaryLabel}
         runCount={summaryRunCount}
         distanceM={summaryDistanceM}
+        isLoading={isSummaryLoading}
       />
 
       {/* 달력 보기/숨기기 토글 */}
@@ -110,7 +113,7 @@ export function CalendarScreen() {
             {/* API 호출 중: 로딩 텍스트, 아니면 캘린더 그리드 표시 */}
             {/* API 응답 전에 CalendarGrid를 그리면 activeDates가 빈 Set */}
             {/* 빈 캘린더가 잠깐 보이는 현상 방지 */}
-            {isLoading ? (
+            {isMonthlyLoading ? (
               <div className="flex justify-center py-8">
                 <span className="body-r text-[hsl(var(--text-secondary))]">로딩 중...</span>
               </div>
@@ -139,10 +142,10 @@ export function CalendarScreen() {
         title={historyTitle}
         items={historyData?.items ?? []}
         isLoading={isHistoryLoading}
-        // useCalendar에서 isLoadingMore, loadMore 받아
+        // useCalendar에서 isScrollLoading, loadMore 받아
         // RunningHisoryList에 전달
         hasMore={historyData?.hasMore ?? false}
-        isLoadingMore={isLoadingMore}
+        isScrollLoading={isScrollLoading}
         onLoadMore={loadMore}
       />
     </div>

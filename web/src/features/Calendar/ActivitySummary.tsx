@@ -5,6 +5,7 @@ interface ActivitySummaryProps {
   label: string;
   runCount: number | null;
   distanceM: number | null;
+  isLoading: boolean;
 }
 
 interface StatCardProps {
@@ -25,15 +26,15 @@ function StatCard({ value, unit, description }: StatCardProps) {
   );
 }
 
-export function ActivitySummary({ label, runCount, distanceM }: ActivitySummaryProps) {
-  const distanceKm = distanceM !== null ? (distanceM / 1000).toFixed(2) : '--';
+export function ActivitySummary({ label, runCount, distanceM, isLoading }: ActivitySummaryProps) {
+  const distanceKm = !isLoading && distanceM !== null ? (distanceM / 1000).toFixed(2) : '--';
 
   return (
     <div className="flex flex-col gap-[var(--space-2)]">
       <p className="body-b text-[hsl(var(--text-primary))]">{label}</p>
       <div className="flex gap-[var(--space-3)]">
         <StatCard
-          value={runCount !== null ? String(runCount) : '--'}
+          value={!isLoading && runCount !== null ? String(runCount) : '--'}
           unit="회"
           description="러닝 횟수"
         />

@@ -3,16 +3,17 @@
 interface StreakCardProps {
   currentStreakDays: number | null;
   longestStreakDays: number | null;
+  isLoading: boolean;
 }
 
-export function StreakCard({ currentStreakDays, longestStreakDays }: StreakCardProps) {
+export function StreakCard({ currentStreakDays, longestStreakDays, isLoading }: StreakCardProps) {
   return (
     <div className="flex flex-col gap-[var(--space-2)]">
       <p className="body-b text-[hsl(var(--text-primary))]">연속 러닝 기록</p>
       <div className="flex items-center justify-center gap-[var(--space-3)] bg-[hsl(var(--surface-subtle))] rounded-[var(--radius-lg)] py-[var(--space-4)]">
         <div className="flex flex-col items-center">
           <span className="h4-b text-[hsl(var(--text-primary))]">
-            {currentStreakDays ?? '--'}
+            {isLoading ? '--' : (currentStreakDays ?? '--')}
             <span className="caption-r text-[hsl(var(--text-secondary))] ml-0.5">일</span>
           </span>
           <span className="caption-r text-[hsl(var(--text-secondary))]">연속</span>
@@ -20,7 +21,7 @@ export function StreakCard({ currentStreakDays, longestStreakDays }: StreakCardP
         <span className="body-r text-[hsl(var(--text-secondary))]">/</span>
         <div className="flex flex-col items-center">
           <span className="h4-b text-[hsl(var(--text-primary))]">
-            {longestStreakDays ?? '--'}
+            {isLoading ? '--' : (longestStreakDays ?? '--')}
             <span className="caption-r text-[hsl(var(--text-secondary))] ml-0.5">일</span>
           </span>
           <span className="caption-r text-[hsl(var(--text-secondary))]">최대</span>

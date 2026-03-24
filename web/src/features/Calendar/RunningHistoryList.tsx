@@ -40,13 +40,13 @@ interface RunningHistoryListProps {
   items: RunningHistoryItem[];
   isLoading: boolean;
   hasMore: boolean;
-  isLoadingMore: boolean;
+  isScrollLoading: boolean;
   onLoadMore: () => void;
 }
 
-export function RunningHistoryList({ title, items, isLoading, hasMore, isLoadingMore, onLoadMore }: RunningHistoryListProps) {
+export function RunningHistoryList({ title, items, isLoading, hasMore, isScrollLoading, onLoadMore }: RunningHistoryListProps) {
   // 목록 끝에 위치한 sentinel 요소가 뷰포트에 들어오면 자동으로 다음 페이지 로드
-  const sentinelRef = useInfiniteScroll(hasMore, isLoadingMore, onLoadMore);
+  const sentinelRef = useInfiniteScroll(hasMore, isScrollLoading, onLoadMore);
 
   return (
     <div className="flex flex-col gap-[var(--space-3)]">
@@ -110,7 +110,7 @@ export function RunningHistoryList({ title, items, isLoading, hasMore, isLoading
       {/* 스크롤 감지용 sentinel — 뷰포트 진입 시 다음 페이지 자동 로드 */}
       <div ref={sentinelRef} />
 
-      {isLoadingMore && (
+      {isScrollLoading && (
         <div className="flex justify-center py-[var(--space-2)]">
           <span className="caption-r text-[hsl(var(--text-secondary))]">불러오는 중...</span>
         </div>

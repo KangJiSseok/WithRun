@@ -24,26 +24,27 @@ export function useCalendar() {
   // 0 ~ 11
   const [month, setMonth] = useState(today.getMonth() + 1);
   // 월별 캘린더 데이터 (달력 그리드용)
-  // 1. 컴포넌트 마운트 -> data = null, 달력이 닫혀있으므로 API 호출 안 함
-  // 2. 달력 열릴 때 -> getMonthlyCalendarApi 호출 -> 응답 오면 data = MonthlyCalendarData
-  // 3. 월 이동 시 -> 새 API 호출 -> 응답 오면 setData (새 데이터)
-  const [data, setData] = useState<MonthlyCalendarData | null>(null);
+  // 1. 컴포넌트 마운트 -> monthlyData = null, 달력이 닫혀있으므로 API 호출 안 함
+  // 2. 달력 열릴 때 -> getMonthlyCalendarApi 호출 -> 응답 오면 monthlyData = MonthlyCalendarData
+  // 3. 월 이동 시 -> 새 API 호출 -> 응답 오면 setMonthlyData (새 데이터)
+  const [monthlyData, setMonthlyData] = useState<MonthlyCalendarData | null>(null);
   // API 호출 중인지 아닌지를 나타내는 플래그
   // 초기값 false = 아직 로딩 중 아님
-  const [isLoading, setIsLoading] = useState(false);
+  const [isMonthlyLoading, setIsMonthlyLoading] = useState(false);
   // 전체 기간 요약 (달력 닫힌 상태에서 ActivitySummary에 표시)
   const [summaryData, setSummaryData] = useState<CalendarSummaryData | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
   // 러닝 기록 리스트 (항상 표시, 상태에 따라 전체/월별/일별 전환)
   const [historyData, setHistoryData] = useState<GetRunningHistoryResponse | null>(null);
   // 초기/컨텍스트 전환 로딩용
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   // 무한스크롤 추가 로딩 중인지 구분 (중복 호출 방지용)
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isScrollLoading, setIsScrollLoading] = useState(false);
   // 선택한 날짜 (달력에서 클릭, 재클릭 시 해제)
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   // 달력 그리드 표시 여부 (토글 버튼으로 제어)
   const [showCalendar, setShowCalendar] = useState(false);
-
+  // 미래 달을 막기 위한 용도 (캘린더 헤더의 다음 버튼 비활성화)
   const isCurrentMonth =
     year === today.getFullYear() && month === today.getMonth() + 1;
 
@@ -53,7 +54,7 @@ export function useCalendar() {
   // 따라서 내부의 별도 async 함수를 선언하고 즉시 호출
 
   // 이전 방식: Promise 체이닝 (effect 본문에서 동기 setState 호출)
-  // => effect 콜백 본문에서 동기적으로 setIsLoading(true) 호출 -> React가
+  // => effect 콜백 본문에서 동기적으로 setIsMonthlyLoading(true) 호출 -> React가
   // 렌더링 중에 상태 변경을 감지해 cascading render 경고 발생할 수 있음
   // 현재 방식: async 함수 내부로 이동 -> 비동기 컨텍스트에서 호출되므로 경고 방지
 
@@ -69,11 +70,14 @@ export function useCalendar() {
   useEffect(() => {
     let cancelled = false;
     async function loadInitial() {
+      setIsSummaryLoading(true);
       try {
         const summary = await getCalendarSummaryApi();
         if (!cancelled) setSummaryData(summary.data);
       } catch {
         if (!cancelled) setSummaryData(null);
+      } finally {
+        if (!cancelled) setIsSummaryLoading(false);
       }
       if (cancelled) return;
       setIsHistoryLoading(true);
@@ -100,9 +104,11 @@ export function useCalendar() {
     if (!wasOpen || showCalendar) return;
     let cancelled = false;
     // 성공: summaryData에 새 데이터, 실패: summaryData = null
+    setIsSummaryLoading(true);
     getCalendarSummaryApi()
       .then((res) => { if (!cancelled) setSummaryData(res.data); })
-      .catch(() => { if (!cancelled) setSummaryData(null); });
+      .catch(() => { if (!cancelled) setSummaryData(null); })
+      .finally(() => { if (!cancelled) setIsSummaryLoading(false); });
     // 달력 닫히면 전체 기록으로 복귀 → params 없이 호출
     setIsHistoryLoading(true);
     getRunningHistoryApi({})
@@ -118,14 +124,14 @@ export function useCalendar() {
   useEffect(() => {
     if (!showCalendar) return;
     async function load() {
-      setIsLoading(true);
+      setIsMonthlyLoading(true);
       try {
         const result = await getMonthlyCalendarApi(year, month);
-        setData(result.data);
+        setMonthlyData(result.data);
       } catch {
-        setData(null);
+        setMonthlyData(null);
       } finally {
-        setIsLoading(false);
+        setIsMonthlyLoading(false);
       }
     }
     load();
@@ -191,7 +197,7 @@ export function useCalendar() {
 
   // 운동 기록이 있는 날짜 조회하기 위함 (운동한 날짜에 빨간 점이 찍힘)
   const activeDates = new Set(
-    data?.dailySummaries.map((s) => s.calendarDate) ?? [],
+    monthlyData?.dailySummaries.map((s) => s.calendarDate) ?? [],
   );
 
   // 날짜 토글: 같은 날짜 재클릭 시 선택 해제 → 월별 기록으로 복귀
@@ -201,7 +207,7 @@ export function useCalendar() {
 
   // 다음 페이지 로드: 현재 컨텍스트(전체/월별/일별)에 cursor를 추가해 요청 후 items에 append
   const loadMore = useCallback(async () => {
-    if (!historyData?.hasMore || !historyData.nextCursor || isLoadingMore) return;
+    if (!historyData?.hasMore || !historyData.nextCursor || isScrollLoading) return;
     const cursor = historyData.nextCursor;
     // 현재 컨텍스트에 맞는 파라미터 구성
     let params: GetRunningHistoryParams = { cursor };
@@ -213,7 +219,7 @@ export function useCalendar() {
         params = { year, month, cursor };
       }
     }
-    setIsLoadingMore(true);
+    setIsScrollLoading(true);
     try {
       const more = await getRunningHistoryApi(params);
       setHistoryData((prev) =>
@@ -222,19 +228,20 @@ export function useCalendar() {
     } catch {
       // 더 보기 실패 시 기존 목록 유지
     } finally {
-      setIsLoadingMore(false);
+      setIsScrollLoading(false);
     }
-  }, [historyData, isLoadingMore, showCalendar, selectedDate, year, month]);
+  }, [historyData, isScrollLoading, showCalendar, selectedDate, year, month]);
 
   return {
     year,
     month,
-    data,
-    isLoading,
+    monthlyData,
+    isMonthlyLoading,
     summaryData,
+    isSummaryLoading,
     historyData,
     isHistoryLoading,
-    isLoadingMore,
+    isScrollLoading,
     loadMore,
     selectedDate,
     toggleDate,
