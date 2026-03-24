@@ -24,11 +24,15 @@ function createUserDotContent(): HTMLElement {
 
 export function useNormalRunMap(
   containerRef: React.RefObject<HTMLDivElement | null>,
-  params: { coordinates: CoordinatePoint[] }
+  params: {
+    coordinates: CoordinatePoint[];
+    courseAnchor: { latitude: number; longitude: number } | null;
+  }
 ): void {
   const { location } = useNormalRunLocation();
   const mapRef = useRef<kakao.maps.Map | null>(null);
   const userDotRef = useRef<kakao.maps.CustomOverlay | null>(null);
+  const safeZoneCircleRef = useRef<kakao.maps.Circle | null>(null);
 
   // 지도 초기화 + 폴리라인 + 사용자 도트
   useEffect(() => {
@@ -83,4 +87,32 @@ export function useNormalRunMap(
     // 지도 중심도 현재 위치로 부드럽게 이동
     mapRef.current?.panTo(latLng);
   }, [location]);
+
+  // courseAnchor 변화 시 안정권 원(반지름 30m) 표시/제거
+  useEffect(() => {
+    const { courseAnchor } = params;
+
+    if (courseAnchor && mapRef.current) {
+      const center = new kakao.maps.LatLng(courseAnchor.latitude, courseAnchor.longitude);
+
+      if (!safeZoneCircleRef.current) {
+        safeZoneCircleRef.current = new kakao.maps.Circle({
+          map: mapRef.current,
+          center,
+          radius: 30,
+          strokeWeight: 2,
+          strokeColor: '#22c55e',
+          strokeOpacity: 0.7,
+          fillColor: '#22c55e',
+          fillOpacity: 0.15,
+        });
+      } else {
+        safeZoneCircleRef.current.setPosition(center);
+      }
+    } else {
+      safeZoneCircleRef.current?.setMap(null);
+      safeZoneCircleRef.current = null;
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [params.courseAnchor]);
 }

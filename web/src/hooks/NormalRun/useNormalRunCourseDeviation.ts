@@ -8,7 +8,8 @@
 //   deviationSec === 4                        → bridge.notifyCourseDeviation(2) (진동 2회) + toast 주의
 //   deviationSec === 8                        → bridge.notifyCourseDeviation(3) (진동 3회) + toast 위험
 //   deviationSec >= 10                        → bridge.notifyCourseDeviationForceStop() + toast + onForceStop() 호출
-//   isPaused 중                               → 카운터 증가 없음
+//   isPaused 중                               → 카운터 증가 없음, 신규 이탈 감지 없음
+//   isPaused 중 복귀                           → isDeviating = false + toast (복귀 감지는 항상 동작)
 
 import { useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner';
@@ -16,7 +17,7 @@ import { toast } from 'sonner';
 import { bridge } from '@/bridge';
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
 import type { CoordinatePoint } from '@/apis/course';
-import { pointToPolylineM } from '@/shared/utils/geo';
+import { pointToPolylineM, nearestPointOnPolyline } from '@/shared/utils/geo';
 
 const DEVIATION_THRESHOLD_M = 30;
 const FORCE_STOP_SEC = 10;
@@ -34,11 +35,13 @@ export function useNormalRunCourseDeviation({
 }: UseNormalRunCourseDeviationParams): {
   isDeviating: boolean;
   deviationSec: number;
+  deviationAnchor: { latitude: number; longitude: number } | null;
 } {
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
 
   const [isDeviating, setIsDeviating] = useState(false);
   const [deviationSec, setDeviationSec] = useState(0);
+  const [deviationAnchor, setDeviationAnchor] = useState<{ latitude: number; longitude: number } | null>(null);
 
   // interval 내부에서 최신값 접근용 ref
   const deviationSecRef = useRef(0);
@@ -48,28 +51,41 @@ export function useNormalRunCourseDeviation({
   latestOnForceStopRef.current = onForceStop;
 
   // GPS 갱신 시 이탈 여부 판단
+  // isPaused 제거: 복귀 감지(true→false)는 일시정지 중에도 항상 동작
   useEffect(() => {
-    if (!gpsLocation || isPaused) return;
+    if (!gpsLocation) return;
 
     const dist = pointToPolylineM(gpsLocation.latitude, gpsLocation.longitude, courseCoordinates);
     const deviating = dist > DEVIATION_THRESHOLD_M;
 
+    // nearest는 업데이터 밖에서 미리 계산 (순수 함수 유지)
+    const nearest = deviating
+      ? nearestPointOnPolyline(gpsLocation.latitude, gpsLocation.longitude, courseCoordinates)
+      : null;
+
     setIsDeviating((prev) => {
-      // false → true 전환: 1차 알림 (진동 1회)
+      // false→true: 일시정지 중엔 신규 이탈 진입 차단
       if (!prev && deviating) {
-        bridge.notifyCourseDeviation(1).catch(() => {});
-        toast.warning('코스를 이탈했습니다', {
-          description: '10초 내에 코스로 복귀하지 않으면 세션이 종료됩니다.',
-          duration: 4000,
-        });
+        if (!isPaused) {
+          bridge.notifyCourseDeviation(1).catch(() => {});
+          toast.warning('코스를 이탈했습니다', {
+            description: '10초 내에 코스로 복귀하지 않으면 세션이 종료됩니다.',
+            duration: 4000,
+          });
+          setDeviationAnchor(nearest);
+          return true;
+        }
+        return prev; // 일시정지 중 → 상태 유지
       }
-      // true → false 전환: 카운터 리셋
+      // true→false: 일시정지 여부 무관하게 복귀 감지
       if (prev && !deviating) {
         deviationSecRef.current = 0;
         setDeviationSec(0);
+        setDeviationAnchor(null);
         toast.success('코스로 복귀했습니다');
+        return false;
       }
-      return deviating;
+      return prev;
     });
   // courseCoordinates는 렌더 간 참조 변경이 없다고 가정 (memoized)
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -111,5 +127,5 @@ export function useNormalRunCourseDeviation({
     return () => clearInterval(intervalId);
   }, [isDeviating]);
 
-  return { isDeviating, deviationSec };
+  return { isDeviating, deviationSec, deviationAnchor };
 }

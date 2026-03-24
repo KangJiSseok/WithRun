@@ -8,7 +8,7 @@
 //   워치 연결 중 → 워치(Samsung Health) 데이터 우선
 //   워치 미연결/끊김 → 모바일(GPS + 가속도계) 폴백
 
-import { useCallback } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
 
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
 
@@ -17,6 +17,7 @@ import { useRunningGps } from '@/shared/hooks/Running/useRunningGps';
 import { useRunningHealth } from '@/shared/hooks/Running/useRunningHealth';
 import { useRunningSplits } from '@/shared/hooks/Running/useRunningSplits';
 import { useNormalRunCourseDeviation } from './useNormalRunCourseDeviation';
+import { nearestPointOnPolyline, haversineM } from '@/shared/utils/geo';
 import type { CoordinatePoint } from '@/apis/course';
 
 interface UseNormalRunningParams {
@@ -27,7 +28,7 @@ interface UseNormalRunningParams {
 export function useNormalRunning({ courseCoordinates, onForceStop }: UseNormalRunningParams) {
   const { durationSec, formattedTime, isPaused, togglePause } = useRunningTimer();
 
-  const { isDeviating, deviationSec } = useNormalRunCourseDeviation({
+  const { isDeviating, deviationSec, deviationAnchor } = useNormalRunCourseDeviation({
     courseCoordinates,
     isPaused,
     onForceStop,
@@ -58,6 +59,38 @@ export function useNormalRunning({ courseCoordinates, onForceStop }: UseNormalRu
     elevationGainMRef,
     currentKmHeartRatesRef,
   });
+
+  // ── 일시정지 앵커 (재개 잠금) ──────────────────────────────────────
+  // 일시정지 진입 시 가장 가까운 코스 지점을 고정 → 해당 지점 30m 내에서만 재개 가능
+  const [pauseAnchor, setPauseAnchor] = useState<{ latitude: number; longitude: number } | null>(null);
+
+  // latest ref 패턴: useEffect dep 최소화
+  const latestGpsRef = useRef(gpsLocation);
+  latestGpsRef.current = gpsLocation;
+  const prevIsPausedRef = useRef(false);
+
+  useEffect(() => {
+    const wasPaused = prevIsPausedRef.current;
+    prevIsPausedRef.current = isPaused;
+
+    if (!wasPaused && isPaused) {
+      // 일시정지 진입 → 현재 GPS 기준 코스 앵커 설정
+      const gps = latestGpsRef.current;
+      if (gps) {
+        setPauseAnchor(nearestPointOnPolyline(gps.latitude, gps.longitude, courseCoordinates));
+      }
+    } else if (wasPaused && !isPaused) {
+      // 재개 → 앵커 해제
+      setPauseAnchor(null);
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isPaused]); // isPaused 전환 시만 실행
+
+  // 재개 가능 여부: 앵커 없음 또는 앵커 30m 이내
+  const isWithinPauseAnchor =
+    !pauseAnchor ||
+    !gpsLocation ||
+    haversineM(gpsLocation.latitude, gpsLocation.longitude, pauseAnchor.latitude, pauseAnchor.longitude) <= 30;
 
   // ── 표시값 계산 ────────────────────────────────────────────────
 
@@ -113,5 +146,8 @@ export function useNormalRunning({ courseCoordinates, onForceStop }: UseNormalRu
     getCollectedData,
     isDeviating,
     deviationSec,
+    deviationAnchor,
+    pauseAnchor,
+    isWithinPauseAnchor,
   };
 }

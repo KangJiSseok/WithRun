@@ -62,3 +62,55 @@ export function pointToPolylineM(
 
   return minDist;
 }
+
+// 점 P에서 폴리라인까지의 최근접 좌표 반환
+// pointToPolylineM과 동일한 알고리즘, 거리 대신 좌표 반환
+export function nearestPointOnPolyline(
+  lat: number,
+  lon: number,
+  polyline: { latitude: number; longitude: number }[]
+): { latitude: number; longitude: number } {
+  if (polyline.length === 0) return { latitude: lat, longitude: lon };
+  if (polyline.length === 1) return { latitude: polyline[0].latitude, longitude: polyline[0].longitude };
+
+  const DEG_TO_RAD = Math.PI / 180;
+  const cosLat = Math.cos(lat * DEG_TO_RAD);
+
+  let minDist = Infinity;
+  let nearestLat = polyline[0].latitude;
+  let nearestLon = polyline[0].longitude;
+
+  for (let i = 0; i < polyline.length - 1; i++) {
+    const ax = polyline[i].longitude * cosLat;
+    const ay = polyline[i].latitude;
+    const bx = polyline[i + 1].longitude * cosLat;
+    const by = polyline[i + 1].latitude;
+    const px = lon * cosLat;
+    const py = lat;
+
+    const abx = bx - ax;
+    const aby = by - ay;
+    const ab2 = abx * abx + aby * aby;
+
+    let closestLat: number;
+    let closestLon: number;
+
+    if (ab2 === 0) {
+      closestLat = polyline[i].latitude;
+      closestLon = polyline[i].longitude;
+    } else {
+      const t = Math.max(0, Math.min(1, ((px - ax) * abx + (py - ay) * aby) / ab2));
+      closestLon = (ax + t * abx) / cosLat;
+      closestLat = ay + t * aby;
+    }
+
+    const d = haversineM(lat, lon, closestLat, closestLon);
+    if (d < minDist) {
+      minDist = d;
+      nearestLat = closestLat;
+      nearestLon = closestLon;
+    }
+  }
+
+  return { latitude: nearestLat, longitude: nearestLon };
+}
