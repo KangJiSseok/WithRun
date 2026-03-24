@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 
 import java.lang.reflect.Field;
 import java.time.LocalDate;
+import java.util.List;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
@@ -62,11 +63,11 @@ class UserRunningPreferenceControllerTest {
     void returnsRunningPreferenceWhenTokenIsValid() throws Exception {
         given(userRunningPreferenceService.getRunningPreference(10L)).willReturn(
                 new UserRunningPreferenceResponse(
-                        Purpose.DIET,
-                        TimeSlot.MORNING,
+                        List.of(Purpose.DIET, Purpose.HEALTH_MAINTENANCE),
+                        List.of(TimeSlot.MORNING, TimeSlot.EVENING),
                         5.0,
                         Difficulty.MEDIUM,
-                        CourseType.PARK
+                        List.of(CourseType.PARK, CourseType.RIVERSIDE)
                 )
         );
 
@@ -74,11 +75,14 @@ class UserRunningPreferenceControllerTest {
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(10L)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.purpose").value("DIET"))
-                .andExpect(jsonPath("$.data.timeSlot").value("MORNING"))
+                .andExpect(jsonPath("$.data.purposes[0]").value("DIET"))
+                .andExpect(jsonPath("$.data.purposes[1]").value("HEALTH_MAINTENANCE"))
+                .andExpect(jsonPath("$.data.timeSlots[0]").value("MORNING"))
+                .andExpect(jsonPath("$.data.timeSlots[1]").value("EVENING"))
                 .andExpect(jsonPath("$.data.preferredDistanceKm").value(5.0))
                 .andExpect(jsonPath("$.data.preferredDifficulty").value("MEDIUM"))
-                .andExpect(jsonPath("$.data.courseType").value("PARK"));
+                .andExpect(jsonPath("$.data.courseTypes[0]").value("PARK"))
+                .andExpect(jsonPath("$.data.courseTypes[1]").value("RIVERSIDE"));
 
         then(userRunningPreferenceService).should().getRunningPreference(10L);
     }
@@ -87,11 +91,11 @@ class UserRunningPreferenceControllerTest {
     @DisplayName("유효한 access token이면 현재 사용자 러닝 기본 설정 저장을 위임한다")
     void updatesRunningPreferenceWhenTokenIsValid() throws Exception {
         UpdateUserRunningPreferenceRequest request = new UpdateUserRunningPreferenceRequest(
-                Purpose.RACE_PREPARATION,
-                TimeSlot.EVENING,
+                List.of(Purpose.RACE_PREPARATION, Purpose.ENDURANCE_IMPROVEMENT),
+                List.of(TimeSlot.EVENING, TimeSlot.DAWN),
                 10.0,
                 Difficulty.HARD,
-                CourseType.TRACK
+                List.of(CourseType.TRACK, CourseType.MOUNTAIN_TRAIL)
         );
 
         mockMvc.perform(put("/api/users/me/running-preferences")
@@ -103,6 +107,28 @@ class UserRunningPreferenceControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()));
 
         then(userRunningPreferenceService).should().updateRunningPreference(eq(10L), eq(request));
+    }
+
+    @Test
+    @DisplayName("선호 거리가 10km를 초과하면 잘못된 입력값 응답을 반환한다")
+    void returnsBadRequestWhenPreferredDistanceExceedsTenKm() throws Exception {
+        UpdateUserRunningPreferenceRequest request = new UpdateUserRunningPreferenceRequest(
+                List.of(Purpose.RACE_PREPARATION),
+                List.of(TimeSlot.EVENING),
+                10.1,
+                Difficulty.HARD,
+                List.of(CourseType.TRACK)
+        );
+
+        mockMvc.perform(put("/api/users/me/running-preferences")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(10L))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
+
+        then(userRunningPreferenceService).should(never()).updateRunningPreference(any(), any());
     }
 
     @Test

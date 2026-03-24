@@ -12,6 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import kr.withrun.was.global.common.type.Difficulty;
@@ -49,12 +50,15 @@ public class UserRunningPreference extends BaseEntity {
     private User user;
 
     @OneToMany(mappedBy = "userRunningPreference", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id asc")
     private final List<UserPreferencePurpose> purposes = new ArrayList<>();
 
     @OneToMany(mappedBy = "userRunningPreference", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id asc")
     private final List<UserPreferenceCourseType> courseTypes = new ArrayList<>();
 
     @OneToMany(mappedBy = "userRunningPreference", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id asc")
     private final List<UserPreferenceTimeSlot> timeSlots = new ArrayList<>();
 
     public static UserRunningPreference create(
@@ -93,20 +97,28 @@ public class UserRunningPreference extends BaseEntity {
         timeSlot.setUserRunningPreference(this);
     }
 
-    public void replacePurpose(kr.withrun.was.domain.user.type.Purpose purpose) {
-        // 현재 화면은 목적 1개만 고르므로 기존 값을 비우고 새 값 1개만 유지합니다.
-        purposes.clear();
-        addPurpose(UserPreferencePurpose.create(purpose));
+    public void replacePurposes(List<kr.withrun.was.domain.user.type.Purpose> purposes) {
+        // 같은 값을 여러 번 보내도 DB unique 제약에 걸리지 않도록 중복을 제거합니다.
+        this.purposes.clear();
+        purposes.stream()
+                .distinct()
+                .map(UserPreferencePurpose::create)
+                .forEach(this::addPurpose);
     }
 
-    public void replaceCourseType(kr.withrun.was.domain.course.type.CourseType courseType) {
-        // 추후 다중 선택 요구가 생기면 이 메서드가 가장 먼저 바뀔 지점입니다.
-        courseTypes.clear();
-        addCourseType(UserPreferenceCourseType.create(courseType));
+    public void replaceCourseTypes(List<kr.withrun.was.domain.course.type.CourseType> courseTypes) {
+        this.courseTypes.clear();
+        courseTypes.stream()
+                .distinct()
+                .map(UserPreferenceCourseType::create)
+                .forEach(this::addCourseType);
     }
 
-    public void replaceTimeSlot(kr.withrun.was.global.common.type.TimeSlot timeSlot) {
-        timeSlots.clear();
-        addTimeSlot(UserPreferenceTimeSlot.create(timeSlot));
+    public void replaceTimeSlots(List<kr.withrun.was.global.common.type.TimeSlot> timeSlots) {
+        this.timeSlots.clear();
+        timeSlots.stream()
+                .distinct()
+                .map(UserPreferenceTimeSlot::create)
+                .forEach(this::addTimeSlot);
     }
 }

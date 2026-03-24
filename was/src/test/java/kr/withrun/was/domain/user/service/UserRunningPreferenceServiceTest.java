@@ -20,6 +20,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.lang.reflect.Field;
+import java.util.List;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -51,11 +52,11 @@ class UserRunningPreferenceServiceTest {
 
         UserRunningPreferenceResponse response = userRunningPreferenceService.getRunningPreference(1L);
 
-        assertThat(response.purpose()).isNull();
-        assertThat(response.timeSlot()).isNull();
+        assertThat(response.purposes()).isEmpty();
+        assertThat(response.timeSlots()).isEmpty();
         assertThat(response.preferredDistanceKm()).isNull();
         assertThat(response.preferredDifficulty()).isNull();
-        assertThat(response.courseType()).isNull();
+        assertThat(response.courseTypes()).isEmpty();
     }
 
     @Test
@@ -64,11 +65,11 @@ class UserRunningPreferenceServiceTest {
         User user = User.createPendingSocialUser();
         setField(user, "id", 1L);
         UpdateUserRunningPreferenceRequest request = new UpdateUserRunningPreferenceRequest(
-                Purpose.HEALTH_MAINTENANCE,
-                TimeSlot.AFTERNOON,
+                List.of(Purpose.HEALTH_MAINTENANCE, Purpose.DIET),
+                List.of(TimeSlot.AFTERNOON, TimeSlot.EVENING),
                 7.5,
                 Difficulty.MEDIUM,
-                CourseType.URBAN
+                List.of(CourseType.URBAN, CourseType.PARK)
         );
 
         given(userRepository.findNotDeletedUser(1L)).willReturn(Optional.of(user));
@@ -79,18 +80,21 @@ class UserRunningPreferenceServiceTest {
         assertThat(preference).isNotNull();
         assertThat(preference.getPreferredDistanceKm()).isEqualTo(7.5);
         assertThat(preference.getPreferredDifficulty()).isEqualTo(Difficulty.MEDIUM);
-        assertThat(preference.getPurposes()).hasSize(1);
-        assertThat(preference.getPurposes().get(0).getPurpose()).isEqualTo(Purpose.HEALTH_MAINTENANCE);
-        assertThat(preference.getTimeSlots()).hasSize(1);
-        assertThat(preference.getTimeSlots().get(0).getTimeSlot()).isEqualTo(TimeSlot.AFTERNOON);
-        assertThat(preference.getCourseTypes()).hasSize(1);
-        assertThat(preference.getCourseTypes().get(0).getCourseType()).isEqualTo(CourseType.URBAN);
+        assertThat(preference.getPurposes())
+                .extracting(purpose -> purpose.getPurpose())
+                .containsExactly(Purpose.HEALTH_MAINTENANCE, Purpose.DIET);
+        assertThat(preference.getTimeSlots())
+                .extracting(timeSlot -> timeSlot.getTimeSlot())
+                .containsExactly(TimeSlot.AFTERNOON, TimeSlot.EVENING);
+        assertThat(preference.getCourseTypes())
+                .extracting(courseType -> courseType.getCourseType())
+                .containsExactly(CourseType.URBAN, CourseType.PARK);
 
         then(userRunningPreferenceRepository).should().save(any(UserRunningPreference.class));
     }
 
     @Test
-    @DisplayName("기존 러닝 기본 설정은 단일 선택값 기준으로 교체 저장한다")
+    @DisplayName("기존 러닝 기본 설정은 다중 선택값 기준으로 교체 저장한다")
     void updatesExistingRunningPreference() {
         User user = User.createPendingSocialUser();
         setField(user, "id", 2L);
@@ -99,17 +103,17 @@ class UserRunningPreferenceServiceTest {
                 Difficulty.EASY,
                 5.0
         );
-        existingPreference.replacePurpose(Purpose.DIET);
-        existingPreference.replaceTimeSlot(TimeSlot.MORNING);
-        existingPreference.replaceCourseType(CourseType.PARK);
+        existingPreference.replacePurposes(List.of(Purpose.DIET));
+        existingPreference.replaceTimeSlots(List.of(TimeSlot.MORNING));
+        existingPreference.replaceCourseTypes(List.of(CourseType.PARK));
         user.assignRunningPreference(existingPreference);
 
         UpdateUserRunningPreferenceRequest request = new UpdateUserRunningPreferenceRequest(
-                Purpose.ENDURANCE_IMPROVEMENT,
-                TimeSlot.EVENING,
+                List.of(Purpose.ENDURANCE_IMPROVEMENT, Purpose.RACE_PREPARATION),
+                List.of(TimeSlot.EVENING, TimeSlot.DAWN),
                 15.0,
                 Difficulty.HARD,
-                CourseType.MOUNTAIN_TRAIL
+                List.of(CourseType.MOUNTAIN_TRAIL, CourseType.TRACK)
         );
 
         given(userRepository.findNotDeletedUser(2L)).willReturn(Optional.of(user));
@@ -118,23 +122,26 @@ class UserRunningPreferenceServiceTest {
 
         assertThat(existingPreference.getPreferredDistanceKm()).isEqualTo(15.0);
         assertThat(existingPreference.getPreferredDifficulty()).isEqualTo(Difficulty.HARD);
-        assertThat(existingPreference.getPurposes()).hasSize(1);
-        assertThat(existingPreference.getPurposes().get(0).getPurpose()).isEqualTo(Purpose.ENDURANCE_IMPROVEMENT);
-        assertThat(existingPreference.getTimeSlots()).hasSize(1);
-        assertThat(existingPreference.getTimeSlots().get(0).getTimeSlot()).isEqualTo(TimeSlot.EVENING);
-        assertThat(existingPreference.getCourseTypes()).hasSize(1);
-        assertThat(existingPreference.getCourseTypes().get(0).getCourseType()).isEqualTo(CourseType.MOUNTAIN_TRAIL);
+        assertThat(existingPreference.getPurposes())
+                .extracting(purpose -> purpose.getPurpose())
+                .containsExactly(Purpose.ENDURANCE_IMPROVEMENT, Purpose.RACE_PREPARATION);
+        assertThat(existingPreference.getTimeSlots())
+                .extracting(timeSlot -> timeSlot.getTimeSlot())
+                .containsExactly(TimeSlot.EVENING, TimeSlot.DAWN);
+        assertThat(existingPreference.getCourseTypes())
+                .extracting(courseType -> courseType.getCourseType())
+                .containsExactly(CourseType.MOUNTAIN_TRAIL, CourseType.TRACK);
     }
 
     @Test
     @DisplayName("없는 사용자는 USER_NOT_FOUND를 반환한다")
     void throwsWhenUserIsNotFound() {
         UpdateUserRunningPreferenceRequest request = new UpdateUserRunningPreferenceRequest(
-                Purpose.DIET,
-                TimeSlot.MORNING,
+                List.of(Purpose.DIET),
+                List.of(TimeSlot.MORNING),
                 5.0,
                 Difficulty.MEDIUM,
-                CourseType.PARK
+                List.of(CourseType.PARK)
         );
 
         given(userRepository.findNotDeletedUser(1L)).willReturn(Optional.empty());

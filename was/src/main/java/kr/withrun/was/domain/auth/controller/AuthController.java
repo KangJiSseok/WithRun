@@ -2,7 +2,9 @@ package kr.withrun.was.domain.auth.controller;
 
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
 import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
@@ -16,6 +18,7 @@ import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.ResponseCode;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
 import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
+import kr.withrun.was.global.response.swagger.SwaggerExampleValues;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
@@ -35,23 +38,47 @@ public class AuthController {
 
     @Operation(
             summary = "현재 로그인 사용자를 조회한다",
-            description = "access token 기준으로 현재 로그인된 사용자 정보와 프로필 완료 여부를 조회한다."
+            description = "Authorization 헤더의 Bearer access token을 기준으로 현재 로그인한 사용자 정보를 조회한다.",
+            parameters = {
+                    @Parameter(
+                            name = HttpHeaders.AUTHORIZATION,
+                            in = ParameterIn.HEADER,
+                            required = true,
+                            description = "현재 로그인 사용자를 식별하는 Bearer access token",
+                            example = "Bearer eyJhbGciOiJIUzI1NiJ9.access-token"
+                    )
+            }
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "현재 사용자 조회 성공",
-                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.AuthMeApiResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = SuccessApiResponseDocs.AuthMeApiResponse.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.AUTH_ME_SUCCESS)
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
-                    description = "인증이 없거나 access token 이 유효하지 않음",
-                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+                    description = "인증이 없거나 access token이 유효하지 않음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorApiResponseDoc.class),
+                            examples = {
+                                    @ExampleObject(name = "인증 없음", value = SwaggerExampleValues.ERROR_UNAUTHORIZED),
+                                    @ExampleObject(name = "유효하지 않은 토큰", value = SwaggerExampleValues.ERROR_TOKEN_INVALID)
+                            }
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "사용자를 찾을 수 없음",
-                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorApiResponseDoc.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.ERROR_USER_NOT_FOUND)
+                    )
             )
     })
     @GetMapping("/me")
@@ -63,24 +90,49 @@ public class AuthController {
     }
 
     @Operation(
-            summary = "access token 을 재발급한다",
-            description = "refresh token 쿠키를 사용해 새로운 access token 을 재발급한다."
+            summary = "access token을 재발급한다",
+            description = "브라우저에 저장된 refresh token 쿠키를 사용해 새로운 access token을 재발급한다.",
+            parameters = {
+                    @Parameter(
+                            name = "refresh_token",
+                            in = ParameterIn.COOKIE,
+                            required = true,
+                            description = "재발급에 사용할 refresh token 쿠키 값",
+                            example = "eyJhbGciOiJIUzI1NiJ9.refresh-token"
+                    )
+            }
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "access token 재발급 성공",
-                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.ReissueAccessTokenApiResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = SuccessApiResponseDocs.ReissueAccessTokenApiResponse.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.REISSUE_ACCESS_TOKEN_SUCCESS)
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "401",
-                    description = "refresh token 이 없거나 유효하지 않음",
-                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+                    description = "refresh token이 없거나 만료되었거나 유효하지 않음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorApiResponseDoc.class),
+                            examples = {
+                                    @ExampleObject(name = "쿠키 없음", value = SwaggerExampleValues.ERROR_UNAUTHORIZED),
+                                    @ExampleObject(name = "만료된 토큰", value = SwaggerExampleValues.ERROR_TOKEN_EXPIRED),
+                                    @ExampleObject(name = "유효하지 않은 토큰", value = SwaggerExampleValues.ERROR_TOKEN_INVALID)
+                            }
+                    )
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
                     description = "사용자를 찾을 수 없음",
-                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorApiResponseDoc.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.ERROR_USER_NOT_FOUND)
+                    )
             )
     })
     @PostMapping("/reissue")
@@ -92,13 +144,25 @@ public class AuthController {
 
     @Operation(
             summary = "로그아웃한다",
-            description = "refresh token 쿠키를 만료시켜 로그아웃 상태로 전환한다."
+            description = "refresh token 쿠키를 만료시켜 로그아웃 상태로 전환한다.",
+            parameters = {
+                    @Parameter(
+                            name = "refresh_token",
+                            in = ParameterIn.COOKIE,
+                            description = "만료 처리할 refresh token 쿠키 값. 쿠키가 없어도 성공 응답을 반환한다.",
+                            example = "eyJhbGciOiJIUzI1NiJ9.refresh-token"
+                    )
+            }
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "200",
                     description = "로그아웃 성공",
-                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.LogoutApiResponse.class))
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = SuccessApiResponseDocs.LogoutApiResponse.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.LOGOUT_SUCCESS)
+                    )
             )
     })
     @PostMapping("/logout")

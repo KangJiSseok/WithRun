@@ -47,11 +47,10 @@ public class UserRunningPreferenceService {
             );
         }
 
-        // 현재 제품은 각 카테고리당 단일 기본 설정만 받기 때문에,
-        // 내부 엔티티의 컬렉션 구조에는 "선택된 값 1개"만 유지합니다.
-        runningPreference.replacePurpose(request.purpose());
-        runningPreference.replaceTimeSlot(request.timeSlot());
-        runningPreference.replaceCourseType(request.courseType());
+        // 온보딩/설정 화면에서 다중 선택한 항목을 카테고리별 컬렉션으로 그대로 저장합니다.
+        runningPreference.replacePurposes(request.purposes());
+        runningPreference.replaceTimeSlots(request.timeSlots());
+        runningPreference.replaceCourseTypes(request.courseTypes());
 
         userRunningPreferenceRepository.save(runningPreference);
     }

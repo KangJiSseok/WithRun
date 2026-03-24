@@ -163,13 +163,13 @@ public class GlobalExceptionHandler {
 
     @Schema(name = "ValidationError", description = "입력값 검증 실패 상세 정보")
     public record ValidationError(
-            @Schema(description = "검증에 실패한 필드명", example = "radiusM")
+            @Schema(description = "검증에 실패한 필드명", example = "field")
             String field,
 
-            @Schema(description = "거부된 입력값", example = "7000", nullable = true)
+            @Schema(description = "거부된 입력값", example = "invalid-value", nullable = true)
             Object rejectedValue,
 
-            @Schema(description = "검증 실패 사유", example = "must be less than or equal to 5000")
+            @Schema(description = "검증 실패 사유", example = "must not be null")
             String message
     ) {
     }

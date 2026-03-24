@@ -6,9 +6,9 @@ import kr.withrun.was.global.exception.GlobalExceptionHandler.ValidationError;
 
 import java.util.List;
 
-@Schema(name = "ValidationErrorApiResponse", description = "잘못된 입력 응답 래퍼. 필드 검증 오류가 있으면 data 에 상세 목록이 포함된다.")
+@Schema(name = "ValidationErrorApiResponse", description = "입력값 검증 실패 응답 래퍼")
 public record ValidationErrorApiResponseDoc(
-        @Schema(description = "요청 성공 여부. 검증 실패 응답은 항상 false 다.", example = "false")
+        @Schema(description = "요청 성공 여부. 검증 실패 응답은 항상 false다.", example = "false")
         boolean success,
 
         @Schema(description = "오류 응답 코드", example = "E001")
@@ -17,7 +17,10 @@ public record ValidationErrorApiResponseDoc(
         @Schema(description = "오류 메시지", example = "잘못된 입력값입니다.")
         String message,
 
-        @ArraySchema(schema = @Schema(implementation = ValidationError.class), arraySchema = @Schema(description = "필드별 검증 실패 목록", nullable = true))
+        @ArraySchema(
+                schema = @Schema(implementation = ValidationError.class),
+                arraySchema = @Schema(description = "필드별 검증 실패 목록", nullable = true)
+        )
         List<ValidationError> data,
 
         @Schema(description = "오류 추적용 식별자", example = "1a2b3c4d")
