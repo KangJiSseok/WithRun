@@ -17,7 +17,7 @@ public record PreferredDistanceRange(
         @Positive
         Integer max
 ) {
-    @AssertTrue(message = "min값은 항상 max보다 작거나 같아야 한다.")
+    @AssertTrue(message = "min 값은 항상 max보다 작거나 같아야 합니다.")
     public boolean isValidRange() {
         return min != null && max != null && min <= max;
     }

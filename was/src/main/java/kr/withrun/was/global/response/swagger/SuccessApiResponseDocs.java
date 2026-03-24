@@ -121,7 +121,7 @@ public final class SuccessApiResponseDocs {
     ) {
     }
 
-    @Schema(name = "NearbyGhostCoursesApiResponse", description = "주변 고스트 코스 조회 성공 응답")
+    @Schema(name = "NearbyGhostCoursesApiResponse", description = "주변 고스트 런 코스 조회 성공 응답")
     public record NearbyGhostCoursesApiResponse(
             @Schema(description = "요청 성공 여부", example = "true")
             boolean success,
@@ -129,7 +129,7 @@ public final class SuccessApiResponseDocs {
             String code,
             @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
             String message,
-            @Schema(description = "주변 고스트 코스 목록 데이터")
+            @Schema(description = "주변 고스트 런 코스 목록 데이터")
             NearbyGhostCoursesResponse data
     ) {
     }
@@ -168,7 +168,7 @@ public final class SuccessApiResponseDocs {
             String code,
             @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
             String message,
-            @Schema(description = "북마크한 코스 목록 데이터. 각 항목에는 누적 좋아요 수와 현재 사용자 좋아요 여부가 포함된다.")
+            @Schema(description = "북마크한 코스 목록 데이터")
             BookmarkedCoursesResponse data
     ) {
     }
@@ -250,7 +250,6 @@ public final class SuccessApiResponseDocs {
             GhostRunningResultResponse data
     ) {
     }
-
 
     @Schema(name = "RunningSessionDetailApiResponse", description = "러닝 세션 상세 조회 성공 응답")
     public record RunningSessionDetailApiResponse(

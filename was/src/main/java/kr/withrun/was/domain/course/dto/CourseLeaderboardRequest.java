@@ -14,11 +14,11 @@ public record CourseLeaderboardRequest(
         @Positive
         Long courseId,
 
-        @Schema(description = "0부터 시작하는 페이지 번호. 생략 시 기본값 0을 사용한다.", example = "0", defaultValue = "0", minimum = "0")
+        @Schema(description = "0부터 시작하는 페이지 번호입니다. 생략하면 0을 사용합니다.", example = "0", defaultValue = "0", minimum = "0")
         @PositiveOrZero
         Integer page,
 
-        @Schema(description = "한 번에 조회할 최대 항목 수. 생략 시 기본값 10을 사용한다.", example = "10", defaultValue = "10", minimum = "1", maximum = "100")
+        @Schema(description = "한 번에 조회할 최대 항목 수입니다. 생략하면 10을 사용합니다.", example = "10", defaultValue = "10", minimum = "1", maximum = "100")
         @Positive
         @Max(100)
         Integer size

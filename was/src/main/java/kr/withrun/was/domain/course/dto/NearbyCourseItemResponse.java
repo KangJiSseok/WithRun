@@ -13,7 +13,7 @@ public record NearbyCourseItemResponse(
         @Schema(description = "코스 ID", example = "12")
         Long courseId,
 
-        @Schema(description = "코스 제목", example = "성곽 야간 러닝 5K")
+        @Schema(description = "코스 제목", example = "한강 야간 러닝 5K")
         String title,
 
         @Schema(description = "코스 상태")
@@ -37,16 +37,19 @@ public record NearbyCourseItemResponse(
         @Schema(description = "코스 종료 지점 경도", example = "126.9814")
         Double endLongitude,
 
-        @Schema(description = "타겟 위치와 코스 사이의 최소 거리(m)", example = "320")
+        @Schema(description = "검색 기준 위치와 코스 사이의 최소 거리(m)", example = "320")
         Integer distanceFromTargetM,
 
-        @Schema(description = "사용자 현재 위치와 코스 사이의 최소 거리(m)", example = "320")
+        @Schema(description = "사용자 현재 위치와 코스 사이의 최소 거리(m)", example = "240")
         Integer distanceFromUserM,
 
         @Schema(description = "코스 난이도", implementation = DifficultyOption.class, nullable = true)
         DifficultyOption difficulty,
 
-        @ArraySchema(schema = @Schema(implementation = CourseTypeOption.class), arraySchema = @Schema(description = "코스 유형 목록"))
+        @ArraySchema(
+                schema = @Schema(implementation = CourseTypeOption.class),
+                arraySchema = @Schema(description = "코스 유형 목록")
+        )
         List<CourseTypeOption> courseTypes,
 
         @Schema(description = "코스 좋아요 수", example = "128")
@@ -82,7 +85,7 @@ public record NearbyCourseItemResponse(
     public record DifficultyOption(
             @Schema(description = "클라이언트가 사용하는 데이터 값", example = "MEDIUM")
             String data,
-            @Schema(description = "사용자에게 노출되는 라벨", example = "보통")
+            @Schema(description = "사용자에게 노출하는 라벨", example = "보통")
             String label
     ) {
         public static DifficultyOption from(Difficulty difficulty) {
@@ -97,7 +100,7 @@ public record NearbyCourseItemResponse(
     public record CourseTypeOption(
             @Schema(description = "클라이언트가 사용하는 데이터 값", example = "RIVERSIDE")
             String data,
-            @Schema(description = "사용자에게 노출되는 라벨", example = "강변")
+            @Schema(description = "사용자에게 노출하는 라벨", example = "강변")
             String label
     ) {
         public static CourseTypeOption from(CourseType courseType) {
