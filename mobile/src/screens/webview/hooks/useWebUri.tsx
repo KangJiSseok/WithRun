@@ -1,11 +1,8 @@
 import { useMemo } from 'react'
-import { useSafeAreaInsets } from 'react-native-safe-area-context'
 import Constants from 'expo-constants'
 import { Platform } from 'react-native'
 
 export default function useWebUri() {
-  const { top, bottom } = useSafeAreaInsets()
-
   const uri = useMemo(() => {
     const androidHost = process.env.EXPO_PUBLIC_WEB_HOST
     const webHost = Constants.expoConfig?.hostUri?.split(':')[0] || 'localhost'
@@ -19,8 +16,8 @@ export default function useWebUri() {
       else return `http://${webHost}:5173` // web
     })()
 
-    return `${baseURL}?insetTop=${top}&insetBottom=${bottom}`
-  }, [top, bottom])
+    return baseURL
+  }, [])
 
   return { uri }
 }
