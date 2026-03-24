@@ -10,6 +10,7 @@ import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.CourseMyLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
@@ -35,6 +36,8 @@ import kr.withrun.was.domain.course.type.CourseDistanceType;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.util.CourseGhostLeaderboardCursorCodec;
+import kr.withrun.was.domain.user.entity.User;
+import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
@@ -70,6 +73,7 @@ public class CourseService {
     private final CourseLikeRepository courseLikeRepository;
     private final CourseReviewRepository courseReviewRepository;
     private final CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
+    private final UserRepository userRepository;
     private final HybridRecommendationService hybridRecommendationService;
 
     public NearbyCoursesResponse findNearbyCourses(NearbyCoursesRequest request, AuthenticatedUser user) {
@@ -282,6 +286,25 @@ public class CourseService {
                 totalElements,
                 totalPages,
                 hasNext
+        );
+    }
+
+    public CourseMyLeaderboardResponse findMyCourseLeaderboard(Long courseId, AuthenticatedUser authenticatedUser) {
+        Long userId = authenticatedUser.userId();
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new CustomException(ResponseCode.USER_NOT_FOUND));
+        getCourse(courseId);
+
+        CourseGhostLeaderboardRankRow myRankRow = courseGhostLeaderboardRepository.findRankedRowsByCourseId(courseId).stream()
+                .filter(row -> row.userId().equals(userId))
+                .findFirst()
+                .orElse(null);
+
+        return new CourseMyLeaderboardResponse(
+                user.getNickname(),
+                user.getId(),
+                myRankRow == null ? 0L : myRankRow.rank(),
+                myRankRow == null ? 0 : myRankRow.point()
         );
     }
 

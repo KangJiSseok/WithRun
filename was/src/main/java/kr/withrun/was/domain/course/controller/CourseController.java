@@ -7,6 +7,8 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.NotNull;
+import jakarta.validation.constraints.Positive;
 import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
@@ -14,6 +16,7 @@ import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.CourseMyLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesRequest;
@@ -30,6 +33,7 @@ import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
 import org.springframework.web.bind.annotation.PathVariable;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -164,6 +168,18 @@ public class CourseController {
             @Valid @ParameterObject @ModelAttribute CourseLeaderboardRequest request
     ) {
         return ApiResponse.successEntity(courseService.findCourseLeaderboard(request));
+    }
+
+    @GetMapping("/leaderboards/me")
+    public ResponseEntity<ApiResponse<CourseMyLeaderboardResponse>> findMyCourseLeaderboard(
+            @Parameter(description = "코스 ID", example = "12")
+            @RequestParam(name = "course_id", required = false)
+            @NotNull
+            @Positive
+            Long courseId,
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
+    ) {
+        return ApiResponse.successEntity(courseService.findMyCourseLeaderboard(courseId, authenticatedUser));
     }
 
     @Operation(summary = "코스 고스트 리더보드 조회", description = "코스의 고스트 리더보드를 조회합니다.")
