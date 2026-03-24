@@ -7,6 +7,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
@@ -24,6 +25,7 @@ import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -105,9 +107,9 @@ public class CourseController {
     })
     @GetMapping("/nearby")
     public ResponseEntity<ApiResponse<NearbyCoursesResponse>> findNearbyCourses(
-            @Valid @ParameterObject @ModelAttribute NearbyCoursesRequest request
+            @Valid @ParameterObject @ModelAttribute NearbyCoursesRequest request, @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return ApiResponse.successEntity(courseService.findNearbyCourses(request));
+        return ApiResponse.successEntity(courseService.findNearbyCourses(request, user));
     }
 
     @Operation(
