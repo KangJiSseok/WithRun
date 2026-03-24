@@ -1,4 +1,4 @@
-// NormalRun GPS 샘플 수집 훅
+// 러닝 GPS 샘플 수집 훅 (FreeRun / NormalRun 공용)
 // 책임: GPS 샘플 수집 + Haversine 거리 누적 + 고도 상승 계산
 
 import { useState, useEffect, useRef } from 'react';
@@ -11,7 +11,7 @@ import { haversineKm } from '@/shared/utils';
 const GPS_NOISE_MIN_KM = 0.002; // 2m 미만 → 정지 노이즈
 const GPS_NOISE_MAX_KM = 0.05;  // 50m 초과 → GPS 점프
 
-export function useNormalRunningGps({ isPaused }: { isPaused: boolean }) {
+export function useRunningGps({ isPaused }: { isPaused: boolean }) {
   const [haversineDistanceKm, setHaversineDistanceKm] = useState(0);
 
   const prevGpsRef = useRef<{ lat: number; lon: number } | null>(null);

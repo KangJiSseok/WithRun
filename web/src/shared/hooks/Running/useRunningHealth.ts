@@ -1,4 +1,4 @@
-// NormalRun 헬스 샘플 수집 훅
+// 러닝 헬스 샘플 수집 훅 (FreeRun / NormalRun 공용)
 // 책임: 워치 연결 감지 + 헬스 샘플 수집 + 구간 심박수 추적
 
 import { useState, useEffect, useRef } from 'react';
@@ -11,7 +11,7 @@ const WATCH_TIMEOUT_MS = 3000;
 // GPS 데이터가 이 시간(ms) 이상 오지 않으면 stale로 판단
 const GPS_TIMEOUT_MS = 3000;
 
-export function useNormalRunningHealth({ isPaused }: { isPaused: boolean }) {
+export function useRunningHealth({ isPaused }: { isPaused: boolean }) {
   const [isWatchConnected, setIsWatchConnected] = useState(false);
 
   const healthSamplesRef = useRef<HealthSample[]>([]);

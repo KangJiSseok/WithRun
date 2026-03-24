@@ -12,19 +12,19 @@ import { useCallback } from 'react';
 
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
 
-import { useNormalRunningTimer } from './useNormalRunningTimer';
-import { useNormalRunningGps } from './useNormalRunningGps';
-import { useNormalRunningHealth } from './useNormalRunningHealth';
-import { useNormalRunningSplits } from './useNormalRunningSplits';
+import { useRunningTimer } from '@/shared/hooks/Running/useRunningTimer';
+import { useRunningGps } from '@/shared/hooks/Running/useRunningGps';
+import { useRunningHealth } from '@/shared/hooks/Running/useRunningHealth';
+import { useRunningSplits } from '@/shared/hooks/Running/useRunningSplits';
 
 export function useNormalRunning() {
-  const { durationSec, formattedTime, isPaused, togglePause } = useNormalRunningTimer();
+  const { durationSec, formattedTime, isPaused, togglePause } = useRunningTimer();
 
   const { haversineDistanceKm, elevationGainMRef, gpsSamplesRef } =
-    useNormalRunningGps({ isPaused });
+    useRunningGps({ isPaused });
 
   const { isWatchConnected, watchHealthData, healthSamplesRef, currentKmHeartRatesRef } =
-    useNormalRunningHealth({ isPaused });
+    useRunningHealth({ isPaused });
 
   // 표시값 계산용: GPS Doppler 속도·케이던스 (데이터 수집은 GPS 훅에서 담당)
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
@@ -35,7 +35,7 @@ export function useNormalRunning() {
       ? watchHealthData.distanceM / 1000
       : haversineDistanceKm;
 
-  const { splitsRef } = useNormalRunningSplits({
+  const { splitsRef } = useRunningSplits({
     distanceKm,
     durationSec,
     isPaused,

@@ -1,4 +1,4 @@
-// NormalRun 1km 구간(split) 감지 훅
+// 러닝 1km 구간(split) 감지 훅 (FreeRun / NormalRun 공용)
 // 책임: 거리 기반 1km 완주 감지 → SplitRecord 누적
 
 import { useEffect, useRef } from 'react';
@@ -8,7 +8,7 @@ import type { SplitRecord } from '@/apis/runningSessions';
 // 회원 시스템 구현 전 임시 mock 유저 (SplitRecord.userId 용)
 const MOCK_USER_ID = 1;
 
-interface UseNormalRunningSplitsParams {
+interface UseRunningSplitsParams {
   distanceKm: number;
   durationSec: number;
   isPaused: boolean;
@@ -16,13 +16,13 @@ interface UseNormalRunningSplitsParams {
   currentKmHeartRatesRef: React.MutableRefObject<number[]>;
 }
 
-export function useNormalRunningSplits({
+export function useRunningSplits({
   distanceKm,
   durationSec,
   isPaused,
   elevationGainMRef,
   currentKmHeartRatesRef,
-}: UseNormalRunningSplitsParams) {
+}: UseRunningSplitsParams) {
   const splitsRef = useRef<SplitRecord[]>([]);
   const lastSplitKmRef = useRef(0);
   const lastSplitTimeRef = useRef(0);

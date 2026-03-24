@@ -1,11 +1,11 @@
-// NormalRun 세션 타이머 훅
+// 러닝 세션 타이머 훅 (FreeRun / NormalRun 공용)
 // 책임: 일시정지 인식 타이머 (elapsed time 누적)
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { formatTime } from '@/shared/utils';
 
-export function useNormalRunningTimer() {
+export function useRunningTimer() {
   const [isPaused, setIsPaused] = useState(false);
   const [time, setTime] = useState(0); // seconds
 
