@@ -124,6 +124,30 @@ class UserCalendarRepositoryTest {
         );
     }
 
+    @DisplayName("사용자와 날짜로 활성 캘린더를 Querydsl 커스텀 메서드에서 조회한다")
+    @Test
+    void findsActiveCalendarByUserIdAndDateFromCustomRepository() throws NoSuchMethodException {
+        User user = persistUser("calendar-runner");
+        UserCalendar calendar = persistCalendar(user, LocalDate.of(2026, 3, 18), 6500, 0, 1, 0, false);
+        persistCalendar(persistUser("another-calendar-runner"), LocalDate.of(2026, 3, 18), 7200, 1, 0, 0, false);
+
+        entityManager.flush();
+        entityManager.clear();
+
+        assertThat(UserCalendarCustomRepository.class.getMethod(
+                "findByUserIdAndCalendarDateAndDeletedAtIsNull",
+                Long.class,
+                LocalDate.class
+        )).isNotNull();
+        assertThat(userCalendarRepository.findByUserIdAndCalendarDateAndDeletedAtIsNull(
+                user.getId(),
+                LocalDate.of(2026, 3, 18)
+        )).isPresent()
+                .get()
+                .extracting(UserCalendar::getId)
+                .isEqualTo(calendar.getId());
+    }
+
     private User persistUser(String nickname) {
         User user = instantiate(User.class);
         setField(user, "nickname", nickname);

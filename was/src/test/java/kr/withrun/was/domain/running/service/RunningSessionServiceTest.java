@@ -12,14 +12,19 @@ import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
+import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
+import kr.withrun.was.domain.running.dto.CreateRunningGpsSampleRequest;
+import kr.withrun.was.domain.running.dto.CreateRunningHealthSampleRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
+import kr.withrun.was.domain.running.dto.CreateRunningSessionSplitRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.RunningGpsSampleResponse;
+import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.running.entity.RunningGpsSample;
@@ -33,7 +38,9 @@ import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHist
 import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
+import kr.withrun.was.domain.user.entity.UserCalendar;
 import kr.withrun.was.domain.user.entity.User;
+import kr.withrun.was.domain.user.repository.UserCalendarRepository;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.common.type.Difficulty;
@@ -83,6 +90,9 @@ class RunningSessionServiceTest {
     private UserRepository userRepository;
 
     @Mock
+    private UserCalendarRepository userCalendarRepository;
+
+    @Mock
     private CourseRepository courseRepository;
 
     @Mock
@@ -119,6 +129,7 @@ class RunningSessionServiceTest {
         runningSessionService = new RunningSessionService(
                 runningSessionRepository,
                 userRepository,
+                userCalendarRepository,
                 courseRepository,
                 courseDifficultyRepository,
                 courseGhostLeaderboardRepository,
@@ -452,6 +463,33 @@ class RunningSessionServiceTest {
         assertThat(response.endedAt()).isBetween(beforeComplete, afterComplete);
         assertThat(runningSession.getEndedAt()).isEqualTo(response.endedAt());
         assertThat(runningSession.getIsCompleted()).isTrue();
+    }
+
+    @DisplayName("상세 종료는 오늘 러닝을 캘린더에 기록한다")
+    @Test
+    void recordsRunInUserCalendarWhenCompletingDetailedRunningSession() {
+        User user = user(21L);
+        RunningSession runningSession = runningSession(91L, 21L, false, STARTED_AT);
+        CompleteRunningSessionRequest request = validCompleteRequest(21L);
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(91L)).thenReturn(Optional.of(runningSession));
+        when(userRepository.findNotDeletedUser(21L)).thenReturn(Optional.of(user));
+        when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningHealthSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningSessionSplitRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(91L, request);
+
+        ArgumentCaptor<UserCalendar> calendarCaptor = ArgumentCaptor.forClass(UserCalendar.class);
+        verify(userCalendarRepository).save(calendarCaptor.capture());
+        UserCalendar savedCalendar = calendarCaptor.getValue();
+        assertThat(savedCalendar.getUser().getId()).isEqualTo(user.getId());
+        assertThat(savedCalendar.getCalendarDate()).isEqualTo(response.endedAt().toLocalDate());
+        assertThat(savedCalendar.getTotalDistanceM()).isEqualTo(5320);
+        assertThat(savedCalendar.getTotalDurationSec()).isEqualTo(1925);
+        assertThat(savedCalendar.getTotalCaloriesKcal()).isEqualTo(328);
+        assertThat(savedCalendar.getFreeRunCount()).isEqualTo(1);
+        assertThat(savedCalendar.getCourseRunCount()).isZero();
+        assertThat(savedCalendar.getGhostRunCount()).isZero();
     }
 
     @DisplayName("완료된 러닝 세션을 요청한 모드의 코스로 등록한다")
@@ -865,6 +903,47 @@ class RunningSessionServiceTest {
                 2520,
                 2,
                 3
+        );
+    }
+
+    private CompleteRunningSessionRequest validCompleteRequest(Long userId) {
+        return new CompleteRunningSessionRequest(
+                userId,
+                5320,
+                328,
+                37.5701,
+                126.9812,
+                2.92,
+                1925,
+                362,
+                46,
+                0,
+                List.of(new CreateRunningGpsSampleRequest(
+                        37.5665,
+                        126.9780,
+                        21.5,
+                        5.2,
+                        182.0,
+                        LocalDateTime.of(2026, 3, 18, 6, 31, 30)
+                )),
+                List.of(new CreateRunningHealthSampleRequest(
+                        LocalDateTime.of(2026, 3, 18, 6, 31, 30),
+                        (short) 152,
+                        3.45,
+                        289,
+                        1250,
+                        84.5,
+                        (short) 174
+                )),
+                List.of(new CreateRunningSessionSplitRequest(
+                        userId,
+                        1,
+                        1000,
+                        320,
+                        320,
+                        152,
+                        12
+                ))
         );
     }
 
