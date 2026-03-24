@@ -37,6 +37,8 @@ export type GpsLocation = {
 
 type _AppBridgeMethods = {
   whoRU(): Promise<string>
+  notifyCourseDeviation(count: 1 | 2 | 3): Promise<void>
+  notifyCourseDeviationForceStop(): Promise<void>
 }
 
 // bridge() 반환 타입과 구조적으로 동일
