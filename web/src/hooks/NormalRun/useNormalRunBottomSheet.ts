@@ -38,8 +38,11 @@ export const useNormalRunBottomSheet = () => {
   }
 
   function startDrag(e: React.PointerEvent) {
-    setIsDragging(true);
     dragControls.start(e);
+  }
+
+  function handleDragStart() {
+    setIsDragging(true);
   }
 
   function handleDragEnd(_: unknown, info: PanInfo) {
@@ -63,6 +66,7 @@ export const useNormalRunBottomSheet = () => {
     collapse,
     expand,
     startDrag,
+    handleDragStart,
     handleDragEnd,
   };
 };

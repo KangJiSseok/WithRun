@@ -52,6 +52,7 @@ export function NormalRunScreen() {
     collapse,
     expand,
     startDrag,
+    handleDragStart,
     handleDragEnd,
   } = useNormalRunBottomSheet();
 
@@ -167,6 +168,7 @@ export function NormalRunScreen() {
             : sheetHeight - headerHeight - BOTTOM_NAV_HEIGHT,
         }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         className="absolute bottom-0 left-0 right-0 z-10 flex max-h-[60dvh] flex-col rounded-t-[var(--radius-2xl)] bg-[hsl(var(--surface-default))] shadow-[0_-4px_20px_rgba(0,0,0,0.12)]"
       >
