@@ -68,6 +68,7 @@ pnpm-debug.log*
 .env.*
 .env*.local
 *.env
+!infra/local/valhalla/.env.example
 
 # Credentials
 *.pem
