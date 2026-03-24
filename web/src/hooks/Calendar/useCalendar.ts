@@ -37,7 +37,7 @@ export function useCalendar() {
   const [historyData, setHistoryData] = useState<GetRunningHistoryResponse | null>(null);
   // 초기/컨텍스트 전환 로딩용
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-  // "더 보기" 요청 중인지 구분
+  // 무한스크롤 추가 로딩 중인지 구분 (중복 호출 방지용)
   const [isLoadingMore, setIsLoadingMore] = useState(false);
   // 선택한 날짜 (달력에서 클릭, 재클릭 시 해제)
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
