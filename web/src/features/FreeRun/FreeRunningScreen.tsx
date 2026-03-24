@@ -1,6 +1,7 @@
 // 러닝 중 화면 (통계 3개 + 타이머 + 일시정지/종료 컨트롤)
 
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Pause, Play, Square } from 'lucide-react';
 import { cn } from '@/shared/utils';
 import { useFreeRunning } from '@/hooks/FreeRun/useFreeRunning';
@@ -45,12 +46,50 @@ function StatCard({ label, value, unit }: StatCardProps) {
 }
 
 export function FreeRunningScreen({ runningSessionId, onFinish }: FreeRunningScreenProps) {
+  const navigate = useNavigate();
   const { time, distance, pace, calories, isPaused, togglePause } = useFreeRunning();
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [submitError, setSubmitError] = useState<string | null>(null);
-  const [localResult, setLocalResult] = useState<RunningResult | null>(null);
+
+  // "latest ref" 패턴: cleanup 클로저에서 최신값 접근
+  const latestValuesRef = useRef({ time, distance, calories });
+  latestValuesRef.current = { time, distance, calories };
+
+  const latestGpsRef = useRef(gpsLocation);
+  latestGpsRef.current = gpsLocation;
+
+  // 정상 완료 시 cleanup PATCH 중복 방지
+  const completedRef = useRef(false);
+
+  // 비정상 종료 처리 (앱 이탈 시 세션 종료 API fire-and-forget)
+  useEffect(() => {
+    return () => {
+      if (completedRef.current || !runningSessionId) return;
+      const { time: t, distance: d, calories: cal } = latestValuesRef.current;
+      const durationSec = parseDurationSec(t);
+      const distanceM = Math.round(parseFloat(d) * 1000);
+      const avgSpeedMps = durationSec > 0 ? distanceM / durationSec : 0;
+      const avgPaceSecPerKm = avgSpeedMps > 0 ? Math.round(1000 / avgSpeedMps) : 300;
+      const gps = latestGpsRef.current;
+      completeRunningSession(runningSessionId, {
+        userId: MOCK_USER_ID,
+        distanceM,
+        caloriesKcal: cal,
+        endLatitude: gps?.latitude ?? 0,
+        endLongitude: gps?.longitude ?? 0,
+        avgSpeedMps,
+        durationSec,
+        avgPaceSecPerKm,
+        elevationGainM: 0,
+        distanceGapM: 0,
+        gpsSamples: [],
+        healthSamples: [],
+        splits: [],
+      }).catch(() => {}); // fire-and-forget
+    };
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
 
   const buildPayload = () => {
     const durationSec = parseDurationSec(time);
@@ -63,11 +102,7 @@ export function FreeRunningScreen({ runningSessionId, onFinish }: FreeRunningScr
 
   const handleStop = async () => {
     const { durationSec, distanceM, avgSpeedMps, avgPaceSecPerKm } = buildPayload();
-    const built: RunningResult = { durationSec, distanceM, caloriesKcal: calories, avgPaceSecPerKm };
-    setLocalResult(built);
-    setSubmitError(null);
     setIsSubmitting(true);
-
 
     try {
       const res = await completeRunningSession(runningSessionId!, {
@@ -85,6 +120,7 @@ export function FreeRunningScreen({ runningSessionId, onFinish }: FreeRunningScr
         healthSamples: [],
         splits: [],
       });
+      completedRef.current = true;
       onFinish({
         durationSec: res.data.durationSec,
         distanceM: res.data.distanceM,
@@ -92,15 +128,10 @@ export function FreeRunningScreen({ runningSessionId, onFinish }: FreeRunningScr
         avgPaceSecPerKm: res.data.avgPaceSecPerKm,
       });
     } catch {
-      setSubmitError('서버 연결에 실패했습니다.');
+      navigate('/free-run');
     } finally {
       setIsSubmitting(false);
     }
-  };
-
-  const handleForceFinish = () => {
-    if (!localResult) return;
-    onFinish(localResult);
   };
 
   return (
@@ -136,27 +167,6 @@ export function FreeRunningScreen({ runningSessionId, onFinish }: FreeRunningScr
           {isPaused ? '일시정지' : '러닝 중'}
         </span>
       </div>
-
-      {/* 에러 메시지 + 재시도/결과보기 버튼 */}
-      {submitError && (
-        <div className="w-full flex flex-col items-center gap-3">
-          <span className="caption-r text-red-400">{submitError}</span>
-          <div className="flex gap-3 w-full">
-            <button
-              onClick={handleStop}
-              className="flex-1 py-3 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] caption-b"
-            >
-              재시도
-            </button>
-            <button
-              onClick={handleForceFinish}
-              className="flex-1 py-3 rounded-2xl bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))] caption-b"
-            >
-              결과 보기
-            </button>
-          </div>
-        </div>
-      )}
 
       {/* 하단 컨트롤 */}
       <div className="relative flex items-center justify-center mb-4 w-full">
