@@ -69,7 +69,7 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
       const gps = latestGpsLocationRef.current;
       completeRunningSession(s.runningSessionId, {
         userId: MOCK_USER_ID,
-        endedAt: new Date().toISOString(),
+
         endLatitude: gps?.latitude ?? 0,
         endLongitude: gps?.longitude ?? 0,
         distanceGapM: 0,
@@ -86,7 +86,7 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
     try {
       const res = await completeRunningSession(session.runningSessionId, {
         userId: MOCK_USER_ID,
-        endedAt: new Date().toISOString(),
+
         endLatitude: gpsLocation?.latitude ?? 0,
         endLongitude: gpsLocation?.longitude ?? 0,
         distanceGapM: 0,

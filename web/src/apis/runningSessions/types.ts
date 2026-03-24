@@ -72,7 +72,7 @@ export type HealthSample = {
 };
 
 // 1km 단위 구간 기록 (TODO: 추후 구현)
-export type SplitData = {
+export type SplitRecord = {
   userId: number;
   splitIndex: number;
   splitDistanceM: number;
@@ -96,7 +96,7 @@ export type CompleteRunningSessionRequest = {
   distanceGapM: number;
   gpsSamples: GpsSample[];
   healthSamples: HealthSample[];
-  splits: SplitData[];
+  splits: SplitRecord[];
 };
 
 // 고스트러닝 결과 타입
