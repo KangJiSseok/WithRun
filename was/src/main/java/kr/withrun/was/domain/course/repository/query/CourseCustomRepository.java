@@ -2,8 +2,8 @@ package kr.withrun.was.domain.course.repository.query;
 
 import kr.withrun.was.domain.course.dto.PreferredDistanceRange;
 import kr.withrun.was.domain.course.entity.Course;
-import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCoursePageRow;
+import kr.withrun.was.domain.course.repository.query.dto.NearbyRecommendationCandidateRow;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
 import kr.withrun.was.domain.course.type.NearbyGhostCourseSortBy;
 
@@ -14,9 +14,14 @@ public interface CourseCustomRepository {
 
     Optional<Course> findNotDeletedCourse(Long courseId);
 
-    List<NearbyCourseCandidateRow> findNearbyCourseCandidates();
-
-    List<NearbyCourseCandidateRow> findNearbyCourseCandidates(List<PreferredDistanceRange> preferredDistanceMs);
+    List<NearbyRecommendationCandidateRow> findNearbyRecommendationCandidates(
+            List<PreferredDistanceRange> preferredDistanceMs,
+            double targetLatitude,
+            double targetLongitude,
+            double userLatitude,
+            double userLongitude,
+            int radiusM
+    );
 
     List<NearbyCoursePageRow> findNearbyCoursePageRows(
             List<PreferredDistanceRange> preferredDistanceMs,

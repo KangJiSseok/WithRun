@@ -113,6 +113,30 @@ public class CourseController {
     }
 
     @Operation(
+            summary = "추천 코스 조회",
+            description = "동일 요청 조건으로 추천 코스 3개를 조회합니다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "추천 코스 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.RecommendedNearbyCoursesApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "잘못된 추천 코스 조회 요청",
+                    content = @Content(schema = @Schema(implementation = ValidationErrorApiResponseDoc.class))
+            )
+    })
+    @GetMapping("/nearby/recommended")
+    public ResponseEntity<ApiResponse<NearbyCoursesResponse>> findRecommendedNearbyCourses(
+            @Valid @ParameterObject @ModelAttribute NearbyCoursesRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
+    ) {
+        return ApiResponse.successEntity(courseService.findRecommendedNearbyCourses(request, user));
+    }
+
+    @Operation(
             summary = "주변 고스트 런 코스 조회",
             description = "반경, 선호 코스 길이, 정렬 조건에 맞는 주변 고스트 런 코스 목록을 조회합니다."
     )

@@ -26,8 +26,8 @@ import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseReviewRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.CourseGhostLeaderboardRankRow;
-import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCoursePageRow;
+import kr.withrun.was.domain.course.repository.query.dto.NearbyRecommendationCandidateRow;
 import kr.withrun.was.domain.course.service.recommendation.CourseRecommendationScore;
 import kr.withrun.was.domain.course.service.recommendation.HybridRecommendationService;
 import kr.withrun.was.domain.course.service.recommendation.NearbyRecommendationInput;
@@ -35,7 +35,6 @@ import kr.withrun.was.domain.course.type.CourseDistanceType;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.util.CourseGhostLeaderboardCursorCodec;
-import kr.withrun.was.domain.course.util.HaversineDistanceCalculator;
 import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
@@ -51,7 +50,6 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Objects;
-import java.util.OptionalInt;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -60,11 +58,10 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CourseService {
 
+    private static final int RECOMMENDED_NEARBY_LIMIT = 3;
+
     @Value("${app.cdn.base-url}")
     private String CDN_URL;
-
-    @Value("${app.recommendation.nearby.recommended-count:3}")
-    private int nearbyRecommendedCount;
 
     private final CourseRepository courseRepository;
     private final CourseDifficultyRepository courseDifficultyRepository;
@@ -76,19 +73,58 @@ public class CourseService {
     private final HybridRecommendationService hybridRecommendationService;
 
     public NearbyCoursesResponse findNearbyCourses(NearbyCoursesRequest request, AuthenticatedUser user) {
-        Long userId = user == null ? null : user.userId();
-        List<NearbyCourseItemResponse> scoredItems = findScoredNearbyCourseItems(request, userId);
-        long totalElements = scoredItems.size();
-        int totalPages = totalElements == 0 ? 0 : (int) ((totalElements + request.size() - 1) / request.size());
+        List<NearbyCoursePageRow> pageRows = courseRepository.findNearbyCoursePageRows(
+                request.preferredDistanceMs(),
+                request.targetLatitude(),
+                request.targetLongitude(),
+                request.latitude(),
+                request.longitude(),
+                request.sortBy(),
+                request.radiusM(),
+                request.page(),
+                request.size()
+        );
+        long totalElements = courseRepository.countNearbyCourses(
+                request.preferredDistanceMs(),
+                request.targetLatitude(),
+                request.targetLongitude(),
+                request.radiusM()
+        );
         boolean hasNext = (long) (request.page() + 1) * request.size() < totalElements;
+        int totalPages = totalElements == 0 ? 0 : (int) ((totalElements + request.size() - 1) / request.size());
         List<NearbyCourseItemResponse> items = enrichNearbyCourseItemsWithCounts(
-                toPagedNearbyCourseItems(scoredItems, request.page(), request.size())
+                pageRows.stream()
+                        .map(this::toNearbyCourseItemResponse)
+                        .toList()
         );
 
         return new NearbyCoursesResponse(
                 items,
                 request.page(),
                 request.size(),
+                totalElements,
+                totalPages,
+                hasNext
+        );
+    }
+
+    public NearbyCoursesResponse findRecommendedNearbyCourses(NearbyCoursesRequest request, AuthenticatedUser user) {
+        Long userId = user == null ? null : user.userId();
+        List<NearbyCourseItemResponse> scoredItems = findScoredNearbyCourseItems(request, userId, RECOMMENDED_NEARBY_LIMIT);
+        List<NearbyCourseItemResponse> items = enrichNearbyCourseItemsWithCounts(
+                scoredItems.stream()
+                        .limit(RECOMMENDED_NEARBY_LIMIT)
+                        .toList()
+        );
+        long totalElements = items.size();
+        int totalPages = totalElements == 0 ? 0 : 1;
+        boolean hasNext = false;
+        int size = items.size();
+
+        return new NearbyCoursesResponse(
+                items,
+                0,
+                size,
                 totalElements,
                 totalPages,
                 hasNext
@@ -328,7 +364,11 @@ public class CourseService {
         return CourseGhostLeaderboardCursorCodec.encode(row.point(), row.leaderboardId());
     }
 
-    private List<NearbyCourseItemResponse> findScoredNearbyCourseItems(NearbyCoursesRequest request, Long userId) {
+    private List<NearbyCourseItemResponse> findScoredNearbyCourseItems(
+            NearbyCoursesRequest request,
+            Long userId,
+            int recommendedLimit
+    ) {
         List<NearbyCourseCandidate> candidates = findNearbyCourseCandidates(request);
         if (candidates.isEmpty()) {
             return List.of();
@@ -357,7 +397,7 @@ public class CourseService {
                                 : candidate.courseId()))
                 .toList();
 
-        Set<Long> recommendedCourseIds = resolveRecommendedCourseIds(sortedCandidates);
+        Set<Long> recommendedCourseIds = resolveRecommendedCourseIds(sortedCandidates, recommendedLimit);
 
         return sortedCandidates.stream()
                 .map(candidate -> toNearbyCourseItemResponse(candidate, recommendedCourseIds.contains(candidate.courseId())))
@@ -365,60 +405,49 @@ public class CourseService {
     }
 
     private List<NearbyCourseCandidate> findNearbyCourseCandidates(NearbyCoursesRequest request) {
-        List<NearbyCourseCandidateRow> rows = courseRepository.findNearbyCourseCandidates(request.preferredDistanceMs());
+        List<NearbyRecommendationCandidateRow> rows = courseRepository.findNearbyRecommendationCandidates(
+                request.preferredDistanceMs(),
+                request.targetLatitude(),
+                request.targetLongitude(),
+                request.latitude(),
+                request.longitude(),
+                request.radiusM()
+        );
         if (rows.isEmpty()) {
             return List.of();
         }
 
-        Map<Long, List<NearbyCourseCandidateRow>> rowsByCourseId = rows.stream()
+        Map<Long, List<NearbyRecommendationCandidateRow>> rowsByCourseId = rows.stream()
                 .filter(row -> row.courseId() != null)
                 .collect(Collectors.groupingBy(
-                        NearbyCourseCandidateRow::courseId,
+                        NearbyRecommendationCandidateRow::courseId,
                         LinkedHashMap::new,
                         Collectors.toList()
                 ));
 
         return rowsByCourseId.values().stream()
-                .map(groupedRows -> toNearbyCourseCandidate(groupedRows, request))
+                .map(this::toNearbyCourseCandidate)
                 .filter(Objects::nonNull)
                 .toList();
     }
 
     private NearbyCourseCandidate toNearbyCourseCandidate(
-            List<NearbyCourseCandidateRow> groupedRows,
-            NearbyCoursesRequest request
+            List<NearbyRecommendationCandidateRow> groupedRows
     ) {
         if (groupedRows == null || groupedRows.isEmpty()) {
             return null;
         }
 
-        NearbyCourseCandidateRow representative = groupedRows.getFirst();
-        Integer distanceFromTargetM = resolveDistanceFromCourse(
-                representative,
-                request.targetLatitude(),
-                request.targetLongitude()
-        );
-        if (distanceFromTargetM == null || distanceFromTargetM > request.radiusM()) {
-            return null;
-        }
-
-        Integer distanceFromUserM = resolveDistanceFromCourse(
-                representative,
-                request.latitude(),
-                request.longitude()
-        );
-        if (distanceFromUserM == null) {
-            return null;
-        }
+        NearbyRecommendationCandidateRow representative = groupedRows.getFirst();
 
         Difficulty difficulty = groupedRows.stream()
-                .map(NearbyCourseCandidateRow::difficulty)
+                .map(NearbyRecommendationCandidateRow::difficulty)
                 .filter(Objects::nonNull)
                 .findFirst()
                 .orElse(null);
 
         List<CourseType> courseTypes = groupedRows.stream()
-                .map(NearbyCourseCandidateRow::courseType)
+                .map(NearbyRecommendationCandidateRow::courseType)
                 .filter(Objects::nonNull)
                 .distinct()
                 .toList();
@@ -436,35 +465,9 @@ public class CourseService {
                 representative.snapshotImageUrl(),
                 difficulty,
                 courseTypes,
-                distanceFromTargetM,
-                distanceFromUserM
+                representative.distanceFromTargetM(),
+                representative.distanceFromUserM()
         );
-    }
-
-    private Integer resolveDistanceFromCourse(
-            NearbyCourseCandidateRow row,
-            double targetLatitude,
-            double targetLongitude
-    ) {
-        OptionalInt minimumDistanceByCoordinates = HaversineDistanceCalculator.calculateMinimumDistanceMeters(
-                row.coordinates(),
-                targetLatitude,
-                targetLongitude
-        );
-        if (minimumDistanceByCoordinates.isPresent()) {
-            return minimumDistanceByCoordinates.getAsInt();
-        }
-
-        OptionalInt distanceByStartPoint = HaversineDistanceCalculator.calculateDistanceMeters(
-                row.startLatitude(),
-                row.startLongitude(),
-                targetLatitude,
-                targetLongitude
-        );
-        if (distanceByStartPoint.isPresent()) {
-            return distanceByStartPoint.getAsInt();
-        }
-        return null;
     }
 
     private NearbyRecommendationInput toNearbyRecommendationInput(NearbyCourseCandidate candidate) {
@@ -493,8 +496,11 @@ public class CourseService {
         return score.finalScore();
     }
 
-    private Set<Long> resolveRecommendedCourseIds(List<NearbyCourseCandidate> sortedCandidates) {
-        int recommendedCount = Math.max(0, Math.min(nearbyRecommendedCount, sortedCandidates.size()));
+    private Set<Long> resolveRecommendedCourseIds(
+            List<NearbyCourseCandidate> sortedCandidates,
+            int recommendedLimit
+    ) {
+        int recommendedCount = Math.max(0, Math.min(recommendedLimit, sortedCandidates.size()));
         if (recommendedCount == 0) {
             return Set.of();
         }

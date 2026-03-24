@@ -15,8 +15,8 @@ import kr.withrun.was.domain.course.entity.QCourseBookmark;
 import kr.withrun.was.domain.course.entity.QCourseDifficulty;
 import kr.withrun.was.domain.course.entity.QCourseLike;
 import kr.withrun.was.domain.course.entity.QCourseTypeMap;
-import kr.withrun.was.domain.course.repository.query.dto.NearbyCourseCandidateRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCoursePageRow;
+import kr.withrun.was.domain.course.repository.query.dto.NearbyRecommendationCandidateRow;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
 import kr.withrun.was.domain.course.type.NearbyGhostCourseSortBy;
 import kr.withrun.was.domain.running.entity.QRunningSession;
@@ -51,14 +51,25 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
     }
 
     @Override
-    public List<NearbyCourseCandidateRow> findNearbyCourseCandidates() {
+    public List<NearbyRecommendationCandidateRow> findNearbyRecommendationCandidates(
+            List<PreferredDistanceRange> preferredDistanceMs,
+            double targetLatitude,
+            double targetLongitude,
+            double userLatitude,
+            double userLongitude,
+            int radiusM
+    ) {
         QCourse course = QCourse.course;
         QCourseDifficulty difficulty = QCourseDifficulty.courseDifficulty;
         QCourseTypeMap courseTypeMap = QCourseTypeMap.courseTypeMap;
+        NumberExpression<Integer> distanceFromTargetM =
+                distanceMetersExpression(course.startLatitude, course.startLongitude, targetLatitude, targetLongitude);
+        NumberExpression<Integer> distanceFromUserM =
+                distanceMetersExpression(course.startLatitude, course.startLongitude, userLatitude, userLongitude);
 
         return queryFactory
                 .select(Projections.constructor(
-                        NearbyCourseCandidateRow.class,
+                        NearbyRecommendationCandidateRow.class,
                         course.id,
                         course.title,
                         course.status,
@@ -71,7 +82,9 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
                         course.snapshotImageUrl,
                         course.coordinates,
                         difficulty.difficulty,
-                        courseTypeMap.courseType
+                        courseTypeMap.courseType,
+                        distanceFromTargetM,
+                        distanceFromUserM
                 ))
                 .from(course)
                 .leftJoin(difficulty).on(
@@ -83,45 +96,14 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
                                 .and(courseTypeMap.deletedAt.isNull())
                 )
                 .where(
-                        course.deletedAt.isNull(),
-                        course.coordinates.isNotNull()
+                        nearbyCourseWhereClause(course, preferredDistanceMs),
+                        distanceFromTargetM.loe(radiusM)
                 )
-                .fetch();
-    }
-
-    @Override
-    public List<NearbyCourseCandidateRow> findNearbyCourseCandidates(List<PreferredDistanceRange> preferredDistanceMs) {
-        QCourse course = QCourse.course;
-        QCourseDifficulty difficulty = QCourseDifficulty.courseDifficulty;
-        QCourseTypeMap courseTypeMap = QCourseTypeMap.courseTypeMap;
-
-        return queryFactory
-                .select(Projections.constructor(
-                        NearbyCourseCandidateRow.class,
-                        course.id,
-                        course.title,
-                        course.status,
-                        course.distanceM,
-                        course.elevationGainM,
-                        course.startLatitude,
-                        course.startLongitude,
-                        course.endLatitude,
-                        course.endLongitude,
-                        course.snapshotImageUrl,
-                        course.coordinates,
-                        difficulty.difficulty,
-                        courseTypeMap.courseType
-                ))
-                .from(course)
-                .leftJoin(difficulty).on(
-                        difficulty.course.eq(course)
-                                .and(difficulty.deletedAt.isNull())
+                .orderBy(
+                        distanceFromUserM.asc(),
+                        course.id.asc(),
+                        courseTypeMap.id.asc().nullsLast()
                 )
-                .leftJoin(courseTypeMap).on(
-                        courseTypeMap.course.eq(course)
-                                .and(courseTypeMap.deletedAt.isNull())
-                )
-                .where(nearbyCourseWhereClause(course, preferredDistanceMs))
                 .fetch();
     }
 
