@@ -1,6 +1,6 @@
 import type { RouteObject } from 'react-router-dom';
 
-import { CalendarPage } from '@/pages/private/calendar';
+import { CalendarPage } from '@/pages/private/CalendarPage';
 import { FreeRunPage } from '@/pages/private/FreeRunPage';
 import { FreeRunSessionPage } from '@/pages/private/FreeRunSessionPage';
 import { HomePage } from '@/pages/private/home';
