@@ -24,6 +24,8 @@ import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.dto.UpdateRunningSessionResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarMonthlyResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
+import kr.withrun.was.domain.auth.dto.AuthMeResponse;
+import kr.withrun.was.domain.auth.dto.ReissueAccessTokenResponse;
 
 public final class SuccessApiResponseDocs {
 
@@ -326,6 +328,43 @@ public final class SuccessApiResponseDocs {
             String message,
             @Schema(description = "누적 러닝 요약 데이터")
             UserCalendarSummaryResponse data
+    ) {
+    }
+
+        @Schema(name = "AuthMeApiResponse", description = "현재 로그인 사용자 조회 성공 응답")
+    public record AuthMeApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "현재 로그인 사용자 데이터")
+            AuthMeResponse data
+    ) {
+    }
+
+    @Schema(name = "ReissueAccessTokenApiResponse", description = "access token 재발급 성공 응답")
+    public record ReissueAccessTokenApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "재발급된 access token 데이터")
+            ReissueAccessTokenResponse data
+    ) {
+    }
+
+    @Schema(name = "LogoutApiResponse", description = "로그아웃 성공 응답")
+    public record LogoutApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S102")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "로그아웃이 완료되었습니다.")
+            String message
     ) {
     }
 }

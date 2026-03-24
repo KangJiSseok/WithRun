@@ -49,4 +49,10 @@ public class UserPreferenceCourseType extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_user_preference_course_type_user_running_preference")
     )
     private UserRunningPreference userRunningPreference;
+
+    public static UserPreferenceCourseType create(CourseType courseType) {
+        UserPreferenceCourseType preferenceCourseType = new UserPreferenceCourseType();
+        preferenceCourseType.courseType = courseType;
+        return preferenceCourseType;
+    }
 }

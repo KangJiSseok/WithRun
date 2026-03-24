@@ -12,6 +12,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.MapsId;
 import jakarta.persistence.OneToMany;
 import jakarta.persistence.OneToOne;
+import jakarta.persistence.OrderBy;
 import jakarta.persistence.Table;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import kr.withrun.was.global.common.type.Difficulty;
@@ -49,13 +50,37 @@ public class UserRunningPreference extends BaseEntity {
     private User user;
 
     @OneToMany(mappedBy = "userRunningPreference", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id asc")
     private final List<UserPreferencePurpose> purposes = new ArrayList<>();
 
     @OneToMany(mappedBy = "userRunningPreference", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id asc")
     private final List<UserPreferenceCourseType> courseTypes = new ArrayList<>();
 
     @OneToMany(mappedBy = "userRunningPreference", cascade = CascadeType.ALL, orphanRemoval = true)
+    @OrderBy("id asc")
     private final List<UserPreferenceTimeSlot> timeSlots = new ArrayList<>();
+
+    public static UserRunningPreference create(
+            User user,
+            Difficulty preferredDifficulty,
+            Double preferredDistanceKm
+    ) {
+        // user_id를 PK로 공유하는 1:1 엔티티라 생성 시점에 user를 반드시 함께 묶습니다.
+        UserRunningPreference preference = new UserRunningPreference();
+        preference.user = user;
+        preference.preferredDifficulty = preferredDifficulty;
+        preference.preferredDistanceKm = preferredDistanceKm;
+        return preference;
+    }
+
+    public void updatePreferredSettings(
+            Difficulty preferredDifficulty,
+            Double preferredDistanceKm
+    ) {
+        this.preferredDifficulty = preferredDifficulty;
+        this.preferredDistanceKm = preferredDistanceKm;
+    }
 
     public void addPurpose(UserPreferencePurpose purpose) {
         purposes.add(purpose);
@@ -70,5 +95,30 @@ public class UserRunningPreference extends BaseEntity {
     public void addTimeSlot(UserPreferenceTimeSlot timeSlot) {
         timeSlots.add(timeSlot);
         timeSlot.setUserRunningPreference(this);
+    }
+
+    public void replacePurposes(List<kr.withrun.was.domain.user.type.Purpose> purposes) {
+        // 같은 값을 여러 번 보내도 DB unique 제약에 걸리지 않도록 중복을 제거합니다.
+        this.purposes.clear();
+        purposes.stream()
+                .distinct()
+                .map(UserPreferencePurpose::create)
+                .forEach(this::addPurpose);
+    }
+
+    public void replaceCourseTypes(List<kr.withrun.was.domain.course.type.CourseType> courseTypes) {
+        this.courseTypes.clear();
+        courseTypes.stream()
+                .distinct()
+                .map(UserPreferenceCourseType::create)
+                .forEach(this::addCourseType);
+    }
+
+    public void replaceTimeSlots(List<kr.withrun.was.global.common.type.TimeSlot> timeSlots) {
+        this.timeSlots.clear();
+        timeSlots.stream()
+                .distinct()
+                .map(UserPreferenceTimeSlot::create)
+                .forEach(this::addTimeSlot);
     }
 }

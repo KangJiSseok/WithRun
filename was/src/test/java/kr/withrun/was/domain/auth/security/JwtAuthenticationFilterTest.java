@@ -54,7 +54,7 @@ class JwtAuthenticationFilterTest {
     @DisplayName("유효한 access token이면 SecurityContext에 현재 사용자를 저장한다")
     void authenticatesRequestWithValidAccessToken() throws Exception {
         // 보호된 프로필 수정 API를 대상으로 access token 인증을 검증합니다.
-        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/users/me/profile");
+        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/users/me");
         request.addHeader(
                 HttpHeaders.AUTHORIZATION,
                 "Bearer " + jwtProvider.generateTokenPair(completedUser(7L), "google").accessToken()
@@ -100,7 +100,7 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("Authorization 헤더가 없으면 그대로 다음 필터로 넘긴다")
     void passesThroughWhenAuthorizationHeaderIsMissing() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/users/me/profile");
+        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/users/me");
         MockHttpServletResponse response = new MockHttpServletResponse();
         MockFilterChain filterChain = new MockFilterChain();
 
@@ -113,7 +113,7 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("잘못된 토큰이면 TOKEN_INVALID 401 응답을 반환한다")
     void returnsUnauthorizedWhenTokenIsInvalid() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/users/me/profile");
+        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/users/me");
         request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer invalid-token");
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -128,7 +128,7 @@ class JwtAuthenticationFilterTest {
     @Test
     @DisplayName("만료된 토큰이면 TOKEN_EXPIRED 401 응답을 반환한다")
     void returnsUnauthorizedWhenTokenIsExpired() throws Exception {
-        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/users/me/profile");
+        MockHttpServletRequest request = new MockHttpServletRequest("PUT", "/api/users/me");
         request.addHeader(HttpHeaders.AUTHORIZATION, "Bearer " + expiredAccessToken(9L));
         MockHttpServletResponse response = new MockHttpServletResponse();
 

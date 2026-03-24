@@ -1,22 +1,35 @@
 package kr.withrun.was.domain.user.controller;
 
+import io.swagger.v3.oas.annotations.Operation;
+import io.swagger.v3.oas.annotations.Parameter;
+import io.swagger.v3.oas.annotations.enums.ParameterIn;
+import io.swagger.v3.oas.annotations.media.Content;
+import io.swagger.v3.oas.annotations.media.ExampleObject;
+import io.swagger.v3.oas.annotations.media.Schema;
+import io.swagger.v3.oas.annotations.responses.ApiResponses;
+import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.user.dto.UpdateUserProfileRequest;
+import kr.withrun.was.domain.user.dto.UserProfileResponse;
 import kr.withrun.was.domain.user.service.UserProfileService;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.ResponseCode;
+import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
+import kr.withrun.was.global.response.swagger.SwaggerExampleValues;
+import kr.withrun.was.global.response.swagger.UserSuccessApiResponseDocs;
+import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
 import lombok.RequiredArgsConstructor;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
-import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
-// "현재 로그인한 사용자"의 프로필만 수정하는 엔드포인트입니다.
-// userId를 외부에서 받지 않고 SecurityContext의 principal에서 꺼내는 것이 핵심입니다.
+@Tag(name = "User Profile", description = "현재 로그인한 사용자 프로필 조회 및 수정 API")
 @RestController
 @RequestMapping("/api/users/me")
 @RequiredArgsConstructor
@@ -24,20 +37,145 @@ public class UserProfileController {
 
     private final UserProfileService userProfileService;
 
-    @PutMapping("/profile")
-    public ResponseEntity<ApiResponse<Void>> updateProfile(
-            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
-            @Valid @RequestBody UpdateUserProfileRequest request
+    @Operation(
+            summary = "현재 로그인 사용자의 프로필을 조회한다",
+            description = "Authorization 헤더의 Bearer access token을 기준으로 현재 로그인한 사용자의 프로필 정보를 조회한다.",
+            parameters = {
+                    @Parameter(
+                            name = HttpHeaders.AUTHORIZATION,
+                            in = ParameterIn.HEADER,
+                            required = true,
+                            description = "현재 로그인 사용자를 식별하는 Bearer access token",
+                            example = "Bearer eyJhbGciOiJIUzI1NiJ9.access-token"
+                    )
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "프로필 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserSuccessApiResponseDocs.UserProfileApiResponse.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.USER_PROFILE_SUCCESS)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증이 없거나 access token이 유효하지 않음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorApiResponseDoc.class),
+                            examples = {
+                                    @ExampleObject(name = "인증 없음", value = SwaggerExampleValues.ERROR_UNAUTHORIZED),
+                                    @ExampleObject(name = "유효하지 않은 토큰", value = SwaggerExampleValues.ERROR_TOKEN_INVALID)
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorApiResponseDoc.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.ERROR_USER_NOT_FOUND)
+                    )
+            )
+    })
+    @GetMapping
+    public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
-        // 응답 바디에 사용자 정보를 다시 싣지 않고, 성공 여부만 반환합니다.
-        // 프런트 상태 동기화는 다음 Step의 /api/auth/me에서 담당할 예정입니다.
+        return ApiResponse.successEntity(
+                userProfileService.getProfile(resolveUserId(authenticatedUser))
+        );
+    }
+
+    @Operation(
+            summary = "현재 로그인 사용자의 프로필을 수정한다",
+            description = "Authorization 헤더의 Bearer access token을 기준으로 현재 로그인한 사용자의 프로필 정보를 수정한다.",
+            parameters = {
+                    @Parameter(
+                            name = HttpHeaders.AUTHORIZATION,
+                            in = ParameterIn.HEADER,
+                            required = true,
+                            description = "현재 로그인 사용자를 식별하는 Bearer access token",
+                            example = "Bearer eyJhbGciOiJIUzI1NiJ9.access-token"
+                    )
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "프로필 수정 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserSuccessApiResponseDocs.UserProfileUpdateApiResponse.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.USER_PROFILE_UPDATE_SUCCESS)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "요청 본문 형식 또는 값이 유효하지 않음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ValidationErrorApiResponseDoc.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.VALIDATION_ERROR_USER_PROFILE)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증이 없거나 access token이 유효하지 않음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorApiResponseDoc.class),
+                            examples = {
+                                    @ExampleObject(name = "인증 없음", value = SwaggerExampleValues.ERROR_UNAUTHORIZED),
+                                    @ExampleObject(name = "유효하지 않은 토큰", value = SwaggerExampleValues.ERROR_TOKEN_INVALID)
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorApiResponseDoc.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.ERROR_USER_NOT_FOUND)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "409",
+                    description = "이미 사용 중인 닉네임임",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorApiResponseDoc.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.ERROR_NICKNAME_ALREADY_EXISTS)
+                    )
+            )
+    })
+    @PutMapping
+    public ResponseEntity<ApiResponse<Void>> updateProfile(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @Valid
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    description = "수정할 현재 로그인 사용자 프로필 정보",
+                    required = true,
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UpdateUserProfileRequest.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.USER_PROFILE_UPDATE_REQUEST)
+                    )
+            )
+            @org.springframework.web.bind.annotation.RequestBody UpdateUserProfileRequest request
+    ) {
         userProfileService.updateProfile(resolveUserId(authenticatedUser), request);
         return ApiResponse.successEntity(ResponseCode.OK);
     }
 
     private Long resolveUserId(AuthenticatedUser authenticatedUser) {
-        // Security 설정상 authenticated() 요청이면 보통 principal이 있어야 하지만,
-        // 방어적으로 한 번 더 확인해 컨트롤러 단에서도 명확한 401을 보장합니다.
         if (authenticatedUser == null || authenticatedUser.userId() == null) {
             throw new CustomException(ResponseCode.UNAUTHORIZED);
         }

@@ -1,6 +1,7 @@
 package kr.withrun.was.domain.user.service;
 
 import kr.withrun.was.domain.user.dto.UpdateUserProfileRequest;
+import kr.withrun.was.domain.user.dto.UserProfileResponse;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.exception.CustomException;
@@ -15,6 +16,14 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserProfileService {
 
     private final UserRepository userRepository;
+
+    public UserProfileResponse getProfile(Long userId) {
+        // 조회/수정 모두 soft delete 되지 않은 활성 사용자만 대상으로 합니다.
+        User user = userRepository.findNotDeletedUser(userId)
+                .orElseThrow(() -> new CustomException(ResponseCode.USER_NOT_FOUND));
+
+        return UserProfileResponse.from(user);
+    }
 
     @Transactional
     public void updateProfile(Long userId, UpdateUserProfileRequest request) {

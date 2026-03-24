@@ -49,4 +49,10 @@ public class UserPreferencePurpose extends BaseEntity {
             foreignKey = @ForeignKey(name = "fk_user_preference_purpose_user_running_preference")
     )
     private UserRunningPreference userRunningPreference;
+
+    public static UserPreferencePurpose create(Purpose purpose) {
+        UserPreferencePurpose preferencePurpose = new UserPreferencePurpose();
+        preferencePurpose.purpose = purpose;
+        return preferencePurpose;
+    }
 }

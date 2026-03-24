@@ -3,6 +3,7 @@ package kr.withrun.was.domain.user.controller;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.withrun.was.domain.auth.jwt.JwtProvider;
 import kr.withrun.was.domain.user.dto.UpdateUserProfileRequest;
+import kr.withrun.was.domain.user.dto.UserProfileResponse;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.service.UserProfileService;
 import kr.withrun.was.domain.user.type.Gender;
@@ -22,9 +23,11 @@ import java.time.LocalDate;
 
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -51,6 +54,30 @@ class UserProfileControllerTest {
     private UserProfileService userProfileService;
 
     @Test
+    @DisplayName("유효한 access token이면 현재 사용자 프로필을 반환한다")
+    void returnsProfileWhenTokenIsValid() throws Exception {
+        given(userProfileService.getProfile(10L)).willReturn(
+                new UserProfileResponse(
+                        "runner",
+                        LocalDate.of(1998, 4, 5),
+                        Gender.FEMALE,
+                        165.5,
+                        52.3
+                )
+        );
+
+        mockMvc.perform(get("/api/users/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(10L)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.nickname").value("runner"))
+                .andExpect(jsonPath("$.data.height").value(165.5))
+                .andExpect(jsonPath("$.data.weight").value(52.3));
+
+        then(userProfileService).should().getProfile(10L);
+    }
+
+    @Test
     @DisplayName("유효한 access token이면 현재 사용자 프로필 저장을 위임한다")
     void updatesProfileWhenTokenIsValid() throws Exception {
         // 컨트롤러 테스트에서는 서비스 구현보다 "인증된 userId가 정확히 전달되는지"가 핵심입니다.
@@ -62,7 +89,7 @@ class UserProfileControllerTest {
                 52.3
         );
 
-        mockMvc.perform(put("/api/users/me/profile")
+        mockMvc.perform(put("/api/users/me")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(10L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -85,7 +112,7 @@ class UserProfileControllerTest {
                 52.3
         );
 
-        mockMvc.perform(put("/api/users/me/profile")
+        mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
@@ -106,7 +133,7 @@ class UserProfileControllerTest {
                 52.3
         );
 
-        mockMvc.perform(put("/api/users/me/profile")
+        mockMvc.perform(put("/api/users/me")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer invalid-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -130,7 +157,7 @@ class UserProfileControllerTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/users/me/profile")
+        mockMvc.perform(put("/api/users/me")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(10L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidBody))
