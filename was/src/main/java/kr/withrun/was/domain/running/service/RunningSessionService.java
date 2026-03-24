@@ -103,6 +103,7 @@ public class RunningSessionService {
         return CreateRunningSessionResponse.from(savedRunningSession, ghostTargetGpsSamples);
     }
 
+    @Transactional
     public RunningSessionDetailResponse completeRunningSession(Long runningSessionId, CompleteRunningSessionRequest request) {
         RunningSession runningSession = getRunningSession(runningSessionId);
         User user = getUser(request.userId());
