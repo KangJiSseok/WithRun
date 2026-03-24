@@ -66,7 +66,7 @@ class UserProfileControllerTest {
                 )
         );
 
-        mockMvc.perform(get("/api/users/me/profile")
+        mockMvc.perform(get("/api/users/me")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(10L)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -89,7 +89,7 @@ class UserProfileControllerTest {
                 52.3
         );
 
-        mockMvc.perform(put("/api/users/me/profile")
+        mockMvc.perform(put("/api/users/me")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(10L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -112,7 +112,7 @@ class UserProfileControllerTest {
                 52.3
         );
 
-        mockMvc.perform(put("/api/users/me/profile")
+        mockMvc.perform(put("/api/users/me")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isUnauthorized())
@@ -133,7 +133,7 @@ class UserProfileControllerTest {
                 52.3
         );
 
-        mockMvc.perform(put("/api/users/me/profile")
+        mockMvc.perform(put("/api/users/me")
                         .header(HttpHeaders.AUTHORIZATION, "Bearer invalid-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
@@ -157,7 +157,7 @@ class UserProfileControllerTest {
                 }
                 """;
 
-        mockMvc.perform(put("/api/users/me/profile")
+        mockMvc.perform(put("/api/users/me")
                         .header(HttpHeaders.AUTHORIZATION, bearerToken(10L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(invalidBody))

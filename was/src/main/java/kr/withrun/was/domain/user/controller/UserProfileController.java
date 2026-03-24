@@ -26,7 +26,7 @@ public class UserProfileController {
 
     private final UserProfileService userProfileService;
 
-    @GetMapping("/profile")
+    @GetMapping
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
@@ -36,7 +36,7 @@ public class UserProfileController {
         );
     }
 
-    @PutMapping("/profile")
+    @PutMapping
     public ResponseEntity<ApiResponse<Void>> updateProfile(
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @Valid @RequestBody UpdateUserProfileRequest request

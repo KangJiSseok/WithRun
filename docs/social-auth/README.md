@@ -129,7 +129,7 @@ Google/Kakao 로그인 성공 시 토큰 발급까지 이어지고, 실패 시 �
 
 ## Step 4. WAS 온보딩 API 추가
 
-- [ ] `PUT /api/users/me/profile` 엔드포인트를 만든다.
+- [ ] `PUT /api/users/me` 엔드포인트를 만든다.
 - [ ] access token 인증을 거친 사용자만 호출 가능하게 한다.
 - [ ] 요청값을 검증한다.
   - [ ] `nickname`
@@ -150,7 +150,7 @@ Google/Kakao 로그인 성공 시 토큰 발급까지 이어지고, 실패 시 �
   - [ ] `GET /api/auth/me`
   - [ ] `POST /api/auth/token/reissue`
   - [ ] `POST /api/auth/logout`
-  - [ ] `PUT /api/users/me/profile`
+  - [ ] `PUT /api/users/me`
 - [ ] `/api/auth/me` 응답에 아래 필드를 포함한다.
   - [ ] `userId`
   - [ ] `nickname`
@@ -213,7 +213,7 @@ Google/Kakao 로그인 성공 시 토큰 발급까지 이어지고, 실패 시 �
   - [ ] `height`
   - [ ] `weight`
 - [ ] 소셜 프로필 이미지/기본 정보 요약을 보여준다.
-- [ ] 제출 시 `PUT /api/users/me/profile` 호출
+- [ ] 제출 시 `PUT /api/users/me` 호출
 - [ ] 성공 시 `/home` 이동
 - [ ] 실패 시 에러 메시지 표시
 - [ ] 이미 온보딩이 끝난 사용자는 `/home`으로 보낸다.
@@ -280,7 +280,7 @@ Google/Kakao 로그인 성공 시 토큰 발급까지 이어지고, 실패 시 �
 - `GET /api/auth/me`
 - `POST /api/auth/token/reissue`
 - `POST /api/auth/logout`
-- `PUT /api/users/me/profile`
+- `PUT /api/users/me`
 
 ## Done Definition
 
