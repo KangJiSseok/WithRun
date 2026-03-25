@@ -53,6 +53,7 @@ public class RunningSessionCustomRepositoryImpl implements RunningSessionCustomR
                 .where(
                         runningSession.user.id.eq(userId),
                         runningSession.deletedAt.isNull(),
+                        runningSession.isCompleted.eq(Boolean.TRUE),
                         withinRange(runningSession, rangeStartInclusive, rangeEndExclusive),
                         isAfterCursor(runningSession, cursorStartedAt, cursorRunningSessionId)
                 )
