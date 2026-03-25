@@ -7,10 +7,6 @@ import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
-import kr.withrun.was.domain.course.dto.CourseLeaderboardItemResponse;
-import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
-import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
-import kr.withrun.was.domain.course.dto.CourseMyLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
@@ -36,7 +32,6 @@ import kr.withrun.was.domain.course.type.CourseDistanceType;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.util.CourseGhostLeaderboardCursorCodec;
-import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
@@ -251,60 +246,6 @@ public class CourseService {
                 false,
                 courseReviewRepository.findAverageRatingByCourseId(courseId),
                 findMyGhostRecord(courseId, userId)
-        );
-    }
-
-    public CourseLeaderboardResponse findCourseLeaderboard(CourseLeaderboardRequest request) {
-        getCourse(request.courseId());
-
-        List<CourseGhostLeaderboardRankRow> rows = courseGhostLeaderboardRepository.findRankedRowsByCourseId(
-                request.courseId(),
-                request.page(),
-                request.size()
-        );
-        long totalElements = courseGhostLeaderboardRepository.countByCourseId(request.courseId());
-
-        List<CourseLeaderboardItemResponse> items = rows.stream()
-                .map(row -> new CourseLeaderboardItemResponse(
-                        row.leaderboardId(),
-                        row.userId(),
-                        row.nickname(),
-                        row.runningSessionId(),
-                        row.point(),
-                        row.rank(),
-                        row.createdAt()
-                ))
-                .toList();
-        int totalPages = totalElements == 0 ? 0 : (int) ((totalElements + request.size() - 1) / request.size());
-        boolean hasNext = (long) (request.page() + 1) * request.size() < totalElements;
-
-        return new CourseLeaderboardResponse(
-                request.courseId(),
-                items,
-                request.page(),
-                request.size(),
-                totalElements,
-                totalPages,
-                hasNext
-        );
-    }
-
-    public CourseMyLeaderboardResponse findMyCourseLeaderboard(Long courseId, AuthenticatedUser authenticatedUser) {
-        Long userId = authenticatedUser.userId();
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new CustomException(ResponseCode.USER_NOT_FOUND));
-        getCourse(courseId);
-
-        CourseGhostLeaderboardRankRow myRankRow = courseGhostLeaderboardRepository.findRankedRowsByCourseId(courseId).stream()
-                .filter(row -> row.userId().equals(userId))
-                .findFirst()
-                .orElse(null);
-
-        return new CourseMyLeaderboardResponse(
-                user.getNickname(),
-                user.getId(),
-                myRankRow == null ? 0L : myRankRow.rank(),
-                myRankRow == null ? 0 : myRankRow.point()
         );
     }
 

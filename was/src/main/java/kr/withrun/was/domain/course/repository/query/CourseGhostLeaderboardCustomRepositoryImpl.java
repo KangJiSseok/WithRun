@@ -52,52 +52,6 @@ public class CourseGhostLeaderboardCustomRepositoryImpl implements CourseGhostLe
     }
 
     @Override
-    public List<CourseGhostLeaderboardRankRow> findRankedRowsByCourseId(Long courseId, int page, int size) {
-        QCourseGhostLeaderboard courseGhostLeaderboard = QCourseGhostLeaderboard.courseGhostLeaderboard;
-        QUser user = QUser.user;
-        NumberExpression<Long> rankExpression = Expressions.numberTemplate(
-                Long.class,
-                "rank() over(order by {0} desc)",
-                courseGhostLeaderboard.point
-        );
-
-        return queryFactory
-                .select(Projections.constructor(
-                        CourseGhostLeaderboardRankRow.class,
-                        courseGhostLeaderboard.id,
-                        courseGhostLeaderboard.user.id,
-                        user.nickname,
-                        courseGhostLeaderboard.runningSession.id,
-                        courseGhostLeaderboard.point,
-                        rankExpression,
-                        courseGhostLeaderboard.createdAt
-                ))
-                .from(courseGhostLeaderboard)
-                .join(courseGhostLeaderboard.user, user)
-                .where(courseGhostLeaderboard.course.id.eq(courseId))
-                .orderBy(
-                        courseGhostLeaderboard.point.desc(),
-                        courseGhostLeaderboard.id.asc()
-                )
-                .offset((long) page * size)
-                .limit(size)
-                .fetch();
-    }
-
-    @Override
-    public long countByCourseId(Long courseId) {
-        QCourseGhostLeaderboard courseGhostLeaderboard = QCourseGhostLeaderboard.courseGhostLeaderboard;
-
-        Long count = queryFactory
-                .select(courseGhostLeaderboard.count())
-                .from(courseGhostLeaderboard)
-                .where(courseGhostLeaderboard.course.id.eq(courseId))
-                .fetchOne();
-
-        return count == null ? 0L : count;
-    }
-
-    @Override
     public Optional<CourseGhostLeaderboard> findTopByUserIdAndCourseId(Long userId, Long courseId) {
         QCourseGhostLeaderboard courseGhostLeaderboard = QCourseGhostLeaderboard.courseGhostLeaderboard;
 

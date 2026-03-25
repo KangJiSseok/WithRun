@@ -5,10 +5,6 @@ import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
-import kr.withrun.was.domain.course.dto.CourseLeaderboardItemResponse;
-import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
-import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
-import kr.withrun.was.domain.course.dto.CourseMyLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
@@ -584,104 +580,6 @@ class CourseControllerTest {
         then(courseService).should().findNearbyCourses(request, null);
     }
 
-    @DisplayName("코스 리더보드 조회 응답을 성공 응답 포맷으로 감싼다")
-    @Test
-    void wrapsCourseLeaderboardResponseInSuccessEnvelope() throws Exception {
-        CourseLeaderboardRequest request = new CourseLeaderboardRequest(12L, 0, 2);
-        CourseLeaderboardResponse response = new CourseLeaderboardResponse(
-                12L,
-                List.of(new CourseLeaderboardItemResponse(
-                        7L,
-                        3L,
-                        "runner-a",
-                        501L,
-                        1200,
-                        1L,
-                        LocalDateTime.of(2026, 3, 18, 9, 0)
-                )),
-                0,
-                2,
-                5L,
-                3,
-                true
-        );
-        given(courseService.findCourseLeaderboard(request)).willReturn(response);
-
-        mockMvc.perform(get("/api/courses/leaderboards")
-                        .queryParam("courseId", "12")
-                        .queryParam("page", "0")
-                        .queryParam("size", "2"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
-                .andExpect(jsonPath("$.data.courseId").value(12L))
-                .andExpect(jsonPath("$.data.items[0].leaderboardId").value(7L))
-                .andExpect(jsonPath("$.data.items[0].userId").value(3L))
-                .andExpect(jsonPath("$.data.items[0].nickname").value("runner-a"))
-                .andExpect(jsonPath("$.data.items[0].point").value(1200))
-                .andExpect(jsonPath("$.data.items[0].rank").value(1))
-                .andExpect(jsonPath("$.data.hasNext").value(true));
-
-        then(courseService).should().findCourseLeaderboard(request);
-    }
-
-    @DisplayName("코스 개인 리더보드 조회 응답을 성공 응답 포맷으로 감싼다")
-    @Test
-    void wrapsMyCourseLeaderboardResponseInSuccessEnvelope() throws Exception {
-        CourseMyLeaderboardResponse response = new CourseMyLeaderboardResponse("runner-a", 7L, 4L, 980);
-        given(courseService.findMyCourseLeaderboard(12L, null)).willReturn(response);
-
-        mockMvc.perform(get("/api/courses/leaderboards/me")
-                        .queryParam("course_id", "12"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
-                .andExpect(jsonPath("$.data.nickname").value("runner-a"))
-                .andExpect(jsonPath("$.data.id").value(7L))
-                .andExpect(jsonPath("$.data.rank").value(4))
-                .andExpect(jsonPath("$.data.point").value(980));
-
-        then(courseService).should().findMyCourseLeaderboard(12L, null);
-    }
-
-    @DisplayName("코스 개인 리더보드 조회에서 course_id가 없으면 잘못된 입력 응답을 반환한다")
-    @Test
-    void returnsInvalidInputWhenMyCourseLeaderboardCourseIdIsMissing() throws Exception {
-        mockMvc.perform(get("/api/courses/leaderboards/me"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
-
-        then(courseService).should(never()).findMyCourseLeaderboard(any(), any());
-    }
-
-    @DisplayName("코스 개인 리더보드 조회에서 course_id가 유효하지 않으면 잘못된 입력 응답을 반환한다")
-    @ParameterizedTest(name = "course_id={0}")
-    @ValueSource(strings = {"0", "-1", "abc", "1.5"})
-    void returnsInvalidInputWhenMyCourseLeaderboardCourseIdIsInvalid(String invalidCourseId) throws Exception {
-        mockMvc.perform(get("/api/courses/leaderboards/me")
-                        .queryParam("course_id", invalidCourseId))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
-
-        then(courseService).should(never()).findMyCourseLeaderboard(any(), any());
-    }
-
-    @DisplayName("코스 개인 리더보드 조회에서 인증 사용자가 없으면 인증 필요 응답을 반환한다")
-    @Test
-    void returnsUnauthorizedWhenMyCourseLeaderboardUserIsMissing() throws Exception {
-        given(courseService.findMyCourseLeaderboard(12L, null))
-                .willThrow(new CustomException(ResponseCode.UNAUTHORIZED));
-
-        mockMvc.perform(get("/api/courses/leaderboards/me")
-                        .queryParam("course_id", "12"))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value(ResponseCode.UNAUTHORIZED.getCode()));
-
-        then(courseService).should().findMyCourseLeaderboard(12L, null);
-    }
 
     @DisplayName("코스 고스트 리더보드 조회 응답을 성공 응답 포맷으로 감싼다")
     @Test
@@ -761,32 +659,6 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()));
 
         then(courseService).should().findCourseGhostLeaderboard(999L, request);
-    }
-
-    @DisplayName("코스 리더보드 조회에서 courseId가 없으면 잘못된 입력 응답을 반환한다")
-    @Test
-    void returnsInvalidInputWhenCourseLeaderboardCourseIdIsMissing() throws Exception {
-        mockMvc.perform(get("/api/courses/leaderboards"))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()))
-                .andExpect(jsonPath("$.data[0].field").value("courseId"));
-
-        then(courseService).should(never()).findCourseLeaderboard(any());
-    }
-
-    @DisplayName("코스 리더보드 size가 유효하지 않으면 잘못된 입력 응답을 반환한다")
-    @ParameterizedTest(name = "size={0}")
-    @ValueSource(strings = {"0", "-1", "101", "abc", "1.5"})
-    void returnsInvalidInputWhenCourseLeaderboardSizeIsInvalid(String invalidSize) throws Exception {
-        mockMvc.perform(get("/api/courses/leaderboards")
-                        .queryParam("courseId", "12")
-                        .queryParam("size", invalidSize))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.success").value(false))
-                .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
-
-        then(courseService).should(never()).findCourseLeaderboard(any());
     }
 
     @DisplayName("주변 고스트 코스 조회에서 필수 쿼리 파라미터가 없으면 잘못된 입력 응답을 반환한다")

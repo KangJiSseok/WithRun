@@ -3,7 +3,6 @@ package kr.withrun.was.domain.course.repository;
 import jakarta.persistence.EntityManager;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseGhostLeaderboard;
-import kr.withrun.was.domain.course.repository.query.CourseGhostLeaderboardCustomRepository;
 import kr.withrun.was.domain.course.repository.query.dto.CourseGhostLeaderboardRankRow;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.vo.Coordinates;
@@ -48,51 +47,6 @@ class CourseGhostLeaderboardRepositoryTest {
 
     @Autowired
     private EntityManager entityManager;
-
-    @DisplayName("point 기준 rank와 페이지 오프셋을 적용해 리더보드를 조회한다")
-    @Test
-    void findsRankedRowsByCourseIdWithPagination() {
-        assertThat(courseGhostLeaderboardRepository).isInstanceOf(CourseGhostLeaderboardCustomRepository.class);
-
-        Course course = persistCourse("Leader Course");
-        Course otherCourse = persistCourse("Other Course");
-        User userA = persistUser("runner-a");
-        User userB = persistUser("runner-b");
-        User userC = persistUser("runner-c");
-        User userD = persistUser("runner-d");
-        User userE = persistUser("runner-e");
-
-        persistLeaderboard(course, userA, 500, LocalDateTime.of(2026, 3, 18, 10, 0));
-        persistLeaderboard(course, userB, 300, LocalDateTime.of(2026, 3, 18, 10, 1));
-        persistLeaderboard(course, userC, 300, LocalDateTime.of(2026, 3, 18, 10, 2));
-        persistLeaderboard(course, userD, 100, LocalDateTime.of(2026, 3, 18, 10, 3));
-        persistLeaderboard(otherCourse, userE, 999, LocalDateTime.of(2026, 3, 18, 10, 4));
-
-        entityManager.flush();
-        entityManager.clear();
-
-        List<CourseGhostLeaderboardRankRow> firstPageRows = courseGhostLeaderboardRepository.findRankedRowsByCourseId(
-                course.getId(),
-                0,
-                3
-        );
-
-        assertThat(firstPageRows).hasSize(3);
-        assertThat(firstPageRows).extracting(CourseGhostLeaderboardRankRow::point).containsExactly(500, 300, 300);
-        assertThat(firstPageRows).extracting(CourseGhostLeaderboardRankRow::rank).containsExactly(1L, 2L, 2L);
-        assertThat(firstPageRows).extracting(CourseGhostLeaderboardRankRow::nickname).containsExactly("runner-a", "runner-b", "runner-c");
-
-        List<CourseGhostLeaderboardRankRow> secondPageRows = courseGhostLeaderboardRepository.findRankedRowsByCourseId(
-                course.getId(),
-                1,
-                2
-        );
-
-        assertThat(secondPageRows).hasSize(2);
-        assertThat(secondPageRows).extracting(CourseGhostLeaderboardRankRow::point).containsExactly(300, 100);
-        assertThat(secondPageRows).extracting(CourseGhostLeaderboardRankRow::rank).containsExactly(2L, 4L);
-        assertThat(courseGhostLeaderboardRepository.countByCourseId(course.getId())).isEqualTo(4L);
-    }
 
     @DisplayName("코스 기준 전체 고스트 리더보드를 정렬과 rank를 유지한 채 조회한다")
     @Test
