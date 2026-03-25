@@ -1,10 +1,10 @@
 import type { RouteObject } from 'react-router-dom';
 
 import { AuthCallbackPage } from '@/pages/public/AuthCallback';
-import { EntryPage } from '@/pages/public/entry';
-import ExamplePublicPage from '@/pages/public/example';
+import { EntryPage } from '@/pages/public/Entry';
+import ExamplePublicPage from '@/pages/public/Example';
 import { LoginPage } from '@/pages/public/Login';
-import { OnboardingPage } from '@/pages/public/onboarding';
+import { OnboardingPage } from '@/pages/public/Onboarding';
 import { PublicOnlyRoute, RequireOnboardingRoute } from '@/routes/AuthGuards';
 import { MainLayout } from '@/shared/layouts/MainLayout';
 
