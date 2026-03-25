@@ -32,8 +32,7 @@ export const useNormalRunCourses = (
       setNormalRunCourses([]);
 
       const allItems: CourseItem[] = [];
-      let radiusM = DEFAULT_RADIUS_M;
-      let cursor: string | undefined = undefined;
+      let page = 0;
 
       try {
         while (!signal.cancelled) {
@@ -42,29 +41,20 @@ export const useNormalRunCourses = (
             longitude: location.longitude,
             targetLatitude: location.latitude,
             targetLongitude: location.longitude,
-            radiusM,
+            radiusM: DEFAULT_RADIUS_M,
             preferredDistanceMs,
-            cursor,
+            page,
+            size: 10,
           });
 
           if (signal.cancelled) break;
 
           allItems.push(...data.items);
 
-          if (data.hasMore) {
-            // 현재 반경 내 다음 페이지 조회
-            cursor = data.nextCursor ?? undefined;
+          if (data.hasNext) {
+            page++;
           } else {
-            if (
-              data.suggestedNextRadiusM === null ||
-              data.nextCursor === null
-            ) {
-              // 더 이상 코스 없음 (최대 반경 도달 or nextCursor 없음)
-              break;
-            }
-            // 탐색 반경 확장 후 계속
-            radiusM = data.suggestedNextRadiusM;
-            cursor = data.nextCursor; // 문맥 유지
+            break;
           }
         }
 

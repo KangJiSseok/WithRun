@@ -26,10 +26,10 @@ export function useNormalRunMapCourses(
   useEffect(() => { preferredDistanceMsRef.current = preferredDistanceMs; }, [preferredDistanceMs]);
   useEffect(() => { gpsLocationRef.current = gpsLocation; }, [gpsLocation]);
 
-  const cursorRef = useRef<string | null>(null);
+  const pageRef = useRef(0);
 
   // fetchPage: ref에서 읽으므로 stable reference (deps: [])
-  const fetchPage = useCallback(async (cursor: string | null) => {
+  const fetchPage = useCallback(async (page: number) => {
     const c = centerRef.current;
     if (!c) return;
 
@@ -44,14 +44,14 @@ export function useNormalRunMapCourses(
         targetLongitude: c.longitude,
         radiusM: Math.max(1000, Math.min(5000, radiusRef.current)),
         preferredDistanceMs: preferredDistanceMsRef.current,
-        ...(cursor ? { cursor } : {}),
+        page,
       });
 
-      setCourses((prev) => (cursor ? [...prev, ...data.items] : data.items));
-      setHasMore(data.hasMore);
-      cursorRef.current = data.nextCursor;
+      setCourses((prev) => (page === 0 ? data.items : [...prev, ...data.items]));
+      setHasMore(data.hasNext);
+      pageRef.current = page + 1;
     } catch {
-      if (!cursor) setCourses([]);
+      if (page === 0) setCourses([]);
     } finally {
       setIsLoading(false);
     }
@@ -61,15 +61,15 @@ export function useNormalRunMapCourses(
   useEffect(() => {
     if (!center) return;
 
-    cursorRef.current = null;
+    pageRef.current = 0;
     setCourses([]);
     setHasMore(false);
-    fetchPage(null);
+    fetchPage(0);
   }, [center, radiusM, preferredDistanceMs, fetchPage]);
 
   const loadMore = useCallback(() => {
-    if (!hasMore || isLoading || !cursorRef.current) return;
-    fetchPage(cursorRef.current);
+    if (!hasMore || isLoading) return;
+    fetchPage(pageRef.current);
   }, [hasMore, isLoading, fetchPage]);
 
   return { courses, isLoading, hasMore, loadMore };
