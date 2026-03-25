@@ -1,6 +1,7 @@
 import { useEffect } from 'react'
 import * as Location from 'expo-location'
 import type { GpsLocation } from '../types'
+import { createGpsKalmanFilter } from '../../utils/gpsKalmanFilter'
 
 export function useGpsLocation(onLocation: (location: GpsLocation) => void) {
   useEffect(() => {
@@ -15,6 +16,9 @@ export function useGpsLocation(onLocation: (location: GpsLocation) => void) {
         return
       }
 
+      // 구독 시작 시 새 필터 인스턴스 생성 (재구독 시 상태 초기화)
+      const filterGps = createGpsKalmanFilter(3) // 러닝 Q=3
+
       subscription = await Location.watchPositionAsync(
         {
           accuracy: Location.Accuracy.BestForNavigation,
@@ -24,13 +28,21 @@ export function useGpsLocation(onLocation: (location: GpsLocation) => void) {
         (location) => {
           const { latitude, longitude, accuracy, altitude, heading, speed } =
             location.coords
-          onLocation({
+          const filtered = filterGps({
             latitude,
             longitude,
+            accuracy: accuracy ?? 10,
+            speed: speed ?? 0,
+            heading: heading ?? 0,
+          })
+          onLocation({
+            latitude: filtered.latitude,
+            longitude: filtered.longitude,
             accuracy,
             altitude,
             heading,
             speedMps: speed,  // GPS Doppler 직접 측정 (가속도계 추정보다 정확)
+            cadenceSpm: null, // 케이던스는 useCadence에서 별도 수집
           })
         }
       )
