@@ -185,6 +185,7 @@ class NearbyCoursesRequestTest {
                         "courseId",
                         "title",
                         "status",
+                        "routeType",
                         "distanceM",
                         "elevationGainM",
                         "startLatitude",
