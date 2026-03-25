@@ -77,3 +77,76 @@ export type GetNearbyCoursesData = {
   totalPages: number;
   hasNext: boolean;
 };
+
+// 고스트 리더보드 아이템
+export type GhostLeaderboardItem = {
+  leaderboardId: number;
+  userId: number;
+  nickname: string;
+  runningSessionId: number;
+  point: number;
+  rank: number;
+  createdAt: string;
+};
+
+// GET /courses/{courseId}/ghost-leaderboard 쿼리 파라미터
+export type GetGhostLeaderboardParams = {
+  size?: number;
+  cursor?: string;
+};
+
+// GET /courses/{courseId}/ghost-leaderboard 응답
+export type GetGhostLeaderboardData = {
+  items: GhostLeaderboardItem[];
+  routeType: RouteType;
+  hasMore: boolean;
+  nextCursor: string | null;
+};
+
+// 내 고스트 기록 (ghost-detail myRecord)
+export type GhostMyRecord = {
+  leaderboardId: number;
+  runningSessionId: number;
+  durationSec: number;
+  point: number;
+  rank: number;
+  createdAt: string;
+};
+
+// GET /courses/{courseId}/ghost-detail/{userId} 응답
+export type GhostCourseDetail = {
+  courseId: number;
+  title: string;
+  status: CourseStatus;
+  routeType: RouteType;
+  difficulty: { data: CourseDifficulty; label: string } | null;
+  distanceM: number;
+  elevationGainM: number;
+  snapshotImageUrl: string | null;
+  startLatitude: number;
+  startLongitude: number;
+  endLatitude: number;
+  endLongitude: number;
+  coordinates: CoordinatePoint[];
+  courseTypes: { data: CourseType; label: string }[];
+  likeCount: number;
+  isLiked: boolean;
+  isBookmarked: boolean;
+  averageRating: number;
+  myRecord: GhostMyRecord | null;
+};
+
+// GET /courses/nearby/ghost 쿼리 파라미터
+// sortBy: 'DISTANCE' | 'GHOST_RUN_COUNT' (일반 코스와 다름)
+// 응답은 GetNearbyCoursesData 재사용
+export type GetNearbyGhostCoursesParams = {
+  latitude: number;
+  longitude: number;
+  targetLatitude: number;
+  targetLongitude: number;
+  radiusM: number;
+  preferredDistanceMs: PreferredDistanceM[];
+  sortBy?: 'DISTANCE' | 'GHOST_RUN_COUNT';
+  page?: number;
+  size?: number;
+};
