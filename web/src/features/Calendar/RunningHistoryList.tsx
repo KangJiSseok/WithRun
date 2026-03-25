@@ -1,3 +1,4 @@
+import { useNavigate } from 'react-router-dom';
 import { useInfiniteScroll } from '@/shared/hooks';
 import { formatDateLabel } from '@/shared/utils';
 import type { RunningHistoryItem } from '@/apis/runningSessions';
@@ -65,8 +66,13 @@ interface RunningHistoryListProps {
 }
 
 function SessionCard({ session }: { session: RunningHistoryItem }) {
+  const navigate = useNavigate();
+
   return (
-    <div className="rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-[var(--space-3)] flex gap-[var(--space-3)] items-center">
+    <button
+      type="button"
+      onClick={() => navigate(`/calendar/${session.runningSessionId}`)}
+      className="w-full text-left rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-[var(--space-3)] flex gap-[var(--space-3)] items-center active:opacity-70 transition-opacity">
       {/* 스냅샷 썸네일 */}
       <div className="w-[var(--space-16)] h-[var(--space-16)] rounded-[var(--radius-lg)] bg-[hsl(var(--surface-subtle))] flex-shrink-0 overflow-hidden">
         {session.snapshotImageUrl ? (
@@ -101,7 +107,7 @@ function SessionCard({ session }: { session: RunningHistoryItem }) {
           <span className="flex-1 text-center">{formatPace(session.distanceM, session.durationSec)}</span>
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 

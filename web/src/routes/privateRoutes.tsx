@@ -1,6 +1,7 @@
 import type { RouteObject } from 'react-router-dom';
 
 import { CalendarPage } from '@/pages/private/CalendarPage';
+import { CalendarDetailPage } from '@/pages/private/CalendarDetailPage';
 import { FreeRunPage } from '@/pages/private/FreeRunPage';
 import { FreeRunSessionPage } from '@/pages/private/FreeRunSessionPage';
 import { HomePage } from '@/pages/private/home';
@@ -46,6 +47,7 @@ export const privateRoutes: RouteObject[] = [
             path: '/normal-run-session/:courseId',
             element: <NormalRunSessionPage />,
           },
+          { path: '/calendar/:runningSessionId', element: <CalendarDetailPage /> },
         ],
       },
     ],
