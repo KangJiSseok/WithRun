@@ -76,18 +76,9 @@ app:
 
   auth:
     # 로그인 성공 후 웹 프론트로 복귀할 기본 주소
-    frontend-base-url: ${app.auth.frontend-base-url:http://localhost:5173}
+    frontend-base-url: http://localhost:5173
     # 모바일 WebView/딥링크 복귀에 사용할 기본 주소
     mobile-deep-link-base: ${app.auth.mobile-deep-link-base:withrun://auth/callback}
-    # CORS 허용 대상 프론트 주소
-    allowed-origins:
-      - http://localhost:5173
-      - http://localhost:5174
-      - http://localhost:8082
-      - https://with-run-demo.vercel.app
-      - https://j14d202.p.ssafy.io
-      - http://j14d202.p.ssafy.io:8082
-      - http://j14d202.p.ssafy.io
   recommendation:
     weight:
       location: 0.45
