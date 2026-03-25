@@ -2,6 +2,7 @@ package kr.withrun.was.domain.running.service;
 
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.entity.CourseDifficulty;
+import kr.withrun.was.domain.course.entity.CourseGhostLeaderboard;
 import kr.withrun.was.domain.course.entity.CourseTypeMap;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
@@ -566,6 +567,43 @@ class RunningSessionServiceTest {
         assertThat(savedCalendar.getFreeRunCount()).isEqualTo(1);
         assertThat(savedCalendar.getCourseRunCount()).isZero();
         assertThat(savedCalendar.getGhostRunCount()).isZero();
+    }
+
+    @DisplayName("고스트 최고 점수 갱신 시 리더보드 러닝 세션 ID도 최신 세션으로 갱신한다")
+    @Test
+    void updatesLeaderboardRunningSessionWhenGhostBestPointIsImproved() {
+        User user = user(31L);
+        Course course = course(701L, CourseStatus.OFFICIAL);
+        RunningSession runningSession = runningSession(111L, 31L, false, STARTED_AT);
+        setField(runningSession, "mode", GHOST);
+        setField(runningSession, "course", course);
+
+        RunningSession ghostTargetSession = runningSession(222L, 99L, true, STARTED_AT.minusDays(1));
+        setField(ghostTargetSession, "course", course);
+        setField(ghostTargetSession, "durationSec", 2100);
+        setField(runningSession, "ghostTargetRunningSession", ghostTargetSession);
+
+        RunningSession previousBestSession = runningSession(333L, 31L, true, STARTED_AT.minusDays(2));
+        CourseGhostLeaderboard existingLeaderboard = CourseGhostLeaderboard.create(user, course, previousBestSession, 950);
+
+        CompleteRunningSessionRequest request = validCompleteRequest(31L);
+
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(111L)).thenReturn(Optional.of(runningSession));
+        when(userRepository.findNotDeletedUser(31L)).thenReturn(Optional.of(user));
+        when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningHealthSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningSessionSplitRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(courseDifficultyRepository.findDifficultyByCourseId(701L)).thenReturn(Optional.of(Difficulty.MEDIUM));
+        when(ghostRunningResultService.calculateGhostRunningPoint(1925, Difficulty.MEDIUM)).thenReturn(1000);
+        when(ghostRunningResultService.calculateGhostRunningPoint(2100, Difficulty.MEDIUM)).thenReturn(900);
+        when(ghostRunningResultRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(31L, 701L)).thenReturn(Optional.of(existingLeaderboard));
+
+        runningSessionService.completeRunningSession(111L, request);
+
+        assertThat(existingLeaderboard.getPoint()).isEqualTo(1000);
+        assertThat(existingLeaderboard.getRunningSession()).isEqualTo(runningSession);
+        verify(courseGhostLeaderboardRepository, never()).save(any(CourseGhostLeaderboard.class));
     }
 
     @DisplayName("완료된 러닝 세션을 요청한 모드의 코스로 등록한다")

@@ -16,6 +16,7 @@ import kr.withrun.was.domain.course.service.recommendation.HybridRecommendationS
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
+import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.global.common.type.Difficulty;
 import org.junit.jupiter.api.BeforeEach;
@@ -57,6 +58,9 @@ class NearbyCourseQueryServiceTest {
     private CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private HybridRecommendationService hybridRecommendationService;
 
     private CourseService courseService;
@@ -71,6 +75,7 @@ class NearbyCourseQueryServiceTest {
                 courseLikeRepository,
                 courseReviewRepository,
                 courseGhostLeaderboardRepository,
+                userRepository,
                 hybridRecommendationService
         );
         setField(courseService, "CDN_URL", "https://cdn.test");

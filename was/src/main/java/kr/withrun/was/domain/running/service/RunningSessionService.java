@@ -356,7 +356,7 @@ public class RunningSessionService {
 
         int existingPoint = existingRow.getPoint() == null ? 0 : existingRow.getPoint();
         if (point > existingPoint) {
-            existingRow.updatePoint(point);
+            existingRow.updatePointAndRunningSession(point, runningSession);
         }
     }
 

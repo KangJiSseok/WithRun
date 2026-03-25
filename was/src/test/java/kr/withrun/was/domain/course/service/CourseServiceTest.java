@@ -1,21 +1,23 @@
 package kr.withrun.was.domain.course.service;
 
+import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
+import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.CourseMyLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
+import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
 import kr.withrun.was.domain.course.dto.PreferredDistanceRange;
-import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
-import kr.withrun.was.domain.course.dto.CourseLeaderboardRequest;
-import kr.withrun.was.domain.course.dto.CourseLeaderboardResponse;
-import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.entity.Course;
-import kr.withrun.was.domain.course.repository.CourseBookmarkRepository;
 import kr.withrun.was.domain.course.entity.CourseGhostLeaderboard;
+import kr.withrun.was.domain.course.repository.CourseBookmarkRepository;
 import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseLikeRepository;
@@ -34,6 +36,7 @@ import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.domain.user.entity.User;
+import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
@@ -79,6 +82,9 @@ class CourseServiceTest {
     private CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
 
     @Mock
+    private UserRepository userRepository;
+
+    @Mock
     private HybridRecommendationService hybridRecommendationService;
 
     private CourseService courseService;
@@ -93,6 +99,7 @@ class CourseServiceTest {
                 courseLikeRepository,
                 courseReviewRepository,
                 courseGhostLeaderboardRepository,
+                userRepository,
                 hybridRecommendationService
         );
         setField(courseService, "CDN_URL", "https://cdn.test");
@@ -328,6 +335,69 @@ class CourseServiceTest {
         assertThat(response.items()).hasSize(2);
         assertThat(response.items().getFirst().rank()).isEqualTo(2L);
         assertThat(response.items().getFirst().nickname()).isEqualTo("runner-b");
+    }
+
+    @DisplayName("개인 리더보드 조회는 현재 사용자 최고 기록의 랭크와 포인트를 반환한다")
+    @Test
+    void returnsMyCourseLeaderboardWithRankAndPoint() {
+        long courseId = 12L;
+        long userId = 7L;
+        Course course = course(courseId);
+        User user = user(userId, "runner-a");
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser(userId, "google", true);
+        List<CourseGhostLeaderboardRankRow> rows = List.of(
+                new CourseGhostLeaderboardRankRow(101L, 2L, "runner-x", 1001L, 1200, 1L, LocalDateTime.of(2026, 3, 19, 9, 0)),
+                new CourseGhostLeaderboardRankRow(201L, userId, "runner-a", 2001L, 980, 5L, LocalDateTime.of(2026, 3, 20, 9, 0)),
+                new CourseGhostLeaderboardRankRow(301L, userId, "runner-a", 3001L, 950, 8L, LocalDateTime.of(2026, 3, 21, 9, 0))
+        );
+
+        when(courseRepository.findNotDeletedCourse(courseId)).thenReturn(Optional.of(course));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(courseGhostLeaderboardRepository.findRankedRowsByCourseId(courseId)).thenReturn(rows);
+
+        CourseMyLeaderboardResponse response = courseService.findMyCourseLeaderboard(courseId, authenticatedUser);
+
+        assertThat(response.nickname()).isEqualTo("runner-a");
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.rank()).isEqualTo(5L);
+        assertThat(response.point()).isEqualTo(980);
+    }
+
+    @DisplayName("개인 리더보드 조회에서 코스 기록이 없으면 rank=0과 point=0을 반환한다")
+    @Test
+    void returnsRankZeroWhenMyCourseLeaderboardRecordIsMissing() {
+        long courseId = 12L;
+        long userId = 7L;
+        Course course = course(courseId);
+        User user = user(userId, "runner-a");
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser(userId, "google", true);
+        List<CourseGhostLeaderboardRankRow> rows = List.of(
+                new CourseGhostLeaderboardRankRow(101L, 2L, "runner-x", 1001L, 1200, 1L, LocalDateTime.of(2026, 3, 19, 9, 0))
+        );
+
+        when(courseRepository.findNotDeletedCourse(courseId)).thenReturn(Optional.of(course));
+        when(userRepository.findById(userId)).thenReturn(Optional.of(user));
+        when(courseGhostLeaderboardRepository.findRankedRowsByCourseId(courseId)).thenReturn(rows);
+
+        CourseMyLeaderboardResponse response = courseService.findMyCourseLeaderboard(courseId, authenticatedUser);
+
+        assertThat(response.nickname()).isEqualTo("runner-a");
+        assertThat(response.id()).isEqualTo(userId);
+        assertThat(response.rank()).isEqualTo(0L);
+        assertThat(response.point()).isEqualTo(0);
+    }
+
+    @DisplayName("개인 리더보드 조회에서 사용자를 찾을 수 없으면 사용자 없음 예외를 던진다")
+    @Test
+    void throwsUserNotFoundWhenMyCourseLeaderboardUserIsMissing() {
+        long userId = 7L;
+        AuthenticatedUser authenticatedUser = new AuthenticatedUser(userId, "google", true);
+        when(userRepository.findById(userId)).thenReturn(Optional.empty());
+
+        assertThatThrownBy(() -> courseService.findMyCourseLeaderboard(12L, authenticatedUser))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.USER_NOT_FOUND);
     }
 
     @DisplayName("없는 코스의 리더보드 조회는 코스 없음 예외를 던진다")
