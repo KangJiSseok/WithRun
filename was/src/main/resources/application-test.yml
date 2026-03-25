@@ -1,0 +1,14 @@
+server:
+  servlet:
+    session:
+      cookie:
+        name: WITHRUNSESSIONTEST
+
+app:
+  auth:
+    frontend-base-url: https://j14d202.p.ssafy.io:8443
+
+auth:
+  jwt:
+    refresh-cookie-name: refresh_token_test
+    refresh-cookie-secure: true
