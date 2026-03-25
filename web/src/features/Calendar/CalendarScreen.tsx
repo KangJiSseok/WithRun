@@ -1,17 +1,11 @@
 import { ChevronDown } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn, formatDateLabel } from '@/shared/utils';
 import { useCalendar } from '@/hooks/Calendar';
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarGrid } from './CalendarGrid';
 import { ActivitySummary } from './ActivitySummary';
 import { RunningHistoryList } from './RunningHistoryList';
 import { StreakCard } from './StreakCard';
-
-// "2026-03-09" -> "3월 9일 활동"
-function formatDayTitle(dateStr: string): string {
-  const parts = dateStr.split('-');
-  return `${Number(parts[1])}월 ${Number(parts[2])}일 활동`;
-}
 
 export function CalendarScreen() {
   const {
@@ -54,7 +48,7 @@ export function CalendarScreen() {
   const historyTitle = !isCalendarOpen
     ? '전체 기록'
     : selectedDate
-      ? formatDayTitle(selectedDate)
+      ? formatDateLabel(selectedDate)
       : `${year}년 ${month}월 활동`;
 
   return (
@@ -146,6 +140,8 @@ export function CalendarScreen() {
         // RunningHistoryList에 전달
         hasMore={historyData?.hasMore ?? false}
         isScrollLoading={isScrollLoading}
+        // 날짜 미선택 상태(전체/월별)에서만 날짜 헤더 표시
+        showDateHeader={!selectedDate}
         onLoadMore={loadMore}
       />
     </div>

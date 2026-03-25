@@ -1,3 +1,4 @@
+export * from './calendar';
 export * from './example';
 export * from './format';
 export * from './geo';
