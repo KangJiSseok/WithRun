@@ -1,10 +1,11 @@
+import { useEffect, useState } from 'react';
+
 import {
   getNormalRunCourseFilterApi,
   type GetNormalRunCourseFilterData,
 } from '@/apis';
-import { useEffect, useState } from 'react';
 
-export const useNormalRunCourseFilter = () => {
+export const useRunCourseFilter = () => {
   const [courseFilters, setCourseFilters] =
     useState<GetNormalRunCourseFilterData | null>(null);
   const [isLoading, setIsLoading] = useState(false);

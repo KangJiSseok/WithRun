@@ -12,14 +12,11 @@ import {
   RunningCourseSearchBar,
 } from '@/shared/components';
 import { Button } from '@/shared/components/shadcn/button';
-import {
-  useNormalRunCircleMap,
-  type CircleMode,
-} from '@/hooks/NormalRun/useNormalRunCircleMap';
+import { useRunCircleMap, type CircleMode } from '@/shared/hooks/useRunCircleMap';
 import { useNormalRunMapCourses } from '@/hooks/NormalRun/useNormalRunMapCourses';
-import { useNormalRunMapFilter } from '@/hooks/NormalRun/useNormalRunMapFilter';
-import { useNormalRunBottomSheet } from '@/hooks/NormalRun/useNormalRunBottomSheet';
-import { NormalRunRadialMenu } from './NormalRunRadialMenu';
+import { useRunMapFilter } from '@/shared/hooks/useRunMapFilter';
+import { useRunBottomSheet } from '@/shared/hooks/useRunBottomSheet';
+import { RunCircleRadialMenu } from '@/shared/components';
 
 type CourseTab = 'official' | 'community';
 
@@ -40,7 +37,7 @@ export function NormalRunScreen() {
     handleDistanceRangeChange,
     handleResetFilters,
     applyFilters,
-  } = useNormalRunMapFilter();
+  } = useRunMapFilter();
 
   const {
     sheetRef,
@@ -55,9 +52,9 @@ export function NormalRunScreen() {
     startDrag,
     handleDragStart,
     handleDragEnd,
-  } = useNormalRunBottomSheet();
+  } = useRunBottomSheet();
 
-  const { containerRef, center, radiusM } = useNormalRunCircleMap(
+  const { containerRef, center, radiusM } = useRunCircleMap(
     mapCourses,
     circleMode,
     collapse
@@ -129,7 +126,7 @@ export function NormalRunScreen() {
       </div>
 
       {/* Radial Menu */}
-      <NormalRunRadialMenu
+      <RunCircleRadialMenu
         circleMode={circleMode}
         onCircleModeChange={setCircleMode}
       />

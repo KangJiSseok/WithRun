@@ -1,5 +1,6 @@
 export * from './BottomNavigation';
 export * from './CoursePageNav';
+export * from './RunCircleRadialMenu';
 export * from './Mascot';
 export * from './RunCharacter';
 export * from './RunningCourseCard';

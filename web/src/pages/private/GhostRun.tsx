@@ -1,4 +1,4 @@
-import GhostRunScreen from '@/features/GhostRun/GhostRunScreen';
+import { GhostRunScreen } from '@/features/GhostRun';
 
 export function GhostRunPage() {
   return <GhostRunScreen />;

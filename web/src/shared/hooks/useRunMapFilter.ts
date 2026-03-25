@@ -5,16 +5,16 @@ import {
   type RunningCourseFilterState,
 } from '@/shared/components';
 import { INITIAL_FILTERS } from '@/constants/NormalRun';
-import { useNormalRunCourseFilter } from './useNormalRunCourseFilter';
+import { useRunCourseFilter } from './useRunCourseFilter';
 
-export const useNormalRunMapFilter = () => {
+export const useRunMapFilter = () => {
   const [showFilterDrawer, setShowFilterDrawer] = useState(false);
   const [filters, setFilters] =
     useState<RunningCourseFilterState>(INITIAL_FILTERS);
   const [appliedFilters, setAppliedFilters] =
     useState<RunningCourseFilterState>(INITIAL_FILTERS);
 
-  const { courseFilters } = useNormalRunCourseFilter();
+  const { courseFilters } = useRunCourseFilter();
 
   const preferredDistanceMs = useMemo(() => {
     const { min, max } = appliedFilters.distanceRange;

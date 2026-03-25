@@ -4,7 +4,7 @@ import type { GpsLocation } from '@bridge';
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
 
 // 모바일 브릿지 GPS를 우선 사용하고, 없으면 브라우저 Geolocation API로 폴백
-export function useNormalRunLocation(): { location: GpsLocation | null } {
+export function useRunLocation(): { location: GpsLocation | null } {
   const bridgeLocation = useBridgeDataStore((s) => s.gpsLocation);
   const [browserLocation, setBrowserLocation] = useState<GpsLocation | null>(null);
 

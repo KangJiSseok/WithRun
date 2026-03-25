@@ -2,9 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { CoordinatePoint } from '@/apis';
 import { createMarkerContent } from '@/shared/utils';
-import { useNormalRunLocation } from './useNormalRunLocation';
+import { useRunLocation } from './useRunLocation';
 
-// 폴리라인 스타일 (useKakaoMap shared hook과 동일)
+// 폴리라인 스타일
 const POLYLINE_STROKE_WEIGHT = 5;
 const POLYLINE_STROKE_COLOR = '#4F80FF';
 const POLYLINE_STROKE_OPACITY = 0.9;
@@ -29,7 +29,6 @@ function haversineM(
       Math.sin(dLon / 2) ** 2;
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
-
 
 function createUserDotContent(label: string, color: string): HTMLElement {
   const wrapper = document.createElement('div');
@@ -73,11 +72,11 @@ type CourseMapParams = {
   endLongitude: number;
 };
 
-export function useNormalRunDetailMap(
+export function useRunDetailMap(
   containerRef: React.RefObject<HTMLDivElement | null>,
   course: CourseMapParams
 ): { isNearStart: boolean } {
-  const { location } = useNormalRunLocation();
+  const { location } = useRunLocation();
   const [isNearStart, setIsNearStart] = useState(false);
 
   const mapRef = useRef<kakao.maps.Map | null>(null);

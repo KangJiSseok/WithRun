@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import type { CoordinatePoint } from '@/apis';
-import { useNormalRunLocation } from './useNormalRunLocation';
+import { useRunLocation } from '@/shared/hooks/useRunLocation';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 
@@ -71,7 +71,7 @@ export function useNormalRunMap(
     courseAnchor: { latitude: number; longitude: number } | null;
   }
 ): void {
-  const { location } = useNormalRunLocation();
+  const { location } = useRunLocation();
   const mapRef = useRef<kakao.maps.Map | null>(null);
   const userDotRef = useRef<kakao.maps.CustomOverlay | null>(null);
   const safeZoneCircleRef = useRef<kakao.maps.Circle | null>(null);
