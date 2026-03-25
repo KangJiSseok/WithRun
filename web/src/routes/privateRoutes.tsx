@@ -13,6 +13,7 @@ import { RequireAuthRoute } from '@/routes/AuthGuards';
 import { MainLayout } from '@/shared/layouts/MainLayout';
 import { GhostRunPage } from '@/pages/private/GhostRun';
 import { GhostRunDetailPage } from '@/pages/private/GhostRunDetail';
+import { GhostRunSessionPage } from '@/pages/private/GhostRunSession';
 
 export const privateRoutes: RouteObject[] = [
   {
@@ -68,6 +69,10 @@ export const privateRoutes: RouteObject[] = [
           },
           { path: '/calendar/:runningSessionId', element: <CalendarDetailPage /> },
         ],
+      },
+      {
+        path: '/ghost-run-session/:courseId',
+        element: <GhostRunSessionPage />,
       },
     ],
   },

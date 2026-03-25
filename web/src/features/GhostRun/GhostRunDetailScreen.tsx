@@ -28,7 +28,9 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
   const containerRef = useRef<HTMLDivElement>(null);
   const sentinelRef = useRef<HTMLDivElement>(null);
   const [isStarting, setIsStarting] = useState(false);
-  const [selectedTarget, setSelectedTarget] = useState<GhostTarget | null>(null);
+  const [selectedTarget, setSelectedTarget] = useState<GhostTarget | null>(
+    null
+  );
 
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
   const setSession = useNormalRunSessionStore((s) => s.setSession);
@@ -41,8 +43,12 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
     endLongitude: course.endLongitude,
   });
 
-  const { items, hasMore, isLoading: leaderboardLoading, loadMore } =
-    useGhostRunLeaderboard(course.courseId);
+  const {
+    items,
+    hasMore,
+    isLoading: leaderboardLoading,
+    loadMore,
+  } = useGhostRunLeaderboard(course.courseId);
 
   // IntersectionObserver로 무한스크롤 센티널 연결
   useEffect(() => {
@@ -153,7 +159,9 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
         <div className="flex flex-col gap-[var(--space-2)]">
           <div className="flex items-center gap-[var(--space-2)]">
             <Trophy size={16} className="text-[hsl(var(--primary-1))]" />
-            <span className="body-l-b text-[hsl(var(--text-primary))]">리더보드</span>
+            <span className="body-l-b text-[hsl(var(--text-primary))]">
+              리더보드
+            </span>
           </div>
 
           {!selectedTarget && (
@@ -163,41 +171,37 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
           )}
 
           {/* 나의 최고 기록 */}
-          <button
-            onClick={handleSelectMyRecord}
-            disabled={!course.myRecord}
-            className={`flex items-center justify-between rounded-xl border p-(--space-3) text-left transition-colors ${
-              course.myRecord && selectedTarget?.runningSessionId === course.myRecord.runningSessionId
-                ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1)/0.08)]'
-                : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-raised))]'
-            } ${!course.myRecord ? 'cursor-default' : ''}`}
-          >
-            <div className="flex flex-col gap-0.5">
-              <span className="caption-r text-[hsl(var(--primary-1))]">나의 최고 기록</span>
-              <span className="body-l-b text-[hsl(var(--text-primary))]">
-                {course.myRecord ? formatTime(course.myRecord.durationSec) : '--'}
-              </span>
-            </div>
-            <div className="flex flex-col items-end gap-0.5">
-              <span className="caption-r text-[hsl(var(--text-secondary))]">
-                {course.myRecord ? `${course.myRecord.rank}위` : '--'}
-              </span>
-              <span className="body-m text-[hsl(var(--primary-1))]">
-                {course.myRecord ? `${course.myRecord.point.toLocaleString()}P` : '--'}
-              </span>
-            </div>
-          </button>
+          {course.myRecord && (
+            <button
+              onClick={handleSelectMyRecord}
+              className={`flex items-center justify-between rounded-xl border p-[var(--space-3)] text-left transition-colors ${
+                selectedTarget?.runningSessionId ===
+                course.myRecord.runningSessionId
+                  ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1)/0.08)]'
+                  : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-raised))]'
+              }`}
+            >
+              <div className="flex flex-col gap-0.5">
+                <span className="caption-r text-[hsl(var(--primary-1))]">
+                  나의 최고 기록
+                </span>
+                <span className="body-l-b text-[hsl(var(--text-primary))]">
+                  {formatTime(course.myRecord.durationSec)}
+                </span>
+              </div>
+              <div className="flex flex-col items-end gap-0.5">
+                <span className="caption-r text-[hsl(var(--text-secondary))]">
+                  {course.myRecord.rank}위
+                </span>
+                <span className="body-m text-[hsl(var(--primary-1))]">
+                  {course.myRecord.point.toLocaleString()}P
+                </span>
+              </div>
+            </button>
+          )}
 
           {/* 리더보드 목록 */}
           <div className="max-h-[200px] overflow-y-auto flex flex-col gap-[var(--space-1)]">
-            {!leaderboardLoading && items.length === 0 && (
-              <div className="flex flex-col items-center justify-center py-6 gap-1">
-                <p className="body-m text-[hsl(var(--text-primary))]">아직 기록이 없어요</p>
-                <p className="caption-r text-[hsl(var(--text-secondary))]">
-                  첫 번째 기록을 세워보세요!
-                </p>
-              </div>
-            )}
             {items.map((item) => (
               <button
                 key={item.leaderboardId}
@@ -235,9 +239,14 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
 
         {/* 출발 지점 도착 안내 박스 */}
         <div className="flex items-start gap-[var(--space-3)] rounded-[var(--radius-lg)] border border-[hsl(var(--border-default))] bg-[hsl(var(--primary-1)/0.05)] p-[var(--space-4)]">
-          <MapPin size={20} className="mt-0.5 shrink-0 text-[hsl(var(--primary-1))]" />
+          <MapPin
+            size={20}
+            className="mt-0.5 shrink-0 text-[hsl(var(--primary-1))]"
+          />
           <div className="flex flex-col gap-[var(--space-1)]">
-            <p className="body-l-b text-[hsl(var(--text-primary))]">출발 지점 도착</p>
+            <p className="body-l-b text-[hsl(var(--text-primary))]">
+              출발 지점 도착
+            </p>
             <p className="body-r text-[hsl(var(--text-secondary))]">
               출발 지점에 도착하면 대결을 시작할 수 있습니다.
             </p>
