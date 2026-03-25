@@ -12,6 +12,7 @@ import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.query.dto.BookmarkedCourseRow;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
@@ -195,6 +196,7 @@ class CourseBookmarkServiceTest {
         assertThat(firstItem.bookmarkId()).isEqualTo(102L);
         assertThat(firstItem.bookmarkedAt()).isEqualTo(LocalDateTime.of(2026, 3, 14, 10, 30));
         assertThat(firstItem.courseId()).isEqualTo(12L);
+        assertThat(firstItem.routeType()).isEqualTo(RouteType.LOOP);
         assertThat(firstItem.difficulty()).isEqualTo(new BookmarkedCourseItemResponse.DifficultyOption("HARD", "어려움"));
         assertThat(firstItem.likeCount()).isEqualTo(9L);
         assertThat(firstItem.isLiked()).isTrue();
@@ -259,6 +261,7 @@ class CourseBookmarkServiceTest {
         BookmarkedCourseItemResponse item = response.items().getFirst();
         assertThat(item.bookmarkId()).isEqualTo(101L);
         assertThat(item.status()).isEqualTo(CourseStatus.COMMUNITY);
+        assertThat(item.routeType()).isEqualTo(RouteType.LOOP);
         assertThat(item.likeCount()).isEqualTo(3L);
         assertThat(item.isLiked()).isFalse();
         assertThat(item.difficulty()).isEqualTo(new BookmarkedCourseItemResponse.DifficultyOption("MEDIUM", "보통"));
@@ -394,6 +397,7 @@ class CourseBookmarkServiceTest {
                 courseId,
                 title,
                 status,
+                RouteType.LOOP,
                 distanceM,
                 elevationGainM,
                 difficulty,
@@ -419,6 +423,7 @@ class CourseBookmarkServiceTest {
                 .coordinates(new Coordinates(List.of(37.5665), List.of(126.9780), List.of(12.0)))
                 .build();
         setField(course, "id", id);
+        setField(course, "routeType", RouteType.LOOP);
         return course;
     }
 

@@ -15,6 +15,7 @@ import kr.withrun.was.domain.course.service.CourseService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
 import kr.withrun.was.domain.course.type.NearbyGhostCourseSortBy;
+import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.global.exception.CustomException;
@@ -249,6 +250,7 @@ class CourseControllerTest {
                         1L,
                         "Han River",
                         CourseStatus.OFFICIAL,
+                        RouteType.LOOP,
                         10000,
                         35,
                         37.57,
@@ -289,6 +291,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.items[0].courseId").value(1L))
                 .andExpect(jsonPath("$.data.items[0].title").value("Han River"))
                 .andExpect(jsonPath("$.data.items[0].status").value(CourseStatus.OFFICIAL.name()))
+                .andExpect(jsonPath("$.data.items[0].routeType").value(RouteType.LOOP.name()))
                 .andExpect(jsonPath("$.data.items[0].difficulty.data").value("MEDIUM"))
                 .andExpect(jsonPath("$.data.items[0].difficulty.label").value("보통"))
                 .andExpect(jsonPath("$.data.items[0].courseTypes[0].data").value("RIVERSIDE"))
@@ -324,6 +327,7 @@ class CourseControllerTest {
                         99L,
                         "Recommended Course",
                         CourseStatus.OFFICIAL,
+                        RouteType.OUT_AND_BACK,
                         8000,
                         22,
                         37.57,
@@ -363,6 +367,7 @@ class CourseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.items[0].courseId").value(99L))
+                .andExpect(jsonPath("$.data.items[0].routeType").value(RouteType.OUT_AND_BACK.name()))
                 .andExpect(jsonPath("$.data.items[0].isRecommended").value(true))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
                 .andExpect(jsonPath("$.data.hasNext").value(false));
@@ -378,6 +383,7 @@ class CourseControllerTest {
                 courseId,
                 "Han River",
                 CourseStatus.OFFICIAL,
+                RouteType.LOOP,
                 new CourseDetailResponse.DifficultyOption("MEDIUM", "보통"),
                 10000,
                 35,
@@ -408,6 +414,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
                 .andExpect(jsonPath("$.data.courseId").value(courseId))
                 .andExpect(jsonPath("$.data.title").value("Han River"))
+                .andExpect(jsonPath("$.data.routeType").value(RouteType.LOOP.name()))
                 .andExpect(jsonPath("$.data.difficulty.data").value("MEDIUM"))
                 .andExpect(jsonPath("$.data.difficulty.label").value("보통"))
                 .andExpect(jsonPath("$.data.coordinates[0].latitude").value(37.57))
@@ -447,6 +454,7 @@ class CourseControllerTest {
                 courseId,
                 "Han River Ghost",
                 CourseStatus.OFFICIAL,
+                RouteType.OUT_AND_BACK,
                 new CourseGhostDetailResponse.DifficultyOption("MEDIUM", "보통"),
                 5200,
                 48,
@@ -481,6 +489,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
                 .andExpect(jsonPath("$.data.courseId").value(courseId))
                 .andExpect(jsonPath("$.data.title").value("Han River Ghost"))
+                .andExpect(jsonPath("$.data.routeType").value(RouteType.OUT_AND_BACK.name()))
                 .andExpect(jsonPath("$.data.difficulty.data").value("MEDIUM"))
                 .andExpect(jsonPath("$.data.courseTypes[0].data").value("RIVERSIDE"))
                 .andExpect(jsonPath("$.data.myRecord.leaderboardId").value(205L))
@@ -595,6 +604,7 @@ class CourseControllerTest {
                         1L,
                         LocalDateTime.of(2026, 3, 21, 10, 30)
                 )),
+                RouteType.LOOP,
                 true,
                 "opaque-cursor"
         );
@@ -611,6 +621,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.items[0].nickname").value("runner-a"))
                 .andExpect(jsonPath("$.data.items[0].point").value(1250))
                 .andExpect(jsonPath("$.data.items[0].rank").value(1))
+                .andExpect(jsonPath("$.data.routeType").value(RouteType.LOOP.name()))
                 .andExpect(jsonPath("$.data.hasMore").value(true))
                 .andExpect(jsonPath("$.data.nextCursor").value("opaque-cursor"));
 
@@ -740,6 +751,7 @@ class CourseControllerTest {
                         1L,
                         "Ghost Han River",
                         CourseStatus.OFFICIAL,
+                        RouteType.LOOP,
                         5000,
                         35,
                         37.57,
@@ -784,6 +796,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.items[0].courseId").value(1L))
                 .andExpect(jsonPath("$.data.items[0].title").value("Ghost Han River"))
                 .andExpect(jsonPath("$.data.items[0].status").value(CourseStatus.OFFICIAL.name()))
+                .andExpect(jsonPath("$.data.items[0].routeType").value(RouteType.LOOP.name()))
                 .andExpect(jsonPath("$.data.items[0].difficulty.data").value("MEDIUM"))
                 .andExpect(jsonPath("$.data.items[0].difficulty.label").value("보통"))
                 .andExpect(jsonPath("$.data.items[0].courseTypes[0].data").value("RIVERSIDE"))

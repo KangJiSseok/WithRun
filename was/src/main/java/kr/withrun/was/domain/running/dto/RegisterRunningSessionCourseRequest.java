@@ -3,6 +3,8 @@ package kr.withrun.was.domain.running.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
+import jakarta.validation.constraints.NotNull;
+import kr.withrun.was.domain.course.type.RouteType;
 
 import java.util.List;
 
@@ -23,6 +25,10 @@ public record RegisterRunningSessionCourseRequest(
         @NotEmpty
         @Schema(description = "코스 유형 enum 이름 목록. 중복 값은 서버에서 제거된다.", example = "[\"RIVERSIDE\",\"URBAN\"]", requiredMode = Schema.RequiredMode.REQUIRED)
         List<@NotBlank String> courseTypes,
+
+        @NotNull
+        @Schema(description = "코스 왕복형/순환형 선택", example = "LOOP")
+        RouteType routeType,
 
         @Schema(description = "코스 스냅샷 이미지 URL. 비우면 러닝 세션의 스냅샷을 재사용한다.", example = "https://cdn.example.com/course/snapshot.png", nullable = true)
         String snapshotImageUrl

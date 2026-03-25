@@ -4,6 +4,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.type.RouteType;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -68,6 +69,7 @@ class BookmarkedCoursesDtoTest {
                         "courseId",
                         "title",
                         "status",
+                        "routeType",
                         "distanceM",
                         "elevationGainM",
                         "difficulty",
@@ -95,6 +97,7 @@ class BookmarkedCoursesDtoTest {
                 42L,
                 "Han River",
                 CourseStatus.OFFICIAL,
+                RouteType.LOOP,
                 10000,
                 35,
                 new BookmarkedCourseItemResponse.DifficultyOption("MEDIUM", "보통"),
@@ -114,6 +117,7 @@ class BookmarkedCoursesDtoTest {
         assertThat(response.nextCursor()).isEqualTo("next-cursor");
         assertThat(item.likeCount()).isEqualTo(17L);
         assertThat(item.isLiked()).isTrue();
+        assertThat(item.routeType()).isEqualTo(RouteType.LOOP);
     }
 
     private Set<ConstraintViolation<BookmarkedCoursesRequest>> validate(BookmarkedCoursesRequest request) {

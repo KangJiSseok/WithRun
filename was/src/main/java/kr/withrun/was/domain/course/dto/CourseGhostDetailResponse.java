@@ -5,6 +5,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.global.common.type.Difficulty;
 
@@ -21,6 +22,9 @@ public record CourseGhostDetailResponse(
 
         @Schema(description = "코스 상태")
         CourseStatus status,
+
+        @Schema(description = "경로 유형", nullable = true)
+        RouteType routeType,
 
         @Schema(description = "코스 난이도", implementation = DifficultyOption.class, nullable = true)
         DifficultyOption difficulty,
@@ -81,6 +85,7 @@ public record CourseGhostDetailResponse(
                 course.getId(),
                 course.getTitle(),
                 course.getStatus(),
+                course.getRouteType(),
                 DifficultyOption.from(difficulty),
                 course.getDistanceM(),
                 course.getElevationGainM(),

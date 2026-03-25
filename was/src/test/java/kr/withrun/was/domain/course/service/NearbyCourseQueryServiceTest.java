@@ -16,6 +16,7 @@ import kr.withrun.was.domain.course.service.recommendation.HybridRecommendationS
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
+import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.global.common.type.Difficulty;
@@ -118,6 +119,7 @@ class NearbyCourseQueryServiceTest {
         assertThat(response.hasNext()).isFalse();
         assertThat(response.items()).hasSize(2);
         assertThat(response.items().getFirst().courseId()).isEqualTo(20L);
+        assertThat(response.items().getFirst().routeType()).isEqualTo(RouteType.LOOP);
         assertThat(response.items().getFirst().isRecommended()).isTrue();
         assertThat(response.items().getFirst().likeCount()).isEqualTo(7L);
         assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(2L);
@@ -222,6 +224,7 @@ class NearbyCourseQueryServiceTest {
                 courseId,
                 "Course " + courseId,
                 CourseStatus.OFFICIAL,
+                RouteType.LOOP,
                 5000,
                 120,
                 latitude,

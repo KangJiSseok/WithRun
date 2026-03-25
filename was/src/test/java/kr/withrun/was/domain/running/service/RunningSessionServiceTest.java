@@ -11,6 +11,7 @@ import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.service.CourseSignalService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
@@ -1002,6 +1003,7 @@ class RunningSessionServiceTest {
                 "COMMUNITY",
                 "MEDIUM",
                 List.of("RIVERSIDE", "URBAN", "RIVERSIDE"),
+                RouteType.LOOP,
                 "course/snapshot.png"
         );
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(81L)).thenReturn(Optional.of(runningSession));
@@ -1095,6 +1097,7 @@ class RunningSessionServiceTest {
                 "PRIVATE",
                 "EASY",
                 List.of("RIVERSIDE"),
+                RouteType.LOOP,
                 null
         );
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(84L)).thenReturn(Optional.of(runningSession));
@@ -1124,6 +1127,7 @@ class RunningSessionServiceTest {
                 "OFFICIAL",
                 "MEDIUM",
                 List.of("RIVERSIDE"),
+                RouteType.LOOP,
                 null
         );
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(85L)).thenReturn(Optional.of(runningSession));
@@ -1183,6 +1187,7 @@ class RunningSessionServiceTest {
                 "COMMUNITY",
                 "EASY",
                 List.of("RIVERSIDE"),
+                RouteType.LOOP,
                 null
         );
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(82L)).thenReturn(Optional.of(runningSession));
@@ -1207,6 +1212,7 @@ class RunningSessionServiceTest {
                 "COMMUNITY",
                 "MEDIUM",
                 List.of("RIVERSIDE"),
+                RouteType.LOOP,
                 null
         );
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(83L)).thenReturn(Optional.of(runningSession));

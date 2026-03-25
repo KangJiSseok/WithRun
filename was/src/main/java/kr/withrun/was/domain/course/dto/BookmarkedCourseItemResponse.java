@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.global.common.type.Difficulty;
 
 import java.time.LocalDateTime;
@@ -25,6 +26,9 @@ public record BookmarkedCourseItemResponse(
 
         @Schema(description = "코스 상태")
         CourseStatus status,
+
+        @Schema(description = "경로 유형", nullable = true)
+        RouteType routeType,
 
         @Schema(description = "코스 총 거리(m)", example = "5200")
         Integer distanceM,

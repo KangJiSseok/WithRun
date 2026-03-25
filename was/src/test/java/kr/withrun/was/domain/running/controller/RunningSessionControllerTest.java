@@ -1,6 +1,7 @@
 package kr.withrun.was.domain.running.controller;
 
 import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
@@ -490,7 +491,7 @@ class RunningSessionControllerTest {
 
     @DisplayName("코스 등록 요청에 필수 필드가 없으면 잘못된 입력 응답을 반환한다")
     @ParameterizedTest(name = "누락된 필드: {0}")
-    @ValueSource(strings = {"title", "mode", "difficulty", "courseTypes"})
+    @ValueSource(strings = {"title", "mode", "difficulty", "courseTypes", "routeType"})
     void returnsInvalidInputValueWhenRegisterCourseRequiredFieldIsMissing(String missingField) throws Exception {
         mockMvc.perform(post("/api/running-sessions/{runningSessionId}/register-course", 901L)
                         .contentType(MediaType.APPLICATION_JSON)
@@ -767,6 +768,7 @@ class RunningSessionControllerTest {
                 "COMMUNITY",
                 "MEDIUM",
                 java.util.List.of("RIVERSIDE", "URBAN"),
+                RouteType.LOOP,
                 "https://cdn.example.com/course/snapshot.png"
         );
     }
@@ -778,6 +780,7 @@ class RunningSessionControllerTest {
                   "mode": "COMMUNITY",
                   "difficulty": "MEDIUM",
                   "courseTypes": ["RIVERSIDE", "URBAN"],
+                  "routeType": "LOOP",
                   "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
                 }
                 """;
@@ -790,6 +793,7 @@ class RunningSessionControllerTest {
                       "mode": "COMMUNITY",
                       "difficulty": "MEDIUM",
                       "courseTypes": ["RIVERSIDE", "URBAN"],
+                      "routeType": "LOOP",
                       "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
                     }
                     """;
@@ -798,6 +802,7 @@ class RunningSessionControllerTest {
                       "title": "한강 야간 러닝 10K",
                       "mode": "COMMUNITY",
                       "courseTypes": ["RIVERSIDE", "URBAN"],
+                      "routeType": "LOOP",
                       "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
                     }
                     """;
@@ -806,6 +811,7 @@ class RunningSessionControllerTest {
                       "title": "한강 야간 러닝 10K",
                       "difficulty": "MEDIUM",
                       "courseTypes": ["RIVERSIDE", "URBAN"],
+                      "routeType": "LOOP",
                       "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
                     }
                     """;
@@ -814,6 +820,16 @@ class RunningSessionControllerTest {
                       "title": "한강 야간 러닝 10K",
                       "mode": "COMMUNITY",
                       "difficulty": "MEDIUM",
+                      "routeType": "LOOP",
+                      "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
+                    }
+                    """;
+            case "routeType" -> """
+                    {
+                      "title": "한강 야간 러닝 10K",
+                      "mode": "COMMUNITY",
+                      "difficulty": "MEDIUM",
+                      "courseTypes": ["RIVERSIDE", "URBAN"],
                       "snapshotImageUrl": "https://cdn.example.com/course/snapshot.png"
                     }
                     """;

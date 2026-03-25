@@ -27,6 +27,7 @@ import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
 import kr.withrun.was.domain.course.type.NearbyGhostCourseSortBy;
+import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.util.CourseGhostLeaderboardCursorCodec;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.running.entity.RunningSession;
@@ -117,6 +118,7 @@ class CourseServiceTest {
         assertThat(response.courseId()).isEqualTo(course.getId());
         assertThat(response.title()).isEqualTo(course.getTitle());
         assertThat(response.status()).isEqualTo(course.getStatus());
+        assertThat(response.routeType()).isEqualTo(RouteType.LOOP);
         assertThat(response.difficulty()).isEqualTo(new CourseDetailResponse.DifficultyOption("EASY", "쉬움"));
         assertThat(response.coordinates()).isEqualTo(course.getCoordinates());
         assertThat(response.courseTypes()).containsExactly(
@@ -213,6 +215,7 @@ class CourseServiceTest {
 
         assertThat(response.courseId()).isEqualTo(course.getId());
         assertThat(response.title()).isEqualTo(course.getTitle());
+        assertThat(response.routeType()).isEqualTo(RouteType.LOOP);
         assertThat(response.difficulty()).isEqualTo(new CourseGhostDetailResponse.DifficultyOption("EASY", "쉬움"));
         assertThat(response.courseTypes()).containsExactly(
                 new CourseGhostDetailResponse.CourseTypeOption("RIVERSIDE", "강변"),
@@ -250,6 +253,7 @@ class CourseServiceTest {
         assertThat(response.items()).hasSize(2);
         assertThat(response.items().getFirst().leaderboardId()).isEqualTo(101L);
         assertThat(response.items().get(1).leaderboardId()).isEqualTo(102L);
+        assertThat(response.routeType()).isEqualTo(RouteType.LOOP);
         assertThat(response.hasMore()).isTrue();
         assertThat(response.nextCursor()).isEqualTo(CourseGhostLeaderboardCursorCodec.encode(1250, 102L));
     }
@@ -276,6 +280,7 @@ class CourseServiceTest {
 
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().getFirst().leaderboardId()).isEqualTo(205L);
+        assertThat(response.routeType()).isEqualTo(RouteType.LOOP);
         assertThat(response.hasMore()).isFalse();
         assertThat(response.nextCursor()).isNull();
     }
@@ -324,6 +329,7 @@ class CourseServiceTest {
                         13L,
                         "Course 13",
                         CourseStatus.OFFICIAL,
+                        RouteType.LOOP,
                         4300,
                         95,
                         37.5668,
@@ -367,6 +373,7 @@ class CourseServiceTest {
         assertThat(response.hasNext()).isFalse();
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().getFirst().courseId()).isEqualTo(13L);
+        assertThat(response.items().getFirst().routeType()).isEqualTo(RouteType.LOOP);
         assertThat(response.items().getFirst().isRecommended()).isFalse();
         assertThat(response.items().getFirst().likeCount()).isEqualTo(6L);
         assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(1L);
@@ -391,6 +398,7 @@ class CourseServiceTest {
                         21L,
                         "Ghost Course 21",
                         CourseStatus.OFFICIAL,
+                        RouteType.OUT_AND_BACK,
                         5000,
                         120,
                         37.5665,
@@ -406,6 +414,7 @@ class CourseServiceTest {
                         22L,
                         "Ghost Course 22",
                         CourseStatus.OFFICIAL,
+                        RouteType.LOOP,
                         4200,
                         90,
                         37.5670,
@@ -450,6 +459,7 @@ class CourseServiceTest {
         assertThat(response.hasNext()).isFalse();
         assertThat(response.items()).hasSize(2);
         assertThat(response.items().getFirst().courseId()).isEqualTo(21L);
+        assertThat(response.items().getFirst().routeType()).isEqualTo(RouteType.OUT_AND_BACK);
         assertThat(response.items().getFirst().likeCount()).isEqualTo(5L);
         assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(1L);
         assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("https://cdn.test/snapshot-21");
@@ -469,6 +479,7 @@ class CourseServiceTest {
                 .coordinates(new Coordinates(List.of(37.5665, 37.5700), List.of(126.9780, 126.9820), List.of(12.0, 15.0)))
                 .build();
         setField(course, "id", id);
+        setField(course, "routeType", RouteType.LOOP);
         return course;
     }
 

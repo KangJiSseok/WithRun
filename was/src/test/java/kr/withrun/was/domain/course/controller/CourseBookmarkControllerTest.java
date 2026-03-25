@@ -22,6 +22,7 @@ import kr.withrun.was.domain.course.dto.CourseBookmarkRemoveResponse;
 import kr.withrun.was.domain.course.service.CourseBookmarkService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
@@ -111,6 +112,7 @@ class CourseBookmarkControllerTest {
                         42L,
                         "Han River",
                         CourseStatus.OFFICIAL,
+                        RouteType.LOOP,
                         10000,
                         35,
                         new BookmarkedCourseItemResponse.DifficultyOption("MEDIUM", "보통"),
@@ -140,6 +142,7 @@ class CourseBookmarkControllerTest {
                 .andExpect(jsonPath("$.data.items[0].courseId").value(42L))
                 .andExpect(jsonPath("$.data.items[0].title").value("Han River"))
                 .andExpect(jsonPath("$.data.items[0].status").value(CourseStatus.OFFICIAL.name()))
+                .andExpect(jsonPath("$.data.items[0].routeType").value(RouteType.LOOP.name()))
                 .andExpect(jsonPath("$.data.items[0].difficulty.data").value("MEDIUM"))
                 .andExpect(jsonPath("$.data.items[0].difficulty.label").value("보통"))
                 .andExpect(jsonPath("$.data.items[0].courseTypes[0].data").value("RIVERSIDE"))

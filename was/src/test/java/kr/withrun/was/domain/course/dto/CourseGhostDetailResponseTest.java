@@ -3,6 +3,7 @@ package kr.withrun.was.domain.course.dto;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.global.common.type.Difficulty;
 import org.junit.jupiter.api.DisplayName;
@@ -44,6 +45,7 @@ class CourseGhostDetailResponseTest {
         assertThat(response.courseId()).isEqualTo(12L);
         assertThat(response.title()).isEqualTo("Ghost Course 12");
         assertThat(response.status()).isEqualTo(CourseStatus.OFFICIAL);
+        assertThat(response.routeType()).isEqualTo(RouteType.LOOP);
         assertThat(response.difficulty()).isEqualTo(new CourseGhostDetailResponse.DifficultyOption("MEDIUM", "보통"));
         assertThat(response.courseTypes()).containsExactly(
                 new CourseGhostDetailResponse.CourseTypeOption("RIVERSIDE", "강변"),
@@ -68,6 +70,7 @@ class CourseGhostDetailResponseTest {
                 .coordinates(new Coordinates(List.of(37.5661, 37.5702), List.of(126.9738, 126.9814), List.of(12.3, 15.8)))
                 .build();
         setField(course, "id", id);
+        setField(course, "routeType", RouteType.LOOP);
         return course;
     }
 
