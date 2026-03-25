@@ -121,6 +121,7 @@ class RunningSessionControllerTest {
                 java.util.List.of(
                         new RunningGpsSampleResponse(
                                 LocalDateTime.parse("2026-03-12T06:30:05"),
+                                0,
                                 37.5665,
                                 126.9780,
                                 12.3,
@@ -146,6 +147,7 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.mode").value(GHOST.name()))
                 .andExpect(jsonPath("$.data.ghostTargetRunningSessionId").value(44L))
                 .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].sampledAt").value("2026-03-12T06:30:05"))
+                .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].time").value(0))
                 .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].latitude").value(37.5665))
                 .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].longitude").value(126.9780));
 
@@ -276,6 +278,7 @@ class RunningSessionControllerTest {
                 3,
                 java.util.List.of(new RunningGpsSampleResponse(
                         LocalDateTime.parse("2026-03-12T06:31:30"),
+                        0,
                         37.5665,
                         126.9780,
                         21.5,
@@ -316,6 +319,7 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.isCompleted").value(true))
                 .andExpect(jsonPath("$.data.elevationGainM").value(3))
                 .andExpect(jsonPath("$.data.gpsSamples[0].sampledAt").value("2026-03-12T06:31:30"))
+                .andExpect(jsonPath("$.data.gpsSamples[0].time").value(0))
                 .andExpect(jsonPath("$.data.gpsSamples[0].speedMps").value(3.45))
                 .andExpect(jsonPath("$.data.gpsSamples[0].paceSecPerKm").value(289))
                 .andExpect(jsonPath("$.data.gpsSamples[0].distanceM").value(1250))

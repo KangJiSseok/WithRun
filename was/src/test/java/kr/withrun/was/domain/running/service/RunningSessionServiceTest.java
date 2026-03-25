@@ -308,8 +308,32 @@ class RunningSessionServiceTest {
 
         assertThat(recordComponentNames(CreateRunningSessionResponse.class)).contains("ghostTargetGpsSamples");
         assertThat(invokeAccessor(response, "ghostTargetGpsSamples")).isEqualTo(List.of(
-                RunningGpsSampleResponse.from(firstGpsSample),
-                RunningGpsSampleResponse.from(secondGpsSample)
+                new RunningGpsSampleResponse(
+                        LocalDateTime.of(2026, 3, 12, 6, 30, 5),
+                        0,
+                        37.5665,
+                        126.9780,
+                        12.3,
+                        3.2,
+                        181.0,
+                        null,
+                        null,
+                        null,
+                        null
+                ),
+                new RunningGpsSampleResponse(
+                        LocalDateTime.of(2026, 3, 12, 6, 30, 15),
+                        10,
+                        37.5667,
+                        126.9782,
+                        12.8,
+                        2.9,
+                        184.0,
+                        null,
+                        null,
+                        null,
+                        null
+                )
         ));
         verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(57L);
     }
@@ -375,7 +399,19 @@ class RunningSessionServiceTest {
         verify(runningSessionRepository).save(sessionCaptor.capture());
         assertThat(sessionCaptor.getValue().getGhostTargetRunningSession()).isEqualTo(leaderboardTarget);
         assertThat(response.ghostTargetRunningSessionId()).isEqualTo(leaderboardTarget.getId());
-        assertThat(response.ghostTargetGpsSamples()).containsExactly(RunningGpsSampleResponse.from(gpsSample));
+        assertThat(response.ghostTargetGpsSamples()).containsExactly(new RunningGpsSampleResponse(
+                LocalDateTime.of(2026, 3, 12, 6, 30, 5),
+                0,
+                37.5665,
+                126.9780,
+                12.3,
+                3.2,
+                181.0,
+                null,
+                null,
+                null,
+                null
+        ));
     }
 
     @DisplayName("없는 사용자는 USER_NOT_FOUND 예외를 던진다")
@@ -556,6 +592,77 @@ class RunningSessionServiceTest {
         assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.withrun.app/snapshots/93.png");
     }
 
+    @DisplayName("상세 조회 응답의 GPS 샘플은 첫 sampledAt 기준 경과 초를 time으로 포함한다")
+    @Test
+    void includesElapsedTimeInRunningSessionDetailGpsSamples() {
+        RunningSession runningSession = runningSession(193L, 1L, true, STARTED_AT);
+        RunningGpsSample firstGpsSample = gpsSample(
+                runningSession,
+                1L,
+                LocalDateTime.of(2026, 3, 18, 6, 31, 30),
+                37.5665,
+                126.9780,
+                21.5,
+                5.2,
+                182.0,
+                3.45,
+                289,
+                1250,
+                (short) 174
+        );
+        RunningGpsSample secondGpsSample = gpsSample(
+                runningSession,
+                1L,
+                LocalDateTime.of(2026, 3, 18, 6, 31, 40),
+                37.5666,
+                126.9781,
+                22.0,
+                5.0,
+                183.0,
+                3.55,
+                281,
+                1290,
+                (short) 176
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(193L)).thenReturn(Optional.of(runningSession));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(193L))
+                .thenReturn(List.of(firstGpsSample, secondGpsSample));
+        when(runningHealthSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(193L)).thenReturn(List.of());
+        when(runningSessionSplitRepository.findByRunningSessionIdOrderBySplitIndexAsc(193L)).thenReturn(List.of());
+        when(ghostRunningResultRepository.findByRunningSessionIdAndDeletedAtIsNull(193L)).thenReturn(Optional.empty());
+
+        RunningSessionDetailResponse response = runningSessionService.findRunningSessionDetail(193L, 1L);
+
+        assertThat(response.gpsSamples()).containsExactly(
+                new RunningGpsSampleResponse(
+                        LocalDateTime.of(2026, 3, 18, 6, 31, 30),
+                        0,
+                        37.5665,
+                        126.9780,
+                        21.5,
+                        5.2,
+                        182.0,
+                        3.45,
+                        289,
+                        1250,
+                        (short) 174
+                ),
+                new RunningGpsSampleResponse(
+                        LocalDateTime.of(2026, 3, 18, 6, 31, 40),
+                        10,
+                        37.5666,
+                        126.9781,
+                        22.0,
+                        5.0,
+                        183.0,
+                        3.55,
+                        281,
+                        1290,
+                        (short) 176
+                )
+        );
+    }
+
     @DisplayName("상세 종료 응답은 주행 지표를 GPS 샘플에 담고 건강 샘플은 생체 정보만 유지한다")
     @Test
     void mapsRunningMetricsOntoGpsSamplesWhenCompletingRunningSession() {
@@ -571,6 +678,7 @@ class RunningSessionServiceTest {
 
         assertThat(response.gpsSamples()).containsExactly(new RunningGpsSampleResponse(
                 LocalDateTime.of(2026, 3, 18, 6, 31, 30),
+                0,
                 37.5665,
                 126.9780,
                 21.5,
