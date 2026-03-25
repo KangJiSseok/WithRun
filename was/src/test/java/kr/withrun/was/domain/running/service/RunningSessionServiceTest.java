@@ -314,6 +314,70 @@ class RunningSessionServiceTest {
         verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(57L);
     }
 
+    @DisplayName("GHOST 모드에서 대상 ID가 없고 내 리더보드 기록도 없으면 빈 GPS 샘플 목록으로 세션을 생성한다")
+    @Test
+    void createsGhostRunningSessionWithEmptyFallbackGpsSamplesWhenLeaderboardRecordIsMissing() {
+        User user = user(13L);
+        Course course = course(303L, CourseStatus.OFFICIAL);
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(user.getId(), course.getId()))
+                .thenReturn(Optional.empty());
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 905L));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(13L, GHOST, 303L, null, 30.0, 176.0)
+        );
+
+        ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
+        verify(runningSessionRepository).save(sessionCaptor.capture());
+        assertThat(sessionCaptor.getValue().getGhostTargetRunningSession()).isNull();
+        assertThat(response.ghostTargetRunningSessionId()).isNull();
+        assertThat(response.ghostTargetGpsSamples()).isEmpty();
+        verify(runningGpsSampleRepository, never()).findByRunningSessionIdOrderBySampledAtAsc(any());
+    }
+
+    @DisplayName("GHOST 모드에서 대상 ID가 없으면 내 코스 리더보드 최고 기록을 고스트 대상으로 사용한다")
+    @Test
+    void createsGhostRunningSessionWithLeaderboardFallbackTarget() {
+        User user = user(31L);
+        Course course = course(307L, CourseStatus.OFFICIAL);
+        RunningSession leaderboardTarget = completedRunningSession(58L);
+        setField(leaderboardTarget, "course", course);
+        CourseGhostLeaderboard leaderboard = leaderboard(700L, user, course, leaderboardTarget, 1250);
+        RunningGpsSample gpsSample = gpsSample(
+                leaderboardTarget,
+                user.getId(),
+                LocalDateTime.of(2026, 3, 12, 6, 30, 5),
+                37.5665,
+                126.9780,
+                12.3,
+                3.2,
+                181.0,
+                null,
+                null,
+                null,
+                null
+        );
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(user.getId(), course.getId()))
+                .thenReturn(Optional.of(leaderboard));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 906L));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(leaderboardTarget.getId()))
+                .thenReturn(List.of(gpsSample));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(user.getId(), GHOST, course.getId(), null, 30.0, 176.0)
+        );
+
+        ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
+        verify(runningSessionRepository).save(sessionCaptor.capture());
+        assertThat(sessionCaptor.getValue().getGhostTargetRunningSession()).isEqualTo(leaderboardTarget);
+        assertThat(response.ghostTargetRunningSessionId()).isEqualTo(leaderboardTarget.getId());
+        assertThat(response.ghostTargetGpsSamples()).containsExactly(RunningGpsSampleResponse.from(gpsSample));
+    }
+
     @DisplayName("없는 사용자는 USER_NOT_FOUND 예외를 던진다")
     @Test
     void throwsUserNotFoundWhenUserDoesNotExist() {
@@ -356,24 +420,6 @@ class RunningSessionServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
-
-        verify(runningSessionRepository, never()).save(any(RunningSession.class));
-    }
-
-    @DisplayName("GHOST 모드에서 고스트 대상 ID가 없으면 잘못된 입력 예외를 던진다")
-    @Test
-    void throwsInvalidInputValueWhenGhostModeHasNoGhostTargetId() {
-        User user = user(13L);
-        Course course = course(303L, CourseStatus.OFFICIAL);
-        stubUser(user);
-        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
-
-        assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(13L, GHOST, 303L, null, 30.0, 176.0)
-        ))
-                .isInstanceOf(CustomException.class)
-                .extracting("responseCode")
-                .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
 
         verify(runningSessionRepository, never()).save(any(RunningSession.class));
     }
@@ -542,6 +588,75 @@ class RunningSessionServiceTest {
         ));
     }
 
+    @DisplayName("고스트 대상 없이 시작한 GHOST 세션도 종료되며 첫 기록을 리더보드에 등록한다")
+    @Test
+    void completesGhostRunningSessionWithoutGhostTarget() {
+        User user = user(41L);
+        Course course = course(401L, CourseStatus.OFFICIAL);
+        RunningSession runningSession = runningSession(94L, user.getId(), false, STARTED_AT);
+        setField(runningSession, "mode", GHOST);
+        setField(runningSession, "course", course);
+        CompleteRunningSessionRequest request = validCompleteRequest(user.getId());
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(runningSession.getId())).thenReturn(Optional.of(runningSession));
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningHealthSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningSessionSplitRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(courseDifficultyRepository.findDifficultyByCourseId(course.getId())).thenReturn(Optional.of(Difficulty.MEDIUM));
+        when(ghostRunningResultService.calculateGhostRunningPoint(1925, Difficulty.MEDIUM)).thenReturn(1200);
+        when(courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(user.getId(), course.getId()))
+                .thenReturn(Optional.empty());
+        when(courseGhostLeaderboardRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(runningSession.getId(), request);
+
+        assertThat(response.isCompleted()).isTrue();
+        assertThat(response.ghostRunningResult()).isNull();
+        verify(ghostRunningResultRepository, never()).save(any());
+
+        ArgumentCaptor<CourseGhostLeaderboard> leaderboardCaptor = ArgumentCaptor.forClass(CourseGhostLeaderboard.class);
+        verify(courseGhostLeaderboardRepository).save(leaderboardCaptor.capture());
+        CourseGhostLeaderboard savedLeaderboard = leaderboardCaptor.getValue();
+        assertThat(savedLeaderboard.getUser().getId()).isEqualTo(user.getId());
+        assertThat(savedLeaderboard.getCourse()).isEqualTo(course);
+        assertThat(savedLeaderboard.getRunningSession()).isEqualTo(runningSession);
+        assertThat(savedLeaderboard.getPoint()).isEqualTo(1200);
+    }
+
+    @DisplayName("더 높은 고스트 점수로 갱신되면 리더보드 최고 행의 세션도 함께 갱신한다")
+    @Test
+    void updatesLeaderboardRunningSessionWhenGhostPointImproves() {
+        User user = user(42L);
+        Course course = course(402L, CourseStatus.OFFICIAL);
+        RunningSession ghostTarget = completedRunningSession(96L);
+        setField(ghostTarget, "course", course);
+        setField(ghostTarget, "durationSec", 1900);
+        setField(ghostTarget, "user", user(420L));
+        RunningSession runningSession = runningSession(95L, user.getId(), false, STARTED_AT);
+        setField(runningSession, "mode", GHOST);
+        setField(runningSession, "course", course);
+        setField(runningSession, "ghostTargetRunningSession", ghostTarget);
+        CourseGhostLeaderboard existingLeaderboard = leaderboard(701L, user, course, completedRunningSession(97L), 900);
+        CompleteRunningSessionRequest request = validCompleteRequest(user.getId());
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(runningSession.getId())).thenReturn(Optional.of(runningSession));
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningHealthSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningSessionSplitRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(courseDifficultyRepository.findDifficultyByCourseId(course.getId())).thenReturn(Optional.of(Difficulty.MEDIUM));
+        when(ghostRunningResultService.calculateGhostRunningPoint(1925, Difficulty.MEDIUM)).thenReturn(1200);
+        when(ghostRunningResultService.calculateGhostRunningPoint(1900, Difficulty.MEDIUM)).thenReturn(1100);
+        when(courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(user.getId(), course.getId()))
+                .thenReturn(Optional.of(existingLeaderboard));
+        when(ghostRunningResultRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(runningSession.getId(), request);
+
+        assertThat(response.ghostRunningResult()).isNotNull();
+        assertThat(existingLeaderboard.getPoint()).isEqualTo(1200);
+        assertThat(existingLeaderboard.getRunningSession()).isEqualTo(runningSession);
+    }
+
     @DisplayName("상세 종료는 오늘 러닝을 캘린더에 기록한다")
     @Test
     void recordsRunInUserCalendarWhenCompletingDetailedRunningSession() {
@@ -560,7 +675,7 @@ class RunningSessionServiceTest {
         verify(userCalendarRepository).save(calendarCaptor.capture());
         UserCalendar savedCalendar = calendarCaptor.getValue();
         assertThat(savedCalendar.getUser().getId()).isEqualTo(user.getId());
-        assertThat(savedCalendar.getCalendarDate()).isEqualTo(response.endedAt().toLocalDate());
+        assertThat(savedCalendar.getCalendarDate()).isEqualTo(runningSession.getStartedAt().toLocalDate());
         assertThat(savedCalendar.getTotalDistanceM()).isEqualTo(5320);
         assertThat(savedCalendar.getTotalDurationSec()).isEqualTo(1925);
         assertThat(savedCalendar.getTotalCaloriesKcal()).isEqualTo(328);
@@ -990,6 +1105,12 @@ class RunningSessionServiceTest {
                 .build();
         setField(course, "id", id);
         return course;
+    }
+
+    private CourseGhostLeaderboard leaderboard(Long id, User user, Course course, RunningSession runningSession, Integer point) {
+        CourseGhostLeaderboard leaderboard = CourseGhostLeaderboard.create(user, course, runningSession, point);
+        setField(leaderboard, "id", id);
+        return leaderboard;
     }
 
     private User user(Long id) {
