@@ -1,16 +1,16 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { FreeRunScreen } from '@/features/FreeRun';
 import { RunningGuideModal } from '@/shared/components/RunningGuideModal';
 
 export function FreeRunPage() {
-  const [showGuide, setShowGuide] = useState(false);
-
-  useEffect(() => {
-    const hasSeenGuide = localStorage.getItem('freerun-guide-seen');
-    if (!hasSeenGuide) {
-      setShowGuide(true);
+  const [showGuide, setShowGuide] = useState(() => {
+    // 초기 렌더에서 바로 localStorage 를 읽어 첫 진입 여부를 결정하면 effect 없이도 가이드 노출을 안정적으로 맞출 수 있다.
+    if (typeof window === 'undefined') {
+      return false;
     }
-  }, []);
+
+    return !window.localStorage.getItem('freerun-guide-seen');
+  });
 
   function handleCloseGuide() {
     localStorage.setItem('freerun-guide-seen', 'true');

@@ -1,3 +1,6 @@
+import type { Purpose, TimeSlot, Difficulty } from '@/apis/RunningPreferences';
+import type { CourseType } from '@/shared/types/api.type';
+
 import type {
   OnboardingFormState,
   OnboardingOption,
@@ -15,43 +18,58 @@ export const ONBOARDING_LOGIN_COPY_TEXTS = [
 ];
 
 export const ONBOARDING_STEPS: OnboardingStep[] = [
+  // 질문 순서를 한 배열로 모아두면 온보딩 단계 이동과 진행 표시를 같은 기준으로 관리할 수 있다.
   { id: 'nickname', title: '어떻게 불러드릴까요?' },
   { id: 'gender', title: '성별을 알려주세요' },
   { id: 'birthdate', title: '생년월일을 알려주세요' },
   { id: 'physical', title: '신체 정보를 알려주세요' },
-  { id: 'goal', title: '러닝의 목표가 무엇인가요?' },
-  { id: 'preference', title: '언제 뛰는 것을 선호하시나요?' },
+  { id: 'purposes', title: '러닝 목적을 선택해주세요' },
+  { id: 'timeSlots', title: '선호 시간대를 골라주세요' },
   { id: 'distance', title: '선호 러닝 거리' },
   { id: 'difficulty', title: '코스 난이도' },
-  { id: 'courseType', title: '코스 타입' },
+  { id: 'courseTypes', title: '선호 코스 타입' },
 ];
 
-export const ONBOARDING_GOAL_OPTIONS: OnboardingOption[] = [
-  { label: '다이어트', value: 'diet', accentClassName: 'text-[#3388FF]' },
-  { label: '건강유지', value: 'wellness', accentClassName: 'text-[#35A55B]' },
-  { label: '대회준비', value: 'race', accentClassName: 'text-[#7C3AED]' },
-  { label: '체력증진', value: 'fitness', accentClassName: 'text-[#F97316]' },
+export const ONBOARDING_PURPOSE_OPTIONS: OnboardingOption<Purpose>[] = [
+  // option 값은 백엔드 enum 과 1:1 로 맞춰서 저장 단계에서 별도 변환이 필요 없게 유지한다.
+  { label: '다이어트', value: 'DIET', accentClassName: 'text-[#3388FF]' },
+  {
+    label: '건강유지',
+    value: 'HEALTH_MAINTENANCE',
+    accentClassName: 'text-[#35A55B]',
+  },
+  {
+    label: '대회준비',
+    value: 'RACE_PREPARATION',
+    accentClassName: 'text-[#7C3AED]',
+  },
+  {
+    label: '체력향상',
+    value: 'ENDURANCE_IMPROVEMENT',
+    accentClassName: 'text-[#F97316]',
+  },
 ];
 
-export const ONBOARDING_PREFERENCE_OPTIONS: OnboardingOption[] = [
-  { label: '아침', value: 'morning' },
-  { label: '점심', value: 'noon' },
-  { label: '저녁', value: 'evening' },
-  { label: '새벽', value: 'dawn' },
+export const ONBOARDING_TIME_SLOT_OPTIONS: OnboardingOption<TimeSlot>[] = [
+  { label: '새벽', value: 'DAWN' },
+  { label: '아침', value: 'MORNING' },
+  { label: '오후', value: 'AFTERNOON' },
+  { label: '저녁', value: 'EVENING' },
 ];
 
-export const ONBOARDING_DIFFICULTY_OPTIONS: OnboardingOption[] = [
-  { label: '쉬움', value: 'easy' },
-  { label: '보통', value: 'medium' },
-  { label: '어려움', value: 'hard' },
+export const ONBOARDING_DIFFICULTY_OPTIONS: OnboardingOption<Difficulty>[] = [
+  { label: '쉬움', value: 'EASY' },
+  { label: '보통', value: 'MEDIUM' },
+  { label: '어려움', value: 'HARD' },
 ];
 
-export const ONBOARDING_COURSE_TYPE_OPTIONS: OnboardingOption[] = [
-  { label: '한강변', value: 'riverside' },
-  { label: '공원', value: 'park' },
-  { label: '산/둘레길', value: 'trail' },
-  { label: '트랙', value: 'track' },
-  { label: '도심', value: 'urban' },
+export const ONBOARDING_COURSE_TYPE_OPTIONS: OnboardingOption<CourseType>[] = [
+  { label: '한강변', value: 'RIVERSIDE' },
+  { label: '공원', value: 'PARK' },
+  { label: '산/둘레길', value: 'MOUNTAIN_TRAIL' },
+  { label: '트랙', value: 'TRACK' },
+  { label: '도심', value: 'URBAN' },
+  { label: '기타', value: 'OTHER' },
 ];
 
 export const DEFAULT_ONBOARDING_FORM_STATE: OnboardingFormState = {
@@ -60,9 +78,9 @@ export const DEFAULT_ONBOARDING_FORM_STATE: OnboardingFormState = {
   birthdate: '',
   height: 170,
   weight: 65,
-  goal: null,
-  preference: null,
-  distance: 5,
-  difficulty: null,
-  courseType: null,
+  purposes: [],
+  timeSlots: [],
+  preferredDistanceKm: 5,
+  preferredDifficulty: null,
+  courseTypes: [],
 };

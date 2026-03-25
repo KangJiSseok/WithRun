@@ -1,3 +1,12 @@
+import type { AuthGender } from '@/apis/auth';
+import type {
+  Difficulty,
+  Purpose,
+  TimeSlot,
+} from '@/apis/RunningPreferences';
+import type { CourseType } from '@/shared/types/api.type';
+
+// 온보딩은 intro -> login -> form 흐름으로 고정해 캐릭터/배경 연출과 단계 분기를 함께 맞춘다.
 export type OnboardingPhase = 'intro' | 'login' | 'form';
 
 export type OnboardingCharacterState = 'intro' | 'login' | 'form';
@@ -7,15 +16,15 @@ export type OnboardingStepId =
   | 'gender'
   | 'birthdate'
   | 'physical'
-  | 'goal'
-  | 'preference'
+  | 'purposes'
+  | 'timeSlots'
   | 'distance'
   | 'difficulty'
-  | 'courseType';
+  | 'courseTypes';
 
-export type OnboardingOption = {
+export type OnboardingOption<TValue extends string = string> = {
   label: string;
-  value: string;
+  value: TValue;
   accentClassName?: string;
 };
 
@@ -27,13 +36,13 @@ export type OnboardingStep = {
 
 export type OnboardingFormState = {
   nickname: string;
-  gender: 'male' | 'female' | null;
+  gender: AuthGender | null;
   birthdate: string;
   height: number;
   weight: number;
-  goal: string | null;
-  preference: string | null;
-  distance: number;
-  difficulty: string | null;
-  courseType: string | null;
+  purposes: Purpose[];
+  timeSlots: TimeSlot[];
+  preferredDistanceKm: number;
+  preferredDifficulty: Difficulty | null;
+  courseTypes: CourseType[];
 };

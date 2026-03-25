@@ -1,11 +1,11 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { useEffect, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import {
   ONBOARDING_INTRO_DURATION_MS,
 } from '@/constants/Onboarding';
-import { useOnboardingStore } from '@/stores/Onboarding';
+import { useAuthStore } from '@/stores/Auth';
 import type {
   OnboardingCharacterState,
   OnboardingPhase,
@@ -32,33 +32,70 @@ function getCharacterState(
   }
 }
 
+function resolveInitialIntroState(
+  isAuthenticated: boolean,
+  hasAccessToken: boolean,
+  hasLoginError: boolean,
+): boolean {
+  return isAuthenticated || hasAccessToken || hasLoginError;
+}
+
+function resolvePhase(
+  isAuthenticated: boolean,
+  hasLoginError: boolean,
+  hasSeenIntro: boolean,
+): OnboardingPhase {
+  // 인증이 끝난 사용자는 바로 form 으로 보내고, 그 외에는 intro/login 만 번갈아 보여준다.
+  if (isAuthenticated) {
+    return 'form';
+  }
+
+  if (hasLoginError || hasSeenIntro) {
+    return 'login';
+  }
+
+  return 'intro';
+}
+
 export function OnboardingScreen() {
   const navigate = useNavigate();
-  const markOnboardingCompleted = useOnboardingStore(
-    (state) => state.markOnboardingCompleted,
+  const [searchParams] = useSearchParams();
+  const status = useAuthStore((state) => state.status);
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const profileCompleted = useAuthStore(
+    (state) => state.user?.profileCompleted,
   );
-  const [phase, setPhase] = useState<OnboardingPhase>('intro');
+  const loginError = searchParams.get('error');
+  const isAuthenticated = status === 'authenticated';
+  const [hasSeenIntro, setHasSeenIntro] = useState<boolean>(() =>
+    resolveInitialIntroState(
+      isAuthenticated,
+      accessToken !== null,
+      loginError !== null,
+    ),
+  );
+  const phase = resolvePhase(isAuthenticated, loginError !== null, hasSeenIntro);
 
   useEffect(() => {
-    if (phase !== 'intro') {
+    if (isAuthenticated && profileCompleted) {
+      navigate('/home', { replace: true });
+    }
+  }, [isAuthenticated, navigate, profileCompleted]);
+
+  useEffect(() => {
+    if (hasSeenIntro || isAuthenticated || loginError) {
       return;
     }
 
+    // intro 는 한 번만 자동 재생하고, 이후에는 login 단계부터 바로 이어서 보여준다.
     const timeoutId = window.setTimeout(() => {
-      // 네이티브 스플래시 뒤에 짧은 브랜드 인트로만 보여주고 로그인 단계로 넘긴다.
-      setPhase('login');
+      setHasSeenIntro(true);
     }, ONBOARDING_INTRO_DURATION_MS);
 
     return () => window.clearTimeout(timeoutId);
-  }, [phase]);
-
-  function handleLoginContinue() {
-    setPhase('form');
-  }
+  }, [hasSeenIntro, isAuthenticated, loginError]);
 
   function handleCompleteOnboarding() {
-    // 첫 실행 여부를 저장해두고, 이후 앱 진입 시에는 홈으로 바로 보낸다.
-    markOnboardingCompleted();
     navigate('/home', { replace: true });
   }
 
@@ -74,7 +111,7 @@ export function OnboardingScreen() {
             className="absolute inset-0 z-10 overflow-hidden"
           >
             <div className="absolute inset-0 z-0">
-              <OnboardingBackground isMoving={phase !== 'form'} />
+              <OnboardingBackground isMoving />
             </div>
 
             <div className="pointer-events-none absolute inset-0 z-10 flex items-center justify-center">
@@ -82,18 +119,18 @@ export function OnboardingScreen() {
             </div>
 
             <AnimatePresence mode="wait">
-              {/* 현재 단계에 따라 로그인 시트 또는 온보딩 폼 시트를 번갈아 보여준다. */}
               {phase === 'login' ? (
                 <OnboardingLoginStep
                   key="onboarding-login"
-                  onContinue={handleLoginContinue}
+                  error={loginError}
                 />
-              ) : (
+              ) : null}
+              {phase === 'form' ? (
                 <OnboardingFormStep
                   key="onboarding-form"
                   onComplete={handleCompleteOnboarding}
                 />
-              )}
+              ) : null}
             </AnimatePresence>
           </motion.div>
         ) : null}
