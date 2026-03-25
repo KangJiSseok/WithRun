@@ -77,6 +77,15 @@ public final class SwaggerExampleValues {
             }
             """;
 
+    // 프로필 화면의 회원탈퇴 버튼이 기대하는 표준 성공 응답 예시입니다.
+    public static final String USER_DELETE_SUCCESS = """
+            {
+              "success": true,
+              "code": "S103",
+              "message": "회원탈퇴가 완료되었습니다."
+            }
+            """;
+
     public static final String USER_RUNNING_PREFERENCE_SUCCESS = """
             {
               "success": true,

@@ -7,6 +7,7 @@
 package kr.withrun.was.domain.auth.oauth2.handler;
 
 import jakarta.servlet.ServletException;
+import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import kr.withrun.was.domain.auth.dto.AuthTokenPair;
@@ -20,20 +21,25 @@ import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.config.AuthProperties;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.ResponseCookie;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.oauth2.client.authentication.OAuth2AuthenticationToken;
 import org.springframework.security.oauth2.core.user.OAuth2User;
 import org.springframework.security.web.authentication.AuthenticationSuccessHandler;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.util.StringUtils;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.Locale;
 
 @Component
 @RequiredArgsConstructor
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
+
+    private static final String OAUTH_TARGET_COOKIE_NAME = "withrun_oauth_target";
 
     private final UserRepository userRepository;
     private final UserAuthAccountRepository userAuthAccountRepository;
@@ -64,7 +70,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         OAuth2UserInfo userInfo = OAuth2UserInfoFactory.of(registrationId, oAuth2User.getAttributes());
 
         User user;
-        boolean isNewUser = false;
 
         // provider + providerUserId로 기존 소셜 계정을 먼저 찾습니다.
         UserAuthAccount authAccount = userAuthAccountRepository
@@ -93,7 +98,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
             );
             userAuthAccountRepository.save(newAuthAccount);
 
-            isNewUser = true;
         }
 
         // 로그인 성공 후 access token / refresh token을 발급합니다.
@@ -105,19 +109,50 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 jwtProvider.createRefreshTokenCookie(authTokenPair.refreshToken()).toString()
         );
 
-        // access token은 우선 callback 쿼리로 전달하고, 프론트는 이 값을 받아 후속 API 호출에 사용합니다.
-        // 이후 /api/auth/me, /reissue 흐름이 붙으면 callback 쿼리 의존성은 줄일 수 있습니다.
-        String redirectUrl = UriComponentsBuilder
-                .fromUriString(authProperties.getFrontendBaseUrl())
-                .path("/auth/callback")
-                .queryParam("accessToken", authTokenPair.accessToken())
-                .queryParam("provider", userInfo.getProvider())
-                .queryParam("isNewUser", isNewUser)
-                .queryParam("profileCompleted", user.isProfileCompleted())
-                .build(true)
-                .toUriString();
+        // mobile/web 분기에만 필요했던 힌트 쿠키는 callback redirect 전에 바로 제거합니다.
+        response.addHeader(HttpHeaders.SET_COOKIE, clearOAuthTargetCookie().toString());
+
+        String redirectUrl = resolveCallbackRedirectUrl(request);
 
         response.sendRedirect(redirectUrl);
+    }
+
+    private String resolveCallbackRedirectUrl(HttpServletRequest request) {
+        // 모바일은 앱 딥링크로 복귀시키고, 웹은 프론트 callback route가 이후 세션 복구를 맡는다.
+        if (isMobileLoginRequest(request) && StringUtils.hasText(authProperties.getMobileDeepLinkBase())) {
+            return UriComponentsBuilder
+                    .fromUriString(authProperties.getMobileDeepLinkBase())
+                    .build(true)
+                    .toUriString();
+        }
+
+        return UriComponentsBuilder
+                .fromUriString(authProperties.getFrontendBaseUrl())
+                .path("/auth/callback")
+                .build(true)
+                .toUriString();
+    }
+
+    private boolean isMobileLoginRequest(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies == null) {
+            return false;
+        }
+
+        return Arrays.stream(cookies)
+                .anyMatch(cookie ->
+                        OAUTH_TARGET_COOKIE_NAME.equals(cookie.getName()) && "mobile".equals(cookie.getValue())
+                );
+    }
+
+    private ResponseCookie clearOAuthTargetCookie() {
+        return ResponseCookie.from(OAUTH_TARGET_COOKIE_NAME, "")
+                .httpOnly(true)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
     }
 
     private String buildTemporaryNickname(String provider, String providerUserId) {

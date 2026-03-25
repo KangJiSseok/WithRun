@@ -3,6 +3,7 @@ package kr.withrun.was.domain.user.service;
 import kr.withrun.was.domain.user.dto.UpdateUserProfileRequest;
 import kr.withrun.was.domain.user.dto.UserProfileResponse;
 import kr.withrun.was.domain.user.entity.User;
+import kr.withrun.was.domain.user.repository.UserAuthAccountRepository;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
@@ -16,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 public class UserProfileService {
 
     private final UserRepository userRepository;
+    private final UserAuthAccountRepository userAuthAccountRepository;
 
     public UserProfileResponse getProfile(Long userId) {
         // 조회/수정 모두 soft delete 되지 않은 활성 사용자만 대상으로 합니다.
@@ -53,6 +55,19 @@ public class UserProfileService {
         } catch (IllegalArgumentException exception) {
             throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
         }
+    }
+
+    @Transactional
+    public void deleteProfile(Long userId) {
+        User user = userRepository.findNotDeletedUser(userId)
+                .orElseThrow(() -> new CustomException(ResponseCode.USER_NOT_FOUND));
+
+        // 탈퇴 후 같은 소셜 계정으로 재가입할 수 있도록 provider 연결 정보는 먼저 제거합니다.
+        userAuthAccountRepository.findById(userId)
+                .ifPresent(userAuthAccountRepository::delete);
+
+        // User 엔티티의 @SQLDelete 가 실제로는 deleted_at 을 채우는 soft delete 를 수행합니다.
+        userRepository.delete(user);
     }
 
     private void validateNickname(String nickname) {
