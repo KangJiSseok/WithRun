@@ -48,7 +48,7 @@ public class RunningSessionController {
 
     @Operation(
             summary = "러닝 세션을 시작한다",
-            description = "사용자와 러닝 모드 기준으로 새로운 러닝 세션을 생성한다. COURSE 모드에서는 courseId 가 필요하고, GHOST 모드에서는 ghostTargetRunningSessionId 가 필요하다."
+            description = "사용자와 러닝 모드 기준으로 새로운 러닝 세션을 생성한다. COURSE 와 GHOST 모드에서는 courseId 가 필요하다. GHOST 모드에서 ghostTargetRunningSessionId 를 비우면 같은 코스의 내 최고 리더보드 기록을 고스트 대상으로 사용하고, 없으면 대상 없이 시작한다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

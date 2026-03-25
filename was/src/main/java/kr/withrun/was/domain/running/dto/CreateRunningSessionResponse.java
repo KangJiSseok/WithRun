@@ -20,7 +20,7 @@ public record CreateRunningSessionResponse(
         @Schema(description = "목표 고스트 세션 ID. 고스트 러닝이 아니면 null 이다.", example = "77", nullable = true)
         Long ghostTargetRunningSessionId,
 
-        @Schema(description = "고스트 대상 세션의 GPS 샘플 목록. 고스트 러닝이 아니면 null 이다.", nullable = true)
+        @Schema(description = "고스트 대상 세션의 GPS 샘플 목록. GHOST 모드에서 fallback 대상이 없으면 빈 배열이고, 고스트 러닝이 아니면 null 이다.", nullable = true)
         List<RunningGpsSampleResponse> ghostTargetGpsSamples,
 
         @Schema(description = "현재 누적 거리(m). 시작 직후에는 0 이다.", example = "0")
