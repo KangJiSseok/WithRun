@@ -1,5 +1,5 @@
 import { Pause, Play, Square } from 'lucide-react';
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { NormalRunMap } from './NormalRunMap';
@@ -43,8 +43,21 @@ type NormalRunSessionScreenProps = {
 
 export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenProps) {
   const navigate = useNavigate();
-  const { time, distance, pace, calories, isPaused, togglePause, getCollectedData } =
-    useNormalRunning();
+
+  // forceStopRef: handleStopRunning ↔ useNormalRunning 순환 의존 해소
+  const forceStopRef = useRef<() => void>(() => {});
+
+  const {
+    time, distance, pace, calories, isPaused, togglePause, getCollectedData,
+    isDeviating, deviationSec,
+    deviationAnchor, pauseAnchor, isWithinPauseAnchor,
+  } = useNormalRunning({
+    courseCoordinates: courseDetail.coordinates,
+    onForceStop: useCallback(() => forceStopRef.current(), []),
+  });
+
+  // 이탈 앵커 우선, 없으면 일시정지 앵커
+  const courseAnchor = deviationAnchor ?? pauseAnchor;
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
 
   const session = useNormalRunSessionStore((s) => s.session);
@@ -79,7 +92,7 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
     };
   }, []);
 
-  const handleStopRunning = async () => {
+  const handleStopRunning = useCallback(async () => {
     if (isEnding || !session) return;
     setIsEnding(true);
     const data = getCollectedData();
@@ -99,12 +112,15 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
     } finally {
       setIsEnding(false);
     }
-  };
+  }, [isEnding, session, getCollectedData, gpsLocation, setResult, clearAll, navigate]);
+
+  // forceStopRef를 항상 최신 handleStopRunning으로 유지
+  forceStopRef.current = handleStopRunning;
 
   return (
     <div className="absolute inset-0 overflow-hidden">
       {/* 지도 */}
-      <NormalRunMap coordinates={courseDetail.coordinates} />
+      <NormalRunMap coordinates={courseDetail.coordinates} courseAnchor={courseAnchor} />
 
       {/* 상단 통계 오버레이 */}
       <div className="absolute left-0 right-0 top-0 z-sticky flex justify-between px-8 pt-14">
@@ -117,6 +133,15 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
           sub={<span className="text-primary">🔥</span>}
         />
       </div>
+
+      {/* 코스 이탈 경고 배너 */}
+      {isDeviating && !isPaused && (
+        <div className="absolute top-28 left-0 right-0 z-sticky flex justify-center">
+          <div className="rounded-full bg-destructive px-4 py-2 text-white body-b">
+            코스 이탈 중 · {deviationSec}s / 10s
+          </div>
+        </div>
+      )}
 
       {/* 하단 그라데이션 + 컨트롤 */}
       <div className="absolute bottom-0 left-0 right-0 z-sticky">
@@ -139,11 +164,22 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
           </div>
 
           {/* 버튼 영역 */}
+          <div className="flex flex-col items-center gap-2">
+            {/* 재개 잠금 안내 문구 */}
+            {isPaused && !isWithinPauseAnchor && (
+              <span className="caption-r text-center text-white/60">
+                안정권으로 복귀 후 재개 가능
+              </span>
+            )}
           <div className="relative flex w-full items-center justify-center">
             {/* 일시정지 / 재개 */}
             <button
               onClick={togglePause}
-              className="z-10 flex h-20 w-20 items-center justify-center rounded-full bg-primary text-white shadow-[0_0_30px_hsl(var(--primary)/50%)]"
+              disabled={isPaused && !isWithinPauseAnchor}
+              className={cn(
+                'z-10 flex h-20 w-20 items-center justify-center rounded-full bg-primary text-white shadow-[0_0_30px_hsl(var(--primary)/50%)]',
+                isPaused && !isWithinPauseAnchor && 'opacity-40 cursor-not-allowed'
+              )}
               aria-label={isPaused ? '러닝 재개' : '일시정지'}
             >
               {isPaused ? (
@@ -167,6 +203,7 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
             >
               <Square size={22} fill="currentColor" />
             </button>
+          </div>
           </div>
         </div>
       </div>

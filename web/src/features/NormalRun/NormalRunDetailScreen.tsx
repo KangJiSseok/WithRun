@@ -10,6 +10,7 @@ import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
 import { createRunningSession } from '@/apis/runningSessions';
 import { useNormalRunSessionStore } from '@/stores/NormalRun';
 import { bridge, useBridgeDataStore } from '@/bridge';
+import { BOTTOM_NAV_HEIGHT } from '@/shared/components';
 
 // 회원 시스템 구현 전 임시 mock 유저
 const MOCK_USER_ID = 1;
@@ -88,7 +89,10 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
       </div>
 
       {/* 하단 코스 정보 패널 */}
-      <div className="absolute bottom-0 left-0 right-0 z-raised flex flex-col gap-[var(--space-4)] rounded-t-[var(--radius-2xl)] bg-[hsl(var(--surface-default))] p-[var(--space-5)] shadow-[var(--shadow-lg)]">
+      <div
+        style={{ paddingBottom: BOTTOM_NAV_HEIGHT + 20 }}
+        className="absolute bottom-0 left-0 right-0 z-raised flex flex-col gap-[var(--space-4)] rounded-t-[var(--radius-2xl)] bg-[hsl(var(--surface-default))] p-[var(--space-5)] shadow-[var(--shadow-lg)]"
+      >
         <h2 className="h2-b text-[hsl(var(--text-primary))]">{course.title}</h2>
 
         {/* 코스 정보 배지 */}

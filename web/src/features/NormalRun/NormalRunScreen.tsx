@@ -5,6 +5,7 @@ import { useNavigate } from 'react-router-dom';
 
 import type { CourseItem } from '@/apis';
 import {
+  BOTTOM_NAV_HEIGHT,
   RunningCourseCard,
   RunningCourseFilterDrawer,
   RunningCourseSearchBar,
@@ -16,17 +17,17 @@ import {
 } from '@/hooks/NormalRun/useNormalRunCircleMap';
 import { useNormalRunMapCourses } from '@/hooks/NormalRun/useNormalRunMapCourses';
 import { useNormalRunMapFilter } from '@/hooks/NormalRun/useNormalRunMapFilter';
-import {
-  useNormalRunBottomSheet,
-  HANDLE_HEIGHT,
-} from '@/hooks/NormalRun/useNormalRunBottomSheet';
+import { useNormalRunBottomSheet } from '@/hooks/NormalRun/useNormalRunBottomSheet';
 import { NormalRunRadialMenu } from './NormalRunRadialMenu';
+
+type CourseTab = 'official' | 'community';
 
 export function NormalRunScreen() {
   const navigate = useNavigate();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [circleMode, setCircleMode] = useState<CircleMode>('USER_LOCATION');
   const [mapCourses, setMapCourses] = useState<CourseItem[]>([]);
+  const [courseTab, setCourseTab] = useState<CourseTab>('official');
 
   const {
     showFilterDrawer,
@@ -42,13 +43,16 @@ export function NormalRunScreen() {
 
   const {
     sheetRef,
+    headerRef,
     sheetHeight,
+    headerHeight,
     isSheetExpanded,
     isDragging,
     dragControls,
     collapse,
     expand,
     startDrag,
+    handleDragStart,
     handleDragEnd,
   } = useNormalRunBottomSheet();
 
@@ -103,7 +107,11 @@ export function NormalRunScreen() {
   return (
     <div className="relative h-dvh w-full overflow-hidden">
       {/* 카카오맵 컨테이너 */}
-      <div ref={containerRef} className="h-full w-full" style={{ touchAction: 'none' }} />
+      <div
+        ref={containerRef}
+        className="h-full w-full"
+        style={{ touchAction: 'none' }}
+      />
 
       {/* 플로팅 검색바 (좌상단) */}
       <div
@@ -148,29 +156,74 @@ export function NormalRunScreen() {
         drag="y"
         dragControls={dragControls}
         dragListener={false}
-        dragConstraints={{ top: 0, bottom: sheetHeight - HANDLE_HEIGHT }}
+        dragConstraints={{
+          top: 0,
+          bottom: sheetHeight - headerHeight - BOTTOM_NAV_HEIGHT,
+        }}
         dragElastic={0}
         dragMomentum={false}
-        animate={{ y: isSheetExpanded ? 0 : sheetHeight - HANDLE_HEIGHT }}
+        animate={{
+          y: isSheetExpanded
+            ? 0
+            : sheetHeight - headerHeight - BOTTOM_NAV_HEIGHT,
+        }}
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+        onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
         className="absolute bottom-0 left-0 right-0 z-10 flex max-h-[60dvh] flex-col rounded-t-[var(--radius-2xl)] bg-[hsl(var(--surface-default))] shadow-[0_-4px_20px_rgba(0,0,0,0.12)]"
       >
-        {/* 핸들 바 (터치 타겟) */}
+        {/* 시트 헤더 (드래그 타겟 + 탭 버튼) */}
         <div
-          className="flex cursor-grab items-center justify-center active:cursor-grabbing"
+          ref={headerRef}
+          className="cursor-grab active:cursor-grabbing"
           style={{ touchAction: 'none' }}
           onPointerDown={startDrag}
         >
-          <div className="py-[var(--space-5)]">
+          {/* 드래그 바 */}
+          <div className="flex justify-center pt-3 pb-2">
             <div className="h-1 w-10 rounded-full bg-[hsl(var(--border-default))]" />
+          </div>
+
+          {/* 탭 버튼 */}
+          <div className="flex gap-2 px-4 pb-3">
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setCourseTab('official');
+                expand();
+              }}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                courseTab === 'official'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'border border-[hsl(var(--border-default))] text-[hsl(var(--text-secondary))]'
+              }`}
+            >
+              공식코스
+            </button>
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                setCourseTab('community');
+                expand();
+              }}
+              className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
+                courseTab === 'community'
+                  ? 'bg-primary text-primary-foreground'
+                  : 'border border-[hsl(var(--border-default))] text-[hsl(var(--text-secondary))]'
+              }`}
+            >
+              커뮤니티 코스
+            </button>
           </div>
         </div>
 
         {/* 스크롤 가능한 코스 리스트 */}
         <div
           className={`flex-1 overflow-y-auto px-(--space-5) py-(--space-4) ${isDragging ? 'pointer-events-none' : ''}`}
-          style={{ touchAction: 'pan-y' }}
+          style={{
+            touchAction: 'pan-y',
+            paddingBottom: BOTTOM_NAV_HEIGHT + 20,
+          }}
           onScroll={handleScroll}
         >
           {isLoading && courses.length === 0 ? (

@@ -1,4 +1,5 @@
-// 러닝 데이터 훅
+// 자유러닝 세션 오케스트레이터 훅
+// 책임: 공용 서브훅 조합 + 표시값 계산 + 세션 데이터 최종 종합(getCollectedData)
 //
 // 데이터 우선순위:
 //   워치 연결 중 → 워치(Samsung Health) 데이터 우선
@@ -8,104 +9,44 @@
 // 모바일 담당: 위도·경도·고도·방향·정확도·속도 (GPS Doppler 직접 측정)
 // 모바일 폴백: 케이던스(가속도계), 거리(Haversine)
 
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useCallback } from 'react';
+
 import { useBridgeDataStore } from '@/bridge';
-
-// 워치 메시지가 이 시간(ms) 이상 오지 않으면 연결 끊김으로 판단
-const WATCH_TIMEOUT_MS = 3000;
-
-// 두 GPS 좌표 간 거리 계산 (Haversine 공식)
-function haversineKm(lat1: number, lon1: number, lat2: number, lon2: number): number {
-  const R = 6371;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-    Math.cos((lat2 * Math.PI) / 180) *
-    Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
-}
+import { useRunningTimer } from '@/shared/hooks/Running/useRunningTimer';
+import { useRunningGps } from '@/shared/hooks/Running/useRunningGps';
+import { useRunningHealth } from '@/shared/hooks/Running/useRunningHealth';
+import { useRunningSplits } from '@/shared/hooks/Running/useRunningSplits';
 
 export function useFreeRunning() {
-  const [isPaused, setIsPaused] = useState(false);
-  const [time, setTime] = useState(0); // seconds
-  // GPS 기반 누적 거리 (워치 폴백용으로 항상 계산)
-  const [haversineDistanceKm, setHaversineDistanceKm] = useState(0);
-  // 워치 연결 여부 (렌더 트리거용)
-  const [isWatchConnected, setIsWatchConnected] = useState(false);
+  const { durationSec, formattedTime, isPaused, togglePause } = useRunningTimer();
 
-  const startTimeRef = useRef<number | null>(null);
-  const elapsedRef = useRef(0);
-  const prevGpsRef = useRef<{ lat: number; lon: number } | null>(null);
+  const { haversineDistanceKm, elevationGainMRef, gpsSamplesRef } =
+    useRunningGps({ isPaused });
 
+  const { isWatchConnected, watchHealthData, healthSamplesRef, currentKmHeartRatesRef } =
+    useRunningHealth({ isPaused });
+
+  // 표시값 계산용: GPS Doppler 속도·케이던스 (데이터 수집은 GPS 훅에서 담당)
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
-  const watchHealthData = useBridgeDataStore((s) => s.watchHealthData);
-  const lastWatchMessageAt = useBridgeDataStore((s) => s.lastWatchMessageAt);
 
-  // 워치 연결 상태를 1초마다 체크 (lastWatchMessageAt 기반)
-  useEffect(() => {
-    const check = () => {
-      const connected =
-        lastWatchMessageAt !== null &&
-        Date.now() - lastWatchMessageAt < WATCH_TIMEOUT_MS;
-      setIsWatchConnected(connected);
-    };
-    check();
-    const interval = setInterval(check, 1000);
-    return () => clearInterval(interval);
-  }, [lastWatchMessageAt]);
+  // distanceKm: 워치 연결 시 워치 데이터 우선, 미연결 시 Haversine 폴백
+  const distanceKm =
+    isWatchConnected && watchHealthData && watchHealthData.distanceM > 0
+      ? watchHealthData.distanceM / 1000
+      : haversineDistanceKm;
 
-  // 타이머
-  useEffect(() => {
-    if (isPaused) {
-      if (startTimeRef.current !== null) {
-        elapsedRef.current += Date.now() - startTimeRef.current;
-        startTimeRef.current = null;
-      }
-      return;
-    }
+  const { splitsRef } = useRunningSplits({
+    distanceKm,
+    durationSec,
+    isPaused,
+    elevationGainMRef,
+    currentKmHeartRatesRef,
+  });
 
-    startTimeRef.current = Date.now();
+  // ── 표시값 계산 ────────────────────────────────────────────────
 
-    const interval = setInterval(() => {
-      if (startTimeRef.current === null) return;
-      setTime(Math.floor((elapsedRef.current + (Date.now() - startTimeRef.current)) / 1000));
-    }, 1000);
-
-    return () => clearInterval(interval);
-  }, [isPaused]);
-
-  // 일시정지 해제 시 GPS 이전 좌표 초기화 (재개 시 점프 방지)
-  useEffect(() => {
-    if (!isPaused) {
-      prevGpsRef.current = null;
-    }
-  }, [isPaused]);
-
-  // GPS 거리 누적 (워치 폴백용으로 항상 계산)
-  useEffect(() => {
-    if (isPaused || !gpsLocation) return;
-
-    const { latitude: lat, longitude: lon } = gpsLocation;
-
-    if (prevGpsRef.current) {
-      const delta = haversineKm(prevGpsRef.current.lat, prevGpsRef.current.lon, lat, lon);
-      // GPS 노이즈 필터: 2m 미만(정지 노이즈) 또는 50m 초과(GPS 점프) 무시
-      if (delta > 0.002 && delta < 0.05) {
-        setHaversineDistanceKm((prev) => prev + delta);
-      }
-    }
-
-    prevGpsRef.current = { lat, lon };
-  }, [gpsLocation, isPaused]);
-
-  // ── 출력값 계산 ────────────────────────────────────────────────
-
-  // 속도: GPS Doppler 직접 측정 (워치/모바일 공통으로 모바일 GPS가 항상 우세)
   const speedMps = gpsLocation?.speedMps ?? 0;
 
-  // 페이스: GPS 속도 기반 (0.5 m/s = ~1.8 km/h 이하는 정지로 간주)
   const pace =
     speedMps > 0.5
       ? (() => {
@@ -116,36 +57,36 @@ export function useFreeRunning() {
         })()
       : `--'--"`;
 
-  // 칼로리: 워치 Health Services 누적값 (워치 전용, 모바일 불가)
   const calories = Math.round(watchHealthData?.caloriesKcal ?? 0);
-
-  // 심박수: 워치 PPG 전용 (모바일 불가)
   const heartRate = watchHealthData?.heartRate ?? 0;
 
-  // 케이던스: 워치 연결 시 Samsung Health SPM 우선, 미연결 시 모바일 가속도계 폴백
   const cadenceSpm = isWatchConnected
     ? (watchHealthData?.cadenceSpm ?? gpsLocation?.cadenceSpm ?? 0)
     : (gpsLocation?.cadenceSpm ?? 0);
 
-  // 거리: 워치 연결 시 Samsung Health 만보계 거리 우선, 미연결 시 Haversine 폴백
-  const distanceKm = isWatchConnected && watchHealthData && watchHealthData.distanceM > 0
-    ? watchHealthData.distanceM / 1000
-    : haversineDistanceKm;
+  // 세션 종료 시 호출 — 수집된 샘플 배열과 종합 통계를 반환
+  const getCollectedData = useCallback(() => {
+    const distanceM = Math.round(distanceKm * 1000);
+    const avgSpeedMps = durationSec > 0 ? distanceM / durationSec : 0;
+    const avgPaceSecPerKm = distanceKm > 0 ? Math.round(durationSec / distanceKm) : 0;
 
-  const formatTime = (s: number) => {
-    const h = Math.floor(s / 3600);
-    const m = Math.floor((s % 3600) / 60);
-    const sec = s % 60;
-    if (h > 0) {
-      return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-    }
-    return `${String(m).padStart(2, '0')}:${String(sec).padStart(2, '0')}`;
-  };
-
-  const togglePause = useCallback(() => setIsPaused((prev) => !prev), []);
+    return {
+      durationSec,
+      distanceM,
+      avgSpeedMps: parseFloat(avgSpeedMps.toFixed(2)),
+      avgPaceSecPerKm,
+      caloriesKcal: calories,
+      elevationGainM: Math.round(elevationGainMRef.current),
+      distanceGapM: 0, // FreeRun: 코스 없으므로 항상 0
+      gpsSamples: gpsSamplesRef.current,
+      healthSamples: healthSamplesRef.current,
+      splits: splitsRef.current,
+    };
+  }, [durationSec, distanceKm, calories, elevationGainMRef, gpsSamplesRef, healthSamplesRef, splitsRef]);
 
   return {
-    time: formatTime(time),
+    time: formattedTime,
+    durationSec,
     distance: distanceKm.toFixed(2),
     pace,
     calories,
@@ -154,5 +95,6 @@ export function useFreeRunning() {
     isWatchConnected,
     isPaused,
     togglePause,
+    getCollectedData,
   };
 }

@@ -11,12 +11,6 @@ import { completeRunningSession } from '@/apis';
 // 회원 시스템 구현 전 임시 mock 유저
 const MOCK_USER_ID = 1;
 
-function parseDurationSec(formatted: string): number {
-  const parts = formatted.split(':').map(Number);
-  if (parts.length === 3) return parts[0] * 3600 + parts[1] * 60 + parts[2];
-  return parts[0] * 60 + parts[1];
-}
-
 export interface RunningResult {
   durationSec: number;
   distanceM: number;
@@ -47,14 +41,15 @@ function StatCard({ label, value, unit }: StatCardProps) {
 
 export function FreeRunningScreen({ runningSessionId, onFinish }: FreeRunningScreenProps) {
   const navigate = useNavigate();
-  const { time, distance, pace, calories, isPaused, togglePause } = useFreeRunning();
+  const { time, distance, pace, calories, isPaused, togglePause, getCollectedData } =
+    useFreeRunning();
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
 
   const [isSubmitting, setIsSubmitting] = useState(false);
 
-  // "latest ref" 패턴: cleanup 클로저에서 최신값 접근
-  const latestValuesRef = useRef({ time, distance, calories });
-  latestValuesRef.current = { time, distance, calories };
+  // "latest ref" 패턴: cleanup 클로저에서 최신 getCollectedData 접근
+  const latestGetCollectedDataRef = useRef(getCollectedData);
+  latestGetCollectedDataRef.current = getCollectedData;
 
   const latestGpsRef = useRef(gpsLocation);
   latestGpsRef.current = gpsLocation;
@@ -66,59 +61,27 @@ export function FreeRunningScreen({ runningSessionId, onFinish }: FreeRunningScr
   useEffect(() => {
     return () => {
       if (completedRef.current || !runningSessionId) return;
-      const { time: t, distance: d, calories: cal } = latestValuesRef.current;
-      const durationSec = parseDurationSec(t);
-      const distanceM = Math.round(parseFloat(d) * 1000);
-      const avgSpeedMps = durationSec > 0 ? distanceM / durationSec : 0;
-      const avgPaceSecPerKm = avgSpeedMps > 0 ? Math.round(1000 / avgSpeedMps) : 300;
+      const data = latestGetCollectedDataRef.current();
       const gps = latestGpsRef.current;
       completeRunningSession(runningSessionId, {
         userId: MOCK_USER_ID,
-        distanceM,
-        caloriesKcal: cal,
+        ...data,
         endLatitude: gps?.latitude ?? 0,
         endLongitude: gps?.longitude ?? 0,
-        avgSpeedMps,
-        durationSec,
-        avgPaceSecPerKm,
-        elevationGainM: 0,
-        distanceGapM: 0,
-        gpsSamples: [],
-        healthSamples: [],
-        splits: [],
       }).catch(() => {}); // fire-and-forget
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
 
-  const buildPayload = () => {
-    const durationSec = parseDurationSec(time);
-    const distanceM = Math.round(parseFloat(distance) * 1000);
-    const avgSpeedMps = durationSec > 0 ? distanceM / durationSec : 0;
-    // TODO: 웹 테스트용 fallback — 실제 이동 데이터 없을 때 300(5분/km) 임시 사용
-    const avgPaceSecPerKm = avgSpeedMps > 0 ? Math.round(1000 / avgSpeedMps) : 300;
-    return { durationSec, distanceM, avgSpeedMps, avgPaceSecPerKm };
-  };
-
   const handleStop = async () => {
-    const { durationSec, distanceM, avgSpeedMps, avgPaceSecPerKm } = buildPayload();
     setIsSubmitting(true);
-
     try {
+      const data = getCollectedData();
       const res = await completeRunningSession(runningSessionId!, {
         userId: MOCK_USER_ID,
-        distanceM,
-        caloriesKcal: calories,
+        ...data,
         endLatitude: gpsLocation?.latitude ?? 0,
         endLongitude: gpsLocation?.longitude ?? 0,
-        avgSpeedMps,
-        durationSec,
-        avgPaceSecPerKm,
-        elevationGainM: 0,
-        distanceGapM: 0,
-        gpsSamples: [],
-        healthSamples: [],
-        splits: [],
       });
       completedRef.current = true;
       onFinish({

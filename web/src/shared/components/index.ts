@@ -6,3 +6,4 @@ export * from './RunningCourseFilterDrawer';
 export * from './RunningCourseSearchBar';
 export * from './RunningGuideModal';
 export * from './TabTitle';
+export * from './TopNavigation';

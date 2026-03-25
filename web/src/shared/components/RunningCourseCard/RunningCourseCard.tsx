@@ -35,7 +35,7 @@ export function RunningCourseCard({
           src={
             course.snapshotImageUrl
               ? `http://${course.snapshotImageUrl}`
-              : 'https://placehold.co/430x176/e8e8e8/cccccc'
+              : '/course-fallback.svg'
           }
           alt={course.title}
           draggable={false}
