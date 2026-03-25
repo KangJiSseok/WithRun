@@ -1,16 +1,16 @@
 {
   "expo": {
     "name": "mobile",
-    "slug": "mobile",
+    "slug": "with-run",
     "version": "1.0.0",
     "android": {
       "package": "com.mobile"
     },
     "extra": {
       "eas": {
-        "projectId": "ef54dd60-8e59-4f4d-bb77-28c7dc3eee92"
+        "projectId": "39f724e8-03c2-4001-bb42-abc0f39092c9"
       }
     },
-    "owner": "wldnjs990"
+    "owner": "jiwon2"
   }
 }
