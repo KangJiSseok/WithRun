@@ -2,25 +2,9 @@ import { Activity, Award, Bookmark, Home, MapPin, Timer } from 'lucide-react';
 import { NormalRunResultMap } from './NormalRunResultMap';
 import { useNavigate } from 'react-router-dom';
 
-import { cn } from '@/shared/utils';
+import { cn, formatTime, formatPace } from '@/shared/utils';
 import { useNormalRunSessionStore } from '@/stores/NormalRun';
 import type { CompleteRunningSessionResponse, HealthSample } from '@/apis/runningSessions';
-
-function formatDuration(seconds: number): string {
-  const h = Math.floor(seconds / 3600);
-  const m = Math.floor((seconds % 3600) / 60);
-  const s = seconds % 60;
-  if (h > 0) {
-    return `${String(h).padStart(2, '0')}:${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-  }
-  return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
-}
-
-function formatPace(secPerKm: number): string {
-  const m = Math.floor(secPerKm / 60);
-  const s = secPerKm % 60;
-  return `${m}'${String(s).padStart(2, '0')}"`;
-}
 
 function HeartRateSection({ samples }: { samples: HealthSample[] }) {
   const rates = samples.map((s) => s.heartRate).filter((r) => r > 0);
@@ -125,11 +109,21 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
           >
             <Bookmark size={26} className="text-[hsl(var(--secondary-5))]" />
           </button>
-          <div className="p-4 rounded-full bg-primary/20 border border-primary/30 mb-4">
-            <Award size={40} className="text-primary" />
-          </div>
-          <h1 className="h2-b text-[hsl(var(--text-inverse))] mb-1">러닝 완료!</h1>
-          <p className="body-r text-[hsl(var(--secondary-5))]">수고하셨습니다</p>
+          {result.isCompleted ? (
+            <div className="p-4 rounded-full bg-primary/20 border border-primary/30 mb-4">
+              <Award size={40} className="text-primary" />
+            </div>
+          ) : (
+            <div className="p-4 rounded-full bg-[hsl(var(--secondary-3))] border border-[hsl(var(--secondary-4))] mb-4">
+              <Activity size={40} className="text-[hsl(var(--secondary-5))]" />
+            </div>
+          )}
+          <h1 className="h2-b text-[hsl(var(--text-inverse))] mb-1">
+            {result.isCompleted ? '러닝 완료!' : '러닝 종료'}
+          </h1>
+          <p className="body-r text-[hsl(var(--secondary-5))]">
+            {result.isCompleted ? '수고하셨습니다' : '아쉽지만, 다음엔 완주해 봐요!'}
+          </p>
         </div>
 
         {/* 지도 영역 — GPS 샘플 2개 이상일 때 경로 표시 */}
@@ -162,7 +156,7 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
           <div className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-2))] rounded-2xl py-4 px-2">
             <span className="caption-r text-[hsl(var(--secondary-5))]">시간</span>
             <span className="h3-b text-[hsl(var(--text-inverse))] tabular-nums">
-              {formatDuration(result.durationSec)}
+              {formatTime(result.durationSec)}
             </span>
           </div>
           <div className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-2))] rounded-2xl py-4 px-2">

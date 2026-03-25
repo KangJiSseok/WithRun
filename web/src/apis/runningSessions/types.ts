@@ -86,6 +86,7 @@ export type SplitRecord = {
 // PATCH /running-sessions/{id} 요청
 export type CompleteRunningSessionRequest = {
   userId: number;
+  isCompleted: boolean;
   distanceM: number;
   caloriesKcal: number;
   endLatitude: number; // -90 ~ 90
@@ -125,6 +126,7 @@ export type SplitResult = {
 // PATCH /running-sessions/{id} 응답
 // 자유러닝에서는 ghostRunningResult: null
 export type CompleteRunningSessionResponse = {
+  isCompleted: boolean;
   runningSessionId: number;
   userId: number;
   snapshotImageUrl: string | null;

@@ -10,3 +10,10 @@ export function formatTime(seconds: number): string {
   }
   return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`;
 }
+
+// 초/km를 "M'SS"" 형식으로 변환
+export function formatPace(secPerKm: number): string {
+  const m = Math.floor(secPerKm / 60);
+  const s = secPerKm % 60;
+  return `${m}'${String(s).padStart(2, '0')}"`;
+}
