@@ -15,47 +15,41 @@ export function useCalendar() {
   // 날짜 표시 방법
   // 1. 렌더링마다 새 Date 객체 생성 (현재 방식)
   // 캘린더 -> 홈 이동 -> (자정 경과) -> 캘린더 재진입 ->
-  // CalenderScreen 언마운트 -> 리마운트 -> useCalender 훅 처음부터 실행
+  // CalendarScreen 언마운트 -> 리마운트 -> useCalendar 훅 처음부터 실행
   // new Date() = 자정 이후 날짜
   // 2. state + useEffect() => 화면 켜둔채로 있어도 setTimeout으로 갱신
   // (발생 가능성이 낮고, 오버엔지니어링)
   const today = new Date();
   const [year, setYear] = useState(today.getFullYear());
-  // 0 ~ 11
+  // (0 ~ 11) + 1
   const [month, setMonth] = useState(today.getMonth() + 1);
   // 월별 캘린더 데이터 (달력 그리드용)
-  // 1. 컴포넌트 마운트 -> data = null, 달력이 닫혀있으므로 API 호출 안 함
-  // 2. 달력 열릴 때 -> getMonthlyCalendarApi 호출 -> 응답 오면 data = MonthlyCalendarData
-  // 3. 월 이동 시 -> 새 API 호출 -> 응답 오면 setData (새 데이터)
-  const [data, setData] = useState<MonthlyCalendarData | null>(null);
+  // 1. 컴포넌트 마운트 -> monthlyData = null, 달력이 닫혀있으므로 API 호출 안 함
+  // 2. 달력 열릴 때 -> getMonthlyCalendarApi 호출 -> 응답 오면 monthlyData = MonthlyCalendarData
+  // 3. 월 이동 시 -> 새 API 호출 -> 응답 오면 setMonthlyData (새 데이터)
+  const [monthlyData, setMonthlyData] = useState<MonthlyCalendarData | null>(null);
   // API 호출 중인지 아닌지를 나타내는 플래그
   // 초기값 false = 아직 로딩 중 아님
-  const [isLoading, setIsLoading] = useState(false);
+  const [isMonthlyLoading, setIsMonthlyLoading] = useState(false);
   // 전체 기간 요약 (달력 닫힌 상태에서 ActivitySummary에 표시)
   const [summaryData, setSummaryData] = useState<CalendarSummaryData | null>(null);
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false);
   // 러닝 기록 리스트 (항상 표시, 상태에 따라 전체/월별/일별 전환)
   const [historyData, setHistoryData] = useState<GetRunningHistoryResponse | null>(null);
   // 초기/컨텍스트 전환 로딩용
   const [isHistoryLoading, setIsHistoryLoading] = useState(false);
   // 무한스크롤 추가 로딩 중인지 구분 (중복 호출 방지용)
-  const [isLoadingMore, setIsLoadingMore] = useState(false);
+  const [isScrollLoading, setIsScrollLoading] = useState(false);
   // 선택한 날짜 (달력에서 클릭, 재클릭 시 해제)
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   // 달력 그리드 표시 여부 (토글 버튼으로 제어)
-  const [showCalendar, setShowCalendar] = useState(false);
-
+  const [isCalendarOpen, setIsCalendarOpen] = useState(false);
+  // 미래 달을 막기 위한 용도 (캘린더 헤더의 다음 버튼 비활성화)
   const isCurrentMonth =
     year === today.getFullYear() && month === today.getMonth() + 1;
 
-  // useEffect의 콜백은 cleanup 함수 또는 undefined 반환해야 하는데,
-  // async 함수는 Promise를 항상 반환하므로, useEffect 콜백 자체를 async로 만들 수는 없음.
-  // (useEffect가 Promise를 cleanup 함수로 오해할 수 있기 때문)
-  // 따라서 내부의 별도 async 함수를 선언하고 즉시 호출
-
-  // 이전 방식: Promise 체이닝 (effect 본문에서 동기 setState 호출)
-  // => effect 콜백 본문에서 동기적으로 setIsLoading(true) 호출 -> React가
-  // 렌더링 중에 상태 변경을 감지해 cascading render 경고 발생할 수 있음
-  // 현재 방식: async 함수 내부로 이동 -> 비동기 컨텍스트에서 호출되므로 경고 방지
+  // 각 effect는 .then/.catch/.finally 체이닝 방식으로 작성
+  // (단, loadHistory는 params 분기 로직으로 async/await 유지)
 
   // 마운트 시 1회: 전체 기간 요약 + 전체 러닝 기록 조회
   // 컴포넌트 마운트 -> getCalendarSummaryApi() 호출
@@ -69,11 +63,14 @@ export function useCalendar() {
   useEffect(() => {
     let cancelled = false;
     async function loadInitial() {
+      setIsSummaryLoading(true);
       try {
         const summary = await getCalendarSummaryApi();
         if (!cancelled) setSummaryData(summary.data);
       } catch {
         if (!cancelled) setSummaryData(null);
+      } finally {
+        if (!cancelled) setIsSummaryLoading(false);
       }
       if (cancelled) return;
       setIsHistoryLoading(true);
@@ -91,18 +88,20 @@ export function useCalendar() {
   }, []);
 
   // 달력이 닫힐 때 (true → false): summary + 전체 history 재조회
-  // [showCalendar] 의존성 배열 (달력 닫힐 때 재조회)
+  // [isCalendarOpen] 의존성 배열 (달력 닫힐 때 재조회)
   const prevShowCalendarRef = useRef<boolean | null>(null);
   useEffect(() => {
     const wasOpen = prevShowCalendarRef.current === true;
-    prevShowCalendarRef.current = showCalendar;
+    prevShowCalendarRef.current = isCalendarOpen;
     // 이전 값이 true(달력 열려있었음) && 현재 값이 false(달력 닫힘)
-    if (!wasOpen || showCalendar) return;
+    if (!wasOpen || isCalendarOpen) return;
     let cancelled = false;
     // 성공: summaryData에 새 데이터, 실패: summaryData = null
+    setIsSummaryLoading(true);
     getCalendarSummaryApi()
       .then((res) => { if (!cancelled) setSummaryData(res.data); })
-      .catch(() => { if (!cancelled) setSummaryData(null); });
+      .catch(() => { if (!cancelled) setSummaryData(null); })
+      .finally(() => { if (!cancelled) setIsSummaryLoading(false); });
     // 달력 닫히면 전체 기록으로 복귀 → params 없이 호출
     setIsHistoryLoading(true);
     getRunningHistoryApi({})
@@ -110,33 +109,29 @@ export function useCalendar() {
       .catch(() => { if (!cancelled) setHistoryData(null); })
       .finally(() => { if (!cancelled) setIsHistoryLoading(false); });
     return () => { cancelled = true; };
-  }, [showCalendar]);
+  }, [isCalendarOpen]);
 
   // 달력이 열려있을 때 year/month 변경 시 월별 캘린더 데이터 조회
   // 달력이 닫혀있으면 skip (데이터 불필요)
-  // [showCalendar, year, month] 의존성 배열 (달력 열릴 때 + 월 이동 시 재조회)
+  // [isCalendarOpen, year, month] 의존성 배열 (달력 열릴 때 + 월 이동 시 재조회)
   useEffect(() => {
-    if (!showCalendar) return;
-    async function load() {
-      setIsLoading(true);
-      try {
-        const result = await getMonthlyCalendarApi(year, month);
-        setData(result.data);
-      } catch {
-        setData(null);
-      } finally {
-        setIsLoading(false);
-      }
-    }
-    load();
-  }, [showCalendar, year, month]);
+    if (!isCalendarOpen) return;
+    let cancelled = false;
+    setIsMonthlyLoading(true);
+    getMonthlyCalendarApi(year, month)
+      .then((res) => { if (!cancelled) setMonthlyData(res.data); })
+      .catch(() => { if (!cancelled) setMonthlyData(null); })
+      .finally(() => { if (!cancelled) setIsMonthlyLoading(false); });
+    return () => { cancelled = true; };
+  }, [isCalendarOpen, year, month]);
 
   // 러닝 기록: 달력이 열릴 때 / year·month·selectedDate 변경 시 재조회
   // 달력이 닫히면 skip → 닫힐 때의 전체 기록 재조회는 위 effect에서 처리
-  // [showCalendar, year, month, selectedDate] 의존성 배열
+  // params 분기 로직이 있어 .then 체이닝보다 async/await이 가독성에 유리
+  // [isCalendarOpen, year, month, selectedDate] 의존성 배열
   useEffect(() => {
     // 달력 닫혀있으면 skip (닫힐 때 전체 기록 재조회는 위 effect에서 처리)
-    if (!showCalendar) return;
+    if (!isCalendarOpen) return;
     let cancelled = false;
     async function loadHistory() {
       setIsHistoryLoading(true);
@@ -165,7 +160,7 @@ export function useCalendar() {
     }
     loadHistory();
     return () => { cancelled = true; };
-  }, [showCalendar, year, month, selectedDate]);
+  }, [isCalendarOpen, year, month, selectedDate]);
 
   function goPrev() {
     if (month === 1) {
@@ -190,8 +185,12 @@ export function useCalendar() {
   }
 
   // 운동 기록이 있는 날짜 조회하기 위함 (운동한 날짜에 빨간 점이 찍힘)
+  // 배열을 Set으로 반환
+  // Set을 쓰는 이유: CalendarGrid에서 날짜 클릭마다 activeDates.has("2026-03-05")
+  // 로 체크 - 배열의 .includes()보다 빠름
   const activeDates = new Set(
-    data?.dailySummaries.map((s) => s.calendarDate) ?? [],
+    // .map((s) => s.calendarDate) — 날짜 문자열만 추출
+    monthlyData?.dailySummaries.map((s) => s.calendarDate) ?? [],
   );
 
   // 날짜 토글: 같은 날짜 재클릭 시 선택 해제 → 월별 기록으로 복귀
@@ -201,40 +200,45 @@ export function useCalendar() {
 
   // 다음 페이지 로드: 현재 컨텍스트(전체/월별/일별)에 cursor를 추가해 요청 후 items에 append
   const loadMore = useCallback(async () => {
-    if (!historyData?.hasMore || !historyData.nextCursor || isLoadingMore) return;
+    // 중복 호출 방지
+    if (!historyData?.hasMore || !historyData.nextCursor || isScrollLoading) return;
     const cursor = historyData.nextCursor;
     // 현재 컨텍스트에 맞는 파라미터 구성
     let params: GetRunningHistoryParams = { cursor };
-    if (showCalendar) {
+    if (isCalendarOpen) {
+      // 일별
       if (selectedDate) {
         const parts = selectedDate.split('-');
         params = { year: Number(parts[0]), month: Number(parts[1]), day: Number(parts[2]), cursor };
+      // 월별
       } else {
         params = { year, month, cursor };
       }
     }
-    setIsLoadingMore(true);
+    setIsScrollLoading(true);
     try {
       const more = await getRunningHistoryApi(params);
       setHistoryData((prev) =>
+        // 새로 받은 items를 기존 items 뒤에 append (덮어쓰지 않음)
         prev ? { ...more.data, items: [...prev.items, ...more.data.items] } : more.data,
       );
     } catch {
       // 더 보기 실패 시 기존 목록 유지
     } finally {
-      setIsLoadingMore(false);
+      setIsScrollLoading(false);
     }
-  }, [historyData, isLoadingMore, showCalendar, selectedDate, year, month]);
+  }, [historyData, isScrollLoading, isCalendarOpen, selectedDate, year, month]);
 
   return {
     year,
     month,
-    data,
-    isLoading,
+    monthlyData,
+    isMonthlyLoading,
     summaryData,
+    isSummaryLoading,
     historyData,
     isHistoryLoading,
-    isLoadingMore,
+    isScrollLoading,
     loadMore,
     selectedDate,
     toggleDate,
@@ -243,7 +247,7 @@ export function useCalendar() {
     goPrev,
     goNext,
     today,
-    showCalendar,
-    setShowCalendar,
+    isCalendarOpen,
+    setIsCalendarOpen,
   };
 }

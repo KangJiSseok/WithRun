@@ -1,5 +1,5 @@
 import { ChevronDown } from 'lucide-react';
-import { cn } from '@/shared/utils';
+import { cn, formatDateLabel } from '@/shared/utils';
 import { useCalendar } from '@/hooks/Calendar';
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarGrid } from './CalendarGrid';
@@ -7,22 +7,17 @@ import { ActivitySummary } from './ActivitySummary';
 import { RunningHistoryList } from './RunningHistoryList';
 import { StreakCard } from './StreakCard';
 
-// "2026-03-09" -> "3월 9일 활동"
-function formatDayTitle(dateStr: string): string {
-  const parts = dateStr.split('-');
-  return `${Number(parts[1])}월 ${Number(parts[2])}일 활동`;
-}
-
 export function CalendarScreen() {
   const {
     year,
     month,
-    data,
-    isLoading,
+    monthlyData,
+    isMonthlyLoading,
     summaryData,
+    isSummaryLoading,
     historyData,
     isHistoryLoading,
-    isLoadingMore,
+    isScrollLoading,
     loadMore,
     selectedDate,
     toggleDate,
@@ -31,29 +26,29 @@ export function CalendarScreen() {
     goPrev,
     goNext,
     today,
-    showCalendar,
-    setShowCalendar,
+    isCalendarOpen,
+    setIsCalendarOpen,
   } = useCalendar();
 
   // 상단 요약 통계
   // - 달력 닫힘: "전체 요약" + lifetime 데이터
   // - 달력 열림: "월별 요약" + monthly 데이터
-  const summaryLabel = showCalendar ? '월별 요약' : '전체 요약';
-  const summaryRunCount = showCalendar
-    ? (data?.monthlyRunCount ?? null)
+  const summaryLabel = isCalendarOpen ? '월별 요약' : '전체 요약';
+  const summaryRunCount = isCalendarOpen
+    ? (monthlyData?.monthlyRunCount ?? null)
     : (summaryData?.lifetimeRunCount ?? null);
-  const summaryDistanceM = showCalendar
-    ? (data?.monthlyDistanceM ?? null)
+  const summaryDistanceM = isCalendarOpen
+    ? (monthlyData?.monthlyDistanceM ?? null)
     : (summaryData?.lifetimeDistanceM ?? null);
 
   // 러닝 기록 리스트 제목
-  // - 날짜 선택됨: "3월 9일 활동" (달력 열림/닫힘 모두 유지)
+  // - 날짜 선택됨: "3월 9일 활동" (달력 열릴 때만)
   // - 달력 열림 + 날짜 미선택: "2026년 3월 활동"
   // - 달력 닫힘 + 날짜 미선택: "전체 기록"
-  const historyTitle = !showCalendar
+  const historyTitle = !isCalendarOpen
     ? '전체 기록'
     : selectedDate
-      ? formatDayTitle(selectedDate)
+      ? formatDateLabel(selectedDate)
       : `${year}년 ${month}월 활동`;
 
   return (
@@ -65,6 +60,7 @@ export function CalendarScreen() {
       <StreakCard
         currentStreakDays={summaryData?.currentStreakDays ?? null}
         longestStreakDays={summaryData?.longestStreakDays ?? null}
+        isLoading={isSummaryLoading}
       />
 
       {/* 요약 통계 (달력 상태에 따라 전체/월별 전환) */}
@@ -72,6 +68,7 @@ export function CalendarScreen() {
         label={summaryLabel}
         runCount={summaryRunCount}
         distanceM={summaryDistanceM}
+        isLoading={isSummaryLoading}
       />
 
       {/* 달력 보기/숨기기 토글 */}
@@ -79,14 +76,14 @@ export function CalendarScreen() {
         type="button"
         onClick={() => {
           // selectedDate 유지 -> 달력 다시 열면 이전 선택 날짜 & RunningHistoryList(일별) 복원
-          setShowCalendar((prev) => !prev);
+          setIsCalendarOpen((prev) => !prev);
         }}
         className="w-full flex justify-between items-center p-[var(--space-3)] rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--surface-subtle))] transition-colors"
       >
-        <span className="body-b">{showCalendar ? '달력 숨기기' : '달력 보기'}</span>
+        <span className="body-b">{isCalendarOpen ? '달력 숨기기' : '달력 보기'}</span>
         <ChevronDown
           size={20}
-          className={cn('transition-transform duration-300', showCalendar && 'rotate-180')}
+          className={cn('transition-transform duration-300', isCalendarOpen && 'rotate-180')}
         />
       </button>
 
@@ -94,7 +91,7 @@ export function CalendarScreen() {
       <div
         className={cn(
           'grid transition-all duration-300 ease-in-out',
-          showCalendar ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
+          isCalendarOpen ? 'grid-rows-[1fr] opacity-100' : 'grid-rows-[0fr] opacity-0',
         )}
       >
         <div className="overflow-hidden">
@@ -110,7 +107,7 @@ export function CalendarScreen() {
             {/* API 호출 중: 로딩 텍스트, 아니면 캘린더 그리드 표시 */}
             {/* API 응답 전에 CalendarGrid를 그리면 activeDates가 빈 Set */}
             {/* 빈 캘린더가 잠깐 보이는 현상 방지 */}
-            {isLoading ? (
+            {isMonthlyLoading ? (
               <div className="flex justify-center py-8">
                 <span className="body-r text-[hsl(var(--text-secondary))]">로딩 중...</span>
               </div>
@@ -139,10 +136,12 @@ export function CalendarScreen() {
         title={historyTitle}
         items={historyData?.items ?? []}
         isLoading={isHistoryLoading}
-        // useCalendar에서 isLoadingMore, loadMore 받아
-        // RunningHisoryList에 전달
+        // useCalendar에서 isScrollLoading, loadMore 받아
+        // RunningHistoryList에 전달
         hasMore={historyData?.hasMore ?? false}
-        isLoadingMore={isLoadingMore}
+        isScrollLoading={isScrollLoading}
+        // 날짜 미선택 상태(전체/월별)에서만 날짜 헤더 표시
+        showDateHeader={!selectedDate}
         onLoadMore={loadMore}
       />
     </div>
