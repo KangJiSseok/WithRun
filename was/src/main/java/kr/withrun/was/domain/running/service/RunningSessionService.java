@@ -44,8 +44,8 @@ import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.domain.running.util.PastRunningSessionCursorCodec;
 import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
-import kr.withrun.was.domain.user.entity.UserCalendar;
 import kr.withrun.was.domain.user.entity.User;
+import kr.withrun.was.domain.user.entity.UserCalendar;
 import kr.withrun.was.domain.user.repository.UserCalendarRepository;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.common.type.Difficulty;
@@ -87,7 +87,12 @@ public class RunningSessionService {
         RunningMode mode = request.mode();
         User user = getUser(request.userId());
         Course course = getCourse(mode, request.courseId());
-        RunningSession ghostTargetRunningSession = getGhostTargetRunningSession(mode, request.ghostTargetRunningSessionId());
+        RunningSession ghostTargetRunningSession = resolveGhostTargetRunningSession(
+                user,
+                mode,
+                course,
+                request.ghostTargetRunningSessionId()
+        );
 
         RunningSession savedRunningSession = runningSessionRepository.save(RunningSession.start(
                 user,
@@ -128,10 +133,9 @@ public class RunningSessionService {
         List<RunningSessionSplit> savedSplits = saveSplits(runningSession, user, request.splits());
 
         GhostRunningResult ghostRunningResult = createGhostRunningResultIfNeeded(runningSession, request.distanceGapM());
+        upsertCourseGhostLeaderboardIfNeeded(runningSession);
 
-        List<RunningGpsSampleResponse> gpsResponses = savedGpsSamples.stream()
-                .map(RunningGpsSampleResponse::from)
-                .toList();
+        List<RunningGpsSampleResponse> gpsResponses = RunningGpsSampleResponse.from(savedGpsSamples);
         List<RunningHealthSampleResponse> healthResponses = savedHealthSamples.stream()
                 .map(RunningHealthSampleResponse::from)
                 .toList();
@@ -196,10 +200,9 @@ public class RunningSessionService {
         RunningSession runningSession = getRunningSession(runningSessionId);
         runningSession.validateOwner(userId);
 
-        List<RunningGpsSampleResponse> gpsSamples = runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
-                .stream()
-                .map(RunningGpsSampleResponse::from)
-                .toList();
+        List<RunningGpsSampleResponse> gpsSamples = RunningGpsSampleResponse.from(
+                runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
+        );
         List<RunningHealthSampleResponse> healthSamples = runningHealthSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
                 .stream()
                 .map(RunningHealthSampleResponse::from)
@@ -259,7 +262,11 @@ public class RunningSessionService {
         }
 
         RunningSession targetSession = runningSession.getGhostTargetRunningSession();
-        if (targetSession == null || !Boolean.TRUE.equals(targetSession.getIsCompleted())) {
+        if (targetSession == null) {
+            return null;
+        }
+
+        if (!Boolean.TRUE.equals(targetSession.getIsCompleted())) {
             throw new CustomException(ResponseCode.INVALID_GHOST_TARGET);
         }
 
@@ -290,12 +297,21 @@ public class RunningSessionService {
         );
 
         GhostRunningResult savedGhostRunningResult = ghostRunningResultRepository.save(ghostRunningResult);
-        upsertCourseGhostLeaderboard(runningSession, point);
         return savedGhostRunningResult;
     }
 
+    private void upsertCourseGhostLeaderboardIfNeeded(RunningSession runningSession) {
+        if (runningSession.getMode() != RunningMode.GHOST) {
+            return;
+        }
+
+        Difficulty difficulty = resolveGhostDifficulty(runningSession, runningSession.getGhostTargetRunningSession());
+        int point = ghostRunningResultService.calculateGhostRunningPoint(runningSession.getDurationSec(), difficulty);
+        upsertCourseGhostLeaderboard(runningSession, point);
+    }
+
     private void upsertUserCalendar(RunningSession runningSession) {
-        LocalDate calendarDate = runningSession.getEndedAt().toLocalDate();
+        LocalDate calendarDate = runningSession.getStartedAt().toLocalDate();
         UserCalendar userCalendar = userCalendarRepository.findByUserIdAndCalendarDateAndDeletedAtIsNull(
                         runningSession.getUser().getId(),
                         calendarDate
@@ -315,7 +331,7 @@ public class RunningSessionService {
     private Difficulty resolveGhostDifficulty(RunningSession runningSession, RunningSession targetSession) {
         Long courseId = runningSession.getCourse() != null
                 ? runningSession.getCourse().getId()
-                : targetSession.getCourse() == null ? null : targetSession.getCourse().getId();
+                : targetSession == null || targetSession.getCourse() == null ? null : targetSession.getCourse().getId();
 
         if (courseId == null) {
             throw new CustomException(ResponseCode.COURSE_NOT_FOUND);
@@ -461,14 +477,43 @@ public class RunningSessionService {
             RunningMode mode,
             RunningSession ghostTargetRunningSession
     ) {
-        if (mode != RunningMode.GHOST || ghostTargetRunningSession == null) {
+        if (mode != RunningMode.GHOST) {
             return null;
         }
 
-        return runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(ghostTargetRunningSession.getId())
-                .stream()
-                .map(RunningGpsSampleResponse::from)
-                .toList();
+        if (ghostTargetRunningSession == null) {
+            return List.of();
+        }
+
+        return RunningGpsSampleResponse.from(
+                runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(ghostTargetRunningSession.getId())
+        );
+    }
+
+    private RunningSession resolveGhostTargetRunningSession(
+            User user,
+            RunningMode mode,
+            Course course,
+            Long ghostTargetRunningSessionId
+    ) {
+        RunningSession explicitGhostTarget = getGhostTargetRunningSession(mode, ghostTargetRunningSessionId);
+        if (explicitGhostTarget != null || mode != RunningMode.GHOST) {
+            return explicitGhostTarget;
+        }
+
+        return getLeaderboardGhostTargetRunningSession(user, course);
+    }
+
+    private RunningSession getLeaderboardGhostTargetRunningSession(User user, Course course) {
+        if (user == null || course == null) {
+            return null;
+        }
+
+        return courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(user.getId(), course.getId())
+                .map(CourseGhostLeaderboard::getRunningSession)
+                .filter(runningSession -> !runningSession.isDeleted())
+                .filter(runningSession -> Boolean.TRUE.equals(runningSession.getIsCompleted()))
+                .orElse(null);
     }
 
     private Course getCourse(RunningMode mode, Long courseId) {
@@ -491,7 +536,7 @@ public class RunningSessionService {
         }
 
         if (ghostTargetRunningSessionId == null) {
-            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+            return null;
         }
 
         RunningSession ghostTargetRunningSession = runningSessionRepository.findByIdAndDeletedAtIsNull(ghostTargetRunningSessionId)

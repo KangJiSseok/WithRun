@@ -22,7 +22,7 @@ public record CreateRunningSessionRequest(
         @Positive
         Long courseId,
 
-        @Schema(description = "GHOST 모드일 때 목표가 되는 완료된 러닝 세션 ID", example = "91", nullable = true)
+        @Schema(description = "GHOST 모드일 때 목표가 되는 완료된 러닝 세션 ID. 비우면 같은 코스의 내 최고 리더보드 기록을 우선 사용한다.", example = "91", nullable = true)
         @Positive
         Long ghostTargetRunningSessionId,
 
