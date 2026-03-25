@@ -86,7 +86,7 @@ public class RunningSessionService {
     public CreateRunningSessionResponse createRunningSession(CreateRunningSessionRequest request) {
         RunningMode mode = request.mode();
         User user = getUser(request.userId());
-        Course course = getCourse(mode, request.courseId());
+        Course course = getCourse(user, mode, request.courseId());
         RunningSession ghostTargetRunningSession = resolveGhostTargetRunningSession(
                 user,
                 mode,
@@ -516,7 +516,7 @@ public class RunningSessionService {
                 .orElse(null);
     }
 
-    private Course getCourse(RunningMode mode, Long courseId) {
+    private Course getCourse(User user, RunningMode mode, Long courseId) {
         if (mode == RunningMode.FREE) {
             return null;
         }
@@ -526,8 +526,19 @@ public class RunningSessionService {
         }
 
         return courseRepository.findNotDeletedCourse(courseId)
-                .filter(course -> course.getStatus() == CourseStatus.OFFICIAL)
+                .filter(course -> isRunnableCourse(user, course))
                 .orElseThrow(() -> new CustomException(ResponseCode.COURSE_NOT_FOUND));
+    }
+
+    private boolean isRunnableCourse(User user, Course course) {
+        if (course.getStatus() == CourseStatus.OFFICIAL || course.getStatus() == CourseStatus.COMMUNITY) {
+            return true;
+        }
+
+        return course.getStatus() == CourseStatus.PRIVATE
+                && course.getUser() != null
+                && user != null
+                && course.getUser().getId().equals(user.getId());
     }
 
     private RunningSession getGhostTargetRunningSession(RunningMode mode, Long ghostTargetRunningSessionId) {
