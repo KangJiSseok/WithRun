@@ -227,6 +227,54 @@ class RunningSessionServiceTest {
         assertThat(response.isCompleted()).isFalse();
     }
 
+    @DisplayName("COURSE 모드는 커뮤니티 코스로도 세션을 생성한다")
+    @Test
+    void createsCourseRunningSessionWithCommunityCourse() {
+        User user = user(31L);
+        Course course = course(307L, CourseStatus.COMMUNITY);
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 904L));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(31L, COURSE, 307L, null, 30.0, 176.0)
+        );
+
+        ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
+        verify(runningSessionRepository, times(1)).save(sessionCaptor.capture());
+        RunningSession savedSession = sessionCaptor.getValue();
+
+        assertThat(savedSession.getCourse()).isEqualTo(course);
+        assertThat(savedSession.getMode()).isEqualTo(COURSE);
+        assertThat(response.runningSessionId()).isEqualTo(904L);
+        assertThat(response.courseId()).isEqualTo(307L);
+        assertThat(response.mode()).isEqualTo(COURSE);
+    }
+
+    @DisplayName("COURSE 모드는 자신이 생성한 비공개 코스로 세션을 생성한다")
+    @Test
+    void createsCourseRunningSessionWithOwnedPrivateCourse() {
+        User user = user(32L);
+        Course course = course(308L, CourseStatus.PRIVATE, user);
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 905L));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(32L, COURSE, 308L, null, 30.0, 176.0)
+        );
+
+        ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
+        verify(runningSessionRepository, times(1)).save(sessionCaptor.capture());
+        RunningSession savedSession = sessionCaptor.getValue();
+
+        assertThat(savedSession.getCourse()).isEqualTo(course);
+        assertThat(savedSession.getMode()).isEqualTo(COURSE);
+        assertThat(response.runningSessionId()).isEqualTo(905L);
+        assertThat(response.courseId()).isEqualTo(308L);
+        assertThat(response.mode()).isEqualTo(COURSE);
+    }
+
     @DisplayName("GHOST 모드는 공식 코스와 완료된 고스트 대상으로 세션을 생성한다")
     @Test
     void createsGhostRunningSessionWithEligibleGhostTarget() {
@@ -258,6 +306,62 @@ class RunningSessionServiceTest {
         assertThat(response.distanceM()).isZero();
         assertThat(response.caloriesKcal()).isZero();
         assertThat(response.isCompleted()).isFalse();
+    }
+
+    @DisplayName("GHOST 모드는 커뮤니티 코스로도 세션을 생성한다")
+    @Test
+    void createsGhostRunningSessionWithCommunityCourse() {
+        User user = user(33L);
+        Course course = course(309L, CourseStatus.COMMUNITY);
+        RunningSession ghostTarget = completedRunningSession(58L);
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(ghostTarget.getId()))
+                .thenReturn(Optional.of(ghostTarget));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 906L));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(33L, GHOST, 309L, 58L, 30.0, 176.0)
+        );
+
+        ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
+        verify(runningSessionRepository, times(1)).save(sessionCaptor.capture());
+        RunningSession savedSession = sessionCaptor.getValue();
+
+        assertThat(savedSession.getCourse()).isEqualTo(course);
+        assertThat(savedSession.getGhostTargetRunningSession()).isEqualTo(ghostTarget);
+        assertThat(savedSession.getMode()).isEqualTo(GHOST);
+        assertThat(response.runningSessionId()).isEqualTo(906L);
+        assertThat(response.courseId()).isEqualTo(309L);
+        assertThat(response.ghostTargetRunningSessionId()).isEqualTo(58L);
+    }
+
+    @DisplayName("GHOST 모드는 자신이 생성한 비공개 코스로 세션을 생성한다")
+    @Test
+    void createsGhostRunningSessionWithOwnedPrivateCourse() {
+        User user = user(34L);
+        Course course = course(310L, CourseStatus.PRIVATE, user);
+        RunningSession ghostTarget = completedRunningSession(59L);
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(ghostTarget.getId()))
+                .thenReturn(Optional.of(ghostTarget));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 907L));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(34L, GHOST, 310L, 59L, 30.0, 176.0)
+        );
+
+        ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
+        verify(runningSessionRepository, times(1)).save(sessionCaptor.capture());
+        RunningSession savedSession = sessionCaptor.getValue();
+
+        assertThat(savedSession.getCourse()).isEqualTo(course);
+        assertThat(savedSession.getGhostTargetRunningSession()).isEqualTo(ghostTarget);
+        assertThat(savedSession.getMode()).isEqualTo(GHOST);
+        assertThat(response.runningSessionId()).isEqualTo(907L);
+        assertThat(response.courseId()).isEqualTo(310L);
+        assertThat(response.ghostTargetRunningSessionId()).isEqualTo(59L);
     }
 
     @DisplayName("GHOST 모드 시작 응답은 대상 세션의 GPS 샘플을 포함한다")
@@ -442,13 +546,13 @@ class RunningSessionServiceTest {
         verify(runningSessionRepository, never()).save(any(RunningSession.class));
     }
 
-    @DisplayName("COURSE 모드에서 공식 코스가 아니면 COURSE_NOT_FOUND 예외를 던진다")
+    @DisplayName("COURSE 모드에서 다른 사용자의 비공개 코스면 COURSE_NOT_FOUND 예외를 던진다")
     @Test
-    void throwsCourseNotFoundWhenCourseIsNotOfficial() {
+    void throwsCourseNotFoundWhenPrivateCourseBelongsToAnotherUser() {
         User user = user(12L);
-        Course communityCourse = course(302L, CourseStatus.COMMUNITY);
+        Course privateCourse = course(302L, CourseStatus.PRIVATE, user(99L));
         stubUser(user);
-        when(courseRepository.findNotDeletedCourse(communityCourse.getId())).thenReturn(Optional.of(communityCourse));
+        when(courseRepository.findNotDeletedCourse(privateCourse.getId())).thenReturn(Optional.of(privateCourse));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
                 new CreateRunningSessionRequest(12L, COURSE, 302L, null, 30.0, 176.0)
@@ -475,6 +579,24 @@ class RunningSessionServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.GHOST_TARGET_NOT_FOUND);
+
+        verify(runningSessionRepository, never()).save(any(RunningSession.class));
+    }
+
+    @DisplayName("GHOST 모드에서 다른 사용자의 비공개 코스면 COURSE_NOT_FOUND 예외를 던진다")
+    @Test
+    void throwsCourseNotFoundWhenGhostModePrivateCourseBelongsToAnotherUser() {
+        User user = user(35L);
+        Course privateCourse = course(311L, CourseStatus.PRIVATE, user(199L));
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(privateCourse.getId())).thenReturn(Optional.of(privateCourse));
+
+        assertThatThrownBy(() -> runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(35L, GHOST, 311L, 60L, 30.0, 176.0)
+        ))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
 
         verify(runningSessionRepository, never()).save(any(RunningSession.class));
     }
@@ -1199,6 +1321,10 @@ class RunningSessionServiceTest {
     }
 
     private Course course(Long id, CourseStatus status) {
+        return course(id, status, null);
+    }
+
+    private Course course(Long id, CourseStatus status, User owner) {
         Course course = Course.builder()
                 .title("Course " + id)
                 .status(status)
@@ -1210,6 +1336,7 @@ class RunningSessionServiceTest {
                 .endLatitude(37.5700)
                 .endLongitude(126.9820)
                 .coordinates(new Coordinates(List.of(37.5665), List.of(126.9780), List.of(12.0)))
+                .user(owner)
                 .build();
         setField(course, "id", id);
         return course;
