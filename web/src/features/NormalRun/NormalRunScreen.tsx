@@ -1,11 +1,12 @@
 import { Filter, Home } from 'lucide-react';
 import { motion } from 'motion/react';
-import { useCallback, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import type { CourseItem } from '@/apis';
 import {
   BOTTOM_NAV_HEIGHT,
+  CoursePageNav,
   RunningCourseCard,
   RunningCourseFilterDrawer,
   RunningCourseSearchBar,
@@ -62,11 +63,8 @@ export function NormalRunScreen() {
     collapse
   );
 
-  const { courses, isLoading, hasMore, loadMore } = useNormalRunMapCourses(
-    center,
-    radiusM,
-    preferredDistanceMs
-  );
+  const { courses, isLoading, currentPage, totalPages, goToPage } =
+    useNormalRunMapCourses(center, radiusM, preferredDistanceMs);
 
   useEffect(() => {
     setMapCourses(courses);
@@ -89,20 +87,6 @@ export function NormalRunScreen() {
     const keyword = searchKeyword.trim().toLowerCase();
     return !keyword || course.title.toLowerCase().includes(keyword);
   });
-
-  const handleScroll = useCallback(
-    (e: React.UIEvent<HTMLDivElement>) => {
-      const el = e.currentTarget;
-      if (
-        el.scrollHeight - el.scrollTop - el.clientHeight < 80 &&
-        hasMore &&
-        !isLoading
-      ) {
-        loadMore();
-      }
-    },
-    [hasMore, isLoading, loadMore]
-  );
 
   return (
     <div className="relative h-dvh w-full overflow-hidden">
@@ -220,11 +204,7 @@ export function NormalRunScreen() {
         {/* 스크롤 가능한 코스 리스트 */}
         <div
           className={`flex-1 overflow-y-auto px-(--space-5) py-(--space-4) ${isDragging ? 'pointer-events-none' : ''}`}
-          style={{
-            touchAction: 'pan-y',
-            paddingBottom: BOTTOM_NAV_HEIGHT + 20,
-          }}
-          onScroll={handleScroll}
+          style={{ touchAction: 'pan-y', paddingBottom: 16 }}
         >
           {isLoading && courses.length === 0 ? (
             <div className="flex h-24 items-center justify-center">
@@ -252,14 +232,23 @@ export function NormalRunScreen() {
                   onToggleSave={() => {}}
                 />
               ))}
-              {isLoading && (
-                <p className="body-r py-4 text-center text-[hsl(var(--text-secondary))]">
-                  불러오는 중...
-                </p>
-              )}
             </div>
           )}
         </div>
+
+        {/* 페이지 네비게이션 */}
+        {totalPages > 1 && (
+          <div
+            className="shrink-0 py-2"
+            style={{ paddingBottom: BOTTOM_NAV_HEIGHT + 8 }}
+          >
+            <CoursePageNav
+              currentPage={currentPage + 1}
+              totalPages={totalPages}
+              onPageChange={(p: number) => goToPage(p - 1)}
+            />
+          </div>
+        )}
       </motion.div>
 
       <RunningCourseFilterDrawer

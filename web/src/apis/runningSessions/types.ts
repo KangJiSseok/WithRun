@@ -58,6 +58,10 @@ export type GpsSample = {
   altitudeM: number | null;
   accuracyM: number | null;
   bearingDeg: number | null;
+  speedMps?: number | null;
+  paceSecPerKm?: number | null;
+  distanceM?: number | null;
+  cadenceSpm?: number | null;
   sampledAt: string; // ISO 8601
 };
 
@@ -65,11 +69,7 @@ export type GpsSample = {
 export type HealthSample = {
   sampledAt: string; // ISO 8601
   heartRate: number;
-  speedMps: number;
-  paceSecPerKm: number;
-  distanceM: number;
   caloriesKcal: number;
-  cadenceSpm: number;
 };
 
 // 1km 단위 구간 기록 (TODO: 추후 구현)
@@ -154,13 +154,13 @@ export type RegisterCourseResponse = {
   courseId: number;
   title: string;
   status: CourseStatus;
-  difficulty: CourseDifficulty;
+  difficulty: { data: CourseDifficulty; label: string } | null;
   distanceM: number;
   elevationGainM: number;
   snapshotImageUrl: string | null;
   startLatitude: number;
   startLongitude: number;
-  endLatitude: number | null;
-  endLongitude: number | null;
-  coordinates: { latitude: number; longitude: number; elevation: number }[];
+  endLatitude: number;
+  endLongitude: number;
+  coordinates: { latitude: number; longitude: number; elevationM: number }[];
 };

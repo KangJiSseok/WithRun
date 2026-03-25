@@ -1,6 +1,11 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useQuery, keepPreviousData } from '@tanstack/react-query';
 
-import { getNearbyCoursesApi, type CourseItem, type PreferredDistanceM } from '@/apis';
+import {
+  getNearbyCoursesApi,
+  type GetNearbyCoursesData,
+  type PreferredDistanceM,
+} from '@/apis';
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
 
 type Center = { latitude: number; longitude: number };
@@ -10,67 +15,47 @@ export function useNormalRunMapCourses(
   radiusM: number,
   preferredDistanceMs: PreferredDistanceM[] = []
 ) {
-  const [courses, setCourses] = useState<CourseItem[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [hasMore, setHasMore] = useState(false);
+  const [currentPage, setCurrentPage] = useState(0);
 
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
 
-  // 최신값 ref (fetchPage가 stable reference를 유지하도록)
-  const centerRef = useRef(center);
-  const radiusRef = useRef(radiusM);
-  const preferredDistanceMsRef = useRef(preferredDistanceMs);
+  // gpsLocation은 쿼리 키에 포함하지 않음 (GPS 업데이트마다 refetch 방지)
+  // queryFn 내부에서 최신값을 읽기 위해 ref 사용
   const gpsLocationRef = useRef(gpsLocation);
-  useEffect(() => { centerRef.current = center; }, [center]);
-  useEffect(() => { radiusRef.current = radiusM; }, [radiusM]);
-  useEffect(() => { preferredDistanceMsRef.current = preferredDistanceMs; }, [preferredDistanceMs]);
-  useEffect(() => { gpsLocationRef.current = gpsLocation; }, [gpsLocation]);
-
-  const cursorRef = useRef<string | null>(null);
-
-  // fetchPage: ref에서 읽으므로 stable reference (deps: [])
-  const fetchPage = useCallback(async (cursor: string | null) => {
-    const c = centerRef.current;
-    if (!c) return;
-
-    const gps = gpsLocationRef.current;
-
-    setIsLoading(true);
-    try {
-      const { data } = await getNearbyCoursesApi({
-        latitude: gps?.latitude ?? c.latitude,
-        longitude: gps?.longitude ?? c.longitude,
-        targetLatitude: c.latitude,
-        targetLongitude: c.longitude,
-        radiusM: Math.max(1000, Math.min(5000, radiusRef.current)),
-        preferredDistanceMs: preferredDistanceMsRef.current,
-        ...(cursor ? { cursor } : {}),
-      });
-
-      setCourses((prev) => (cursor ? [...prev, ...data.items] : data.items));
-      setHasMore(data.hasMore);
-      cursorRef.current = data.nextCursor;
-    } catch {
-      if (!cursor) setCourses([]);
-    } finally {
-      setIsLoading(false);
-    }
-  }, []);
-
-  // center/radiusM/preferredDistanceMs 변경 시 목록 초기화 후 첫 페이지 fetch
   useEffect(() => {
-    if (!center) return;
+    gpsLocationRef.current = gpsLocation;
+  }, [gpsLocation]);
 
-    cursorRef.current = null;
-    setCourses([]);
-    setHasMore(false);
-    fetchPage(null);
-  }, [center, radiusM, preferredDistanceMs, fetchPage]);
+  // center/radiusM/preferredDistanceMs 변경 시 첫 페이지로 리셋
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [center, radiusM, preferredDistanceMs]);
 
-  const loadMore = useCallback(() => {
-    if (!hasMore || isLoading || !cursorRef.current) return;
-    fetchPage(cursorRef.current);
-  }, [hasMore, isLoading, fetchPage]);
+  const { data, isLoading, isFetching } = useQuery<GetNearbyCoursesData | null>({
+    queryKey: ['nearbyCourses', center, radiusM, preferredDistanceMs, currentPage],
+    queryFn: async () => {
+      if (!center) return null;
+      const gps = gpsLocationRef.current;
+      const { data } = await getNearbyCoursesApi({
+        latitude: gps?.latitude ?? center.latitude,
+        longitude: gps?.longitude ?? center.longitude,
+        targetLatitude: center.latitude,
+        targetLongitude: center.longitude,
+        radiusM: Math.max(1000, Math.min(5000, radiusM)),
+        preferredDistanceMs,
+        page: currentPage,
+      });
+      return data;
+    },
+    enabled: !!center,
+    placeholderData: keepPreviousData,
+  });
 
-  return { courses, isLoading, hasMore, loadMore };
+  return {
+    courses: data?.items ?? [],
+    isLoading: isLoading || isFetching,
+    currentPage,
+    totalPages: data?.totalPages ?? 0,
+    goToPage: setCurrentPage,
+  };
 }

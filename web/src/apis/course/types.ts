@@ -2,6 +2,7 @@ import type {
   CourseDifficulty,
   CourseStatus,
   CourseType,
+  RouteType,
 } from '@/shared/types/api.type';
 
 export type CoordinatePoint = {
@@ -15,6 +16,7 @@ export type CourseDetail = {
   courseId: number;
   title: string;
   status: CourseStatus;
+  routeType: RouteType;
   difficulty: { data: CourseDifficulty; label: string } | null;
   distanceM: number;
   elevationGainM: number;
@@ -36,6 +38,7 @@ export type CourseItem = {
   courseId: number;
   title: string;
   status: CourseStatus;
+  routeType: RouteType;
   distanceM: number;
   elevationGainM: number;
   startLatitude: number;
@@ -46,6 +49,7 @@ export type CourseItem = {
   distanceFromTargetM: number;
   difficulty: { data: string; label: string } | null;
   courseTypes: { data: string; label: string }[];
+  isRecommended: boolean;
   snapshotImageUrl: string | null;
   likeCount: number;
   bookmarkCount: number;
@@ -60,13 +64,16 @@ export type GetNearbyCoursesParams = {
   targetLongitude: number;
   radiusM: number;
   preferredDistanceMs: PreferredDistanceM[];
-  pageSize?: number;
-  cursor?: string;
+  sortBy?: 'DISTANCE' | 'POPULAR';
+  page?: number;
+  size?: number;
 };
 
 export type GetNearbyCoursesData = {
   items: CourseItem[];
-  hasMore: boolean;
-  nextCursor: string | null;
-  suggestedNextRadiusM: number | null;
+  page: number;
+  size: number;
+  totalElements: number;
+  totalPages: number;
+  hasNext: boolean;
 };
