@@ -180,6 +180,7 @@ public class RunningSessionService {
                 .endLatitude(runningSession.getEndLatitude())
                 .endLongitude(runningSession.getEndLongitude())
                 .coordinates(courseCoordinates)
+                .routeType(request.routeType())
                 .user(runningSession.getUser())
                 .build());
 

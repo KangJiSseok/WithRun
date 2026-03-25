@@ -31,6 +31,7 @@ import kr.withrun.was.domain.course.service.recommendation.NearbyRecommendationI
 import kr.withrun.was.domain.course.type.CourseDistanceType;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.util.CourseGhostLeaderboardCursorCodec;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.common.type.Difficulty;
@@ -212,6 +213,7 @@ public class CourseService {
                 course.getId(),
                 course.getTitle(),
                 course.getStatus(),
+                course.getRouteType(),
                 CourseDetailResponse.DifficultyOption.from(courseDifficultyRepository.findDifficultyByCourseId(courseId)
                         .orElse(null)),
                 course.getDistanceM(),
@@ -250,7 +252,7 @@ public class CourseService {
     }
 
     public CourseGhostLeaderboardResponse findCourseGhostLeaderboard(Long courseId, CourseGhostLeaderboardRequest request) {
-        getCourse(courseId);
+        Course course = getCourse(courseId);
 
         List<CourseGhostLeaderboardRankRow> rows = courseGhostLeaderboardRepository.findRankedRowsByCourseId(courseId);
         int startIndex = resolveGhostLeaderboardStartIndex(rows, request.cursor());
@@ -271,7 +273,7 @@ public class CourseService {
                 ))
                 .toList();
 
-        return new CourseGhostLeaderboardResponse(items, hasMore, nextCursor);
+        return new CourseGhostLeaderboardResponse(items, course.getRouteType(), hasMore, nextCursor);
     }
 
     private Course getCourse(Long courseId) {
@@ -420,6 +422,7 @@ public class CourseService {
                 representative.courseId(),
                 representative.title(),
                 representative.status(),
+                representative.routeType(),
                 representative.distanceM(),
                 representative.elevationGainM(),
                 representative.startLatitude(),
@@ -494,6 +497,7 @@ public class CourseService {
                 row.courseId(),
                 row.title(),
                 row.status(),
+                row.routeType(),
                 row.distanceM(),
                 row.elevationGainM(),
                 row.startLatitude(),
@@ -521,6 +525,7 @@ public class CourseService {
                 candidate.courseId(),
                 candidate.title(),
                 candidate.status(),
+                candidate.routeType(),
                 candidate.distanceM(),
                 candidate.elevationGainM(),
                 candidate.startLatitude(),
@@ -555,6 +560,7 @@ public class CourseService {
                         item.courseId(),
                         item.title(),
                         item.status(),
+                        item.routeType(),
                         item.distanceM(),
                         item.elevationGainM(),
                         item.startLatitude(),
@@ -584,6 +590,7 @@ public class CourseService {
             Long courseId,
             String title,
             CourseStatus status,
+            RouteType routeType,
             Integer distanceM,
             Integer elevationGainM,
             Double startLatitude,

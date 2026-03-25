@@ -113,6 +113,7 @@ public class CourseBookmarkService {
                 representative.courseId(),
                 representative.title(),
                 representative.status(),
+                representative.routeType(),
                 representative.distanceM(),
                 representative.elevationGainM(),
                 BookmarkedCourseItemResponse.DifficultyOption.from(representative.difficulty()),

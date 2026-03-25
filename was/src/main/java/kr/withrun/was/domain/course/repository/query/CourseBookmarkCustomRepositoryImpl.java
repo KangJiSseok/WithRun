@@ -122,6 +122,7 @@ public class CourseBookmarkCustomRepositoryImpl implements CourseBookmarkCustomR
                         course.id,
                         course.title,
                         course.status,
+                        course.routeType,
                         course.distanceM,
                         course.elevationGainM,
                         courseDifficulty.difficulty,

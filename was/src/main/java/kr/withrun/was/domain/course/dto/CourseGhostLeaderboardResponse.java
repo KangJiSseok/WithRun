@@ -2,6 +2,7 @@ package kr.withrun.was.domain.course.dto;
 
 import io.swagger.v3.oas.annotations.media.ArraySchema;
 import io.swagger.v3.oas.annotations.media.Schema;
+import kr.withrun.was.domain.course.type.RouteType;
 
 import java.util.List;
 
@@ -9,6 +10,9 @@ import java.util.List;
 public record CourseGhostLeaderboardResponse(
         @ArraySchema(schema = @Schema(implementation = CourseGhostLeaderboardItemResponse.class), arraySchema = @Schema(description = "현재 페이지 리더보드 항목 목록"))
         List<CourseGhostLeaderboardItemResponse> items,
+
+        @Schema(description = "코스 경로 유형", nullable = true)
+        RouteType routeType,
 
         @Schema(description = "다음 페이지 존재 여부", example = "true")
         boolean hasMore,

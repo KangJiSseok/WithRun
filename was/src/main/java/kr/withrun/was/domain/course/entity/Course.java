@@ -13,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import kr.withrun.was.domain.course.type.CourseStatus;
+import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
@@ -71,6 +72,10 @@ public class Course extends BaseEntity {
     @Column(name = "promoted_at")
     private LocalDateTime promotedAt;
 
+    @Enumerated(EnumType.STRING)
+    @Column(name = "route_type")
+    private RouteType routeType;
+
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(
             name = "created_by_user_id",
@@ -91,6 +96,7 @@ public class Course extends BaseEntity {
             Double endLongitude,
             Coordinates coordinates,
             LocalDateTime promotedAt,
+            RouteType routeType,
             User user
     ) {
         this.title = title;
@@ -104,6 +110,7 @@ public class Course extends BaseEntity {
         this.endLongitude = endLongitude;
         this.coordinates = coordinates;
         this.promotedAt = promotedAt;
+        this.routeType = routeType;
         this.user = user;
     }
 
