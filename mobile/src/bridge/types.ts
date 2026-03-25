@@ -37,6 +37,7 @@ export type GpsLocation = {
 
 type _AppBridgeMethods = {
   whoRU(): Promise<string>
+  startSocialLogin(url: string): Promise<void>
   notifyCourseDeviation(count: 1 | 2 | 3): Promise<void>
   notifyCourseDeviationForceStop(): Promise<void>
 }

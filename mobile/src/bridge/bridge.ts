@@ -3,8 +3,8 @@ import {
   bridge,
   postMessageSchema,
 } from '@webview-bridge/react-native'
-import { Vibration } from 'react-native'
-import { GpsLocation, WatchHealthData } from './hooks'
+import { Linking, Vibration } from 'react-native'
+import type { GpsLocation, WatchHealthData } from './types'
 
 // android <-> RN 간 브릿지 통신 함수
 export const appPostMessageSchema = postMessageSchema({
@@ -19,12 +19,19 @@ export const appPostMessageSchema = postMessageSchema({
   },
 })
 
-export type AndroidPostMessageSchema = typeof appPostMessageSchema
-
 // 웹 <-> 모바일 간 브릿지 통신 함수
 export const appBridge = bridge({
   async whoRU() {
     return "Hello, I'm native"
+  },
+  async startSocialLogin(url: string) {
+    // 모바일은 백엔드가 mobile 전용 OAuth 진입점에서 딥링크 복귀 쿠키를 심어주도록 경로만 바꿔 연다.
+    const mobileAuthorizationUrl = url.replace(
+      '/oauth2/authorization/',
+      '/mobile/oauth2/authorization/',
+    )
+
+    await Linking.openURL(mobileAuthorizationUrl)
   },
   async notifyCourseDeviation(count: 1 | 2 | 3) {
     // count만큼 진동 반복: [대기, ON, 대기, ON, ...]
@@ -41,9 +48,6 @@ export const appBridge = bridge({
     Vibration.vibrate(1000)
   },
 })
-
-// 브릿지 타입(웹 공유용)
-export type AppBridge = typeof appBridge
 
 // 웹뷰 클라이언트
 export const { WebView, postMessage } = createWebView({
