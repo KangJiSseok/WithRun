@@ -29,6 +29,9 @@ importers:
       expo-status-bar:
         specifier: ~3.0.9
         version: 3.0.9(react-native@0.81.5(@babel/core@7.29.0)(@types/react@19.1.17)(react@19.1.0))(react@19.1.0)
+      kalmanjs:
+        specifier: ^1.1.0
+        version: 1.1.0
       react:
         specifier: 19.1.0
         version: 19.1.0
@@ -44,6 +47,10 @@ importers:
       typescript:
         specifier: ~5.9.2
         version: 5.9.3
+    devDependencies:
+      '@types/kalmanjs':
+        specifier: ^1.1.0
+        version: 1.1.0
 
 packages:
 
@@ -817,6 +824,9 @@ packages:
 
   '@types/istanbul-reports@3.0.4':
     resolution: {integrity: sha512-pk2B1NWalF9toCRu6gjBzR69syFjP4Od8WRAX+0mmf9lAjCRicLOWc+ZrxZHx/0XRjotgkF9t6iaMJ+aXcOdZQ==}
+
+  '@types/kalmanjs@1.1.0':
+    resolution: {integrity: sha512-x93QR3TXzzy6ZN2oi85a/DTHrwgcxWwykhF+meyxHCHKrErbOHqTl3J7mDh4uZXjRDt8lGJrp9UjLRfbyPx6ug==}
 
   '@types/node@25.3.2':
     resolution: {integrity: sha512-RpV6r/ij22zRRdyBPcxDeKAzH43phWVKEjL2iksqo1Vz3CuBUrgmPpPhALKiRfU7OMCmeeO9vECBMsV0hMTG8Q==}
@@ -1613,6 +1623,9 @@ packages:
     resolution: {integrity: sha512-XmOWe7eyHYH14cLdVPoyg+GOH3rYX++KpzrylJwSW98t3Nk+U8XOl8FWKOgwtzdb8lXGf6zYwDUzeHMWfxasyg==}
     engines: {node: '>=6'}
     hasBin: true
+
+  kalmanjs@1.1.0:
+    resolution: {integrity: sha512-Gkm2DAKIX8geuDcEJ92e80EmQ6TyIzWBJk6AFk+aDLofQ4G/KoDe1RCY9WMuXFe0NQxsTi7HYh9BVQneOtlvkg==}
 
   kleur@3.0.3:
     resolution: {integrity: sha512-eTIzlVOSUR+JxdDFepEYcBMtZ9Qqdef+rnzWdRZuMbOywu5tO2w2N7rqjoANZ5k9vywhL6Br1VRjUIgTQx4E8w==}
@@ -3764,6 +3777,8 @@ snapshots:
     dependencies:
       '@types/istanbul-lib-report': 3.0.3
 
+  '@types/kalmanjs@1.1.0': {}
+
   '@types/node@25.3.2':
     dependencies:
       undici-types: 7.18.2
@@ -4603,6 +4618,8 @@ snapshots:
   jsesc@3.1.0: {}
 
   json5@2.2.3: {}
+
+  kalmanjs@1.1.0: {}
 
   kleur@3.0.3: {}
 

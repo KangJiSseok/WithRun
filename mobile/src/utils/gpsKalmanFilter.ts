@@ -1,7 +1,9 @@
+import KalmanFilter from 'kalmanjs';
+
 interface GpsCoords {
   latitude: number
   longitude: number
-  accuracy: number  // 단위: m → 측정 노이즈 R = accuracy²
+  accuracy: number  // 단위: m
   speed: number
   heading: number
 }
@@ -12,7 +14,7 @@ interface FilteredCoords {
 }
 
 /**
- * GPS 칼만 필터 팩토리 함수
+ * GPS 칼만 필터 팩토리 함수 (kalmanjs 기반)
  *
  * @param Q - 프로세스 노이즈 (기본값 1)
  *   - Q가 클수록 새 GPS 측정값을 더 신뢰 → 반응 빠르지만 노이즈 많음
@@ -27,35 +29,13 @@ interface FilteredCoords {
  * const filtered = filterGps({ latitude, longitude, accuracy, speed, heading })
  */
 export function createGpsKalmanFilter(Q = 1) {
-  let P = 0
-  let prevLat = 0
-  let prevLng = 0
-  let initialized = false
+  const filterLat = new KalmanFilter({ R: 1, Q })
+  const filterLng = new KalmanFilter({ R: 1, Q })
 
   return function filter(coords: GpsCoords): FilteredCoords {
-    const { latitude, longitude, accuracy } = coords
-    const R = accuracy * accuracy
-
-    if (!initialized) {
-      initialized = true
-      prevLat = latitude
-      prevLng = longitude
-      return { latitude, longitude }
+    return {
+      latitude: filterLat.filter(coords.latitude),
+      longitude: filterLng.filter(coords.longitude),
     }
-
-    // 예측 단계: 불확실성 증가
-    P += Q
-
-    // 칼만 게인: R이 클수록(GPS 신뢰도 낮을수록) 측정값 가중치 감소
-    const K = P / (P + R)
-
-    // 보정 단계: 이전 추정값과 새 측정값의 가중 평균
-    prevLat += K * (latitude - prevLat)
-    prevLng += K * (longitude - prevLng)
-
-    // 불확실성 업데이트
-    P *= (1 - K)
-
-    return { latitude: prevLat, longitude: prevLng }
   }
 }
