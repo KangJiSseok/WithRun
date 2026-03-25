@@ -44,8 +44,8 @@ import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.domain.running.util.PastRunningSessionCursorCodec;
 import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
-import kr.withrun.was.domain.user.entity.UserCalendar;
 import kr.withrun.was.domain.user.entity.User;
+import kr.withrun.was.domain.user.entity.UserCalendar;
 import kr.withrun.was.domain.user.repository.UserCalendarRepository;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.common.type.Difficulty;
@@ -295,7 +295,7 @@ public class RunningSessionService {
     }
 
     private void upsertUserCalendar(RunningSession runningSession) {
-        LocalDate calendarDate = runningSession.getEndedAt().toLocalDate();
+        LocalDate calendarDate = runningSession.getStartedAt().toLocalDate();
         UserCalendar userCalendar = userCalendarRepository.findByUserIdAndCalendarDateAndDeletedAtIsNull(
                         runningSession.getUser().getId(),
                         calendarDate
@@ -491,7 +491,7 @@ public class RunningSessionService {
         }
 
         if (ghostTargetRunningSessionId == null) {
-            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+            return null;
         }
 
         RunningSession ghostTargetRunningSession = runningSessionRepository.findByIdAndDeletedAtIsNull(ghostTargetRunningSessionId)
