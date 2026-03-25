@@ -135,9 +135,7 @@ public class RunningSessionService {
         GhostRunningResult ghostRunningResult = createGhostRunningResultIfNeeded(runningSession, request.distanceGapM());
         upsertCourseGhostLeaderboardIfNeeded(runningSession);
 
-        List<RunningGpsSampleResponse> gpsResponses = savedGpsSamples.stream()
-                .map(RunningGpsSampleResponse::from)
-                .toList();
+        List<RunningGpsSampleResponse> gpsResponses = RunningGpsSampleResponse.from(savedGpsSamples);
         List<RunningHealthSampleResponse> healthResponses = savedHealthSamples.stream()
                 .map(RunningHealthSampleResponse::from)
                 .toList();
@@ -202,10 +200,9 @@ public class RunningSessionService {
         RunningSession runningSession = getRunningSession(runningSessionId);
         runningSession.validateOwner(userId);
 
-        List<RunningGpsSampleResponse> gpsSamples = runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
-                .stream()
-                .map(RunningGpsSampleResponse::from)
-                .toList();
+        List<RunningGpsSampleResponse> gpsSamples = RunningGpsSampleResponse.from(
+                runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
+        );
         List<RunningHealthSampleResponse> healthSamples = runningHealthSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
                 .stream()
                 .map(RunningHealthSampleResponse::from)
@@ -488,10 +485,9 @@ public class RunningSessionService {
             return List.of();
         }
 
-        return runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(ghostTargetRunningSession.getId())
-                .stream()
-                .map(RunningGpsSampleResponse::from)
-                .toList();
+        return RunningGpsSampleResponse.from(
+                runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(ghostTargetRunningSession.getId())
+        );
     }
 
     private RunningSession resolveGhostTargetRunningSession(
