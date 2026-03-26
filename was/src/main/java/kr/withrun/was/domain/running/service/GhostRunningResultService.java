@@ -10,7 +10,8 @@ import org.springframework.stereotype.Service;
 
 @Service
 @RequiredArgsConstructor
-public class GhostRunningResultService {
+public class
+GhostRunningResultService {
 
     private final GhostRunningResultRepository ghostRunningResultRepository;
 

@@ -8,6 +8,11 @@ services:
       - ./custom_files:/custom_files
     environment:
       tile_urls: ${VALHALLA_TILE_URL}
+      use_tiles_ignore_pbf: ${VALHALLA_USE_TILES_IGNORE_PBF:-False}
+      force_rebuild: ${VALHALLA_FORCE_REBUILD:-False}
+      build_tar: ${VALHALLA_BUILD_TAR:-False}
+      server_threads: ${VALHALLA_SERVER_THREADS:-1}
+      use_default_speeds_config: ${VALHALLA_USE_DEFAULT_SPEEDS_CONFIG:-False}
     healthcheck:
       test:
         [

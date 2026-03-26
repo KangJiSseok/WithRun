@@ -14,6 +14,9 @@ import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
+import kr.withrun.was.domain.navigation.exception.NavigationBundleGenerationException;
+import kr.withrun.was.domain.navigation.service.bundle.NavigationBundleGenerationService;
+import kr.withrun.was.domain.navigation.type.NavigationBundleFailureCode;
 import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningGpsSampleRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningHealthSampleRequest;
@@ -79,6 +82,7 @@ public class RunningSessionService {
     private final GhostRunningResultService ghostRunningResultService;
     private final CourseSignalService courseSignalService;
     private final CloudFrontSignedUrlService cloudFrontSignedUrlService;
+    private final NavigationBundleGenerationService navigationBundleGenerationService;
 
     @Transactional
     public CreateRunningSessionResponse createRunningSession(CreateRunningSessionRequest request) {
@@ -103,7 +107,13 @@ public class RunningSessionService {
 
         List<RunningGpsSampleResponse> ghostTargetGpsSamples = getGhostTargetGpsSamples(mode, ghostTargetRunningSession);
 
-        return CreateRunningSessionResponse.from(savedRunningSession, ghostTargetGpsSamples);
+        return CreateRunningSessionResponse.from(
+                savedRunningSession,
+                ghostTargetGpsSamples,
+                course == null
+                        ? null
+                        : cloudFrontSignedUrlService.generateSignedUrl(course.getNavigationBundleUrl())
+        );
     }
 
     @Transactional
@@ -181,7 +191,7 @@ public class RunningSessionService {
                 .routeType(request.routeType())
                 .user(runningSession.getUser())
                 .build());
-
+        generateNavigationBundle(course.getId());
         courseDifficultyRepository.save(CourseDifficulty.create(course, difficulty));
         courseTypeMapRepository.saveAll(courseTypes.stream()
                 .map(courseType -> CourseTypeMap.create(course, courseType))
@@ -193,6 +203,17 @@ public class RunningSessionService {
                 difficulty,
                 cloudFrontSignedUrlService.generateSignedUrl(course.getSnapshotImageUrl())
         );
+    }
+
+    private void generateNavigationBundle(Long courseId) {
+        try {
+            navigationBundleGenerationService.generate(courseId);
+        } catch (NavigationBundleGenerationException exception) {
+            if (exception.getFailureCode() == NavigationBundleFailureCode.COURSE_NOT_FOUND) {
+                throw new CustomException(ResponseCode.COURSE_NOT_FOUND);
+            }
+            throw new CustomException(ResponseCode.NAVIGATION_BUNDLE_FAILED);
+        }
     }
 
     public RunningSessionDetailResponse findRunningSessionDetail(Long runningSessionId, Long userId) {

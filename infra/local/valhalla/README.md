@@ -24,7 +24,8 @@ docker compose ps
 ```
 
 첫 기동 시에는 `VALHALLA_TILE_URL`에 지정한 PBF를 다운로드하고 타일을 생성하므로 시간이 걸릴 수 있습니다.
-기본값은 공식 문서에서 자주 쓰는 작은 샘플인 Andorra PBF라서 smoke test가 빠른 편입니다.
+기본값은 한국 Geofabrik PBF이며, 국가 단위 extract 라서 초기 타일 생성 시간이 샘플 PBF보다 더 오래 걸릴 수 있습니다.
+로컬 기본값은 Windows/Docker Desktop 환경에서의 안정성을 위해 `server_threads=1`, `build_tar=False`, `use_default_speeds_config=False`로 보수적으로 잡아뒀습니다.
 
 ## Readiness Check
 
@@ -38,12 +39,12 @@ curl -fsS "http://localhost:${VALHALLA_PORT:-8002}/status"
 
 ## Smoke Test
 
-아래 요청은 기본 샘플 PBF(Andorra) 기준으로 바로 통과하는 최소 route 확인용 요청입니다.
+아래 요청은 기본 한국 PBF 기준의 최소 route 확인용 요청입니다.
 
 ```bash
 curl -fsS -X POST "http://localhost:${VALHALLA_PORT:-8002}/route" \
   -H "Content-Type: application/json" \
-  --data '{"locations":[{"lat":42.5063,"lon":1.5218},{"lat":42.5096,"lon":1.5402}],"costing":"auto"}'
+  --data '{"locations":[{"lat":37.566295,"lon":126.977945},{"lat":37.565889,"lon":126.983063}],"costing":"auto"}'
 ```
 
 응답 본문에 `trip` 객체가 내려오면 기본 라우팅은 정상입니다.
@@ -71,6 +72,13 @@ docker compose down
 1. `.env`의 `VALHALLA_TILE_URL`을 변경합니다.
 2. `custom_files/` 내부 산출물을 비웁니다.
 3. `docker compose up -d`로 다시 기동합니다.
+
+## Stability Knobs
+
+- `VALHALLA_USE_TILES_IGNORE_PBF=False`: 실패한 partial tile 재사용을 막고 PBF 기준으로 다시 판단합니다.
+- `VALHALLA_BUILD_TAR=False`: 디버깅 중에는 tar extract 생성을 끄고 디렉터리 타일만 사용합니다.
+- `VALHALLA_SERVER_THREADS=1`: 대용량 지역 빌드 시 스레드 수를 줄여 안정성을 높입니다.
+- `VALHALLA_USE_DEFAULT_SPEEDS_CONFIG=False`: enhance 단계의 default speeds 주입을 끕니다.
 
 ## Notes
 

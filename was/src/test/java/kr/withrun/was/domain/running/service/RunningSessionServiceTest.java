@@ -15,6 +15,9 @@ import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
+import kr.withrun.was.domain.navigation.exception.NavigationBundleGenerationException;
+import kr.withrun.was.domain.navigation.service.bundle.NavigationBundleGenerationService;
+import kr.withrun.was.domain.navigation.type.NavigationBundleFailureCode;
 import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningGpsSampleRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningHealthSampleRequest;
@@ -54,6 +57,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
+import org.mockito.InOrder;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.transaction.annotation.Transactional;
@@ -78,6 +82,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.inOrder;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("러닝 세션 서비스")
@@ -127,6 +132,9 @@ class RunningSessionServiceTest {
     @Mock
     private CloudFrontSignedUrlService cloudFrontSignedUrlService;
 
+    @Mock
+    private NavigationBundleGenerationService navigationBundleGenerationService;
+
     private RunningSessionService runningSessionService;
 
     @BeforeEach
@@ -145,12 +153,9 @@ class RunningSessionServiceTest {
                 ghostRunningResultRepository,
                 ghostRunningResultService,
                 courseSignalService,
-                cloudFrontSignedUrlService
+                cloudFrontSignedUrlService,
+                navigationBundleGenerationService
         );
-        lenient().when(cloudFrontSignedUrlService.generateSignedUrl(any())).thenAnswer(invocation -> {
-            Object value = invocation.getArgument(0);
-            return value == null ? null : "signed::" + value;
-        });
         lenient().when(cloudFrontSignedUrlService.normalizeObjectKey(any())).thenAnswer(invocation -> {
             String value = invocation.getArgument(0);
             if (value == null || value.isBlank()) {
@@ -169,6 +174,11 @@ class RunningSessionServiceTest {
                 return path;
             }
             return value.startsWith("/") ? value.substring(1) : value;
+        });
+        lenient().when(cloudFrontSignedUrlService.generateSignedUrl(any())).thenAnswer(invocation -> {
+            String value = invocation.getArgument(0);
+            String normalized = cloudFrontSignedUrlService.normalizeObjectKey(value);
+            return normalized == null ? null : "signed::" + normalized;
         });
     }
 
@@ -301,6 +311,42 @@ class RunningSessionServiceTest {
         assertThat(response.runningSessionId()).isEqualTo(905L);
         assertThat(response.courseId()).isEqualTo(308L);
         assertThat(response.mode()).isEqualTo(COURSE);
+    }
+
+    @DisplayName("COURSE 모드 시작 응답은 코스의 navigation bundle URL 을 포함한다")
+    @Test
+    void includesNavigationBundleUrlInCreateResponse() {
+        User user = user(22L);
+        Course course = course(320L, CourseStatus.OFFICIAL);
+        course.updateNavigationBundleUrl("https://cdn.withrun.kr/navigation/latest/320.json");
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 922L));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(22L, COURSE, 320L, null, 30.0, 176.0)
+        );
+
+        assertThat(recordComponentNames(CreateRunningSessionResponse.class)).contains("navigationBundleUrl");
+        assertThat(invokeAccessor(response, "navigationBundleUrl"))
+                .isEqualTo("signed::navigation/latest/320.json");
+    }
+
+    @DisplayName("COURSE 모드 시작 응답은 빈 navigation bundle URL 을 null 로 반환한다")
+    @Test
+    void returnsNullWhenNavigationBundleUrlIsBlank() {
+        User user = user(23L);
+        Course course = course(321L, CourseStatus.OFFICIAL);
+        course.updateNavigationBundleUrl("   ");
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 923L));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(23L, COURSE, 321L, null, 30.0, 176.0)
+        );
+
+        assertThat(response.navigationBundleUrl()).isNull();
     }
 
     @DisplayName("GHOST 모드는 공식 코스와 완료된 고스트 대상으로 세션을 생성한다")
@@ -1076,6 +1122,20 @@ class RunningSessionServiceTest {
         assertThat(courseTypeMaps)
                 .extracting(CourseTypeMap::getCourse)
                 .containsOnly(savedCourse);
+        verify(navigationBundleGenerationService).generate(501L);
+
+        InOrder inOrder = inOrder(
+                courseRepository,
+                navigationBundleGenerationService,
+                courseDifficultyRepository,
+                courseTypeMapRepository,
+                courseSignalService
+        );
+        inOrder.verify(courseRepository).save(any(Course.class));
+        inOrder.verify(navigationBundleGenerationService).generate(501L);
+        inOrder.verify(courseDifficultyRepository).save(any(CourseDifficulty.class));
+        inOrder.verify(courseTypeMapRepository).saveAll(any());
+        inOrder.verify(courseSignalService).upsertCourseFeature(savedCourse, Difficulty.MEDIUM, List.of(CourseType.RIVERSIDE, CourseType.URBAN));
     }
 
     @DisplayName("완료된 러닝 세션을 PRIVATE 코스로 등록한다")
@@ -1144,6 +1204,103 @@ class RunningSessionServiceTest {
         verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(84L);
         assertThat(courseCaptor.getValue().getStatus()).isEqualTo(CourseStatus.PRIVATE);
         assertThat(courseCaptor.getValue().getCoordinates()).isEqualTo(expectedCoordinates);
+        verify(navigationBundleGenerationService).generate(503L);
+    }
+
+    @DisplayName("코스 등록 후 번들 생성에서 코스를 찾지 못하면 COURSE_NOT_FOUND 를 반환한다")
+    @Test
+    void mapsCourseNotFoundWhenNavigationBundleGenerationFailsDuringRegisterCourse() {
+        RunningSession runningSession = runningSession(86L, 7L, true, STARTED_AT);
+        setField(runningSession, "coordinates", new Coordinates(
+                List.of(37.566001),
+                List.of(126.977001),
+                List.of(0.0)
+        ));
+        RunningGpsSample gpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 25),
+                37.566501,
+                126.978001,
+                13.1,
+                2.7,
+                179.0,
+                null,
+                null,
+                null,
+                null
+        );
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "한강 아침 러닝",
+                "COMMUNITY",
+                "EASY",
+                List.of("RIVERSIDE"),
+                RouteType.LOOP,
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(86L)).thenReturn(Optional.of(runningSession));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(86L)).thenReturn(List.of(gpsSample));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 504L));
+        when(navigationBundleGenerationService.generate(504L)).thenThrow(
+                new NavigationBundleGenerationException(NavigationBundleFailureCode.COURSE_NOT_FOUND, "missing course")
+        );
+
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(86L, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
+
+        verify(courseDifficultyRepository, never()).save(any(CourseDifficulty.class));
+        verify(courseTypeMapRepository, never()).saveAll(any());
+        verify(courseSignalService, never()).upsertCourseFeature(any(Course.class), any(Difficulty.class), any());
+    }
+
+    @DisplayName("코스 등록 후 번들 생성의 일반 실패는 NAVIGATION_BUNDLE_FAILED 를 반환한다")
+    @Test
+    void mapsNavigationBundleFailedWhenNavigationBundleGenerationFailsDuringRegisterCourse() {
+        RunningSession runningSession = runningSession(87L, 7L, true, STARTED_AT);
+        setField(runningSession, "coordinates", new Coordinates(
+                List.of(37.566001),
+                List.of(126.977001),
+                List.of(0.0)
+        ));
+        RunningGpsSample gpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 25),
+                37.566501,
+                126.978001,
+                13.1,
+                2.7,
+                179.0,
+                null,
+                null,
+                null,
+                null
+        );
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "한강 아침 러닝",
+                "COMMUNITY",
+                "EASY",
+                List.of("RIVERSIDE"),
+                RouteType.LOOP,
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(87L)).thenReturn(Optional.of(runningSession));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(87L)).thenReturn(List.of(gpsSample));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 505L));
+        when(navigationBundleGenerationService.generate(505L)).thenThrow(
+                new NavigationBundleGenerationException(NavigationBundleFailureCode.BUNDLE_STORAGE_FAILED, "storage failed")
+        );
+
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(87L, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.NAVIGATION_BUNDLE_FAILED);
+
+        verify(courseDifficultyRepository, never()).save(any(CourseDifficulty.class));
+        verify(courseTypeMapRepository, never()).saveAll(any());
+        verify(courseSignalService, never()).upsertCourseFeature(any(Course.class), any(Difficulty.class), any());
     }
 
     @DisplayName("지원하지 않는 코스 모드는 등록할 수 없다")

@@ -8,6 +8,7 @@ public enum ResponseCode {
     OK("S001", HttpStatus.OK, "요청이 성공했습니다.", true),
     CREATED("S002", HttpStatus.CREATED, "리소스가 생성되었습니다.", true),
     NO_CONTENT("S003", HttpStatus.NO_CONTENT, "요청이 성공했습니다.", true),
+    ACCEPTED("S004", HttpStatus.ACCEPTED, "요청이 접수되었습니다.", true),
 
     // User Success
     USER_REGISTERED("S100", HttpStatus.CREATED, "회원가입이 완료되었습니다.", true),
@@ -65,7 +66,11 @@ public enum ResponseCode {
 
     // File Error
     S3_BUCKET_NOT_CONFIGURED("E500", HttpStatus.INTERNAL_SERVER_ERROR, "S3 버킷 설정이 필요합니다.", false),
-    S3_UPLOAD_FAILED("E501", HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다.", false);
+    S3_UPLOAD_FAILED("E501", HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다.", false),
+
+    // Navigation Error
+    NAVIGATION_BUNDLE_PENDING("E600", HttpStatus.ACCEPTED, "최신 네비게이션 번들이 아직 준비되지 않았습니다.", false),
+    NAVIGATION_BUNDLE_FAILED("E601", HttpStatus.SERVICE_UNAVAILABLE, "최신 네비게이션 번들 생성에 실패했습니다.", false);
 
     private final String code;
     private final HttpStatus status;
