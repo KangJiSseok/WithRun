@@ -48,8 +48,8 @@ class OAuth2SuccessHandlerTest {
     private JwtProvider jwtProvider;
 
     @Test
-    @DisplayName("reuses existing user and redirects to the frontend callback path")
-    void reusesExistingUserAndRedirectsToFrontendCallbackPath() throws Exception {
+    @DisplayName("reuses existing user and redirects to the same-origin callback path")
+    void reusesExistingUserAndRedirectsToSameOriginCallbackPath() throws Exception {
         // access token 은 URL 쿼리로 넘기지 않고, callback 화면이 refresh cookie 기반으로 다시 복구한다.
         AuthProperties authProperties = new AuthProperties();
         authProperties.setFrontendBaseUrl("http://localhost:5173");
@@ -93,7 +93,7 @@ class OAuth2SuccessHandlerTest {
         );
 
         assertThat(response.getRedirectedUrl())
-                .isEqualTo("http://localhost:5173/auth/callback");
+                .isEqualTo("/auth/callback");
         assertThat(response.getHeader(HttpHeaders.SET_COOKIE)).isEqualTo(refreshCookie.toString());
 
         verify(userRepository, never()).save(any(User.class));
@@ -141,7 +141,7 @@ class OAuth2SuccessHandlerTest {
         );
 
         assertThat(response.getRedirectedUrl())
-                .isEqualTo("http://localhost:5173/auth/callback");
+                .isEqualTo("/auth/callback");
         assertThat(response.getHeader(HttpHeaders.SET_COOKIE)).isEqualTo(refreshCookie.toString());
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);

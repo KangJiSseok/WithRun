@@ -51,8 +51,7 @@ public class OAuth2FailureHandler implements AuthenticationFailureHandler {
         }
 
         return UriComponentsBuilder
-                .fromUriString(authProperties.getFrontendBaseUrl())
-                .path("/auth/callback")
+                .fromPath("/auth/callback")
                 .queryParam("error", error)
                 .build(true)
                 .toUriString();

@@ -127,8 +127,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         }
 
         return UriComponentsBuilder
-                .fromUriString(authProperties.getFrontendBaseUrl())
-                .path("/auth/callback")
+                .fromPath("/auth/callback")
                 .build(true)
                 .toUriString();
     }

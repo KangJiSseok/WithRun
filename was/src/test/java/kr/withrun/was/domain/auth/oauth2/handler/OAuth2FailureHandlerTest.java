@@ -31,7 +31,7 @@ class OAuth2FailureHandlerTest {
         );
 
         assertThat(response.getRedirectedUrl())
-                .isEqualTo("http://localhost:5173/auth/callback?error=access_denied");
+                .isEqualTo("/auth/callback?error=access_denied");
     }
 
     @DisplayName("OAuth authorization request가 사라지면 cancelled 에러로 리다이렉트한다")
@@ -47,7 +47,7 @@ class OAuth2FailureHandlerTest {
         );
 
         assertThat(response.getRedirectedUrl())
-                .isEqualTo("http://localhost:5173/auth/callback?error=cancelled");
+                .isEqualTo("/auth/callback?error=cancelled");
     }
 
     @DisplayName("기타 예외는 server_error로 리다이렉트한다")
@@ -63,7 +63,7 @@ class OAuth2FailureHandlerTest {
         );
 
         assertThat(response.getRedirectedUrl())
-                .isEqualTo("http://localhost:5173/auth/callback?error=server_error");
+                .isEqualTo("/auth/callback?error=server_error");
     }
 
     private static AuthProperties authProperties() {

@@ -50,7 +50,7 @@ test_was:
 docker_push_dev:
   stage: image
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "hotfix-was/login")'
   script:
     - printf '%s\n' "$WEB_ENV_TEST" > web/.env.test
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
@@ -78,7 +78,7 @@ docker_push_prod:
 deploy_test:
   stage: deploy
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == "hotfix-was/login")'
   environment:
     name: test
   script:
