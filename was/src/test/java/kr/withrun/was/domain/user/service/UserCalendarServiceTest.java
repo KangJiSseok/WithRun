@@ -2,6 +2,7 @@ package kr.withrun.was.domain.user.service;
 
 import kr.withrun.was.domain.user.dto.UserCalendarMonthlyResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
+import kr.withrun.was.domain.user.dto.UserCalendarWeeklyResponse;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserCalendarRepository;
 import kr.withrun.was.domain.user.repository.UserRepository;
@@ -180,6 +181,47 @@ class UserCalendarServiceTest {
         assertThat(response.currentStreakDays()).isZero();
         assertThat(response.longestStreakDays()).isZero();
         assertThat(response.calculatedDate()).isEqualTo(today);
+    }
+
+    @DisplayName("이번 주 일요일부터 토요일까지의 러닝 합계를 반환한다")
+    @Test
+    void returnsWeeklySummaryForCurrentWeek() {
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.minusDays((today.getDayOfWeek().getValue()) % 7L);
+        LocalDate endDate = startDate.plusDays(6);
+        User user = user(16L);
+
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(userCalendarRepository.findDailySummaries(user.getId(), startDate, endDate)).thenReturn(List.of(
+                new UserCalendarDailySummaryRow(startDate, 7000, 1800, 390, 1, 0, 0),
+                new UserCalendarDailySummaryRow(startDate.plusDays(2), 5000, 1500, 280, 0, 1, 1)
+        ));
+
+        UserCalendarWeeklyResponse response = userCalendarService.findWeeklySummary(user.getId());
+
+        assertThat(response.weeklyRunCount()).isEqualTo(3);
+        assertThat(response.weeklyDistanceM()).isEqualTo(12000);
+        assertThat(response.weeklyCaloriesKcal()).isEqualTo(670);
+        assertThat(response.weeklyDurationSec()).isEqualTo(3300);
+    }
+
+    @DisplayName("이번 주 캘린더 데이터가 없어도 0 주간 합계를 반환한다")
+    @Test
+    void returnsZeroWeeklySummaryWhenUserHasNoCalendarsInWeek() {
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.minusDays((today.getDayOfWeek().getValue()) % 7L);
+        LocalDate endDate = startDate.plusDays(6);
+        User user = user(17L);
+
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(userCalendarRepository.findDailySummaries(user.getId(), startDate, endDate)).thenReturn(List.of());
+
+        UserCalendarWeeklyResponse response = userCalendarService.findWeeklySummary(user.getId());
+
+        assertThat(response.weeklyRunCount()).isZero();
+        assertThat(response.weeklyDistanceM()).isZero();
+        assertThat(response.weeklyCaloriesKcal()).isZero();
+        assertThat(response.weeklyDurationSec()).isZero();
     }
 
     @DisplayName("없는 사용자는 USER_NOT_FOUND 예외를 던진다")
