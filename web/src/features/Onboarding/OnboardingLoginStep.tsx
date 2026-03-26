@@ -6,7 +6,7 @@ import { useNavigate } from 'react-router-dom';
 import { bridge } from '@/bridge';
 import {
   buildSocialLoginUrl,
-  buildWebSocialLoginUrl,
+  type AuthUser,
   type SocialProvider,
 } from '@/apis/auth';
 import { ONBOARDING_LOGIN_COPY_TEXTS } from '@/constants/Onboarding';
@@ -80,15 +80,14 @@ export function OnboardingLoginStep({ error }: OnboardingLoginStepProps) {
     setPendingProvider(provider);
 
     try {
+      const authorizationUrl = buildSocialLoginUrl(provider);
+
       if (bridge.isWebViewBridgeAvailable) {
         // 모바일에서는 네이티브가 외부 브라우저와 딥링크 복귀를 책임지도록 위임한다.
-        const authorizationUrl = buildSocialLoginUrl(provider);
         await bridge.startSocialLogin(authorizationUrl);
         return;
       }
 
-      // 일반 웹에서는 로그인 시작 origin 을 함께 넘겨 callback 도메인을 동적으로 맞춘다.
-      const authorizationUrl = buildWebSocialLoginUrl(provider);
       window.location.assign(authorizationUrl);
     } catch {
       setPendingProvider(null);
