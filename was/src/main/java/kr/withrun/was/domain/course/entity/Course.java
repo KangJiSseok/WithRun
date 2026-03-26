@@ -53,6 +53,9 @@ public class Course extends BaseEntity {
     @Column(name = "snapshot_image_url")
     private String snapshotImageUrl;
 
+    @Column(name = "latest_navigation_bundle_url")
+    private String latestNavigationBundleUrl;
+
     @Column(name = "start_latitude", nullable = false)
     private Double startLatitude;
 
@@ -90,6 +93,7 @@ public class Course extends BaseEntity {
             Integer distanceM,
             Integer elevationGainM,
             String snapshotImageUrl,
+            String latestNavigationBundleUrl,
             Double startLatitude,
             Double startLongitude,
             Double endLatitude,
@@ -104,6 +108,7 @@ public class Course extends BaseEntity {
         this.distanceM = distanceM;
         this.elevationGainM = elevationGainM;
         this.snapshotImageUrl = snapshotImageUrl;
+        this.latestNavigationBundleUrl = latestNavigationBundleUrl;
         this.startLatitude = startLatitude;
         this.startLongitude = startLongitude;
         this.endLatitude = endLatitude;
@@ -123,6 +128,10 @@ public class Course extends BaseEntity {
         if (this.promotedAt == null) {
             this.promotedAt = LocalDateTime.now();
         }
+    }
+
+    public void updateLatestNavigationBundleUrl(String latestNavigationBundleUrl) {
+        this.latestNavigationBundleUrl = latestNavigationBundleUrl;
     }
 
 }
