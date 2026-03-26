@@ -146,6 +146,26 @@ export type CompleteRunningSessionResponse = {
   ghostRunningResult: GhostRunningResult | null;
 };
 
+// GET /running-sessions/{runningSessionId}/detail 응답
+export type RunningSessionDetailResponse = {
+  isCompleted: boolean;
+  runningSessionId: number;
+  userId: number;
+  snapshotImageUrl: string | null;
+  startedAt: string;
+  endedAt: string | null;
+  distanceM: number;
+  durationSec: number;
+  avgSpeedMps: number;
+  avgPaceSecPerKm: number;
+  caloriesKcal: number;
+  elevationGainM: number;
+  gpsSamples: GpsSample[];
+  healthSamples: HealthSample[];
+  splits: SplitResult[];
+  ghostRunningResult: GhostRunningResult | null;
+};
+
 export type RegisterCourseRequest = {
   title: string;
   difficulty: CourseDifficulty;

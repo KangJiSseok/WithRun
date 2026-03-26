@@ -9,6 +9,7 @@ import type {
   RegisterCourseResponse,
   GetRunningHistoryResponse,
   GetRunningHistoryParams,
+  RunningSessionDetailResponse,
 } from './types';
 
 /**
@@ -72,6 +73,19 @@ export const patchCompleteRunningSessionApi = async (
   const { data } = await axiosClient.patch<ApiResponse<CompleteRunningSessionResponse>>(
     `/running-sessions/${runningSessionId}`,
     body,
+  );
+  return data;
+};
+
+/**
+ * 러닝 세션 상세 조회 API
+ * GET /running-sessions/{runningSessionId}/detail
+ */
+export const getRunningSessionDetailApi = async (
+  runningSessionId: number,
+): Promise<ApiResponse<RunningSessionDetailResponse>> => {
+  const { data } = await axiosClient.get<ApiResponse<RunningSessionDetailResponse>>(
+    `/running-sessions/${runningSessionId}/detail/${MOCK_USER_ID}`,
   );
   return data;
 };

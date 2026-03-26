@@ -1,6 +1,10 @@
+import type { RefObject } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { useInfiniteScroll } from '@/shared/hooks';
-import { formatDateLabel } from '@/shared/utils';
+import { formatDateLabel, formatStartTime } from '@/shared/utils';
 import type { RunningHistoryItem } from '@/apis/runningSessions';
+
+const SCROLL_KEY = 'calendarScrollY';
 
 const TIME_SLOT_LABEL: Record<string, string> = {
   DAWN: '새벽',
@@ -8,12 +12,6 @@ const TIME_SLOT_LABEL: Record<string, string> = {
   AFTERNOON: '오후',
   EVENING: '저녁',
 };
-
-// "2026-03-16T13:05:00" -> "13:05"
-function formatTime(startedAt: string): string {
-  const date = new Date(startedAt);
-  return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-}
 
 // 날짜 순서를 유지하면서 날짜별로 그룹핑
 function groupByDate(items: RunningHistoryItem[]): { dateKey: string; sessions: RunningHistoryItem[] }[] {
@@ -61,12 +59,21 @@ interface RunningHistoryListProps {
   hasMore: boolean;
   isScrollLoading: boolean;
   showDateHeader: boolean;
+  scrollRef: RefObject<HTMLDivElement | null>;
   onLoadMore: () => void;
 }
 
-function SessionCard({ session }: { session: RunningHistoryItem }) {
+function SessionCard({ session, scrollRef }: { session: RunningHistoryItem; scrollRef: RefObject<HTMLDivElement | null> }) {
+  const navigate = useNavigate();
+
   return (
-    <div className="rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-[var(--space-3)] flex gap-[var(--space-3)] items-center">
+    <button
+      type="button"
+      onClick={() => {
+        sessionStorage.setItem(SCROLL_KEY, String(scrollRef.current?.scrollTop ?? 0));
+        navigate(`/calendar/${session.runningSessionId}`);
+      }}
+      className="w-full text-left rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-[var(--space-3)] flex gap-[var(--space-3)] items-center active:opacity-70 transition-opacity">
       {/* 스냅샷 썸네일 */}
       <div className="w-[var(--space-16)] h-[var(--space-16)] rounded-[var(--radius-lg)] bg-[hsl(var(--surface-subtle))] flex-shrink-0 overflow-hidden">
         {session.snapshotImageUrl ? (
@@ -88,7 +95,7 @@ function SessionCard({ session }: { session: RunningHistoryItem }) {
             {TIME_SLOT_LABEL[session.timeSlot] ?? session.timeSlot} 러닝
           </span>
           <span className="caption-r text-[hsl(var(--text-secondary))]">
-            {formatTime(session.startedAt)}
+            {formatStartTime(session.startedAt)}
           </span>
         </div>
 
@@ -101,11 +108,11 @@ function SessionCard({ session }: { session: RunningHistoryItem }) {
           <span className="flex-1 text-center">{formatPace(session.distanceM, session.durationSec)}</span>
         </div>
       </div>
-    </div>
+    </button>
   );
 }
 
-export function RunningHistoryList({ title, items, isLoading, hasMore, isScrollLoading, showDateHeader, onLoadMore }: RunningHistoryListProps) {
+export function RunningHistoryList({ title, items, isLoading, hasMore, isScrollLoading, showDateHeader, scrollRef, onLoadMore }: RunningHistoryListProps) {
   // 목록 끝에 위치한 sentinel 요소가 뷰포트에 들어오면 자동으로 다음 페이지 로드
   const sentinelRef = useInfiniteScroll(hasMore, isScrollLoading, onLoadMore);
 
@@ -130,12 +137,12 @@ export function RunningHistoryList({ title, items, isLoading, hasMore, isScrollL
             <div key={dateKey} className="flex flex-col gap-[var(--space-2)]">
               <p className="caption-b text-[hsl(var(--text-secondary))]">{formatDateLabel(dateKey)}</p>
               {sessions.map((session) => (
-                <SessionCard key={session.runningSessionId} session={session} />
+                <SessionCard key={session.runningSessionId} session={session} scrollRef={scrollRef} />
               ))}
             </div>
           ))
         : !isLoading && items.map((session) => (
-            <SessionCard key={session.runningSessionId} session={session} />
+            <SessionCard key={session.runningSessionId} session={session} scrollRef={scrollRef} />
           ))}
 
       {/* 스크롤 감지용 sentinel — 뷰포트 진입 시 다음 페이지 자동 로드 */}
