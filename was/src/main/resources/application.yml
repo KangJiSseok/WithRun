@@ -78,6 +78,10 @@ app:
     bucket: ${s3.bucket:}
   cdn:
     base-url: ${cdn.url}
+  cloudfront:
+    key-pair-id: ${cloudfront.key-pair-id:}
+    private-key: ${cloudfront.private-key:}
+    signed-url-expiration-seconds: ${cloudfront.signed-url-expiration-seconds}
 
   auth:
     # 로그인 성공 후 웹 프론트로 복귀할 기본 주소
