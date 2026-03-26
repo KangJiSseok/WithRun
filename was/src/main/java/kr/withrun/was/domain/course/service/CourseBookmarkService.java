@@ -12,12 +12,12 @@ import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.query.dto.BookmarkedCourseRow;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.util.BookmarkedCourseCursorCodec;
+import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,13 +32,11 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 public class CourseBookmarkService {
 
-    @Value("${app.cdn.base-url}")
-    private String CDN_URL;
-
     private final CourseRepository courseRepository;
     private final CourseBookmarkRepository courseBookmarkRepository;
     private final UserRepository userRepository;
     private final CourseSignalService courseSignalService;
+    private final CloudFrontSignedUrlService cloudFrontSignedUrlService;
 
     @Transactional
     public CourseBookmarkAddResponse addBookmark(Long courseId, Long userId) {
@@ -118,7 +116,7 @@ public class CourseBookmarkService {
                 representative.elevationGainM(),
                 BookmarkedCourseItemResponse.DifficultyOption.from(representative.difficulty()),
                 mergeCourseTypes(rows),
-                CDN_URL + "/" + representative.snapshotImageUrl(),
+                cloudFrontSignedUrlService.generateSignedUrl(representative.snapshotImageUrl()),
                 representative.likeCount(),
                 Boolean.TRUE.equals(representative.isLiked()),
                 true

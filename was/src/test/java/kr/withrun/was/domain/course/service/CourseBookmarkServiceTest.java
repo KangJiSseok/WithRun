@@ -14,6 +14,7 @@ import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.domain.user.type.Gender;
@@ -57,6 +58,9 @@ class CourseBookmarkServiceTest {
     @Mock
     private CourseSignalService courseSignalService;
 
+    @Mock
+    private CloudFrontSignedUrlService cloudFrontSignedUrlService;
+
     private CourseBookmarkService courseBookmarkService;
 
     @BeforeEach
@@ -65,8 +69,14 @@ class CourseBookmarkServiceTest {
                 courseRepository,
                 courseBookmarkRepository,
                 userRepository,
-                courseSignalService
+                courseSignalService,
+                cloudFrontSignedUrlService
         );
+        when(cloudFrontSignedUrlService.generateSignedUrl(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(invocation -> {
+                    Object value = invocation.getArgument(0);
+                    return value == null ? null : "signed::" + value;
+                });
     }
 
     @DisplayName("북마크를 추가하면 북마크 상태와 생성 시각을 반환한다")
@@ -202,6 +212,7 @@ class CourseBookmarkServiceTest {
         assertThat(firstItem.isLiked()).isTrue();
         assertThat(firstItem.isBookmarked()).isTrue();
         assertThat(firstItem.courseTypes()).containsExactly(new BookmarkedCourseItemResponse.CourseTypeOption("PARK", "공원"));
+        assertThat(firstItem.snapshotImageUrl()).isEqualTo("signed::snapshot-12");
         assertThat(response.hasMore()).isTrue();
         assertThat(response.nextCursor()).isNotBlank();
     }

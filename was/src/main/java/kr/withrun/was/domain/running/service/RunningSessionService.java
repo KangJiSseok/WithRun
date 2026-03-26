@@ -13,6 +13,7 @@ import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
+import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
 import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningGpsSampleRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningHealthSampleRequest;
@@ -52,7 +53,6 @@ import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -64,9 +64,6 @@ import java.util.List;
 @Transactional(readOnly = true)
 @RequiredArgsConstructor
 public class RunningSessionService {
-
-    @Value("${app.cdn.base-url}")
-    private String CDN_URL;
 
     private final RunningSessionRepository runningSessionRepository;
     private final UserRepository userRepository;
@@ -81,6 +78,7 @@ public class RunningSessionService {
     private final GhostRunningResultRepository ghostRunningResultRepository;
     private final GhostRunningResultService ghostRunningResultService;
     private final CourseSignalService courseSignalService;
+    private final CloudFrontSignedUrlService cloudFrontSignedUrlService;
 
     @Transactional
     public CreateRunningSessionResponse createRunningSession(CreateRunningSessionRequest request) {
@@ -152,7 +150,7 @@ public class RunningSessionService {
                 gpsResponses,
                 healthResponses,
                 splitResponses,
-                CDN_URL + "/" + runningSession.getSnapshotImageUrl(),
+                cloudFrontSignedUrlService.generateSignedUrl(runningSession.getSnapshotImageUrl()),
                 ghostRunningResultResponse
         );
     }
@@ -193,7 +191,7 @@ public class RunningSessionService {
         return RegisterRunningSessionCourseResponse.from(
                 course,
                 difficulty,
-                CDN_URL + "/" + course.getSnapshotImageUrl()
+                cloudFrontSignedUrlService.generateSignedUrl(course.getSnapshotImageUrl())
         );
     }
 
@@ -222,7 +220,7 @@ public class RunningSessionService {
                 gpsSamples,
                 healthSamples,
                 splits,
-                CDN_URL + "/" + runningSession.getSnapshotImageUrl(),
+                cloudFrontSignedUrlService.generateSignedUrl(runningSession.getSnapshotImageUrl()),
                 ghostRunningResult
         );
     }
@@ -250,7 +248,10 @@ public class RunningSessionService {
                 ? List.copyOf(rows.subList(0, request.pageSize()))
                 : List.copyOf(rows);
         List<PastRunningSessionItemResponse> items = pagedRows.stream()
-                .map(row -> PastRunningSessionItemResponse.from(row, CDN_URL + "/" + row.snapshotImageUrl()))
+                .map(row -> PastRunningSessionItemResponse.from(
+                        row,
+                        cloudFrontSignedUrlService.generateSignedUrl(row.snapshotImageUrl())
+                ))
                 .toList();
         String nextCursor = hasMore ? toCursor(pagedRows.getLast()) : null;
 
@@ -605,9 +606,9 @@ public class RunningSessionService {
 
     private String resolveSnapshotImageUrl(String requestedSnapshotImageUrl, String runningSessionSnapshotImageUrl) {
         if (requestedSnapshotImageUrl == null || requestedSnapshotImageUrl.isBlank()) {
-            return runningSessionSnapshotImageUrl;
+            return cloudFrontSignedUrlService.normalizeObjectKey(runningSessionSnapshotImageUrl);
         }
-        return requestedSnapshotImageUrl;
+        return cloudFrontSignedUrlService.normalizeObjectKey(requestedSnapshotImageUrl);
     }
 
     private Coordinates buildCourseCoordinates(Long runningSessionId) {

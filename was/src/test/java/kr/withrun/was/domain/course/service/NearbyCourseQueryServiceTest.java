@@ -11,6 +11,7 @@ import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseReviewRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyRecommendationCandidateRow;
+import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
 import kr.withrun.was.domain.course.service.recommendation.CourseRecommendationScore;
 import kr.withrun.was.domain.course.service.recommendation.HybridRecommendationService;
 import kr.withrun.was.domain.course.type.CourseStatus;
@@ -64,6 +65,9 @@ class NearbyCourseQueryServiceTest {
     @Mock
     private HybridRecommendationService hybridRecommendationService;
 
+    @Mock
+    private CloudFrontSignedUrlService cloudFrontSignedUrlService;
+
     private CourseService courseService;
 
     @BeforeEach
@@ -77,9 +81,14 @@ class NearbyCourseQueryServiceTest {
                 courseReviewRepository,
                 courseGhostLeaderboardRepository,
                 userRepository,
-                hybridRecommendationService
+                hybridRecommendationService,
+                cloudFrontSignedUrlService
         );
-        setField(courseService, "CDN_URL", "https://cdn.test");
+        when(cloudFrontSignedUrlService.generateSignedUrl(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(invocation -> {
+                    Object value = invocation.getArgument(0);
+                    return value == null ? null : "signed::" + value;
+                });
     }
 
     @Test
@@ -123,7 +132,7 @@ class NearbyCourseQueryServiceTest {
         assertThat(response.items().getFirst().isRecommended()).isTrue();
         assertThat(response.items().getFirst().likeCount()).isEqualTo(7L);
         assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(2L);
-        assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("https://cdn.test/snapshot-20");
+        assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("signed::snapshot-20");
         assertThat(response.items().get(1).isRecommended()).isTrue();
     }
 

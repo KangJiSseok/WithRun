@@ -22,6 +22,7 @@ import kr.withrun.was.domain.course.repository.CourseReviewRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.CourseGhostLeaderboardRankRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCoursePageRow;
+import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
 import kr.withrun.was.domain.course.service.recommendation.HybridRecommendationService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
@@ -84,6 +85,9 @@ class CourseServiceTest {
     @Mock
     private HybridRecommendationService hybridRecommendationService;
 
+    @Mock
+    private CloudFrontSignedUrlService cloudFrontSignedUrlService;
+
     private CourseService courseService;
 
     @BeforeEach
@@ -97,9 +101,14 @@ class CourseServiceTest {
                 courseReviewRepository,
                 courseGhostLeaderboardRepository,
                 userRepository,
-                hybridRecommendationService
+                hybridRecommendationService,
+                cloudFrontSignedUrlService
         );
-        setField(courseService, "CDN_URL", "https://cdn.test");
+        when(cloudFrontSignedUrlService.generateSignedUrl(org.mockito.ArgumentMatchers.any()))
+                .thenAnswer(invocation -> {
+                    Object value = invocation.getArgument(0);
+                    return value == null ? null : "signed::" + value;
+                });
     }
 
     @DisplayName("코스 상세 조회는 좌표와 메타 정보를 함께 반환한다")
@@ -381,7 +390,7 @@ class CourseServiceTest {
         assertThat(response.items().getFirst().isRecommended()).isFalse();
         assertThat(response.items().getFirst().likeCount()).isEqualTo(6L);
         assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(1L);
-        assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("https://cdn.test/snapshot-13");
+        assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("signed::snapshot-13");
     }
 
     @Test
@@ -466,7 +475,7 @@ class CourseServiceTest {
         assertThat(response.items().getFirst().routeType()).isEqualTo(RouteType.OUT_AND_BACK);
         assertThat(response.items().getFirst().likeCount()).isEqualTo(5L);
         assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(1L);
-        assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("https://cdn.test/snapshot-21");
+        assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("signed::snapshot-21");
     }
 
     private Course course(Long id) {
