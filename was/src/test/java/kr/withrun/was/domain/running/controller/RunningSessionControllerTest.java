@@ -383,10 +383,11 @@ class RunningSessionControllerTest {
     @Test
     void wrapsRunningSessionDetailResponseWithCompletionState() throws Exception {
         long runningSessionId = 777L;
+        long userId = 1L;
         RunningSessionDetailResponse response = new RunningSessionDetailResponse(
                 true,
                 runningSessionId,
-                1L,
+                userId,
                 "https://cdn.withrun.app/snapshots/777.png",
                 LocalDateTime.parse("2026-03-12T06:30:00"),
                 LocalDateTime.parse("2026-03-12T07:12:00"),
@@ -401,21 +402,15 @@ class RunningSessionControllerTest {
                 java.util.List.of(),
                 null
         );
-        given(runningSessionService.findRunningSessionDetail(runningSessionId, 1L)).willReturn(response);
+        given(runningSessionService.findRunningSessionDetail(runningSessionId, userId)).willReturn(response);
 
-        mockMvc.perform(get("/api/running-sessions/{runningSessionId}/detail", runningSessionId)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {
-                                  "userId": 1
-                                }
-                                """))
+        mockMvc.perform(get("/api/running-sessions/{runningSessionId}/detail/{userId}", runningSessionId, userId))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.runningSessionId").value(runningSessionId))
                 .andExpect(jsonPath("$.data.isCompleted").value(true));
 
-        then(runningSessionService).should().findRunningSessionDetail(runningSessionId, 1L);
+        then(runningSessionService).should().findRunningSessionDetail(runningSessionId, userId);
     }
 
     @DisplayName("유효하지 않은 종료 요청은 잘못된 입력 응답을 반환한다")
