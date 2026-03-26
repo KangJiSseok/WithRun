@@ -2,6 +2,7 @@ package kr.withrun.was.domain.user.controller;
 
 import kr.withrun.was.domain.user.dto.UserCalendarMonthlyResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
+import kr.withrun.was.domain.user.dto.UserCalendarWeeklyResponse;
 import kr.withrun.was.domain.user.service.UserCalendarService;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
@@ -216,5 +217,46 @@ class UserCalendarControllerTest {
                 .andExpect(jsonPath("$.message").value(ResponseCode.USER_NOT_FOUND.getMessage()));
 
         then(userCalendarService).should().findSummary(userId);
+    }
+
+    @DisplayName("주간 러닝 요약 응답을 성공 응답 포맷으로 감싼다")
+    @Test
+    void wrapsWeeklySummaryResponseInSuccessEnvelope() throws Exception {
+        long userId = 30L;
+        UserCalendarWeeklyResponse response = new UserCalendarWeeklyResponse(
+                4,
+                23100,
+                1240,
+                5380
+        );
+        given(userCalendarService.findWeeklySummary(userId)).willReturn(response);
+
+        mockMvc.perform(get("/api/calendars/{userId}/weekly", userId))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
+                .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
+                .andExpect(jsonPath("$.data.weeklyRunCount").value(4))
+                .andExpect(jsonPath("$.data.weeklyDistanceM").value(23100))
+                .andExpect(jsonPath("$.data.weeklyCaloriesKcal").value(1240))
+                .andExpect(jsonPath("$.data.weeklyDurationSec").value(5380));
+
+        then(userCalendarService).should().findWeeklySummary(userId);
+    }
+
+    @DisplayName("주간 요약에서 없는 사용자를 조회하면 사용자 없음 응답을 반환한다")
+    @Test
+    void returnsUserNotFoundWhenWeeklySummaryUserIsMissing() throws Exception {
+        long userId = 999L;
+        given(userCalendarService.findWeeklySummary(userId))
+                .willThrow(new CustomException(ResponseCode.USER_NOT_FOUND));
+
+        mockMvc.perform(get("/api/calendars/{userId}/weekly", userId))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.USER_NOT_FOUND.getCode()))
+                .andExpect(jsonPath("$.message").value(ResponseCode.USER_NOT_FOUND.getMessage()));
+
+        then(userCalendarService).should().findWeeklySummary(userId);
     }
 }
