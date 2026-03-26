@@ -14,6 +14,7 @@ import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
+import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
 import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningGpsSampleRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningHealthSampleRequest;
@@ -71,6 +72,7 @@ import static kr.withrun.was.domain.running.type.RunningMode.GHOST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -81,7 +83,6 @@ import static org.mockito.Mockito.when;
 @DisplayName("러닝 세션 서비스")
 class RunningSessionServiceTest {
 
-    private static final String CDN_BASE_URL = "https://cdn.withrun.app";
     private static final LocalDateTime STARTED_AT = LocalDateTime.of(2026, 3, 12, 6, 30);
 
     @Mock
@@ -123,6 +124,9 @@ class RunningSessionServiceTest {
     @Mock
     private CourseSignalService courseSignalService;
 
+    @Mock
+    private CloudFrontSignedUrlService cloudFrontSignedUrlService;
+
     private RunningSessionService runningSessionService;
 
     @BeforeEach
@@ -140,9 +144,32 @@ class RunningSessionServiceTest {
                 runningSessionSplitRepository,
                 ghostRunningResultRepository,
                 ghostRunningResultService,
-                courseSignalService
+                courseSignalService,
+                cloudFrontSignedUrlService
         );
-        setField(runningSessionService, "CDN_URL", CDN_BASE_URL);
+        lenient().when(cloudFrontSignedUrlService.generateSignedUrl(any())).thenAnswer(invocation -> {
+            Object value = invocation.getArgument(0);
+            return value == null ? null : "signed::" + value;
+        });
+        lenient().when(cloudFrontSignedUrlService.normalizeObjectKey(any())).thenAnswer(invocation -> {
+            String value = invocation.getArgument(0);
+            if (value == null || value.isBlank()) {
+                return null;
+            }
+            if (value.startsWith("http://") || value.startsWith("https://")) {
+                int pathStart = value.indexOf("://");
+                int firstSlashAfterHost = value.indexOf('/', pathStart + 3);
+                if (firstSlashAfterHost < 0) {
+                    return null;
+                }
+                int queryStart = value.indexOf('?', firstSlashAfterHost);
+                String path = queryStart >= 0
+                        ? value.substring(firstSlashAfterHost + 1, queryStart)
+                        : value.substring(firstSlashAfterHost + 1);
+                return path;
+            }
+            return value.startsWith("/") ? value.substring(1) : value;
+        });
     }
 
     @DisplayName("서비스는 클래스 기본 readOnly와 쓰기 메서드 트랜잭션을 함께 사용한다")
@@ -712,7 +739,7 @@ class RunningSessionServiceTest {
         RunningSessionDetailResponse response = runningSessionService.findRunningSessionDetail(93L, 1L);
 
         assertThat(response.isCompleted()).isTrue();
-        assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.withrun.app/snapshots/93.png");
+        assertThat(response.snapshotImageUrl()).isEqualTo("signed::snapshots/93.png");
     }
 
     @DisplayName("상세 조회 응답의 GPS 샘플은 첫 sampledAt 기준 경과 초를 time으로 포함한다")
@@ -1004,7 +1031,7 @@ class RunningSessionServiceTest {
                 "MEDIUM",
                 List.of("RIVERSIDE", "URBAN", "RIVERSIDE"),
                 RouteType.LOOP,
-                "course/snapshot.png"
+                "https://cdn.withrun.app/course/snapshot.png?Expires=100&Signature=test&Key-Pair-Id=K123"
         );
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(81L)).thenReturn(Optional.of(runningSession));
         when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(81L))
@@ -1020,7 +1047,7 @@ class RunningSessionServiceTest {
         assertThat(response.difficulty()).isEqualTo(new RegisterRunningSessionCourseResponse.DifficultyOption("MEDIUM", "보통"));
         assertThat(response.distanceM()).isEqualTo(10000);
         assertThat(response.elevationGainM()).isEqualTo(120);
-        assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.withrun.app/course/snapshot.png");
+        assertThat(response.snapshotImageUrl()).isEqualTo("signed::course/snapshot.png");
         assertThat(response.coordinates()).isEqualTo(expectedCoordinates);
 
         ArgumentCaptor<Course> courseCaptor = ArgumentCaptor.forClass(Course.class);
@@ -1029,6 +1056,7 @@ class RunningSessionServiceTest {
         Course savedCourse = courseCaptor.getValue();
         assertThat(savedCourse.getStatus()).isEqualTo(CourseStatus.COMMUNITY);
         assertThat(savedCourse.getUser()).isEqualTo(runningSession.getUser());
+        assertThat(savedCourse.getSnapshotImageUrl()).isEqualTo("course/snapshot.png");
         assertThat(savedCourse.getCoordinates()).isEqualTo(expectedCoordinates);
         assertThat(savedCourse.getCoordinates()).isNotEqualTo(runningSession.getCoordinates());
 
@@ -1198,7 +1226,7 @@ class RunningSessionServiceTest {
         RegisterRunningSessionCourseResponse response =
                 runningSessionService.registerRunningSessionCourse(82L, request);
 
-        assertThat(response.snapshotImageUrl()).isEqualTo("https://cdn.withrun.app/snapshots/82.png");
+        assertThat(response.snapshotImageUrl()).isEqualTo("signed::snapshots/82.png");
         assertThat(response.coordinates()).isEqualTo(expectedCoordinates);
         verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(82L);
     }
@@ -1277,7 +1305,7 @@ class RunningSessionServiceTest {
                         7000,
                         2100,
                         420,
-                        "https://cdn.withrun.app/snapshots/121.png",
+                        "signed::snapshots/121.png",
                         40,
                         true,
                         RunningMode.GHOST,

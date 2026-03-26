@@ -81,6 +81,30 @@ public record CourseGhostDetailResponse(
             Double averageRating,
             MyRecord myRecord
     ) {
+        return of(
+                course,
+                difficulty,
+                courseTypes,
+                likeCount,
+                isLiked,
+                isBookmarked,
+                averageRating,
+                course.getSnapshotImageUrl(),
+                myRecord
+        );
+    }
+
+    public static CourseGhostDetailResponse of(
+            Course course,
+            Difficulty difficulty,
+            List<CourseType> courseTypes,
+            Long likeCount,
+            boolean isLiked,
+            boolean isBookmarked,
+            Double averageRating,
+            String snapshotImageUrl,
+            MyRecord myRecord
+    ) {
         return new CourseGhostDetailResponse(
                 course.getId(),
                 course.getTitle(),
@@ -89,7 +113,7 @@ public record CourseGhostDetailResponse(
                 DifficultyOption.from(difficulty),
                 course.getDistanceM(),
                 course.getElevationGainM(),
-                course.getSnapshotImageUrl(),
+                snapshotImageUrl,
                 course.getStartLatitude(),
                 course.getStartLongitude(),
                 course.getEndLatitude(),

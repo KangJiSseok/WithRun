@@ -30,7 +30,7 @@ public record RegisterRunningSessionCourseRequest(
         @Schema(description = "코스 왕복형/순환형 선택", example = "LOOP")
         RouteType routeType,
 
-        @Schema(description = "코스 스냅샷 이미지 URL. 비우면 러닝 세션의 스냅샷을 재사용한다.", example = "https://cdn.example.com/course/snapshot.png", nullable = true)
+        @Schema(description = "코스 스냅샷 object key 또는 CloudFront URL. 비우면 러닝 세션의 스냅샷을 재사용하며 서버는 저장 전에 object key로 정규화한다.", example = "course-snapshot/101.png", nullable = true)
         String snapshotImageUrl
 ) {
 }

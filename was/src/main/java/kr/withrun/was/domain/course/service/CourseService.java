@@ -25,6 +25,7 @@ import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.CourseGhostLeaderboardRankRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCoursePageRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyRecommendationCandidateRow;
+import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
 import kr.withrun.was.domain.course.service.recommendation.CourseRecommendationScore;
 import kr.withrun.was.domain.course.service.recommendation.HybridRecommendationService;
 import kr.withrun.was.domain.course.service.recommendation.NearbyRecommendationInput;
@@ -38,7 +39,6 @@ import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import lombok.RequiredArgsConstructor;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -59,9 +59,6 @@ public class CourseService {
 
     private static final int RECOMMENDED_NEARBY_LIMIT = 3;
 
-    @Value("${app.cdn.base-url}")
-    private String CDN_URL;
-
     private final CourseRepository courseRepository;
     private final CourseDifficultyRepository courseDifficultyRepository;
     private final CourseTypeMapRepository courseTypeMapRepository;
@@ -71,6 +68,7 @@ public class CourseService {
     private final CourseGhostLeaderboardRepository courseGhostLeaderboardRepository;
     private final UserRepository userRepository;
     private final HybridRecommendationService hybridRecommendationService;
+    private final CloudFrontSignedUrlService cloudFrontSignedUrlService;
 
     public NearbyCoursesResponse findNearbyCourses(NearbyCoursesRequest request, AuthenticatedUser user) {
         List<NearbyCoursePageRow> pageRows = courseRepository.findNearbyCoursePageRows(
@@ -221,7 +219,7 @@ public class CourseService {
                         .orElse(null)),
                 course.getDistanceM(),
                 course.getElevationGainM(),
-                CDN_URL + "/" + course.getSnapshotImageUrl(),
+                cloudFrontSignedUrlService.generateSignedUrl(course.getSnapshotImageUrl()),
                 course.getStartLatitude(),
                 course.getStartLongitude(),
                 course.getEndLatitude(),
@@ -250,6 +248,7 @@ public class CourseService {
                 false,
                 false,
                 courseReviewRepository.findAverageRatingByCourseId(courseId),
+                cloudFrontSignedUrlService.generateSignedUrl(course.getSnapshotImageUrl()),
                 findMyGhostRecord(courseId, userId)
         );
     }
@@ -583,10 +582,7 @@ public class CourseService {
     }
 
     private String toSnapshotImageUrl(String snapshotImagePath) {
-        if (snapshotImagePath == null) {
-            return null;
-        }
-        return CDN_URL + "/" + snapshotImagePath;
+        return cloudFrontSignedUrlService.generateSignedUrl(snapshotImagePath);
     }
 
     private record NearbyCourseCandidate(
