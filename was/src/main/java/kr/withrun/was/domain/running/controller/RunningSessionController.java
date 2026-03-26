@@ -15,7 +15,6 @@ import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
-import kr.withrun.was.domain.running.dto.RunningSessionDetailRequest;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
 import kr.withrun.was.global.response.ApiResponse;
@@ -196,7 +195,7 @@ public class RunningSessionController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "runningSessionId 또는 요청 본문 값이 유효하지 않음",
+                    description = "runningSessionId 또는 userId 경로 값이 유효하지 않음",
                     content = @Content(schema = @Schema(implementation = ValidationErrorApiResponseDoc.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -205,16 +204,13 @@ public class RunningSessionController {
                     content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
             )
     })
-    @GetMapping("/{runningSessionId}/detail")
+    @GetMapping("/{runningSessionId}/detail/{userId}")
     public ResponseEntity<ApiResponse<RunningSessionDetailResponse>> findRunningSessionDetail(
             @Parameter(description = "상세 조회할 러닝 세션 ID", example = "91")
             @PathVariable @Positive Long runningSessionId,
-            @io.swagger.v3.oas.annotations.parameters.RequestBody(
-                    required = true,
-                    description = "상세 조회를 요청하는 사용자 정보를 담은 요청 본문"
-            )
-            @Valid @RequestBody RunningSessionDetailRequest request
+            @Parameter(description = "상세 조회를 요청하는 사용자 ID", example = "1")
+            @PathVariable @Positive Long userId
     ) {
-        return ApiResponse.successEntity(runningSessionService.findRunningSessionDetail(runningSessionId, request.userId()));
+        return ApiResponse.successEntity(runningSessionService.findRunningSessionDetail(runningSessionId, userId));
     }
 }
