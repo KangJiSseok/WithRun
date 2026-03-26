@@ -22,6 +22,10 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class JwtProvider {
 
+    private static final String ACCESS_TOKEN_TYPE = "access";
+    private static final String REFRESH_TOKEN_TYPE = "refresh";
+    private static final String MOBILE_AUTH_CODE_TOKEN_TYPE = "mobile_auth_code";
+
     private final JwtProperties jwtProperties;
 
     // 로그인 성공 후 access token / refresh token을 한 번에 발급합니다.
@@ -63,24 +67,35 @@ public class JwtProvider {
     }
 
     public AuthenticatedUser extractAuthenticatedUser(String accessToken) {
-        Claims claims = parseAccessToken(accessToken);
-        // 이후 서비스 계층에서 사용자 조회의 기준이 되는 userId claim을 꺼냅니다.
-        Long userId = claims.get("userId", Long.class);
-        if (userId == null) {
-            throw new JwtAuthenticationException(ResponseCode.TOKEN_INVALID, "userId claim is missing");
-        }
+        return toAuthenticatedUser(parseAccessToken(accessToken), ResponseCode.TOKEN_INVALID);
+    }
 
-        String provider = claims.get("provider", String.class);
-        if (provider == null || provider.isBlank()) {
-            throw new JwtAuthenticationException(ResponseCode.TOKEN_INVALID, "provider claim is missing");
-        }
+    public String generateMobileAuthCode(User user, String provider) {
+        Instant now = Instant.now();
 
-        Boolean profileCompleted = claims.get("profileCompleted", Boolean.class);
-        if (profileCompleted == null) {
-            throw new JwtAuthenticationException(ResponseCode.TOKEN_INVALID, "profileCompleted claim is missing");
-        }
+        // 모바일은 외부 브라우저 쿠키를 WebView가 이어받지 못할 수 있어,
+        // 짧게 살아있는 교환용 코드만 딥링크로 넘기고 WebView 안에서 다시 세션을 만듭니다.
+        return Jwts.builder()
+                .subject(String.valueOf(user.getId()))
+                .claim("userId", user.getId())
+                .claim("provider", provider)
+                .claim("profileCompleted", user.isProfileCompleted())
+                .claim("tokenType", MOBILE_AUTH_CODE_TOKEN_TYPE)
+                .issuedAt(Date.from(now))
+                .expiration(Date.from(now.plusSeconds(jwtProperties.getMobileAuthCodeExpirationSeconds())))
+                .signWith(getSigningKey())
+                .compact();
+    }
 
-        return new AuthenticatedUser(userId, provider, profileCompleted);
+    public AuthenticatedUser extractAuthenticatedUserFromMobileAuthCode(String mobileAuthCode) {
+        try {
+            return toAuthenticatedUser(
+                    parseToken(mobileAuthCode, MOBILE_AUTH_CODE_TOKEN_TYPE),
+                    ResponseCode.LOGIN_CODE_INVALID
+            );
+        } catch (JwtAuthenticationException exception) {
+            throw new JwtAuthenticationException(ResponseCode.LOGIN_CODE_INVALID, exception.getMessage(), exception);
+        }
     }
 
     public Long extractUserIdFromRefreshToken(String refreshToken) {
@@ -105,7 +120,7 @@ public class JwtProvider {
                 .claim("userId", user.getId())
                 .claim("provider", provider)
                 .claim("profileCompleted", user.isProfileCompleted())
-                .claim("tokenType", "access")
+                .claim("tokenType", ACCESS_TOKEN_TYPE)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(jwtProperties.getAccessExpirationSeconds())))
                 .signWith(getSigningKey())
@@ -120,11 +135,31 @@ public class JwtProvider {
         return Jwts.builder()
                 .subject(String.valueOf(user.getId()))
                 .claim("userId", user.getId())
-                .claim("tokenType", "refresh")
+                .claim("tokenType", REFRESH_TOKEN_TYPE)
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(jwtProperties.getRefreshExpirationSeconds())))
                 .signWith(getSigningKey())
                 .compact();
+    }
+
+    private AuthenticatedUser toAuthenticatedUser(Claims claims, ResponseCode invalidCode) {
+        // access token과 mobile auth code가 같은 최소 주체 정보를 공유하도록 공통 변환을 사용합니다.
+        Long userId = claims.get("userId", Long.class);
+        if (userId == null) {
+            throw new JwtAuthenticationException(invalidCode, "userId claim is missing");
+        }
+
+        String provider = claims.get("provider", String.class);
+        if (provider == null || provider.isBlank()) {
+            throw new JwtAuthenticationException(invalidCode, "provider claim is missing");
+        }
+
+        Boolean profileCompleted = claims.get("profileCompleted", Boolean.class);
+        if (profileCompleted == null) {
+            throw new JwtAuthenticationException(invalidCode, "profileCompleted claim is missing");
+        }
+
+        return new AuthenticatedUser(userId, provider, profileCompleted);
     }
 
     private Claims parseToken(String token, String expectedTokenType) {

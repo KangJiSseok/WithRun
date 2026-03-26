@@ -4,8 +4,10 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
+import kr.withrun.was.domain.auth.dto.AuthExchangeResult;
 import kr.withrun.was.domain.auth.dto.AuthMeResponse;
 import kr.withrun.was.domain.auth.dto.ReissueAccessTokenResponse;
+import kr.withrun.was.domain.auth.dto.AuthTokenPair;
 import kr.withrun.was.domain.auth.jwt.JwtProvider;
 import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.auth.security.JwtAuthenticationException;
@@ -64,6 +66,21 @@ public class AuthService {
         return jwtProvider.expireRefreshTokenCookie();
     }
 
+    @Transactional
+    public AuthExchangeResult exchangeMobileAuthCode(String code) {
+        // 딥링크로 받은 code를 WebView 안에서 교환해, 이제부터는 WebView 저장소 기준으로 세션을 유지합니다.
+        AuthenticatedUser authenticatedUser = extractAuthenticatedUserFromMobileAuthCode(code);
+        User user = userRepository.findNotDeletedUser(authenticatedUser.userId())
+                .orElseThrow(() -> new CustomException(ResponseCode.USER_NOT_FOUND));
+
+        AuthTokenPair tokenPair = jwtProvider.generateTokenPair(user, authenticatedUser.provider());
+
+        return new AuthExchangeResult(
+                tokenPair.accessToken(),
+                jwtProvider.createRefreshTokenCookie(tokenPair.refreshToken())
+        );
+    }
+
     private String extractRefreshToken(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null || cookies.length == 0) {
@@ -89,6 +106,19 @@ public class AuthService {
             throw new CustomException(exception.getResponseCode());
         } catch (JwtException | IllegalArgumentException exception) {
             throw new CustomException(ResponseCode.TOKEN_INVALID);
+        }
+    }
+
+    private AuthenticatedUser extractAuthenticatedUserFromMobileAuthCode(String code) {
+        try {
+            return jwtProvider.extractAuthenticatedUserFromMobileAuthCode(code);
+        } catch (ExpiredJwtException exception) {
+            // 모바일 code는 refresh token보다 훨씬 짧게 쓰이므로 만료/위조를 별도 응답 코드로 구분합니다.
+            throw new CustomException(ResponseCode.LOGIN_CODE_EXPIRED);
+        } catch (JwtAuthenticationException exception) {
+            throw new CustomException(ResponseCode.LOGIN_CODE_INVALID);
+        } catch (JwtException | IllegalArgumentException exception) {
+            throw new CustomException(ResponseCode.LOGIN_CODE_INVALID);
         }
     }
 }

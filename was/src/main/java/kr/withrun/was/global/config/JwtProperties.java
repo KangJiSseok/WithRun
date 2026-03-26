@@ -19,6 +19,8 @@ public class JwtProperties {
     private long accessExpirationSeconds = 3600;
     // refresh token 만료 시간(초). 기본값 14일
     private long refreshExpirationSeconds = 1209600;
+    // 모바일 OAuth 완료 후 WebView 안에서 교환할 짧은 수명의 로그인 코드 만료 시간(초)
+    private long mobileAuthCodeExpirationSeconds = 300;
     // 브라우저에 내려줄 refresh token 쿠키 이름
     private String refreshCookieName = "refresh_token";
     // refresh token 쿠키가 유효한 경로

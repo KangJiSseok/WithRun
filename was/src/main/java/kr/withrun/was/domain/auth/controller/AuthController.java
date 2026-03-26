@@ -10,6 +10,8 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import kr.withrun.was.domain.auth.dto.AuthCodeExchangeRequest;
+import kr.withrun.was.domain.auth.dto.AuthExchangeResult;
 import kr.withrun.was.domain.auth.dto.AuthMeResponse;
 import kr.withrun.was.domain.auth.dto.ReissueAccessTokenResponse;
 import kr.withrun.was.domain.auth.security.AuthenticatedUser;
@@ -24,6 +26,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -141,6 +144,17 @@ public class AuthController {
     ) {
         // OAuth callback 직후나 access token 만료 후 모두 이 endpoint 하나로 access token 을 복구합니다.
         return ApiResponse.successEntity(authService.reissueAccessToken(request));
+    }
+
+    @PostMapping("/exchange")
+    public ResponseEntity<ApiResponse<AuthExchangeResult>> exchangeMobileAuthCode(
+            @RequestBody AuthCodeExchangeRequest request,
+            @Parameter(hidden = true) HttpServletResponse response
+    ) {
+        // 모바일 OAuth 복귀 직후에는 refresh cookie가 없을 수 있으므로, code 교환으로 세션을 새로 세웁니다.
+        AuthExchangeResult exchangeResult = authService.exchangeMobileAuthCode(request.code());
+        response.addHeader(HttpHeaders.SET_COOKIE, exchangeResult.refreshTokenCookie().toString());
+        return ApiResponse.successEntity(exchangeResult);
     }
 
     @Operation(

@@ -62,8 +62,8 @@ public class SecurityConfig {
                         // 소셜 로그인 관련 주소(/oauth2, /login/oauth2 등)는 로그인 안 한 사람도 100% 무사 통과(permitAll)
                         // /mobile/oauth2/** 는 모바일용, /web/oauth2/** 는 origin 을 기억하는 웹용 OAuth 진입점입니다.
                         .requestMatchers("/oauth2/**", "/login/oauth2/**", "/mobile/oauth2/**", "/web/oauth2/**").permitAll()
-                        // refresh token 쿠키로 access token을 재발급하거나, 쿠키를 비우는 로그아웃은 비로그인 상태에서도 접근 가능해야 합니다.
-                        .requestMatchers(HttpMethod.POST, "/api/auth/reissue", "/api/auth/logout").permitAll()
+                        // refresh 재발급/로그아웃과 모바일 code 교환은 로그인 직전 단계라 비인증 접근을 허용합니다.
+                        .requestMatchers(HttpMethod.POST, "/api/auth/reissue", "/api/auth/logout", "/api/auth/exchange").permitAll()
                         // 현재 사용자 조회는 access token 인증이 필요합니다.
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                         // Step 4부터는 "내 프로필 저장" API만 access token 인증을 반드시 거치게 합니다.
