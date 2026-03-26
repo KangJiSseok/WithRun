@@ -62,6 +62,8 @@ valhalla:
   base-url: ${VALHALLA_BASE_URL:http://localhost:8002}
 
 server:
+  # 프록시(Nginx) 뒤에서 들어온 https/host/port 정보를 기준으로 OAuth redirect URI를 계산합니다.
+  forward-headers-strategy: framework
   servlet:
     session:
       cookie:
