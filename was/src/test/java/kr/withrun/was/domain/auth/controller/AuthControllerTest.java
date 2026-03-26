@@ -112,7 +112,7 @@ class AuthControllerTest {
         ResponseCookie expiredCookie = ResponseCookie.from("refresh_token", "")
                 .httpOnly(true)
                 .path("/")
-                .sameSite("Lax")
+                .sameSite("None")
                 .maxAge(0)
                 .build();
         given(authService.expireRefreshTokenCookie()).willReturn(expiredCookie);
@@ -124,7 +124,7 @@ class AuthControllerTest {
                 .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("refresh_token=")))
                 .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("Max-Age=0")))
                 .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("HttpOnly")))
-                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("SameSite=Lax")));
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("SameSite=None")));
 
         then(authService).should().expireRefreshTokenCookie();
     }

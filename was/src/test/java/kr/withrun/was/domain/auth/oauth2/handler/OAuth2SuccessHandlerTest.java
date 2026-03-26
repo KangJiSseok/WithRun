@@ -72,7 +72,7 @@ class OAuth2SuccessHandlerTest {
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", "refresh-token")
                 .httpOnly(true)
                 .path("/")
-                .sameSite("Lax")
+                .sameSite("None")
                 .build();
 
         when(userAuthAccountRepository.findByProviderAndProviderUserId("google", "google-user-123"))
@@ -119,7 +119,7 @@ class OAuth2SuccessHandlerTest {
         ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", "refresh-token")
                 .httpOnly(true)
                 .path("/")
-                .sameSite("Lax")
+                .sameSite("None")
                 .build();
 
         when(userAuthAccountRepository.findByProviderAndProviderUserId("google", "new-google-user"))

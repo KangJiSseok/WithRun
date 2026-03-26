@@ -114,7 +114,7 @@ class JwtProviderTest {
         assertThat(cookie.isHttpOnly()).isTrue();
         assertThat(cookie.isSecure()).isFalse();
         assertThat(cookie.getPath()).isEqualTo("/");
-        assertThat(cookie.getSameSite()).isEqualTo("Lax");
+        assertThat(cookie.getSameSite()).isEqualTo("None");
         assertThat(cookie.getMaxAge().getSeconds()).isEqualTo(1209600L);
     }
 
@@ -130,7 +130,7 @@ class JwtProviderTest {
         assertThat(cookie.isHttpOnly()).isTrue();
         assertThat(cookie.isSecure()).isFalse();
         assertThat(cookie.getPath()).isEqualTo("/");
-        assertThat(cookie.getSameSite()).isEqualTo("Lax");
+        assertThat(cookie.getSameSite()).isEqualTo("None");
         assertThat(cookie.getMaxAge().getSeconds()).isZero();
     }
 
@@ -153,7 +153,7 @@ class JwtProviderTest {
         jwtProperties.setRefreshExpirationSeconds(1209600L);
         jwtProperties.setRefreshCookieName("refresh_token");
         jwtProperties.setRefreshCookiePath("/");
-        jwtProperties.setRefreshCookieSameSite("Lax");
+        jwtProperties.setRefreshCookieSameSite("None");
         jwtProperties.setRefreshCookieSecure(false);
         return jwtProperties;
     }
