@@ -119,7 +119,7 @@ class RunningSessionControllerTest {
                 902L,
                 GHOST,
                 300L,
-                "https://cdn.withrun.kr/navigation/latest/300.json",
+                "https://cdn.withrun.kr/navigation/latest/300.json?Expires=100&Signature=test-signature&Key-Pair-Id=K123",
                 44L,
                 java.util.List.of(
                         new RunningGpsSampleResponse(
@@ -148,7 +148,7 @@ class RunningSessionControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.runningSessionId").value(902L))
                 .andExpect(jsonPath("$.data.mode").value(GHOST.name()))
-                .andExpect(jsonPath("$.data.navigationBundleUrl").value("https://cdn.withrun.kr/navigation/latest/300.json"))
+                .andExpect(jsonPath("$.data.navigationBundleUrl").value("https://cdn.withrun.kr/navigation/latest/300.json?Expires=100&Signature=test-signature&Key-Pair-Id=K123"))
                 .andExpect(jsonPath("$.data.ghostTargetRunningSessionId").value(44L))
                 .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].sampledAt").value("2026-03-12T06:30:05"))
                 .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].time").value(0))

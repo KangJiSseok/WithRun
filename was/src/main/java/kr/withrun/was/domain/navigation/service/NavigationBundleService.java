@@ -1,6 +1,7 @@
 package kr.withrun.was.domain.navigation.service;
 
 import kr.withrun.was.domain.course.repository.CourseRepository;
+import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
 import kr.withrun.was.domain.navigation.dto.GenerateNavigationBundleResponse;
 import kr.withrun.was.domain.navigation.dto.GetLatestNavigationBundleResponse;
 import kr.withrun.was.domain.navigation.exception.NavigationBundleGenerationException;
@@ -20,16 +21,19 @@ public class NavigationBundleService {
 
     private final CourseRepository courseRepository;
     private final NavigationBundleGenerationService navigationBundleGenerationService;
+    private final CloudFrontSignedUrlService cloudFrontSignedUrlService;
 
     /**
      * 코스 조회와 번들 생성 서비스를 묶어 API 흐름을 구성하기 위한 생성자입니다.
      */
     public NavigationBundleService(
             CourseRepository courseRepository,
-            NavigationBundleGenerationService navigationBundleGenerationService
+            NavigationBundleGenerationService navigationBundleGenerationService,
+            CloudFrontSignedUrlService cloudFrontSignedUrlService
     ) {
         this.courseRepository = courseRepository;
         this.navigationBundleGenerationService = navigationBundleGenerationService;
+        this.cloudFrontSignedUrlService = cloudFrontSignedUrlService;
     }
 
     /**
@@ -57,7 +61,7 @@ public class NavigationBundleService {
                         return new GetLatestNavigationBundleResponse(
                                 courseId,
                                 NavigationBundleStatus.READY.name(),
-                                course.getNavigationBundleUrl()
+                                cloudFrontSignedUrlService.generateSignedUrl(course.getNavigationBundleUrl())
                         );
                     }
                     return createPendingResponse(courseId);

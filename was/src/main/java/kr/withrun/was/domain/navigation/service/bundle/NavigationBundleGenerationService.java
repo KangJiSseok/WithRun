@@ -18,7 +18,6 @@ import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -36,7 +35,6 @@ public class NavigationBundleGenerationService {
     private final NavigationBundleDocumentBuilder navigationBundleDocumentBuilder;
     private final NavigationBundleDocumentValidator navigationBundleDocumentValidator;
     private final NavigationBundleStore navigationBundleStore;
-    private final String cdnBaseUrl;
     private final boolean traceAttributesEnabled;
 
     /**
@@ -49,7 +47,6 @@ public class NavigationBundleGenerationService {
             NavigationBundleDocumentBuilder navigationBundleDocumentBuilder,
             NavigationBundleDocumentValidator navigationBundleDocumentValidator,
             NavigationBundleStore navigationBundleStore,
-            @Value("${app.cdn.base-url:}") String cdnBaseUrl,
             @Value("${app.navigation.trace-attributes-enabled:true}") boolean traceAttributesEnabled
     ) {
         this.courseRepository = courseRepository;
@@ -58,7 +55,6 @@ public class NavigationBundleGenerationService {
         this.navigationBundleDocumentBuilder = navigationBundleDocumentBuilder;
         this.navigationBundleDocumentValidator = navigationBundleDocumentValidator;
         this.navigationBundleStore = navigationBundleStore;
-        this.cdnBaseUrl = cdnBaseUrl;
         this.traceAttributesEnabled = traceAttributesEnabled;
     }
 
@@ -80,7 +76,7 @@ public class NavigationBundleGenerationService {
 
         navigationBundleDocumentValidator.validate(document);
         String storageKey = navigationBundleStore.storeLatest(courseId, document);
-        course.updateNavigationBundleUrl(buildDownloadUrl(storageKey));
+        course.updateNavigationBundleUrl(storageKey);
         courseRepository.save(course);
 
         return new NavigationBundleGenerationResult(
@@ -106,43 +102,5 @@ public class NavigationBundleGenerationService {
 
     private ValhallaTraceAttributes emptyTraceAttributes() {
         return new ValhallaTraceAttributes(List.of(), List.of(), List.of());
-    }
-
-    /**
-     * 저장된 S3 key 를 외부에서 사용할 다운로드 URL 형태로 변환합니다.
-     */
-    private String buildDownloadUrl(String storageKey) {
-        if (!StringUtils.hasText(storageKey)) {
-            return null;
-        }
-
-        String normalizedKey = trimLeadingSlash(storageKey);
-        if (!StringUtils.hasText(cdnBaseUrl)) {
-            return normalizedKey;
-        }
-
-        return trimTrailingSlash(cdnBaseUrl) + "/" + normalizedKey;
-    }
-
-    /**
-     * key 앞에 붙은 불필요한 슬래시를 제거합니다.
-     */
-    private String trimLeadingSlash(String value) {
-        String normalized = value;
-        while (normalized.startsWith("/")) {
-            normalized = normalized.substring(1);
-        }
-        return normalized;
-    }
-
-    /**
-     * base URL 끝에 붙은 불필요한 슬래시를 제거합니다.
-     */
-    private String trimTrailingSlash(String value) {
-        String normalized = value;
-        while (normalized.endsWith("/")) {
-            normalized = normalized.substring(0, normalized.length() - 1);
-        }
-        return normalized;
     }
 }

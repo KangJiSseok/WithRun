@@ -4,6 +4,7 @@ import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
 import kr.withrun.was.domain.navigation.dto.GenerateNavigationBundleResponse;
 import kr.withrun.was.domain.navigation.dto.GetLatestNavigationBundleResponse;
 import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleGenerationResult;
@@ -38,13 +39,17 @@ class NavigationBundleServiceTest {
     @Mock
     private NavigationBundleGenerationService navigationBundleGenerationService;
 
+    @Mock
+    private CloudFrontSignedUrlService cloudFrontSignedUrlService;
+
     private NavigationBundleService navigationBundleService;
 
     @BeforeEach
     void setUp() {
         navigationBundleService = new NavigationBundleService(
                 courseRepository,
-                navigationBundleGenerationService
+                navigationBundleGenerationService,
+                cloudFrontSignedUrlService
         );
     }
 
@@ -81,18 +86,36 @@ class NavigationBundleServiceTest {
                 .isEqualTo(ResponseCode.NAVIGATION_BUNDLE_FAILED);
     }
 
-    @DisplayName("코스에 저장된 navigation bundle URL 이 있으면 READY 응답을 반환한다")
+    @DisplayName("코스에 저장된 navigation bundle object key 가 있으면 signed URL 로 READY 응답을 반환한다")
     @Test
     void returnsReadyLatestNavigationBundle() {
         Course course = course(42L);
-        course.updateNavigationBundleUrl("https://cdn.withrun.kr/navigation/latest/42.json");
+        course.updateNavigationBundleUrl("navigation/latest/42.json");
 
         when(courseRepository.findNotDeletedCourse(42L)).thenReturn(Optional.of(course));
+        when(cloudFrontSignedUrlService.generateSignedUrl("navigation/latest/42.json"))
+                .thenReturn("signed::navigation/latest/42.json");
 
         GetLatestNavigationBundleResponse response = navigationBundleService.getLatestBundle(42L);
 
         assertThat(response.status()).isEqualTo("READY");
-        assertThat(response.downloadUrl()).isEqualTo("https://cdn.withrun.kr/navigation/latest/42.json");
+        assertThat(response.downloadUrl()).isEqualTo("signed::navigation/latest/42.json");
+    }
+
+    @DisplayName("코스에 기존 CDN navigation bundle URL 이 저장돼 있어도 signed URL 로 READY 응답을 반환한다")
+    @Test
+    void returnsReadyLatestNavigationBundleForLegacyCdnUrl() {
+        Course course = course(42L);
+        course.updateNavigationBundleUrl("https://cdn.withrun.kr/navigation/latest/42.json");
+
+        when(courseRepository.findNotDeletedCourse(42L)).thenReturn(Optional.of(course));
+        when(cloudFrontSignedUrlService.generateSignedUrl("https://cdn.withrun.kr/navigation/latest/42.json"))
+                .thenReturn("signed::navigation/latest/42.json");
+
+        GetLatestNavigationBundleResponse response = navigationBundleService.getLatestBundle(42L);
+
+        assertThat(response.status()).isEqualTo("READY");
+        assertThat(response.downloadUrl()).isEqualTo("signed::navigation/latest/42.json");
     }
 
     @DisplayName("코스에 navigation bundle URL 이 없으면 PENDING 응답을 반환한다")

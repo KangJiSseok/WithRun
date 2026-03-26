@@ -107,7 +107,13 @@ public class RunningSessionService {
 
         List<RunningGpsSampleResponse> ghostTargetGpsSamples = getGhostTargetGpsSamples(mode, ghostTargetRunningSession);
 
-        return CreateRunningSessionResponse.from(savedRunningSession, ghostTargetGpsSamples);
+        return CreateRunningSessionResponse.from(
+                savedRunningSession,
+                ghostTargetGpsSamples,
+                course == null
+                        ? null
+                        : cloudFrontSignedUrlService.generateSignedUrl(course.getNavigationBundleUrl())
+        );
     }
 
     @Transactional
@@ -185,13 +191,12 @@ public class RunningSessionService {
                 .routeType(request.routeType())
                 .user(runningSession.getUser())
                 .build());
-
+        generateNavigationBundle(course.getId());
         courseDifficultyRepository.save(CourseDifficulty.create(course, difficulty));
         courseTypeMapRepository.saveAll(courseTypes.stream()
                 .map(courseType -> CourseTypeMap.create(course, courseType))
                 .toList());
         courseSignalService.upsertCourseFeature(course, difficulty, courseTypes);
-        generateNavigationBundle(course.getId());
 
         return RegisterRunningSessionCourseResponse.from(
                 course,

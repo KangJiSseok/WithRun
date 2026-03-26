@@ -69,7 +69,7 @@ class NavigationControllerTest {
         GetLatestNavigationBundleResponse response = new GetLatestNavigationBundleResponse(
                 courseId,
                 "READY",
-                "https://cdn.withrun.kr/navigation/latest/42.json"
+                "https://cdn.withrun.kr/navigation/latest/42.json?Expires=100&Signature=test-signature&Key-Pair-Id=K123"
         );
         given(navigationBundleService.getLatestBundle(courseId)).willReturn(response);
 
@@ -78,7 +78,7 @@ class NavigationControllerTest {
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
                 .andExpect(jsonPath("$.data.status").value("READY"))
-                .andExpect(jsonPath("$.data.downloadUrl").value("https://cdn.withrun.kr/navigation/latest/42.json"));
+                .andExpect(jsonPath("$.data.downloadUrl").value("https://cdn.withrun.kr/navigation/latest/42.json?Expires=100&Signature=test-signature&Key-Pair-Id=K123"));
 
         then(navigationBundleService).should().getLatestBundle(courseId);
     }

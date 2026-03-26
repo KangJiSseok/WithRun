@@ -19,8 +19,8 @@ public record CreateRunningSessionResponse(
         Long courseId,
 
         @Schema(
-                description = "네비게이션 번들 URL. 코스가 없거나 아직 생성되지 않았으면 null 이다.",
-                example = "https://cdn.withrun.kr/navigation/latest/12.json",
+                description = "서명된 네비게이션 번들 URL. 코스가 없거나 아직 생성되지 않았으면 null 이다.",
+                example = "https://cdn.withrun.kr/navigation/latest/12.json?Expires=100&Signature=test-signature&Key-Pair-Id=K123",
                 nullable = true
         )
         String navigationBundleUrl,
@@ -41,13 +41,10 @@ public record CreateRunningSessionResponse(
         boolean isCompleted
 ) {
 
-    public static CreateRunningSessionResponse from(RunningSession runningSession) {
-        return from(runningSession, null);
-    }
-
     public static CreateRunningSessionResponse from(
             RunningSession runningSession,
-            List<RunningGpsSampleResponse> ghostTargetGpsSamples
+            List<RunningGpsSampleResponse> ghostTargetGpsSamples,
+            String navigationBundleUrl
     ) {
         return new CreateRunningSessionResponse(
                 runningSession.getId(),
@@ -55,9 +52,7 @@ public record CreateRunningSessionResponse(
                 runningSession.getCourse() != null
                         ? runningSession.getCourse().getId()
                         : null,
-                runningSession.getCourse() != null
-                        ? normalizeNavigationBundleUrl(runningSession.getCourse().getNavigationBundleUrl())
-                        : null,
+                normalizeNavigationBundleUrl(navigationBundleUrl),
                 runningSession.getGhostTargetRunningSession() != null
                         ? runningSession.getGhostTargetRunningSession().getId()
                         : null,
