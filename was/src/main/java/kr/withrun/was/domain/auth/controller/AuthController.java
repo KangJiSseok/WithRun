@@ -8,8 +8,11 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.validation.Valid;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
+import kr.withrun.was.domain.auth.dto.AuthCodeExchangeRequest;
+import kr.withrun.was.domain.auth.dto.AuthExchangeResult;
 import kr.withrun.was.domain.auth.dto.AuthMeResponse;
 import kr.withrun.was.domain.auth.dto.ReissueAccessTokenResponse;
 import kr.withrun.was.domain.auth.security.AuthenticatedUser;
@@ -25,6 +28,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -141,6 +145,20 @@ public class AuthController {
     ) {
         // OAuth callback 직후나 access token 만료 후 모두 이 endpoint 하나로 access token 을 복구합니다.
         return ApiResponse.successEntity(authService.reissueAccessToken(request));
+    }
+
+    @Operation(
+            summary = "모바일 OAuth 교환 코드를 세션으로 바꾼다",
+            description = "외부 브라우저 로그인 뒤 앱 내부 WebView가 전달받은 교환 코드를 access token 과 refresh cookie 로 교환한다."
+    )
+    @PostMapping("/exchange")
+    public ResponseEntity<ApiResponse<ReissueAccessTokenResponse>> exchangeAuthCode(
+            @Valid @RequestBody AuthCodeExchangeRequest request,
+            @Parameter(hidden = true) HttpServletResponse response
+    ) {
+        AuthExchangeResult result = authService.exchangeMobileAuthCode(request.code());
+        response.addHeader(HttpHeaders.SET_COOKIE, result.refreshTokenCookie().toString());
+        return ApiResponse.successEntity(result.response());
     }
 
     @Operation(

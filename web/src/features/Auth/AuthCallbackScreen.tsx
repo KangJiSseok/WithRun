@@ -13,6 +13,7 @@ export function AuthCallbackScreen() {
 
   useEffect(() => {
     const error = searchParams.get('error');
+    const authCode = searchParams.get('code');
 
     if (error) {
       // 백엔드 실패 이유는 onboarding 화면이 그대로 보여주는 UX 로 다시 합친다.
@@ -29,8 +30,8 @@ export function AuthCallbackScreen() {
 
     void (async () => {
       try {
-        // callback 진입 시에는 항상 refresh cookie 기준으로 세션을 다시 세운다.
-        const session = await bootstrapAuthSession();
+        // 모바일은 code 교환, 웹은 refresh cookie 복구로 같은 callback 화면을 재사용한다.
+        const session = await bootstrapAuthSession(undefined, authCode);
 
         if (isCancelled) {
           return;

@@ -23,3 +23,7 @@ export type ReissueAccessTokenResponse = {
   provider: string;
   profileCompleted: boolean;
 };
+
+export type ExchangeAuthCodeRequest = {
+  code: string;
+};

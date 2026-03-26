@@ -27,4 +27,6 @@ public class JwtProperties {
     private String refreshCookieSameSite = "Lax";
     // 운영 환경에서는 true, 로컬 개발에서는 false로 시작
     private boolean refreshCookieSecure = false;
+    // 모바일 OAuth 복귀 시 앱 내부 WebView에서 교환할 짧은 수명의 인증 코드 만료 시간(초)
+    private long mobileAuthCodeExpirationSeconds = 300;
 }

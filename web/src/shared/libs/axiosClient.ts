@@ -37,6 +37,7 @@ function shouldSkipRefresh(config?: RetryableAxiosRequestConfig): boolean {
 
   return (
     requestUrl.includes('/auth/reissue') ||
+    requestUrl.includes('/auth/exchange') ||
     requestUrl.includes('/auth/me') ||
     requestUrl.includes('/auth/logout')
   );

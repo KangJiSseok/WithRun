@@ -1,5 +1,6 @@
 package kr.withrun.was.domain.auth.controller;
 
+import kr.withrun.was.domain.auth.dto.AuthExchangeResult;
 import kr.withrun.was.domain.auth.dto.AuthMeResponse;
 import kr.withrun.was.domain.auth.dto.ReissueAccessTokenResponse;
 import kr.withrun.was.domain.auth.jwt.JwtProvider;
@@ -13,6 +14,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.http.HttpHeaders;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseCookie;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
@@ -104,6 +106,35 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.profileCompleted").value(false));
 
         then(authService).should().reissueAccessToken(any());
+    }
+
+    @Test
+    @DisplayName("모바일 교환 코드가 있으면 access token 과 refresh cookie를 내려준다")
+    void exchangesMobileAuthCodeWhenCodeExists() throws Exception {
+        ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", "refresh-token")
+                .httpOnly(true)
+                .path("/")
+                .sameSite("None")
+                .build();
+        given(authService.exchangeMobileAuthCode("mobile-code")).willReturn(
+                new AuthExchangeResult(
+                        new ReissueAccessTokenResponse("new-access-token", "google", true),
+                        refreshCookie
+                )
+        );
+
+        mockMvc.perform(post("/api/auth/exchange")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"code\":\"mobile-code\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.accessToken").value("new-access-token"))
+                .andExpect(jsonPath("$.data.provider").value("google"))
+                .andExpect(jsonPath("$.data.profileCompleted").value(true))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("refresh_token=refresh-token")))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("SameSite=None")));
+
+        then(authService).should().exchangeMobileAuthCode("mobile-code");
     }
 
     @Test

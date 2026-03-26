@@ -3,6 +3,7 @@ package kr.withrun.was.domain.auth.service;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.Cookie;
+import kr.withrun.was.domain.auth.dto.AuthExchangeResult;
 import kr.withrun.was.domain.auth.dto.AuthMeResponse;
 import kr.withrun.was.domain.auth.dto.AuthTokenPair;
 import kr.withrun.was.domain.auth.dto.ReissueAccessTokenResponse;
@@ -125,6 +126,30 @@ class AuthServiceTest {
     }
 
     @Test
+    @DisplayName("exchanges mobile auth code into access token and refresh cookie")
+    void exchangesMobileAuthCodeIntoAccessTokenAndRefreshCookie() {
+        User user = completedUser(10L);
+        UserAuthAccount authAccount = UserAuthAccount.create(
+                user,
+                "google",
+                "google-user-123",
+                "runner@example.com",
+                "https://image.example.com/profile.png"
+        );
+        String mobileAuthCode = jwtProvider.generateMobileAuthCode(user, "google");
+
+        when(userRepository.findNotDeletedUser(10L)).thenReturn(Optional.of(user));
+        when(userAuthAccountRepository.findById(10L)).thenReturn(Optional.of(authAccount));
+
+        AuthExchangeResult result = authService.exchangeMobileAuthCode(mobileAuthCode);
+
+        assertThat(result.response().provider()).isEqualTo("google");
+        assertThat(result.response().profileCompleted()).isTrue();
+        assertThat(jwtProvider.extractAuthenticatedUser(result.response().accessToken()).userId()).isEqualTo(10L);
+        assertThat(result.refreshTokenCookie().getName()).isEqualTo("refresh_token");
+    }
+
+    @Test
     @DisplayName("throws unauthorized when refresh cookie is missing")
     void throwsUnauthorizedWhenRefreshCookieIsMissing() {
         MockHttpServletRequest request = new MockHttpServletRequest();
@@ -156,6 +181,7 @@ class AuthServiceTest {
         properties.setRefreshCookiePath("/");
         properties.setRefreshCookieSameSite("Lax");
         properties.setRefreshCookieSecure(false);
+        properties.setMobileAuthCodeExpirationSeconds(300L);
         return properties;
     }
 
