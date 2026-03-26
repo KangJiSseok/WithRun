@@ -13,12 +13,15 @@ import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaTraceReque
 import kr.withrun.was.domain.navigation.exception.NavigationBundleGenerationException;
 import kr.withrun.was.domain.navigation.service.input.CourseTraceResampler;
 import kr.withrun.was.domain.navigation.type.NavigationBundleFailureCode;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestClient;
 
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -31,6 +34,7 @@ public class ValhallaTraceClient {
 
     private static final int RELAXED_GPS_ACCURACY = 10;
     private static final int RELAXED_SEARCH_RADIUS = 35;
+    private static final Logger log = LoggerFactory.getLogger(ValhallaTraceClient.class);
 
     private final RestClient restClient;
     private final CourseTraceResampler courseTraceResampler;
@@ -68,6 +72,7 @@ public class ValhallaTraceClient {
                         .retrieve()
                         .body(JsonNode.class);
 
+                logTraceRouteResponseSummary(response, attempt);
                 return parseRouteTraceResponse(response);
             } catch (NavigationBundleGenerationException exception) {
                 lastFailure = exception;
@@ -109,6 +114,7 @@ public class ValhallaTraceClient {
                 );
             }
 
+            logTraceAttributesResponseSummary(response, request);
             return new ValhallaTraceAttributes(
                     extractEdges(response.path("edges")),
                     extractMatchedPoints(response.path("matched_points")),
@@ -133,8 +139,8 @@ public class ValhallaTraceClient {
             );
         }
 
-        JsonNode legsNode = response.path("trip").path("legs");
-        if (!legsNode.isArray() || legsNode.isEmpty()) {
+        List<JsonNode> orderedTrips = collectOrderedTrips(response);
+        if (orderedTrips.isEmpty()) {
             throw new NavigationBundleGenerationException(
                     NavigationBundleFailureCode.VALHALLA_TRACE_ROUTE_FAILED,
                     "Valhalla trace_route response is missing route legs"
@@ -144,46 +150,197 @@ public class ValhallaTraceClient {
         List<SnappedRoutePoint> flattenedShape = new ArrayList<>();
         List<NavigationManeuver> flattenedManeuvers = new ArrayList<>();
 
-        for (JsonNode legNode : legsNode) {
-            List<SnappedRoutePoint> legShape = decodePolyline(legNode.path("shape").asText(""));
-            if (legShape.isEmpty()) {
-                throw new NavigationBundleGenerationException(
-                        NavigationBundleFailureCode.VALHALLA_TRACE_ROUTE_FAILED,
-                        "Valhalla trace_route leg shape must not be empty"
-                );
-            }
-
-            int shapeIndexOffset = flattenedShape.isEmpty() ? 0 : flattenedShape.size();
-            if (!flattenedShape.isEmpty() && isSamePoint(flattenedShape.get(flattenedShape.size() - 1), legShape.get(0))) {
-                shapeIndexOffset -= 1;
-                flattenedShape.addAll(legShape.subList(1, legShape.size()));
-            } else {
-                flattenedShape.addAll(legShape);
-            }
-
-            JsonNode maneuversNode = legNode.path("maneuvers");
-            if (!maneuversNode.isArray()) {
+        for (JsonNode tripNode : orderedTrips) {
+            JsonNode legsNode = tripNode.path("legs");
+            if (!legsNode.isArray() || legsNode.isEmpty()) {
                 continue;
             }
-            for (JsonNode maneuverNode : maneuversNode) {
-                flattenedManeuvers.add(new NavigationManeuver(
-                        shapeIndexOffset + maneuverNode.path("begin_shape_index").asInt(),
-                        shapeIndexOffset + maneuverNode.path("end_shape_index").asInt(),
-                        maneuverNode.path("instruction").asText(""),
-                        readOptionalText(maneuverNode, "verbal_transition_alert_instruction"),
-                        readOptionalText(maneuverNode, "verbal_pre_transition_instruction"),
-                        readOptionalText(maneuverNode, "verbal_post_transition_instruction"),
-                        readOptionalBoolean(maneuverNode, "verbal_multi_cue"),
-                        readOptionalText(maneuverNode, "verbal_succinct_transition_instruction"),
-                        readOptionalInt(maneuverNode, "type"),
-                        readOptionalInt(maneuverNode, "bearing_before"),
-                        readOptionalInt(maneuverNode, "bearing_after"),
-                        extractVoiceInstructions(maneuverNode.path("voiceInstructions"))
-                ));
+
+            for (JsonNode legNode : legsNode) {
+                List<SnappedRoutePoint> legShape = decodePolyline(legNode.path("shape").asText(""));
+                if (legShape.isEmpty()) {
+                    throw new NavigationBundleGenerationException(
+                            NavigationBundleFailureCode.VALHALLA_TRACE_ROUTE_FAILED,
+                            "Valhalla trace_route leg shape must not be empty"
+                    );
+                }
+
+                int shapeIndexOffset = flattenedShape.isEmpty() ? 0 : flattenedShape.size();
+                if (!flattenedShape.isEmpty() && isSamePoint(flattenedShape.get(flattenedShape.size() - 1), legShape.get(0))) {
+                    shapeIndexOffset -= 1;
+                    flattenedShape.addAll(legShape.subList(1, legShape.size()));
+                } else {
+                    flattenedShape.addAll(legShape);
+                }
+
+                JsonNode maneuversNode = legNode.path("maneuvers");
+                if (!maneuversNode.isArray()) {
+                    continue;
+                }
+                for (JsonNode maneuverNode : maneuversNode) {
+                    flattenedManeuvers.add(new NavigationManeuver(
+                            shapeIndexOffset + maneuverNode.path("begin_shape_index").asInt(),
+                            shapeIndexOffset + maneuverNode.path("end_shape_index").asInt(),
+                            maneuverNode.path("instruction").asText(""),
+                            readOptionalText(maneuverNode, "verbal_transition_alert_instruction"),
+                            readOptionalText(maneuverNode, "verbal_pre_transition_instruction"),
+                            readOptionalText(maneuverNode, "verbal_post_transition_instruction"),
+                            readOptionalBoolean(maneuverNode, "verbal_multi_cue"),
+                            readOptionalText(maneuverNode, "verbal_succinct_transition_instruction"),
+                            readOptionalInt(maneuverNode, "type"),
+                            readOptionalInt(maneuverNode, "bearing_before"),
+                            readOptionalInt(maneuverNode, "bearing_after"),
+                            extractVoiceInstructions(maneuverNode.path("voiceInstructions"))
+                    ));
+                }
             }
         }
 
         return new ValhallaRouteTraceResult(List.copyOf(flattenedShape), List.copyOf(flattenedManeuvers));
+    }
+
+    private List<JsonNode> collectOrderedTrips(JsonNode response) {
+        List<TraceTripSegment> segments = new ArrayList<>();
+        segments.add(new TraceTripSegment(response.path("trip"), readOriginalIndex(response.path("trip").path("locations"), 0), 0));
+
+        JsonNode alternatesNode = response.path("alternates");
+        if (alternatesNode.isArray()) {
+            for (int index = 0; index < alternatesNode.size(); index++) {
+                JsonNode alternateTrip = alternatesNode.get(index).path("trip");
+                if (!alternateTrip.isMissingNode()) {
+                    segments.add(new TraceTripSegment(alternateTrip, readOriginalIndex(alternateTrip.path("locations"), Integer.MAX_VALUE), index + 1));
+                }
+            }
+        }
+
+        return segments.stream()
+                .filter(segment -> !segment.tripNode().isMissingNode())
+                .sorted(Comparator
+                        .comparingInt(TraceTripSegment::startOriginalIndex)
+                        .thenComparingInt(TraceTripSegment::sequence))
+                .map(TraceTripSegment::tripNode)
+                .toList();
+    }
+
+    private int readOriginalIndex(JsonNode locationsNode, int fallback) {
+        if (!locationsNode.isArray() || locationsNode.isEmpty()) {
+            return fallback;
+        }
+
+        JsonNode firstLocation = locationsNode.get(0);
+        JsonNode originalIndexNode = firstLocation.path("original_index");
+        return originalIndexNode.isIntegralNumber() ? originalIndexNode.asInt() : fallback;
+    }
+
+    private void logTraceRouteResponseSummary(JsonNode response, ValhallaTraceRequest request) {
+        if (!log.isInfoEnabled() || response == null) {
+            return;
+        }
+
+        List<JsonNode> orderedTrips = collectOrderedTrips(response);
+        int tripLegCount = countLegs(response.path("trip"));
+        int alternateCount = response.path("alternates").isArray() ? response.path("alternates").size() : 0;
+        int totalLegCount = orderedTrips.stream().mapToInt(this::countLegs).sum();
+        int totalManeuverCount = orderedTrips.stream().mapToInt(this::countManeuvers).sum();
+
+        log.info(
+                "Valhalla trace_route response summary: inputPoints={}, tripLegs={}, alternates={}, orderedTrips={}, totalLegs={}, maneuvers={}, tripStartOriginalIndex={}, alternateStartOriginalIndices={}",
+                request.shape().size(),
+                tripLegCount,
+                alternateCount,
+                orderedTrips.size(),
+                totalLegCount,
+                totalManeuverCount,
+                readOriginalIndex(response.path("trip").path("locations"), -1),
+                collectAlternateStartOriginalIndices(response.path("alternates"))
+        );
+    }
+
+    private void logTraceAttributesResponseSummary(JsonNode response, ValhallaTraceRequest request) {
+        if (!log.isInfoEnabled() || response == null) {
+            return;
+        }
+
+        JsonNode matchedPointsNode = response.path("matched_points");
+        int matchedPointCount = matchedPointsNode.isArray() ? matchedPointsNode.size() : 0;
+        int matchedCount = countMatchedPointsByType(matchedPointsNode, "matched");
+        int interpolatedCount = countMatchedPointsByType(matchedPointsNode, "interpolated");
+        int unmatchedCount = countMatchedPointsByType(matchedPointsNode, "unmatched");
+        int discontinuityCount = countMatchedPointDiscontinuities(matchedPointsNode);
+
+        log.info(
+                "Valhalla trace_attributes response summary: inputPoints={}, edges={}, matchedPoints={}, matched={}, interpolated={}, unmatched={}, discontinuities={}, shapeLengths={}",
+                request.shape().size(),
+                response.path("edges").isArray() ? response.path("edges").size() : 0,
+                matchedPointCount,
+                matchedCount,
+                interpolatedCount,
+                unmatchedCount,
+                discontinuityCount,
+                response.path("shape_attributes").path("length").isArray() ? response.path("shape_attributes").path("length").size() : 0
+        );
+    }
+
+    private int countLegs(JsonNode tripNode) {
+        JsonNode legsNode = tripNode.path("legs");
+        return legsNode.isArray() ? legsNode.size() : 0;
+    }
+
+    private int countManeuvers(JsonNode tripNode) {
+        JsonNode legsNode = tripNode.path("legs");
+        if (!legsNode.isArray()) {
+            return 0;
+        }
+
+        int maneuverCount = 0;
+        for (JsonNode legNode : legsNode) {
+            JsonNode maneuversNode = legNode.path("maneuvers");
+            if (maneuversNode.isArray()) {
+                maneuverCount += maneuversNode.size();
+            }
+        }
+        return maneuverCount;
+    }
+
+    private List<Integer> collectAlternateStartOriginalIndices(JsonNode alternatesNode) {
+        if (!alternatesNode.isArray()) {
+            return List.of();
+        }
+
+        List<Integer> startOriginalIndices = new ArrayList<>();
+        for (JsonNode alternateNode : alternatesNode) {
+            startOriginalIndices.add(readOriginalIndex(alternateNode.path("trip").path("locations"), -1));
+        }
+        return List.copyOf(startOriginalIndices);
+    }
+
+    private int countMatchedPointsByType(JsonNode matchedPointsNode, String type) {
+        if (!matchedPointsNode.isArray()) {
+            return 0;
+        }
+
+        int count = 0;
+        for (JsonNode matchedPointNode : matchedPointsNode) {
+            if (type.equals(matchedPointNode.path("type").asText())) {
+                count += 1;
+            }
+        }
+        return count;
+    }
+
+    private int countMatchedPointDiscontinuities(JsonNode matchedPointsNode) {
+        if (!matchedPointsNode.isArray()) {
+            return 0;
+        }
+
+        int count = 0;
+        for (JsonNode matchedPointNode : matchedPointsNode) {
+            if (matchedPointNode.path("begin_route_discontinuity").asBoolean(false)
+                    || matchedPointNode.path("end_route_discontinuity").asBoolean(false)) {
+                count += 1;
+            }
+        }
+        return count;
     }
 
     /**
@@ -375,5 +532,8 @@ public class ValhallaTraceClient {
     private Boolean readOptionalBoolean(JsonNode node, String fieldName) {
         JsonNode fieldNode = node.path(fieldName);
         return fieldNode.isMissingNode() || fieldNode.isNull() ? null : fieldNode.asBoolean();
+    }
+
+    private record TraceTripSegment(JsonNode tripNode, int startOriginalIndex, int sequence) {
     }
 }

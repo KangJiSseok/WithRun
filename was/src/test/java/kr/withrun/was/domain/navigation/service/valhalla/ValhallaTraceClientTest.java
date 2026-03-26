@@ -1,5 +1,8 @@
 package kr.withrun.was.domain.navigation.service.valhalla;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.sun.net.httpserver.HttpServer;
@@ -22,6 +25,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import org.slf4j.LoggerFactory;
 
 @DisplayName("Valhalla trace client")
 class ValhallaTraceClientTest {
@@ -247,6 +251,208 @@ class ValhallaTraceClientTest {
                     )
             );
         } finally {
+            server.stop(0);
+        }
+    }
+
+    @DisplayName("trace_route alternates 로 분리된 연속 구간도 하나의 경로로 이어 붙인다")
+    @Test
+    void mergesOrderedAlternateTripsIntoSingleLogicalRoute() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/trace_route", exchange -> writeJson(exchange, 200, """
+                {
+                  "trip": {
+                    "locations": [
+                      {"type": "break", "lat": 37.5665, "lon": 126.9780, "original_index": 0},
+                      {"type": "via", "lat": 37.5680, "lon": 126.9800, "original_index": 2}
+                    ],
+                    "legs": [
+                      {
+                        "shape": "%s",
+                        "maneuvers": [
+                          {"begin_shape_index": 0, "end_shape_index": 2, "instruction": "출발 후 직진"}
+                        ]
+                      }
+                    ]
+                  },
+                  "alternates": [
+                    {
+                      "trip": {
+                        "locations": [
+                          {"type": "via", "lat": 37.5680, "lon": 126.9800, "original_index": 3},
+                          {"type": "break", "lat": 37.5665, "lon": 126.9780, "original_index": 4}
+                        ],
+                        "legs": [
+                          {
+                            "shape": "%s",
+                            "maneuvers": [
+                              {"begin_shape_index": 0, "end_shape_index": 2, "instruction": "되돌아가기"}
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+                """.formatted(
+                encodeShape(List.of(
+                        new SnappedRoutePoint(37.5665, 126.9780),
+                        new SnappedRoutePoint(37.5671, 126.9792),
+                        new SnappedRoutePoint(37.5680, 126.9800)
+                )),
+                encodeShape(List.of(
+                        new SnappedRoutePoint(37.5680, 126.9800),
+                        new SnappedRoutePoint(37.5671, 126.9792),
+                        new SnappedRoutePoint(37.5665, 126.9780)
+                ))
+        )));
+        server.start();
+
+        try {
+            ValhallaTraceClient client = new ValhallaTraceClient(
+                    "http://localhost:" + server.getAddress().getPort(),
+                    new CourseTraceResampler()
+            );
+
+            ValhallaRouteTraceResult result = client.requestRouteTrace(new ValhallaTraceRequest(
+                    List.of(
+                            new ValhallaRequestPoint(37.5665, 126.9780),
+                            new ValhallaRequestPoint(37.5680, 126.9800),
+                            new ValhallaRequestPoint(37.5665, 126.9780)
+                    ),
+                    "pedestrian",
+                    "map_snap",
+                    5,
+                    20,
+                    500,
+                    "ko-KR",
+                    "kilometers"
+            ));
+
+            assertThat(result.shape()).extracting(SnappedRoutePoint::lat, SnappedRoutePoint::lon)
+                    .containsExactly(
+                            org.assertj.core.groups.Tuple.tuple(37.5665, 126.9780),
+                            org.assertj.core.groups.Tuple.tuple(37.5671, 126.9792),
+                            org.assertj.core.groups.Tuple.tuple(37.5680, 126.9800),
+                            org.assertj.core.groups.Tuple.tuple(37.5671, 126.9792),
+                            org.assertj.core.groups.Tuple.tuple(37.5665, 126.9780)
+                    );
+            assertThat(result.maneuvers()).containsExactly(
+                    new NavigationManeuver(0, 2, "출발 후 직진", null, null, null, null, null, null, null, null, List.of()),
+                    new NavigationManeuver(2, 4, "되돌아가기", null, null, null, null, null, null, null, null, List.of())
+            );
+        } finally {
+            server.stop(0);
+        }
+    }
+
+    @DisplayName("trace_route 와 trace_attributes 응답 요약을 로그로 남긴다")
+    @Test
+    void logsValhallaResponseSummaries() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/trace_route", exchange -> writeJson(exchange, 200, """
+                {
+                  "trip": {
+                    "locations": [
+                      {"type": "break", "lat": 37.5665, "lon": 126.9780, "original_index": 0},
+                      {"type": "via", "lat": 37.5680, "lon": 126.9800, "original_index": 2}
+                    ],
+                    "legs": [
+                      {
+                        "shape": "%s",
+                        "maneuvers": [
+                          {"begin_shape_index": 0, "end_shape_index": 2, "instruction": "출발 후 직진"}
+                        ]
+                      }
+                    ]
+                  },
+                  "alternates": [
+                    {
+                      "trip": {
+                        "locations": [
+                          {"type": "via", "lat": 37.5680, "lon": 126.9800, "original_index": 3},
+                          {"type": "break", "lat": 37.5665, "lon": 126.9780, "original_index": 4}
+                        ],
+                        "legs": [
+                          {
+                            "shape": "%s",
+                            "maneuvers": [
+                              {"begin_shape_index": 0, "end_shape_index": 2, "instruction": "되돌아가기"}
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+                """.formatted(
+                encodeShape(List.of(
+                        new SnappedRoutePoint(37.5665, 126.9780),
+                        new SnappedRoutePoint(37.5671, 126.9792),
+                        new SnappedRoutePoint(37.5680, 126.9800)
+                )),
+                encodeShape(List.of(
+                        new SnappedRoutePoint(37.5680, 126.9800),
+                        new SnappedRoutePoint(37.5671, 126.9792),
+                        new SnappedRoutePoint(37.5665, 126.9780)
+                ))
+        )));
+        server.createContext("/trace_attributes", exchange -> writeJson(exchange, 200, """
+                {
+                  "edges": [{}, {}],
+                  "matched_points": [
+                    {"lat": 37.5665, "lon": 126.9780, "type": "matched", "edge_index": 0},
+                    {"lat": 37.5680, "lon": 126.9800, "type": "matched", "edge_index": 1, "begin_route_discontinuity": true},
+                    {"lat": 37.5665, "lon": 126.9780, "type": "interpolated", "edge_index": 2}
+                  ],
+                  "shape_attributes": {"length": [0.1, 0.2]}
+                }
+                """));
+        server.start();
+
+        Logger logger = (Logger) LoggerFactory.getLogger(ValhallaTraceClient.class);
+        ListAppender<ILoggingEvent> listAppender = new ListAppender<>();
+        listAppender.start();
+        logger.addAppender(listAppender);
+
+        try {
+            ValhallaTraceClient client = new ValhallaTraceClient(
+                    "http://localhost:" + server.getAddress().getPort(),
+                    new CourseTraceResampler()
+            );
+            ValhallaTraceRequest request = new ValhallaTraceRequest(
+                    List.of(
+                            new ValhallaRequestPoint(37.5665, 126.9780),
+                            new ValhallaRequestPoint(37.5680, 126.9800),
+                            new ValhallaRequestPoint(37.5665, 126.9780)
+                    ),
+                    "pedestrian",
+                    "map_snap",
+                    5,
+                    20,
+                    500,
+                    "ko-KR",
+                    "kilometers"
+            );
+
+            client.requestRouteTrace(request);
+            client.requestTraceAttributes(request);
+
+            assertThat(listAppender.list)
+                    .extracting(ILoggingEvent::getFormattedMessage)
+                    .anySatisfy(message -> assertThat(message)
+                            .contains("Valhalla trace_route response summary")
+                            .contains("inputPoints=3")
+                            .contains("tripLegs=1")
+                            .contains("alternates=1")
+                            .contains("orderedTrips=2"))
+                    .anySatisfy(message -> assertThat(message)
+                            .contains("Valhalla trace_attributes response summary")
+                            .contains("matchedPoints=3")
+                            .contains("interpolated=1")
+                            .contains("discontinuities=1"));
+        } finally {
+            logger.detachAppender(listAppender);
             server.stop(0);
         }
     }
