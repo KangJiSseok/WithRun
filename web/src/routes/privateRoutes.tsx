@@ -7,34 +7,46 @@ import { HomePage } from '@/pages/private/home';
 import { NormalRunPage } from '@/pages/private/NormalRun';
 import { NormalRunDetailPage } from '@/pages/private/NormalRunDetail';
 import { NormalRunSessionPage } from '@/pages/private/NormalRunSession';
+import { ProfilePage } from '@/pages/private/profile';
+import { RequireAuthRoute } from '@/routes/AuthGuards';
 import { MainLayout } from '@/shared/layouts/MainLayout';
 import { GhostRunPage } from '@/pages/private/GhostRun';
 
 export const privateRoutes: RouteObject[] = [
   {
-    element: <MainLayout showTopNav showBottomNav />,
+    // private route 는 공통 auth guard 를 한 번만 거치고, 이후 레이아웃만 화면 종류에 따라 나눕니다.
+    element: <RequireAuthRoute />,
     children: [
-      { path: '/home', element: <HomePage /> },
-
-      { path: '/calendar', element: <CalendarPage /> },
-    ],
-  },
-  {
-    element: <MainLayout showBottomNav fullScreen />,
-    children: [
-      { path: '/normal-run', element: <NormalRunPage /> },
-      { path: '/normal-run/:courseId', element: <NormalRunDetailPage /> },
-      { path: '/free-run', element: <FreeRunPage /> },
-      { path: '/ghost-run', element: <GhostRunPage /> },
-    ],
-  },
-  {
-    element: <MainLayout fullScreen />,
-    children: [
-      { path: '/free-run-session', element: <FreeRunSessionPage /> },
       {
-        path: '/normal-run-session/:courseId',
-        element: <NormalRunSessionPage />,
+        element: <MainLayout showBottomNav />,
+        children: [{ path: '/home', element: <HomePage /> }],
+      },
+      {
+        element: <MainLayout showBottomNav fullScreen />,
+        children: [{ path: '/profile', element: <ProfilePage /> }],
+      },
+      {
+        element: <MainLayout showTopNav showBottomNav />,
+        children: [{ path: '/calendar', element: <CalendarPage /> }],
+      },
+      {
+        element: <MainLayout showBottomNav fullScreen />,
+        children: [
+          { path: '/normal-run', element: <NormalRunPage /> },
+          { path: '/normal-run/:courseId', element: <NormalRunDetailPage /> },
+          { path: '/free-run', element: <FreeRunPage /> },
+          { path: '/ghost-run', element: <GhostRunPage /> },
+        ],
+      },
+      {
+        element: <MainLayout fullScreen />,
+        children: [
+          { path: '/free-run-session', element: <FreeRunSessionPage /> },
+          {
+            path: '/normal-run-session/:courseId',
+            element: <NormalRunSessionPage />,
+          },
+        ],
       },
     ],
   },

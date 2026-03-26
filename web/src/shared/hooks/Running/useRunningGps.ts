@@ -21,9 +21,12 @@ export function useRunningGps({ isPaused }: { isPaused: boolean }) {
 
   // latest-ref 패턴: isPaused 변경 시 effect 재실행 없이 최신값 읽기
   const latestIsPausedRef = useRef(isPaused);
-  latestIsPausedRef.current = isPaused;
-
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
+
+  useEffect(() => {
+    // render 중 ref 값을 직접 바꾸지 않고 effect 에서 동기화해 React Compiler 경고 가능성을 줄인다.
+    latestIsPausedRef.current = isPaused;
+  }, [isPaused]);
 
   // 일시정지 해제 시 이전 GPS 좌표 초기화 (재개 시 점프 방지)
   useEffect(() => {

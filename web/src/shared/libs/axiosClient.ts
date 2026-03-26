@@ -1,36 +1,124 @@
-import axios from 'axios';
+import axios, {
+  AxiosError,
+  type InternalAxiosRequestConfig,
+} from 'axios';
 
-// 아직 서버 url은 없으니 VITE_API_BASE_URL는 .env 파일 만들어두기만 해주세요!
-const axiosClient = axios.create({
-  baseURL: import.meta.env.VITE_API_BASE_URL,
-  timeout: 10000,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
+import type { ReissueAccessTokenResponse } from '@/apis/auth';
+import { getApiBaseUrl } from '@/shared/config/api';
+import type { ApiResponse } from '@/shared/types/api.type';
+import { useAuthStore } from '@/stores/Auth';
 
-// 요청 인터셉터
+type RetryableAxiosRequestConfig = InternalAxiosRequestConfig & {
+  _retry?: boolean;
+  skipAuthRefresh?: boolean;
+};
+
+function createBaseClient() {
+  return axios.create({
+    baseURL: getApiBaseUrl(),
+    timeout: 10000,
+    withCredentials: true,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+}
+
+function shouldSkipRefresh(config?: RetryableAxiosRequestConfig): boolean {
+  if (!config) {
+    return true;
+  }
+
+  if (config.skipAuthRefresh) {
+    return true;
+  }
+
+  const requestUrl = config.url ?? '';
+
+  return (
+    requestUrl.includes('/auth/reissue') ||
+    requestUrl.includes('/auth/me') ||
+    requestUrl.includes('/auth/logout')
+  );
+}
+
+function redirectToLogin(): void {
+  if (typeof window === 'undefined') {
+    return;
+  }
+
+  if (window.location.pathname === '/login') {
+    return;
+  }
+
+  window.location.replace('/login');
+}
+
+async function requestAccessTokenRefresh(): Promise<string> {
+  // refresh token 은 HttpOnly cookie 에 있으므로 재발급 요청은 별도 헤더 없이 쿠키 기반으로만 보낸다.
+  const { data } = await authApiClient.post<ApiResponse<ReissueAccessTokenResponse>>(
+    '/auth/reissue',
+  );
+
+  const nextAccessToken = data.data.accessToken;
+  useAuthStore.getState().setAccessToken(nextAccessToken);
+
+  return nextAccessToken;
+}
+
+export const authApiClient = createBaseClient();
+
+const axiosClient = createBaseClient();
+
+let refreshPromise: Promise<string> | null = null;
+
 axiosClient.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('accessToken');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    const accessToken = useAuthStore.getState().accessToken;
+
+    if (accessToken) {
+      config.headers = config.headers ?? {};
+      config.headers.Authorization = `Bearer ${accessToken}`;
     }
+
     return config;
   },
-  (error) => Promise.reject(error)
+  (error) => Promise.reject(error),
 );
 
-// 응답 인터셉터
 axiosClient.interceptors.response.use(
   (response) => response,
-  (error) => {
-    if (error.response?.status === 401) {
-      localStorage.removeItem('accessToken');
-      window.location.href = '/login';
+  async (error: AxiosError) => {
+    const originalRequest = error.config as RetryableAxiosRequestConfig | undefined;
+
+    if (
+      error.response?.status !== 401 ||
+      !originalRequest ||
+      originalRequest._retry ||
+      shouldSkipRefresh(originalRequest)
+    ) {
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
-  }
+
+    originalRequest._retry = true;
+
+    try {
+      // 여러 요청이 동시에 401 이 나도 refresh 호출은 한 번만 수행하고 나머지는 같은 Promise 를 기다린다.
+      refreshPromise ??= requestAccessTokenRefresh().finally(() => {
+        refreshPromise = null;
+      });
+
+      const nextAccessToken = await refreshPromise;
+      originalRequest.headers = originalRequest.headers ?? {};
+      originalRequest.headers.Authorization = `Bearer ${nextAccessToken}`;
+
+      return axiosClient(originalRequest);
+    } catch (refreshError) {
+      useAuthStore.getState().clearAuth();
+      redirectToLogin();
+      return Promise.reject(refreshError);
+    }
+  },
 );
 
 export default axiosClient;

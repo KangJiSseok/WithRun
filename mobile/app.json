@@ -2,9 +2,26 @@
   "expo": {
     "name": "mobile",
     "slug": "with-run",
+    "scheme": "withrun",
     "version": "1.0.0",
     "android": {
-      "package": "com.mobile"
+      "package": "com.mobile",
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "category": ["BROWSABLE", "DEFAULT"],
+          "data": [
+            {
+              "scheme": "withrun",
+              "host": "auth",
+              "pathPrefix": "/callback"
+            }
+          ]
+        }
+      ]
+    },
+    "ios": {
+      "bundleIdentifier": "com.mobile"
     },
     "extra": {
       "eas": {

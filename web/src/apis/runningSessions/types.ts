@@ -70,6 +70,10 @@ export type HealthSample = {
   sampledAt: string; // ISO 8601
   heartRate: number;
   caloriesKcal: number;
+  speedMps?: number | null;
+  paceSecPerKm?: number | null;
+  distanceM?: number | null;
+  cadenceSpm?: number | null;
 };
 
 // 1km 단위 구간 기록 (TODO: 추후 구현)

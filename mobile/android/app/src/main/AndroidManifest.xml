@@ -33,6 +33,16 @@
         <action android:name="android.intent.action.MAIN"/>
         <category android:name="android.intent.category.LAUNCHER"/>
       </intent-filter>
+      <!-- OAuth 완료 후 withrun://auth/callback 딥링크로 앱을 다시 여는 진입점 -->
+      <intent-filter>
+        <action android:name="android.intent.action.VIEW"/>
+        <category android:name="android.intent.category.DEFAULT"/>
+        <category android:name="android.intent.category.BROWSABLE"/>
+        <data
+          android:host="auth"
+          android:pathPrefix="/callback"
+          android:scheme="withrun" />
+      </intent-filter>
     </activity>
   </application>
 </manifest>
