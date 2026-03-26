@@ -31,7 +31,7 @@ public class CourseMetaController {
 
     @Operation(
             summary = "코스 등록 메타 항목을 조회한다",
-            description = "코스 등록 화면에서 사용하는 코스 유형, 공개 범위, 난이도 선택 항목 목록을 조회한다."
+            description = "코스 등록 화면에서 사용하는 코스 유형, 공개 범위, 경로 형태, 난이도 선택 항목 목록을 조회한다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
