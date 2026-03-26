@@ -18,7 +18,8 @@ class OAuth2FailureHandlerTest {
 
     @DisplayName("provider가 access_denied를 넘기면 로그인 화면으로 access_denied 에러를 전달한다")
     @Test
-    void redirectsToLoginWithAccessDeniedWhenProviderReturnsAccessDenied() throws Exception {
+    void redirectsToCallbackWithAccessDeniedWhenProviderReturnsAccessDenied() throws Exception {
+        // 실패도 shared callback route 로 모으기 때문에 프론트는 한 화면에서 에러 해석만 하면 된다.
         MockHttpServletRequest request = new MockHttpServletRequest();
         request.setParameter("error", "access_denied");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -30,12 +31,12 @@ class OAuth2FailureHandlerTest {
         );
 
         assertThat(response.getRedirectedUrl())
-                .isEqualTo("http://localhost:5173/login?error=access_denied");
+                .isEqualTo("http://localhost:5173/auth/callback?error=access_denied");
     }
 
     @DisplayName("OAuth authorization request가 사라지면 cancelled 에러로 리다이렉트한다")
     @Test
-    void redirectsToLoginWithCancelledWhenAuthorizationRequestIsMissing() throws Exception {
+    void redirectsToCallbackWithCancelledWhenAuthorizationRequestIsMissing() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -46,12 +47,12 @@ class OAuth2FailureHandlerTest {
         );
 
         assertThat(response.getRedirectedUrl())
-                .isEqualTo("http://localhost:5173/login?error=cancelled");
+                .isEqualTo("http://localhost:5173/auth/callback?error=cancelled");
     }
 
     @DisplayName("기타 예외는 server_error로 리다이렉트한다")
     @Test
-    void redirectsToLoginWithServerErrorForUnexpectedFailures() throws Exception {
+    void redirectsToCallbackWithServerErrorForUnexpectedFailures() throws Exception {
         MockHttpServletRequest request = new MockHttpServletRequest();
         MockHttpServletResponse response = new MockHttpServletResponse();
 
@@ -62,7 +63,7 @@ class OAuth2FailureHandlerTest {
         );
 
         assertThat(response.getRedirectedUrl())
-                .isEqualTo("http://localhost:5173/login?error=server_error");
+                .isEqualTo("http://localhost:5173/auth/callback?error=server_error");
     }
 
     private static AuthProperties authProperties() {

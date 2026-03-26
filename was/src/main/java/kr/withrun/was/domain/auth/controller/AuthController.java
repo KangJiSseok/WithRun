@@ -139,6 +139,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<ReissueAccessTokenResponse>> reissueAccessToken(
             @Parameter(hidden = true) HttpServletRequest request
     ) {
+        // OAuth callback 직후나 access token 만료 후 모두 이 endpoint 하나로 access token 을 복구합니다.
         return ApiResponse.successEntity(authService.reissueAccessToken(request));
     }
 
@@ -169,6 +170,7 @@ public class AuthController {
     public ResponseEntity<ApiResponse<Void>> logout(
             @Parameter(hidden = true) HttpServletResponse response
     ) {
+        // 로그아웃은 서버 세션 삭제보다 refresh cookie 만료가 핵심이므로 쿠키 정리만 수행합니다.
         response.addHeader(
                 HttpHeaders.SET_COOKIE,
                 authService.expireRefreshTokenCookie().toString()

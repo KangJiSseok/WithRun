@@ -48,8 +48,9 @@ class OAuth2SuccessHandlerTest {
     private JwtProvider jwtProvider;
 
     @Test
-    @DisplayName("reuses existing user and redirects with issued token data")
-    void reusesExistingUserAndRedirectsWithIssuedTokenData() throws Exception {
+    @DisplayName("reuses existing user and redirects to the frontend callback path")
+    void reusesExistingUserAndRedirectsToFrontendCallbackPath() throws Exception {
+        // access token 은 URL 쿼리로 넘기지 않고, callback 화면이 refresh cookie 기반으로 다시 복구한다.
         AuthProperties authProperties = new AuthProperties();
         authProperties.setFrontendBaseUrl("http://localhost:5173");
         OAuth2SuccessHandler oAuth2SuccessHandler = new OAuth2SuccessHandler(
@@ -92,7 +93,7 @@ class OAuth2SuccessHandlerTest {
         );
 
         assertThat(response.getRedirectedUrl())
-                .isEqualTo("http://localhost:5173/auth/callback?accessToken=access-token&provider=google&isNewUser=false&profileCompleted=true");
+                .isEqualTo("http://localhost:5173/auth/callback");
         assertThat(response.getHeader(HttpHeaders.SET_COOKIE)).isEqualTo(refreshCookie.toString());
 
         verify(userRepository, never()).save(any(User.class));
@@ -100,8 +101,8 @@ class OAuth2SuccessHandlerTest {
     }
 
     @Test
-    @DisplayName("creates pending user for first login and redirects with onboarding state")
-    void createsPendingUserForFirstLoginAndRedirectsWithOnboardingState() throws Exception {
+    @DisplayName("creates pending user for first login and redirects to the shared callback path")
+    void createsPendingUserForFirstLoginAndRedirectsToSharedCallbackPath() throws Exception {
         AuthProperties authProperties = new AuthProperties();
         authProperties.setFrontendBaseUrl("http://localhost:5173");
         OAuth2SuccessHandler oAuth2SuccessHandler = new OAuth2SuccessHandler(
@@ -140,7 +141,7 @@ class OAuth2SuccessHandlerTest {
         );
 
         assertThat(response.getRedirectedUrl())
-                .isEqualTo("http://localhost:5173/auth/callback?accessToken=access-token&provider=google&isNewUser=true&profileCompleted=false");
+                .isEqualTo("http://localhost:5173/auth/callback");
         assertThat(response.getHeader(HttpHeaders.SET_COOKIE)).isEqualTo(refreshCookie.toString());
 
         ArgumentCaptor<User> userCaptor = ArgumentCaptor.forClass(User.class);

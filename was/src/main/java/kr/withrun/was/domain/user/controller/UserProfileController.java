@@ -8,8 +8,10 @@ import io.swagger.v3.oas.annotations.media.ExampleObject;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import kr.withrun.was.domain.auth.security.AuthenticatedUser;
+import kr.withrun.was.domain.auth.service.AuthService;
 import kr.withrun.was.domain.user.dto.UpdateUserProfileRequest;
 import kr.withrun.was.domain.user.dto.UserProfileResponse;
 import kr.withrun.was.domain.user.service.UserProfileService;
@@ -24,6 +26,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,6 +39,7 @@ import org.springframework.web.bind.annotation.RestController;
 public class UserProfileController {
 
     private final UserProfileService userProfileService;
+    private final AuthService authService;
 
     @Operation(
             summary = "현재 로그인 사용자의 프로필을 조회한다",
@@ -173,6 +177,66 @@ public class UserProfileController {
     ) {
         userProfileService.updateProfile(resolveUserId(authenticatedUser), request);
         return ApiResponse.successEntity(ResponseCode.OK);
+    }
+
+    @Operation(
+            summary = "현재 로그인 사용자를 회원탈퇴 처리한다",
+            description = "Authorization 헤더의 Bearer access token을 기준으로 현재 로그인한 사용자를 soft delete 처리하고 refresh token 쿠키를 만료시킨다.",
+            parameters = {
+                    @Parameter(
+                            name = HttpHeaders.AUTHORIZATION,
+                            in = ParameterIn.HEADER,
+                            required = true,
+                            description = "현재 로그인 사용자를 식별하는 Bearer access token",
+                            example = "Bearer eyJhbGciOiJIUzI1NiJ9.access-token"
+                    )
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "회원탈퇴 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserSuccessApiResponseDocs.UserDeleteApiResponse.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.USER_DELETE_SUCCESS)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "401",
+                    description = "인증이 없거나 access token이 유효하지 않음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorApiResponseDoc.class),
+                            examples = {
+                                    @ExampleObject(name = "인증 없음", value = SwaggerExampleValues.ERROR_UNAUTHORIZED),
+                                    @ExampleObject(name = "유효하지 않은 토큰", value = SwaggerExampleValues.ERROR_TOKEN_INVALID)
+                            }
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorApiResponseDoc.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.ERROR_USER_NOT_FOUND)
+                    )
+            )
+    })
+    @DeleteMapping
+    public ResponseEntity<ApiResponse<Void>> deleteProfile(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
+            @Parameter(hidden = true) HttpServletResponse response
+    ) {
+        // 탈퇴 직후 브라우저가 기존 refresh cookie로 다시 세션을 복구하지 못하도록 쿠키도 함께 만료시킨다.
+        userProfileService.deleteProfile(resolveUserId(authenticatedUser));
+        response.addHeader(
+                HttpHeaders.SET_COOKIE,
+                authService.expireRefreshTokenCookie().toString()
+        );
+        return ApiResponse.successEntity(ResponseCode.USER_DELETED);
     }
 
     private Long resolveUserId(AuthenticatedUser authenticatedUser) {

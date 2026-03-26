@@ -13,6 +13,8 @@ public enum ResponseCode {
     USER_REGISTERED("S100", HttpStatus.CREATED, "회원가입이 완료되었습니다.", true),
     USER_LOGGED_IN("S101", HttpStatus.OK, "로그인이 완료되었습니다.", true),
     USER_LOGGED_OUT("S102", HttpStatus.OK, "로그아웃이 완료되었습니다.", true),
+    // 프로필 화면에서 soft delete 기반 회원탈퇴가 끝났을 때 사용합니다.
+    USER_DELETED("S103", HttpStatus.OK, "회원탈퇴가 완료되었습니다.", true),
 
     // ========== Error ==========
     // Common Error
