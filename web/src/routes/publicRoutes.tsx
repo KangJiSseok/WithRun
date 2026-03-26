@@ -1,4 +1,4 @@
-import type { RouteObject } from 'react-router-dom';
+import { Navigate, type RouteObject } from 'react-router-dom';
 
 // import { AuthCallbackPage } from '@/pages/public/AuthCallback';
 // import { EntryPage } from '@/pages/public/Entry';
@@ -10,6 +10,7 @@ import ExamplePublicPage from '@/pages/public/Example';
 
 export const publicRoutes: RouteObject[] = [
   // { path: '/', element: <EntryPage /> },
+  { path: '/', element: <Navigate to="/home" replace /> },
   { path: '/example', element: <ExamplePublicPage /> },
   // {
   //   // /login 은 별도 public route 를 유지하되, 실제 화면은 온보딩 흐름으로 합쳐서 보낸다.
@@ -35,4 +36,5 @@ export const publicRoutes: RouteObject[] = [
   //     },
   //   ],
   // },
+  { path: '*', element: <Navigate to="/home" replace /> },
 ];
