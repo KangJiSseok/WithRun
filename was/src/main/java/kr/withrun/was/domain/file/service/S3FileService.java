@@ -17,7 +17,7 @@ import software.amazon.awssdk.services.s3.model.S3Exception;
 @RequiredArgsConstructor
 public class S3FileService {
 
-    private static final String COURSE_SNAPSHOT_DIRECTORY = "courese-snapshot";
+    private static final String COURSE_SNAPSHOT_DIRECTORY = "course-snapshot";
     private static final String COURSE_SNAPSHOT_EXTENSION = ".png";
 
     private final S3Client s3Client;

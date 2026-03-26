@@ -291,6 +291,17 @@ public final class SuccessApiResponseDocs {
     ) {
     }
 
+    @Schema(name = "CreatedApiResponse", description = "생성 성공 공통 응답")
+    public record CreatedApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S002")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "리소스가 생성되었습니다.")
+            String message
+    ) {
+    }
+
     @Schema(name = "CreateRunningSessionSplitApiResponse", description = "러닝 세션 구간 기록 저장 성공 응답")
     public record CreateRunningSessionSplitApiResponse(
             @Schema(description = "요청 성공 여부", example = "true")
