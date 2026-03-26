@@ -103,6 +103,35 @@ class JwtProviderTest {
     }
 
     @Test
+    @DisplayName("generates and extracts authenticated user from mobile auth code")
+    void generatesAndExtractsAuthenticatedUserFromMobileAuthCode() {
+        JwtProvider jwtProvider = new JwtProvider(jwtProperties());
+        User user = completedUser(10L);
+
+        String mobileAuthCode = jwtProvider.generateMobileAuthCode(user, "google");
+        AuthenticatedUser authenticatedUser = jwtProvider.extractAuthenticatedUserFromMobileAuthCode(mobileAuthCode);
+        Claims claims = parseClaims(mobileAuthCode);
+
+        assertThat(claims.get("tokenType", String.class)).isEqualTo("mobile_auth_code");
+        assertThat(authenticatedUser.userId()).isEqualTo(10L);
+        assertThat(authenticatedUser.provider()).isEqualTo("google");
+        assertThat(authenticatedUser.profileCompleted()).isTrue();
+    }
+
+    @Test
+    @DisplayName("rejects access token when extracting mobile auth code")
+    void rejectsAccessTokenWhenExtractingMobileAuthCode() {
+        JwtProvider jwtProvider = new JwtProvider(jwtProperties());
+        User user = completedUser(10L);
+        String accessToken = jwtProvider.generateTokenPair(user, "google").accessToken();
+
+        assertThatThrownBy(() -> jwtProvider.extractAuthenticatedUserFromMobileAuthCode(accessToken))
+                .isInstanceOf(JwtAuthenticationException.class)
+                .extracting(exception -> ((JwtAuthenticationException) exception).getResponseCode())
+                .isEqualTo(ResponseCode.LOGIN_CODE_INVALID);
+    }
+
+    @Test
     @DisplayName("creates refresh token cookie with configured attributes")
     void createsRefreshTokenCookieWithConfiguredAttributes() {
         JwtProvider jwtProvider = new JwtProvider(jwtProperties());
@@ -151,6 +180,7 @@ class JwtProviderTest {
         jwtProperties.setAccessSecret(ACCESS_SECRET);
         jwtProperties.setAccessExpirationSeconds(3600L);
         jwtProperties.setRefreshExpirationSeconds(1209600L);
+        jwtProperties.setMobileAuthCodeExpirationSeconds(300L);
         jwtProperties.setRefreshCookieName("refresh_token");
         jwtProperties.setRefreshCookiePath("/");
         jwtProperties.setRefreshCookieSameSite("None");

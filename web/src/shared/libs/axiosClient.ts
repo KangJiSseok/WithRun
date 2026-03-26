@@ -36,6 +36,8 @@ function shouldSkipRefresh(config?: RetryableAxiosRequestConfig): boolean {
   const requestUrl = config.url ?? '';
 
   return (
+    // code 교환 자체가 세션 복구 시작점이므로 여기서 다시 refresh 재시도를 걸면 루프가 생길 수 있습니다.
+    requestUrl.includes('/auth/exchange') ||
     requestUrl.includes('/auth/reissue') ||
     requestUrl.includes('/auth/me') ||
     requestUrl.includes('/auth/logout')

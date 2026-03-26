@@ -3,6 +3,7 @@ package kr.withrun.was.domain.auth.service;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.security.Keys;
 import jakarta.servlet.http.Cookie;
+import kr.withrun.was.domain.auth.dto.AuthExchangeResult;
 import kr.withrun.was.domain.auth.dto.AuthMeResponse;
 import kr.withrun.was.domain.auth.dto.AuthTokenPair;
 import kr.withrun.was.domain.auth.dto.ReissueAccessTokenResponse;
@@ -147,11 +148,36 @@ class AuthServiceTest {
                 .isEqualTo(ResponseCode.TOKEN_EXPIRED);
     }
 
+    @Test
+    @DisplayName("exchanges mobile auth code into access token and refresh cookie")
+    void exchangesMobileAuthCodeIntoAccessTokenAndRefreshCookie() {
+        User user = completedUser(10L);
+        String mobileAuthCode = jwtProvider.generateMobileAuthCode(user, "google");
+
+        when(userRepository.findNotDeletedUser(10L)).thenReturn(Optional.of(user));
+
+        AuthExchangeResult result = authService.exchangeMobileAuthCode(mobileAuthCode);
+
+        assertThat(jwtProvider.extractAuthenticatedUser(result.accessToken()).userId()).isEqualTo(10L);
+        assertThat(result.refreshTokenCookie().getName()).isEqualTo("refresh_token");
+        assertThat(result.refreshTokenCookie().isHttpOnly()).isTrue();
+    }
+
+    @Test
+    @DisplayName("throws login code expired when mobile auth code is expired")
+    void throwsLoginCodeExpiredWhenMobileAuthCodeIsExpired() {
+        assertThatThrownBy(() -> authService.exchangeMobileAuthCode(expiredMobileAuthCode(10L)))
+                .isInstanceOf(CustomException.class)
+                .extracting(exception -> ((CustomException) exception).getResponseCode())
+                .isEqualTo(ResponseCode.LOGIN_CODE_EXPIRED);
+    }
+
     private JwtProperties jwtProperties() {
         JwtProperties properties = new JwtProperties();
         properties.setAccessSecret(ACCESS_SECRET);
         properties.setAccessExpirationSeconds(3600L);
         properties.setRefreshExpirationSeconds(1209600L);
+        properties.setMobileAuthCodeExpirationSeconds(300L);
         properties.setRefreshCookieName("refresh_token");
         properties.setRefreshCookiePath("/");
         properties.setRefreshCookieSameSite("Lax");
@@ -167,6 +193,22 @@ class AuthServiceTest {
                 .subject(String.valueOf(userId))
                 .claim("userId", userId)
                 .claim("tokenType", "refresh")
+                .issuedAt(Date.from(now.minusSeconds(120)))
+                .expiration(Date.from(now.minusSeconds(60)))
+                .signWith(secretKey)
+                .compact();
+    }
+
+    private String expiredMobileAuthCode(Long userId) {
+        SecretKey secretKey = Keys.hmacShaKeyFor(ACCESS_SECRET.getBytes(StandardCharsets.UTF_8));
+        Instant now = Instant.now();
+
+        return Jwts.builder()
+                .subject(String.valueOf(userId))
+                .claim("userId", userId)
+                .claim("provider", "google")
+                .claim("profileCompleted", true)
+                .claim("tokenType", "mobile_auth_code")
                 .issuedAt(Date.from(now.minusSeconds(120)))
                 .expiration(Date.from(now.minusSeconds(60)))
                 .signWith(secretKey)

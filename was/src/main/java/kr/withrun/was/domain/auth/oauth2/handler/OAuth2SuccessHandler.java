@@ -10,7 +10,6 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import kr.withrun.was.domain.auth.dto.AuthTokenPair;
 import kr.withrun.was.domain.auth.jwt.JwtProvider;
 import kr.withrun.was.domain.auth.oauth2.userinfo.OAuth2UserInfo;
 import kr.withrun.was.domain.auth.oauth2.userinfo.OAuth2UserInfoFactory;
@@ -101,13 +100,24 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         }
 
-        // 로그인 성공 후 access token / refresh token을 발급합니다.
-        AuthTokenPair authTokenPair = jwtProvider.generateTokenPair(user, userInfo.getProvider());
+        boolean mobileLoginRequest = isMobileLoginRequest(request);
 
-        // refresh token은 브라우저에서 직접 읽지 못하도록 HttpOnly 쿠키로 내려줍니다.
+        if (mobileLoginRequest) {
+            // 모바일은 외부 브라우저에서 받은 refresh cookie를 WebView가 공유하지 못할 수 있어,
+            // 세션 대신 짧은 auth code만 딥링크로 넘기고 앱이 WebView 안에서 교환하게 합니다.
+            String mobileAuthCode = jwtProvider.generateMobileAuthCode(user, userInfo.getProvider());
+            response.addHeader(HttpHeaders.SET_COOKIE, clearOAuthTargetCookie().toString());
+            response.addHeader(HttpHeaders.SET_COOKIE, clearOAuthOriginCookie().toString());
+            response.sendRedirect(resolveMobileCallbackRedirectUrl(mobileAuthCode));
+            return;
+        }
+
+        // 웹 로그인은 기존처럼 refresh cookie 기반 세션 복구를 유지합니다.
         response.addHeader(
                 HttpHeaders.SET_COOKIE,
-                jwtProvider.createRefreshTokenCookie(authTokenPair.refreshToken()).toString()
+                jwtProvider.createRefreshTokenCookie(
+                        jwtProvider.generateTokenPair(user, userInfo.getProvider()).refreshToken()
+                ).toString()
         );
 
         // mobile/web 분기에만 필요했던 힌트 쿠키는 callback redirect 전에 바로 제거합니다.
@@ -121,14 +131,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
     }
 
     private String resolveCallbackRedirectUrl(HttpServletRequest request) {
-        // 모바일은 앱 딥링크로 복귀시키고, 웹은 프론트 callback route가 이후 세션 복구를 맡는다.
-        if (isMobileLoginRequest(request) && StringUtils.hasText(authProperties.getMobileDeepLinkBase())) {
-            return UriComponentsBuilder
-                    .fromUriString(authProperties.getMobileDeepLinkBase())
-                    .build(true)
-                    .toUriString();
-        }
-
         String origin = resolveWebOriginCookie(request);
         if (StringUtils.hasText(origin)) {
             // 웹은 로그인 시작 origin 이 검증된 값으로 남아 있으면 그 도메인의 callback 으로 되돌립니다.
@@ -142,6 +144,15 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         return UriComponentsBuilder
                 .fromUriString(authProperties.getFrontendBaseUrl())
                 .path("/auth/callback")
+                .build(true)
+                .toUriString();
+    }
+
+    private String resolveMobileCallbackRedirectUrl(String mobileAuthCode) {
+        // 딥링크 query string은 WebViewScreen이 그대로 /auth/callback 쪽으로 전달해줍니다.
+        return UriComponentsBuilder
+                .fromUriString(authProperties.getMobileDeepLinkBase())
+                .queryParam("code", mobileAuthCode)
                 .build(true)
                 .toUriString();
     }

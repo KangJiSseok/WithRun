@@ -162,6 +162,53 @@ class OAuth2SuccessHandlerTest {
         assertThat(authAccountCaptor.getValue().getProfileImageUrl()).isEqualTo("https://image.example.com/new.png");
     }
 
+    @Test
+    @DisplayName("redirects mobile login to the app deep link with a short-lived auth code")
+    void redirectsMobileLoginToAppDeepLinkWithShortLivedAuthCode() throws Exception {
+        AuthProperties authProperties = new AuthProperties();
+        authProperties.setFrontendBaseUrl("http://localhost:5173");
+        authProperties.setMobileDeepLinkBase("withrun://auth/callback");
+        OAuth2SuccessHandler oAuth2SuccessHandler = new OAuth2SuccessHandler(
+                userRepository,
+                userAuthAccountRepository,
+                authProperties,
+                jwtProvider
+        );
+
+        User existingUser = completedUser(1L);
+        UserAuthAccount authAccount = UserAuthAccount.create(
+                existingUser,
+                "google",
+                "google-user-123",
+                "runner@example.com",
+                "https://image.example.com/profile.png"
+        );
+
+        when(userAuthAccountRepository.findByProviderAndProviderUserId("google", "google-user-123"))
+                .thenReturn(Optional.of(authAccount));
+        when(jwtProvider.generateMobileAuthCode(existingUser, "google")).thenReturn("mobile-auth-code");
+
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setCookies(new jakarta.servlet.http.Cookie("withrun_oauth_target", "mobile"));
+        MockHttpServletResponse response = new MockHttpServletResponse();
+
+        oAuth2SuccessHandler.onAuthenticationSuccess(
+                request,
+                response,
+                authenticationToken(Map.of(
+                        "sub", "google-user-123",
+                        "email", "runner@example.com",
+                        "picture", "https://image.example.com/profile.png"
+                ))
+        );
+
+        assertThat(response.getRedirectedUrl())
+                .isEqualTo("withrun://auth/callback?code=mobile-auth-code");
+
+        verify(jwtProvider).generateMobileAuthCode(existingUser, "google");
+        verify(jwtProvider, never()).createRefreshTokenCookie(any());
+    }
+
     private OAuth2AuthenticationToken authenticationToken(Map<String, Object> attributes) {
         DefaultOAuth2User principal = new DefaultOAuth2User(
                 List.of(new SimpleGrantedAuthority("ROLE_USER")),

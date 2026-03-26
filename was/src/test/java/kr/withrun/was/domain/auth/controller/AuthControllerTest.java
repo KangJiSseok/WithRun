@@ -1,5 +1,6 @@
 package kr.withrun.was.domain.auth.controller;
 
+import kr.withrun.was.domain.auth.dto.AuthExchangeResult;
 import kr.withrun.was.domain.auth.dto.AuthMeResponse;
 import kr.withrun.was.domain.auth.dto.ReissueAccessTokenResponse;
 import kr.withrun.was.domain.auth.jwt.JwtProvider;
@@ -104,6 +105,31 @@ class AuthControllerTest {
                 .andExpect(jsonPath("$.data.profileCompleted").value(false));
 
         then(authService).should().reissueAccessToken(any());
+    }
+
+    @Test
+    @DisplayName("mobile auth code를 교환하면 access token과 refresh cookie를 반환한다")
+    void exchangesMobileAuthCodeAndReturnsRefreshCookie() throws Exception {
+        ResponseCookie refreshCookie = ResponseCookie.from("refresh_token", "refresh-token")
+                .httpOnly(true)
+                .path("/")
+                .sameSite("None")
+                .build();
+        given(authService.exchangeMobileAuthCode("mobile-code")).willReturn(
+                new AuthExchangeResult("new-access-token", refreshCookie)
+        );
+
+        mockMvc.perform(post("/api/auth/exchange")
+                        .contentType("application/json")
+                        .content("""
+                                {"code":"mobile-code"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.accessToken").value("new-access-token"))
+                .andExpect(header().string(HttpHeaders.SET_COOKIE, containsString("refresh_token=refresh-token")));
+
+        then(authService).should().exchangeMobileAuthCode("mobile-code");
     }
 
     @Test
