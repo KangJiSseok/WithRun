@@ -153,6 +153,10 @@ class CourseServiceTest {
                 new CourseRegisterMetaResponse.ModeOption("COMMUNITY", "커뮤니티 코스"),
                 new CourseRegisterMetaResponse.ModeOption("PRIVATE", "개인 코스")
         );
+        assertThat(response.routeTypes()).containsExactly(
+                new CourseRegisterMetaResponse.RouteTypeOption("LOOP", "순환형"),
+                new CourseRegisterMetaResponse.RouteTypeOption("OUT_AND_BACK", "왕복형")
+        );
     }
 
     @DisplayName("설문 메타 조회는 mode 없이 enum 목록을 data와 label로 반환한다")

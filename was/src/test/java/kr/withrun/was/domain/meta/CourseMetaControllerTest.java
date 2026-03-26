@@ -51,6 +51,10 @@ class CourseMetaControllerTest {
                         new CourseRegisterMetaResponse.ModeOption("PRIVATE", "개인 코스")
                 ),
                 List.of(
+                        new CourseRegisterMetaResponse.RouteTypeOption("LOOP", "순환형"),
+                        new CourseRegisterMetaResponse.RouteTypeOption("OUT_AND_BACK", "왕복형")
+                ),
+                List.of(
                         new CourseRegisterMetaResponse.DifficultyOption("EASY", "쉬움"),
                         new CourseRegisterMetaResponse.DifficultyOption("MEDIUM", "보통")
                 )
@@ -68,6 +72,10 @@ class CourseMetaControllerTest {
                 .andExpect(jsonPath("$.data.mode[0].label").value("커뮤니티 코스"))
                 .andExpect(jsonPath("$.data.mode[1].data").value("PRIVATE"))
                 .andExpect(jsonPath("$.data.mode[1].label").value("개인 코스"))
+                .andExpect(jsonPath("$.data.routeTypes[0].data").value("LOOP"))
+                .andExpect(jsonPath("$.data.routeTypes[0].label").value("순환형"))
+                .andExpect(jsonPath("$.data.routeTypes[1].data").value("OUT_AND_BACK"))
+                .andExpect(jsonPath("$.data.routeTypes[1].label").value("왕복형"))
                 .andExpect(jsonPath("$.data.difficulties[0].data").value("EASY"))
                 .andExpect(jsonPath("$.data.difficulties[0].label").value("쉬움"));
 

@@ -175,6 +175,9 @@ public class CourseService {
                 List.of(CourseStatus.COMMUNITY, CourseStatus.PRIVATE).stream()
                         .map(CourseRegisterMetaResponse.ModeOption::from)
                         .toList(),
+                Arrays.stream(RouteType.values())
+                        .map(CourseRegisterMetaResponse.RouteTypeOption::from)
+                        .toList(),
                 Arrays.stream(Difficulty.values())
                         .map(CourseRegisterMetaResponse.DifficultyOption::from)
                         .toList()
