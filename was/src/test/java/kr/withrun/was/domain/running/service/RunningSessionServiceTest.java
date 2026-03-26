@@ -15,6 +15,9 @@ import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
+import kr.withrun.was.domain.navigation.exception.NavigationBundleGenerationException;
+import kr.withrun.was.domain.navigation.service.bundle.NavigationBundleGenerationService;
+import kr.withrun.was.domain.navigation.type.NavigationBundleFailureCode;
 import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningGpsSampleRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningHealthSampleRequest;
@@ -127,6 +130,9 @@ class RunningSessionServiceTest {
     @Mock
     private CloudFrontSignedUrlService cloudFrontSignedUrlService;
 
+    @Mock
+    private NavigationBundleGenerationService navigationBundleGenerationService;
+
     private RunningSessionService runningSessionService;
 
     @BeforeEach
@@ -145,7 +151,8 @@ class RunningSessionServiceTest {
                 ghostRunningResultRepository,
                 ghostRunningResultService,
                 courseSignalService,
-                cloudFrontSignedUrlService
+                cloudFrontSignedUrlService,
+                navigationBundleGenerationService
         );
         lenient().when(cloudFrontSignedUrlService.generateSignedUrl(any())).thenAnswer(invocation -> {
             Object value = invocation.getArgument(0);
@@ -1112,6 +1119,7 @@ class RunningSessionServiceTest {
         assertThat(courseTypeMaps)
                 .extracting(CourseTypeMap::getCourse)
                 .containsOnly(savedCourse);
+        verify(navigationBundleGenerationService).generate(501L);
     }
 
     @DisplayName("완료된 러닝 세션을 PRIVATE 코스로 등록한다")
@@ -1180,6 +1188,95 @@ class RunningSessionServiceTest {
         verify(runningGpsSampleRepository).findByRunningSessionIdOrderBySampledAtAsc(84L);
         assertThat(courseCaptor.getValue().getStatus()).isEqualTo(CourseStatus.PRIVATE);
         assertThat(courseCaptor.getValue().getCoordinates()).isEqualTo(expectedCoordinates);
+        verify(navigationBundleGenerationService).generate(503L);
+    }
+
+    @DisplayName("코스 등록 후 번들 생성에서 코스를 찾지 못하면 COURSE_NOT_FOUND 를 반환한다")
+    @Test
+    void mapsCourseNotFoundWhenNavigationBundleGenerationFailsDuringRegisterCourse() {
+        RunningSession runningSession = runningSession(86L, 7L, true, STARTED_AT);
+        setField(runningSession, "coordinates", new Coordinates(
+                List.of(37.566001),
+                List.of(126.977001),
+                List.of(0.0)
+        ));
+        RunningGpsSample gpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 25),
+                37.566501,
+                126.978001,
+                13.1,
+                2.7,
+                179.0,
+                null,
+                null,
+                null,
+                null
+        );
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "한강 아침 러닝",
+                "COMMUNITY",
+                "EASY",
+                List.of("RIVERSIDE"),
+                RouteType.LOOP,
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(86L)).thenReturn(Optional.of(runningSession));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(86L)).thenReturn(List.of(gpsSample));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 504L));
+        when(navigationBundleGenerationService.generate(504L)).thenThrow(
+                new NavigationBundleGenerationException(NavigationBundleFailureCode.COURSE_NOT_FOUND, "missing course")
+        );
+
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(86L, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
+    }
+
+    @DisplayName("코스 등록 후 번들 생성의 일반 실패는 NAVIGATION_BUNDLE_FAILED 를 반환한다")
+    @Test
+    void mapsNavigationBundleFailedWhenNavigationBundleGenerationFailsDuringRegisterCourse() {
+        RunningSession runningSession = runningSession(87L, 7L, true, STARTED_AT);
+        setField(runningSession, "coordinates", new Coordinates(
+                List.of(37.566001),
+                List.of(126.977001),
+                List.of(0.0)
+        ));
+        RunningGpsSample gpsSample = gpsSample(
+                runningSession,
+                7L,
+                LocalDateTime.of(2026, 3, 12, 6, 30, 25),
+                37.566501,
+                126.978001,
+                13.1,
+                2.7,
+                179.0,
+                null,
+                null,
+                null,
+                null
+        );
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "한강 아침 러닝",
+                "COMMUNITY",
+                "EASY",
+                List.of("RIVERSIDE"),
+                RouteType.LOOP,
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(87L)).thenReturn(Optional.of(runningSession));
+        when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(87L)).thenReturn(List.of(gpsSample));
+        when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 505L));
+        when(navigationBundleGenerationService.generate(505L)).thenThrow(
+                new NavigationBundleGenerationException(NavigationBundleFailureCode.BUNDLE_STORAGE_FAILED, "storage failed")
+        );
+
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(87L, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.NAVIGATION_BUNDLE_FAILED);
     }
 
     @DisplayName("지원하지 않는 코스 모드는 등록할 수 없다")

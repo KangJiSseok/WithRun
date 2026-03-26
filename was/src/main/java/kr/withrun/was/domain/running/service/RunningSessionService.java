@@ -14,6 +14,9 @@ import kr.withrun.was.domain.course.type.CourseType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
+import kr.withrun.was.domain.navigation.exception.NavigationBundleGenerationException;
+import kr.withrun.was.domain.navigation.service.bundle.NavigationBundleGenerationService;
+import kr.withrun.was.domain.navigation.type.NavigationBundleFailureCode;
 import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningGpsSampleRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningHealthSampleRequest;
@@ -79,6 +82,7 @@ public class RunningSessionService {
     private final GhostRunningResultService ghostRunningResultService;
     private final CourseSignalService courseSignalService;
     private final CloudFrontSignedUrlService cloudFrontSignedUrlService;
+    private final NavigationBundleGenerationService navigationBundleGenerationService;
 
     @Transactional
     public CreateRunningSessionResponse createRunningSession(CreateRunningSessionRequest request) {
@@ -187,12 +191,24 @@ public class RunningSessionService {
                 .map(courseType -> CourseTypeMap.create(course, courseType))
                 .toList());
         courseSignalService.upsertCourseFeature(course, difficulty, courseTypes);
+        generateNavigationBundle(course.getId());
 
         return RegisterRunningSessionCourseResponse.from(
                 course,
                 difficulty,
                 cloudFrontSignedUrlService.generateSignedUrl(course.getSnapshotImageUrl())
         );
+    }
+
+    private void generateNavigationBundle(Long courseId) {
+        try {
+            navigationBundleGenerationService.generate(courseId);
+        } catch (NavigationBundleGenerationException exception) {
+            if (exception.getFailureCode() == NavigationBundleFailureCode.COURSE_NOT_FOUND) {
+                throw new CustomException(ResponseCode.COURSE_NOT_FOUND);
+            }
+            throw new CustomException(ResponseCode.NAVIGATION_BUNDLE_FAILED);
+        }
     }
 
     public RunningSessionDetailResponse findRunningSessionDetail(Long runningSessionId, Long userId) {

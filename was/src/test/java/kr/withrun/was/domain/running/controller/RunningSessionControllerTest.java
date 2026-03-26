@@ -520,6 +520,24 @@ class RunningSessionControllerTest {
         then(runningSessionService).should().registerRunningSessionCourse(runningSessionId, request);
     }
 
+    @DisplayName("코스 등록 중 네비게이션 번들 생성이 실패하면 서비스 불가 응답을 반환한다")
+    @Test
+    void returnsServiceUnavailableWhenRegisterCourseNavigationBundleGenerationFails() throws Exception {
+        long runningSessionId = 901L;
+        RegisterRunningSessionCourseRequest request = validRegisterCourseRequest();
+        given(runningSessionService.registerRunningSessionCourse(runningSessionId, request))
+                .willThrow(new CustomException(ResponseCode.NAVIGATION_BUNDLE_FAILED));
+
+        mockMvc.perform(post("/api/running-sessions/{runningSessionId}/register-course", runningSessionId)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRegisterCourseRequestBody()))
+                .andExpect(status().isServiceUnavailable())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.NAVIGATION_BUNDLE_FAILED.getCode()));
+
+        then(runningSessionService).should().registerRunningSessionCourse(runningSessionId, request);
+    }
+
     @DisplayName("과거 러닝 세션 조회 응답을 성공 응답 포맷으로 감싼다")
     @Test
     void wrapsPastRunningSessionsResponseInSuccessEnvelope() throws Exception {
