@@ -441,18 +441,127 @@ class ValhallaTraceClientTest {
             assertThat(listAppender.list)
                     .extracting(ILoggingEvent::getFormattedMessage)
                     .anySatisfy(message -> assertThat(message)
+                            .contains("Valhalla trace_route request payload")
+                            .contains("\"shape_match\":\"map_snap\"")
+                            .contains("\"costing\":\"pedestrian\""))
+                    .anySatisfy(message -> assertThat(message)
                             .contains("Valhalla trace_route response summary")
                             .contains("inputPoints=3")
                             .contains("tripLegs=1")
                             .contains("alternates=1")
                             .contains("orderedTrips=2"))
                     .anySatisfy(message -> assertThat(message)
+                            .contains("Valhalla trace_route raw response")
+                            .contains("\"alternates\"")
+                            .contains("\"original_index\":4"))
+                    .anySatisfy(message -> assertThat(message)
+                            .contains("Valhalla trace_attributes request payload")
+                            .contains("\"shape_match\":\"map_snap\"")
+                            .contains("\"trace_options\""))
+                    .anySatisfy(message -> assertThat(message)
                             .contains("Valhalla trace_attributes response summary")
                             .contains("matchedPoints=3")
                             .contains("interpolated=1")
-                            .contains("discontinuities=1"));
+                            .contains("discontinuities=1"))
+                    .anySatisfy(message -> assertThat(message)
+                            .contains("Valhalla trace_attributes raw response")
+                            .contains("\"matched_points\"")
+                            .contains("\"begin_route_discontinuity\":true"));
         } finally {
             logger.detachAppender(listAppender);
+            server.stop(0);
+        }
+    }
+
+    @DisplayName("alternates 를 이어붙일 때 중간 segment 의 목적지 maneuver 는 유턴으로 치환한다")
+    @Test
+    void replacesIntermediateDestinationWithTurnaroundManeuver() throws Exception {
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/trace_route", exchange -> writeJson(exchange, 200, """
+                {
+                  "trip": {
+                    "locations": [
+                      {"type": "break", "lat": 37.5665, "lon": 126.9780, "original_index": 0},
+                      {"type": "via", "lat": 37.5680, "lon": 126.9800, "original_index": 2}
+                    ],
+                    "legs": [
+                      {
+                        "shape": "%s",
+                        "maneuvers": [
+                          {"begin_shape_index": 0, "end_shape_index": 2, "instruction": "출발 후 직진", "type": 1, "bearing_after": 140},
+                          {"begin_shape_index": 2, "end_shape_index": 2, "instruction": "목적지 도착", "type": 4, "bearing_before": 140}
+                        ]
+                      }
+                    ]
+                  },
+                  "alternates": [
+                    {
+                      "trip": {
+                        "locations": [
+                          {"type": "via", "lat": 37.5680, "lon": 126.9800, "original_index": 3},
+                          {"type": "break", "lat": 37.5665, "lon": 126.9780, "original_index": 4}
+                        ],
+                        "legs": [
+                          {
+                            "shape": "%s",
+                            "maneuvers": [
+                              {"begin_shape_index": 0, "end_shape_index": 2, "instruction": "되돌아가기", "type": 1, "bearing_after": 320, "verbal_post_transition_instruction": "500m 동안 계속"},
+                              {"begin_shape_index": 2, "end_shape_index": 2, "instruction": "목적지 도착", "type": 4}
+                            ]
+                          }
+                        ]
+                      }
+                    }
+                  ]
+                }
+                """.formatted(
+                encodeShape(List.of(
+                        new SnappedRoutePoint(37.5665, 126.9780),
+                        new SnappedRoutePoint(37.5671, 126.9792),
+                        new SnappedRoutePoint(37.5680, 126.9800)
+                )),
+                encodeShape(List.of(
+                        new SnappedRoutePoint(37.5680, 126.9800),
+                        new SnappedRoutePoint(37.5671, 126.9792),
+                        new SnappedRoutePoint(37.5665, 126.9780)
+                ))
+        )));
+        server.start();
+
+        try {
+            ValhallaTraceClient client = new ValhallaTraceClient(
+                    "http://localhost:" + server.getAddress().getPort(),
+                    new CourseTraceResampler()
+            );
+
+            ValhallaRouteTraceResult result = client.requestRouteTrace(new ValhallaTraceRequest(
+                    List.of(
+                            new ValhallaRequestPoint(37.5665, 126.9780),
+                            new ValhallaRequestPoint(37.5680, 126.9800),
+                            new ValhallaRequestPoint(37.5665, 126.9780)
+                    ),
+                    "pedestrian",
+                    "map_snap",
+                    5,
+                    20,
+                    500,
+                    "ko-KR",
+                    "kilometers"
+            ));
+
+            assertThat(result.maneuvers())
+                    .extracting(
+                            NavigationManeuver::instruction,
+                            NavigationManeuver::type,
+                            NavigationManeuver::verbalPostTransitionInstruction
+                    )
+                    .containsExactly(
+                            org.assertj.core.groups.Tuple.tuple("출발 후 직진", 1, null),
+                            org.assertj.core.groups.Tuple.tuple("유턴", 13, "500m 동안 계속"),
+                            org.assertj.core.groups.Tuple.tuple("되돌아가기", 1, "500m 동안 계속"),
+                            org.assertj.core.groups.Tuple.tuple("목적지 도착", 4, null)
+                    );
+        } finally {
             server.stop(0);
         }
     }

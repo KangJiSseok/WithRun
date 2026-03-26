@@ -1,6 +1,8 @@
 package kr.withrun.was.domain.navigation.service.valhalla;
 
+import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.withrun.was.domain.navigation.dto.internal.valhalla.MatchedRoutePoint;
 import kr.withrun.was.domain.navigation.dto.internal.valhalla.NavigationManeuver;
 import kr.withrun.was.domain.navigation.dto.internal.valhalla.RouteEdge;
@@ -35,6 +37,7 @@ public class ValhallaTraceClient {
     private static final int RELAXED_GPS_ACCURACY = 10;
     private static final int RELAXED_SEARCH_RADIUS = 35;
     private static final Logger log = LoggerFactory.getLogger(ValhallaTraceClient.class);
+    private static final ObjectMapper LOG_OBJECT_MAPPER = new ObjectMapper();
 
     private final RestClient restClient;
     private final CourseTraceResampler courseTraceResampler;
@@ -65,13 +68,17 @@ public class ValhallaTraceClient {
         NavigationBundleGenerationException lastFailure = null;
         for (ValhallaTraceRequest attempt : attempts) {
             try {
+                Map<String, Object> payload = buildTraceRoutePayload(attempt);
+                log.info("Valhalla trace_route request payload: {}", toLogJson(payload));
+
                 JsonNode response = restClient.post()
                         .uri("/trace_route")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .body(buildTraceRoutePayload(attempt))
+                        .body(payload)
                         .retrieve()
                         .body(JsonNode.class);
 
+                log.info("Valhalla trace_route raw response: {}", toLogJson(response));
                 logTraceRouteResponseSummary(response, attempt);
                 return parseRouteTraceResponse(response);
             } catch (NavigationBundleGenerationException exception) {
@@ -100,10 +107,13 @@ public class ValhallaTraceClient {
      */
     public ValhallaTraceAttributes requestTraceAttributes(ValhallaTraceRequest request) {
         try {
+            Map<String, Object> payload = buildTraceAttributesPayload(request);
+            log.info("Valhalla trace_attributes request payload: {}", toLogJson(payload));
+
             JsonNode response = restClient.post()
                     .uri("/trace_attributes")
                     .contentType(MediaType.APPLICATION_JSON)
-                    .body(buildTraceAttributesPayload(request))
+                    .body(payload)
                     .retrieve()
                     .body(JsonNode.class);
 
@@ -114,6 +124,7 @@ public class ValhallaTraceClient {
                 );
             }
 
+            log.info("Valhalla trace_attributes raw response: {}", toLogJson(response));
             logTraceAttributesResponseSummary(response, request);
             return new ValhallaTraceAttributes(
                     extractEdges(response.path("edges")),
@@ -150,7 +161,9 @@ public class ValhallaTraceClient {
         List<SnappedRoutePoint> flattenedShape = new ArrayList<>();
         List<NavigationManeuver> flattenedManeuvers = new ArrayList<>();
 
-        for (JsonNode tripNode : orderedTrips) {
+        for (int tripIndex = 0; tripIndex < orderedTrips.size(); tripIndex++) {
+            JsonNode tripNode = orderedTrips.get(tripIndex);
+            boolean isFinalTrip = tripIndex == orderedTrips.size() - 1;
             JsonNode legsNode = tripNode.path("legs");
             if (!legsNode.isArray() || legsNode.isEmpty()) {
                 continue;
@@ -178,6 +191,17 @@ public class ValhallaTraceClient {
                     continue;
                 }
                 for (JsonNode maneuverNode : maneuversNode) {
+                    Integer maneuverType = readOptionalInt(maneuverNode, "type");
+                    if (!isFinalTrip && isDestinationManeuver(maneuverType)) {
+                        flattenedManeuvers.add(synthesizeTurnaroundManeuver(
+                                maneuverNode,
+                                shapeIndexOffset,
+                                orderedTrips,
+                                tripIndex
+                        ));
+                        continue;
+                    }
+
                     flattenedManeuvers.add(new NavigationManeuver(
                             shapeIndexOffset + maneuverNode.path("begin_shape_index").asInt(),
                             shapeIndexOffset + maneuverNode.path("end_shape_index").asInt(),
@@ -187,7 +211,7 @@ public class ValhallaTraceClient {
                             readOptionalText(maneuverNode, "verbal_post_transition_instruction"),
                             readOptionalBoolean(maneuverNode, "verbal_multi_cue"),
                             readOptionalText(maneuverNode, "verbal_succinct_transition_instruction"),
-                            readOptionalInt(maneuverNode, "type"),
+                            maneuverType,
                             readOptionalInt(maneuverNode, "bearing_before"),
                             readOptionalInt(maneuverNode, "bearing_after"),
                             extractVoiceInstructions(maneuverNode.path("voiceInstructions"))
@@ -341,6 +365,117 @@ public class ValhallaTraceClient {
             }
         }
         return count;
+    }
+
+    private boolean isDestinationManeuver(Integer maneuverType) {
+        return maneuverType != null && maneuverType == 4;
+    }
+
+    private NavigationManeuver synthesizeTurnaroundManeuver(
+            JsonNode destinationManeuverNode,
+            int shapeIndexOffset,
+            List<JsonNode> orderedTrips,
+            int currentTripIndex
+    ) {
+        Integer bearingBefore = readOptionalInt(destinationManeuverNode, "bearing_before");
+        Integer nextSegmentBearing = readNextSegmentBearing(orderedTrips, currentTripIndex + 1);
+        String verbalPostTransitionInstruction = readNextSegmentVerbalPostTransitionInstruction(orderedTrips, currentTripIndex + 1);
+        int turnaroundType = resolveTurnaroundType(bearingBefore, nextSegmentBearing);
+
+        return new NavigationManeuver(
+                shapeIndexOffset + destinationManeuverNode.path("begin_shape_index").asInt(),
+                shapeIndexOffset + destinationManeuverNode.path("end_shape_index").asInt(),
+                "유턴",
+                "유턴",
+                "유턴",
+                verbalPostTransitionInstruction,
+                null,
+                "유턴",
+                turnaroundType,
+                bearingBefore,
+                nextSegmentBearing,
+                List.of()
+        );
+    }
+
+    private Integer readNextSegmentBearing(List<JsonNode> orderedTrips, int nextTripIndex) {
+        if (nextTripIndex < 0 || nextTripIndex >= orderedTrips.size()) {
+            return null;
+        }
+
+        JsonNode legsNode = orderedTrips.get(nextTripIndex).path("legs");
+        if (!legsNode.isArray()) {
+            return null;
+        }
+
+        for (JsonNode legNode : legsNode) {
+            JsonNode maneuversNode = legNode.path("maneuvers");
+            if (!maneuversNode.isArray()) {
+                continue;
+            }
+
+            for (JsonNode maneuverNode : maneuversNode) {
+                Integer bearingBefore = readOptionalInt(maneuverNode, "bearing_before");
+                if (bearingBefore != null) {
+                    return bearingBefore;
+                }
+
+                Integer bearingAfter = readOptionalInt(maneuverNode, "bearing_after");
+                if (bearingAfter != null) {
+                    return bearingAfter;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private String readNextSegmentVerbalPostTransitionInstruction(List<JsonNode> orderedTrips, int nextTripIndex) {
+        if (nextTripIndex < 0 || nextTripIndex >= orderedTrips.size()) {
+            return null;
+        }
+
+        JsonNode legsNode = orderedTrips.get(nextTripIndex).path("legs");
+        if (!legsNode.isArray()) {
+            return null;
+        }
+
+        for (JsonNode legNode : legsNode) {
+            JsonNode maneuversNode = legNode.path("maneuvers");
+            if (!maneuversNode.isArray()) {
+                continue;
+            }
+
+            for (JsonNode maneuverNode : maneuversNode) {
+                String verbalPostTransitionInstruction = readOptionalText(maneuverNode, "verbal_post_transition_instruction");
+                if (verbalPostTransitionInstruction != null && !verbalPostTransitionInstruction.isBlank()) {
+                    return verbalPostTransitionInstruction;
+                }
+            }
+        }
+
+        return null;
+    }
+
+    private int resolveTurnaroundType(Integer bearingBefore, Integer bearingAfter) {
+        if (bearingBefore == null || bearingAfter == null) {
+            return 13;
+        }
+
+        int clockwiseDelta = Math.floorMod(bearingAfter - bearingBefore, 360);
+        return clockwiseDelta < 180 ? 12 : 13;
+    }
+
+    private String toLogJson(Object value) {
+        if (value == null) {
+            return "null";
+        }
+
+        try {
+            return LOG_OBJECT_MAPPER.writeValueAsString(value);
+        } catch (JsonProcessingException exception) {
+            return "<json-serialization-failed:" + exception.getClass().getSimpleName() + ">";
+        }
     }
 
     /**
