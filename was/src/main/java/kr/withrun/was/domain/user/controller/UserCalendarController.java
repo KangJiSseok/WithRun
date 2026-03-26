@@ -11,6 +11,7 @@ import jakarta.validation.constraints.Positive;
 import kr.withrun.was.domain.user.dto.UserCalendarMonthlyRequest;
 import kr.withrun.was.domain.user.dto.UserCalendarMonthlyResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
+import kr.withrun.was.domain.user.dto.UserCalendarWeeklyResponse;
 import kr.withrun.was.domain.user.service.UserCalendarService;
 import kr.withrun.was.global.response.ApiResponse;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
@@ -87,5 +88,29 @@ public class UserCalendarController {
             @PathVariable Long userId
     ) {
         return ApiResponse.successEntity(userCalendarService.findSummary(userId));
+    }
+
+    @Operation(
+            summary = "주간 러닝 요약을 조회한다",
+            description = "특정 사용자의 이번 주(일요일~토요일) 총 러닝 횟수, 거리, 소모 칼로리, 운동 시간을 조회한다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "주간 러닝 요약 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.UserCalendarWeeklyApiResponse.class))
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "404",
+                    description = "사용자를 찾을 수 없음",
+                    content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
+            )
+    })
+    @GetMapping("/{userId}/weekly")
+    public ResponseEntity<ApiResponse<UserCalendarWeeklyResponse>> findWeeklySummary(
+            @Parameter(description = "주간 요약을 조회할 사용자 ID", example = "7")
+            @PathVariable Long userId
+    ) {
+        return ApiResponse.successEntity(userCalendarService.findWeeklySummary(userId));
     }
 }

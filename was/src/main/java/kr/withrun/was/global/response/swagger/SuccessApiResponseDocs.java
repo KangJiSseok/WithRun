@@ -23,6 +23,7 @@ import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarMonthlyResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
+import kr.withrun.was.domain.user.dto.UserCalendarWeeklyResponse;
 import kr.withrun.was.domain.auth.dto.AuthMeResponse;
 import kr.withrun.was.domain.auth.dto.ReissueAccessTokenResponse;
 
@@ -338,6 +339,19 @@ public final class SuccessApiResponseDocs {
             String message,
             @Schema(description = "누적 러닝 요약 데이터")
             UserCalendarSummaryResponse data
+    ) {
+    }
+
+    @Schema(name = "UserCalendarWeeklyApiResponse", description = "사용자 주간 러닝 요약 조회 성공 응답")
+    public record UserCalendarWeeklyApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "주간 러닝 요약 데이터")
+            UserCalendarWeeklyResponse data
     ) {
     }
 

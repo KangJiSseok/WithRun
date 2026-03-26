@@ -2,6 +2,7 @@ package kr.withrun.was.domain.user.service;
 
 import kr.withrun.was.domain.user.dto.UserCalendarMonthlyResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
+import kr.withrun.was.domain.user.dto.UserCalendarWeeklyResponse;
 import kr.withrun.was.domain.user.repository.UserCalendarRepository;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.domain.user.repository.query.dto.UserCalendarDailySummaryRow;
@@ -13,8 +14,10 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.DateTimeException;
+import java.time.DayOfWeek;
 import java.time.LocalDate;
 import java.time.YearMonth;
+import java.time.temporal.TemporalAdjusters;
 import java.util.List;
 
 @Service
@@ -62,6 +65,41 @@ public class UserCalendarService {
                 calculateCurrentStreakDays(runningDates, calculatedDate),
                 calculateLongestStreakDays(runningDates),
                 calculatedDate
+        );
+    }
+
+    public UserCalendarWeeklyResponse findWeeklySummary(Long userId) {
+        getUser(userId);
+
+        LocalDate today = LocalDate.now();
+        LocalDate startDate = today.with(TemporalAdjusters.previousOrSame(DayOfWeek.SUNDAY));
+        LocalDate endDate = startDate.plusDays(6);
+
+        List<UserCalendarDailySummaryRow> dailySummaryRows = userCalendarRepository.findDailySummaries(
+                userId,
+                startDate,
+                endDate
+        );
+
+        int weeklyRunCount = 0;
+        int weeklyDistanceM = 0;
+        int weeklyCaloriesKcal = 0;
+        int weeklyDurationSec = 0;
+
+        for (UserCalendarDailySummaryRow dailySummaryRow : dailySummaryRows) {
+            weeklyRunCount += dailySummaryRow.dailyCourseRunCount()
+                    + dailySummaryRow.dailyFreeRunCount()
+                    + dailySummaryRow.dailyGhostRunCount();
+            weeklyDistanceM += dailySummaryRow.dailyDistanceM();
+            weeklyCaloriesKcal += dailySummaryRow.dailyCaloriesKcal();
+            weeklyDurationSec += dailySummaryRow.dailyDurationSec();
+        }
+
+        return new UserCalendarWeeklyResponse(
+                weeklyRunCount,
+                weeklyDistanceM,
+                weeklyCaloriesKcal,
+                weeklyDurationSec
         );
     }
 
