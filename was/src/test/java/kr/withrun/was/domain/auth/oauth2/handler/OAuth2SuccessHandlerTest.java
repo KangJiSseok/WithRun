@@ -30,7 +30,6 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -161,57 +160,6 @@ class OAuth2SuccessHandlerTest {
         assertThat(authAccountCaptor.getValue().getProviderUserId()).isEqualTo("new-google-user");
         assertThat(authAccountCaptor.getValue().getEmail()).isEqualTo("new@example.com");
         assertThat(authAccountCaptor.getValue().getProfileImageUrl()).isEqualTo("https://image.example.com/new.png");
-    }
-
-    @Test
-    @DisplayName("mobile login request redirects to deep link with exchange code")
-    void redirectsMobileLoginRequestToDeepLinkWithExchangeCode() throws Exception {
-        AuthProperties authProperties = new AuthProperties();
-        authProperties.setFrontendBaseUrl("http://localhost:5173");
-        authProperties.setMobileDeepLinkBase("withrun://auth/callback");
-        OAuth2SuccessHandler oAuth2SuccessHandler = new OAuth2SuccessHandler(
-                userRepository,
-                userAuthAccountRepository,
-                authProperties,
-                jwtProvider
-        );
-
-        User existingUser = completedUser(1L);
-        UserAuthAccount authAccount = UserAuthAccount.create(
-                existingUser,
-                "google",
-                "google-user-123",
-                "runner@example.com",
-                "https://image.example.com/profile.png"
-        );
-
-        when(userAuthAccountRepository.findByProviderAndProviderUserId("google", "google-user-123"))
-                .thenReturn(Optional.of(authAccount));
-        when(jwtProvider.generateMobileAuthCode(existingUser, "google")).thenReturn("mobile-auth-code");
-
-        MockHttpServletRequest request = new MockHttpServletRequest();
-        request.setCookies(new jakarta.servlet.http.Cookie("withrun_oauth_target", "mobile"));
-        MockHttpServletResponse response = new MockHttpServletResponse();
-
-        oAuth2SuccessHandler.onAuthenticationSuccess(
-                request,
-                response,
-                authenticationToken(Map.of(
-                        "sub", "google-user-123",
-                        "email", "runner@example.com",
-                        "picture", "https://image.example.com/profile.png"
-                ))
-        );
-
-        assertThat(response.getRedirectedUrl())
-                .isEqualTo("withrun://auth/callback?code=mobile-auth-code");
-        assertThat(response.getHeaders(HttpHeaders.SET_COOKIE)).singleElement()
-                .asString()
-                .contains("withrun_oauth_target=");
-
-        verify(jwtProvider).generateMobileAuthCode(existingUser, "google");
-        verify(jwtProvider, never()).generateTokenPair(any(User.class), anyString());
-        verify(jwtProvider, never()).createRefreshTokenCookie(anyString());
     }
 
     private OAuth2AuthenticationToken authenticationToken(Map<String, Object> attributes) {

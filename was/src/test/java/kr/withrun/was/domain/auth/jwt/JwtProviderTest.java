@@ -69,21 +69,6 @@ class JwtProviderTest {
     }
 
     @Test
-    @DisplayName("extracts authenticated user from mobile auth code")
-    void extractsAuthenticatedUserFromMobileAuthCode() {
-        JwtProvider jwtProvider = new JwtProvider(jwtProperties());
-        User user = completedUser(10L);
-
-        AuthenticatedUser authenticatedUser = jwtProvider.extractAuthenticatedUserFromMobileAuthCode(
-                jwtProvider.generateMobileAuthCode(user, "google")
-        );
-
-        assertThat(authenticatedUser.userId()).isEqualTo(10L);
-        assertThat(authenticatedUser.provider()).isEqualTo("google");
-        assertThat(authenticatedUser.profileCompleted()).isTrue();
-    }
-
-    @Test
     @DisplayName("rejects refresh token when extracting authenticated user")
     void rejectsRefreshTokenWhenExtractingAuthenticatedUser() {
         JwtProvider jwtProvider = new JwtProvider(jwtProperties());
@@ -170,7 +155,6 @@ class JwtProviderTest {
         jwtProperties.setRefreshCookiePath("/");
         jwtProperties.setRefreshCookieSameSite("None");
         jwtProperties.setRefreshCookieSecure(false);
-        jwtProperties.setMobileAuthCodeExpirationSeconds(300L);
         return jwtProperties;
     }
 

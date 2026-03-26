@@ -22,10 +22,6 @@ import java.util.Date;
 @RequiredArgsConstructor
 public class JwtProvider {
 
-    private static final String ACCESS_TOKEN_TYPE = "access";
-    private static final String REFRESH_TOKEN_TYPE = "refresh";
-    private static final String MOBILE_AUTH_CODE_TOKEN_TYPE = "mobile_auth_code";
-
     private final JwtProperties jwtProperties;
 
     // 로그인 성공 후 access token / refresh token을 한 번에 발급합니다.
@@ -59,39 +55,15 @@ public class JwtProvider {
     }
 
     public Claims parseAccessToken(String accessToken) {
-        return parseToken(accessToken, ACCESS_TOKEN_TYPE);
+        return parseToken(accessToken, "access");
     }
 
     public Claims parseRefreshToken(String refreshToken) {
-        return parseToken(refreshToken, REFRESH_TOKEN_TYPE);
+        return parseToken(refreshToken, "refresh");
     }
 
     public AuthenticatedUser extractAuthenticatedUser(String accessToken) {
         Claims claims = parseAccessToken(accessToken);
-        return extractAuthenticatedUser(claims);
-    }
-
-    public String generateMobileAuthCode(User user, String provider) {
-        Instant now = Instant.now();
-
-        return Jwts.builder()
-                .subject(String.valueOf(user.getId()))
-                .claim("userId", user.getId())
-                .claim("provider", provider)
-                .claim("profileCompleted", user.isProfileCompleted())
-                .claim("tokenType", MOBILE_AUTH_CODE_TOKEN_TYPE)
-                .issuedAt(Date.from(now))
-                .expiration(Date.from(now.plusSeconds(jwtProperties.getMobileAuthCodeExpirationSeconds())))
-                .signWith(getSigningKey())
-                .compact();
-    }
-
-    public AuthenticatedUser extractAuthenticatedUserFromMobileAuthCode(String mobileAuthCode) {
-        Claims claims = parseToken(mobileAuthCode, MOBILE_AUTH_CODE_TOKEN_TYPE);
-        return extractAuthenticatedUser(claims);
-    }
-
-    private AuthenticatedUser extractAuthenticatedUser(Claims claims) {
         // 이후 서비스 계층에서 사용자 조회의 기준이 되는 userId claim을 꺼냅니다.
         Long userId = claims.get("userId", Long.class);
         if (userId == null) {
@@ -133,7 +105,7 @@ public class JwtProvider {
                 .claim("userId", user.getId())
                 .claim("provider", provider)
                 .claim("profileCompleted", user.isProfileCompleted())
-                .claim("tokenType", ACCESS_TOKEN_TYPE)
+                .claim("tokenType", "access")
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(jwtProperties.getAccessExpirationSeconds())))
                 .signWith(getSigningKey())
@@ -148,7 +120,7 @@ public class JwtProvider {
         return Jwts.builder()
                 .subject(String.valueOf(user.getId()))
                 .claim("userId", user.getId())
-                .claim("tokenType", REFRESH_TOKEN_TYPE)
+                .claim("tokenType", "refresh")
                 .issuedAt(Date.from(now))
                 .expiration(Date.from(now.plusSeconds(jwtProperties.getRefreshExpirationSeconds())))
                 .signWith(getSigningKey())

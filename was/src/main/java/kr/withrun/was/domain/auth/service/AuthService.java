@@ -4,9 +4,7 @@ import io.jsonwebtoken.ExpiredJwtException;
 import io.jsonwebtoken.JwtException;
 import jakarta.servlet.http.Cookie;
 import jakarta.servlet.http.HttpServletRequest;
-import kr.withrun.was.domain.auth.dto.AuthExchangeResult;
 import kr.withrun.was.domain.auth.dto.AuthMeResponse;
-import kr.withrun.was.domain.auth.dto.AuthTokenPair;
 import kr.withrun.was.domain.auth.dto.ReissueAccessTokenResponse;
 import kr.withrun.was.domain.auth.jwt.JwtProvider;
 import kr.withrun.was.domain.auth.security.AuthenticatedUser;
@@ -66,29 +64,6 @@ public class AuthService {
         return jwtProvider.expireRefreshTokenCookie();
     }
 
-    public AuthExchangeResult exchangeMobileAuthCode(String code) {
-        AuthenticatedUser authenticatedUser = extractAuthenticatedUserFromMobileAuthCode(code);
-
-        User user = userRepository.findNotDeletedUser(authenticatedUser.userId())
-                .orElseThrow(() -> new CustomException(ResponseCode.USER_NOT_FOUND));
-
-        String provider = userAuthAccountRepository.findById(authenticatedUser.userId())
-                .map(UserAuthAccount::getProvider)
-                .orElseThrow(() -> new CustomException(ResponseCode.UNAUTHORIZED));
-
-        AuthTokenPair authTokenPair = jwtProvider.generateTokenPair(user, provider);
-        ReissueAccessTokenResponse response = new ReissueAccessTokenResponse(
-                authTokenPair.accessToken(),
-                provider,
-                user.isProfileCompleted()
-        );
-
-        return new AuthExchangeResult(
-                response,
-                jwtProvider.createRefreshTokenCookie(authTokenPair.refreshToken())
-        );
-    }
-
     private String extractRefreshToken(HttpServletRequest request) {
         Cookie[] cookies = request.getCookies();
         if (cookies == null || cookies.length == 0) {
@@ -109,18 +84,6 @@ public class AuthService {
             return jwtProvider.extractUserIdFromRefreshToken(refreshToken);
         } catch (ExpiredJwtException exception) {
             // 재로그인 대신 재발급 분기를 태울 수 있도록 만료와 위조를 구분합니다.
-            throw new CustomException(ResponseCode.TOKEN_EXPIRED);
-        } catch (JwtAuthenticationException exception) {
-            throw new CustomException(exception.getResponseCode());
-        } catch (JwtException | IllegalArgumentException exception) {
-            throw new CustomException(ResponseCode.TOKEN_INVALID);
-        }
-    }
-
-    private AuthenticatedUser extractAuthenticatedUserFromMobileAuthCode(String code) {
-        try {
-            return jwtProvider.extractAuthenticatedUserFromMobileAuthCode(code);
-        } catch (ExpiredJwtException exception) {
             throw new CustomException(ResponseCode.TOKEN_EXPIRED);
         } catch (JwtAuthenticationException exception) {
             throw new CustomException(exception.getResponseCode());

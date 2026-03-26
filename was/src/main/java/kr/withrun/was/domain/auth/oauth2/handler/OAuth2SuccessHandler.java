@@ -100,35 +100,32 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         }
 
-        boolean mobileLoginRequest = isMobileLoginRequest(request);
-
-        if (mobileLoginRequest && StringUtils.hasText(authProperties.getMobileDeepLinkBase())) {
-            // 모바일 분기는 외부 브라우저 쿠키 저장소를 믿지 않고, 짧은 교환 코드만 앱으로 넘긴다.
-            response.addHeader(HttpHeaders.SET_COOKIE, clearOAuthTargetCookie().toString());
-            String mobileAuthCode = jwtProvider.generateMobileAuthCode(user, userInfo.getProvider());
-            response.sendRedirect(resolveMobileCallbackRedirectUrl(mobileAuthCode));
-            return;
-        }
-
-        // 웹 로그인은 기존처럼 refresh cookie 기반으로 callback 화면이 세션을 복구한다.
+        // 로그인 성공 후 access token / refresh token을 발급합니다.
         AuthTokenPair authTokenPair = jwtProvider.generateTokenPair(user, userInfo.getProvider());
+
+        // refresh token은 브라우저에서 직접 읽지 못하도록 HttpOnly 쿠키로 내려줍니다.
         response.addHeader(
                 HttpHeaders.SET_COOKIE,
                 jwtProvider.createRefreshTokenCookie(authTokenPair.refreshToken()).toString()
         );
+
+        // mobile/web 분기에만 필요했던 힌트 쿠키는 callback redirect 전에 바로 제거합니다.
         response.addHeader(HttpHeaders.SET_COOKIE, clearOAuthTargetCookie().toString());
-        response.sendRedirect(resolveWebCallbackRedirectUrl());
+
+        String redirectUrl = resolveCallbackRedirectUrl(request);
+
+        response.sendRedirect(redirectUrl);
     }
 
-    private String resolveMobileCallbackRedirectUrl(String code) {
-        return UriComponentsBuilder
-                .fromUriString(authProperties.getMobileDeepLinkBase())
-                .queryParam("code", code)
-                .build(true)
-                .toUriString();
-    }
+    private String resolveCallbackRedirectUrl(HttpServletRequest request) {
+        // 모바일은 앱 딥링크로 복귀시키고, 웹은 프론트 callback route가 이후 세션 복구를 맡는다.
+        if (isMobileLoginRequest(request) && StringUtils.hasText(authProperties.getMobileDeepLinkBase())) {
+            return UriComponentsBuilder
+                    .fromUriString(authProperties.getMobileDeepLinkBase())
+                    .build(true)
+                    .toUriString();
+        }
 
-    private String resolveWebCallbackRedirectUrl() {
         return UriComponentsBuilder
                 .fromUriString(authProperties.getFrontendBaseUrl())
                 .path("/auth/callback")

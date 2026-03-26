@@ -1,9 +1,4 @@
-import {
-  exchangeAuthCode,
-  getCurrentUser,
-  reissueAccessToken,
-  type AuthUser,
-} from '@/apis/auth';
+import { getCurrentUser, reissueAccessToken, type AuthUser } from '@/apis/auth';
 
 export type BootstrapAuthSessionResult = {
   accessToken: string;
@@ -12,16 +7,14 @@ export type BootstrapAuthSessionResult = {
 
 export async function bootstrapAuthSession(
   fallbackAccessToken?: string | null,
-  authCode?: string | null,
 ): Promise<BootstrapAuthSessionResult> {
   try {
-    const authResponse = authCode
-      ? await exchangeAuthCode({ code: authCode })
-      : await reissueAccessToken();
-    const user = await getCurrentUser(authResponse.accessToken);
+    // refresh cookie 가 살아 있으면 access token 을 새로 받고, 그 토큰으로 현재 사용자를 복구한다.
+    const reissueResponse = await reissueAccessToken();
+    const user = await getCurrentUser(reissueResponse.accessToken);
 
     return {
-      accessToken: authResponse.accessToken,
+      accessToken: reissueResponse.accessToken,
       user,
     };
   } catch (reissueError) {

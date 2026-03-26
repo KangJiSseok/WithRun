@@ -63,7 +63,7 @@ public class SecurityConfig {
                         // /mobile/oauth2/** 는 WebView 가 외부 브라우저 OAuth 를 시작할 때 사용하는 모바일 전용 진입점입니다.
                         .requestMatchers("/oauth2/**", "/login/oauth2/**", "/mobile/oauth2/**").permitAll()
                         // refresh token 쿠키로 access token을 재발급하거나, 쿠키를 비우는 로그아웃은 비로그인 상태에서도 접근 가능해야 합니다.
-                        .requestMatchers(HttpMethod.POST, "/api/auth/reissue", "/api/auth/exchange", "/api/auth/logout").permitAll()
+                        .requestMatchers(HttpMethod.POST, "/api/auth/reissue", "/api/auth/logout").permitAll()
                         // 현재 사용자 조회는 access token 인증이 필요합니다.
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                         // Step 4부터는 "내 프로필 저장" API만 access token 인증을 반드시 거치게 합니다.
