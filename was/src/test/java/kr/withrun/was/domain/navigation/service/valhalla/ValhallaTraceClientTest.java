@@ -11,6 +11,7 @@ import kr.withrun.was.domain.navigation.dto.internal.valhalla.SnappedRoutePoint;
 import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaVoiceInstruction;
 import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaRequestPoint;
 import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaRouteTraceResult;
+import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaTraceAttributes;
 import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaTraceRequest;
 import kr.withrun.was.domain.navigation.service.input.CourseTraceResampler;
 import org.junit.jupiter.api.DisplayName;
@@ -469,6 +470,109 @@ class ValhallaTraceClientTest {
                             .contains("\"begin_route_discontinuity\":true"));
         } finally {
             logger.detachAppender(listAppender);
+            server.stop(0);
+        }
+    }
+
+    @DisplayName("trace_attributes 는 필요한 filters 를 보내고 매칭 포인트를 파싱한다")
+    @Test
+    void sendsRequiredTraceAttributeFiltersAndParsesMatchedPoints() throws Exception {
+        List<String> requestBodies = new ArrayList<>();
+        HttpServer server = HttpServer.create(new InetSocketAddress(0), 0);
+        server.createContext("/trace_attributes", exchange -> {
+            requestBodies.add(new String(exchange.getRequestBody().readAllBytes(), StandardCharsets.UTF_8));
+            writeJson(exchange, 200, """
+                    {
+                      "edges": [
+                        {
+                          "begin_shape_index": 0,
+                          "end_shape_index": 1,
+                          "length": 0.15,
+                          "names": ["세종대로"]
+                        }
+                      ],
+                      "matched_points": [
+                        {
+                          "lat": 37.5665,
+                          "lon": 126.9780,
+                          "type": "matched",
+                          "edge_index": 0
+                        },
+                        {
+                          "lat": 37.5671,
+                          "lon": 126.9792,
+                          "type": "interpolated",
+                          "edge_index": 0
+                        }
+                      ],
+                      "shape_attributes": {
+                        "length": [0.15, 0.20]
+                      }
+                    }
+                    """);
+        });
+        server.start();
+
+        try {
+            ValhallaTraceClient client = new ValhallaTraceClient(
+                    "http://localhost:" + server.getAddress().getPort(),
+                    new CourseTraceResampler()
+            );
+            ValhallaTraceRequest request = new ValhallaTraceRequest(
+                    List.of(
+                            new ValhallaRequestPoint(37.5665, 126.9780),
+                            new ValhallaRequestPoint(37.5671, 126.9792),
+                            new ValhallaRequestPoint(37.5680, 126.9800)
+                    ),
+                    "pedestrian",
+                    "map_snap",
+                    5,
+                    20,
+                    500,
+                    "ko-KR",
+                    "kilometers"
+            );
+
+            ValhallaTraceAttributes result = client.requestTraceAttributes(request);
+
+            assertThat(requestBodies).hasSize(1);
+
+            JsonNode payload = objectMapper.readTree(requestBodies.get(0));
+            assertThat(payload.path("filters").path("action").asText()).isEqualTo("include");
+            assertThat(payload.path("filters").path("attributes"))
+                    .extracting(JsonNode::asText)
+                    .containsExactly(
+                            "edge.length",
+                            "edge.begin_shape_index",
+                            "edge.end_shape_index",
+                            "edge.names",
+                            "matched.point",
+                            "matched.type",
+                            "matched.edge_index",
+                            "shape_attributes.length"
+                    );
+
+            assertThat(result.edges())
+                    .extracting(
+                            routeEdge -> routeEdge.beginShapeIndex(),
+                            routeEdge -> routeEdge.endShapeIndex(),
+                            routeEdge -> routeEdge.lengthKm(),
+                            routeEdge -> routeEdge.names()
+                    )
+                    .containsExactly(org.assertj.core.groups.Tuple.tuple(0, 1, 0.15, List.of("세종대로")));
+            assertThat(result.matchedPoints())
+                    .extracting(
+                            matchedPoint -> matchedPoint.lat(),
+                            matchedPoint -> matchedPoint.lon(),
+                            matchedPoint -> matchedPoint.type(),
+                            matchedPoint -> matchedPoint.edgeIndex()
+                    )
+                    .containsExactly(
+                            org.assertj.core.groups.Tuple.tuple(37.5665, 126.9780, "matched", 0),
+                            org.assertj.core.groups.Tuple.tuple(37.5671, 126.9792, "interpolated", 0)
+                    );
+            assertThat(result.shapeLengths()).containsExactly(0.15, 0.20);
+        } finally {
             server.stop(0);
         }
     }

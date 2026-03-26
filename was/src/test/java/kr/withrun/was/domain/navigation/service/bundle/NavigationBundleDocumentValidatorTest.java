@@ -45,6 +45,7 @@ class NavigationBundleDocumentValidatorTest {
                         null,
                         null,
                         null,
+                        null,
                         List.of(),
                         2,
                         1,
@@ -83,6 +84,7 @@ class NavigationBundleDocumentValidatorTest {
                                 null,
                                 null,
                                 null,
+                                null,
                                 List.of(),
                                 0,
                                 1,
@@ -93,6 +95,7 @@ class NavigationBundleDocumentValidatorTest {
                         ),
                         new NavigationBundleManeuver(
                                 "도착합니다",
+                                null,
                                 null,
                                 null,
                                 null,

@@ -36,6 +36,16 @@ public class ValhallaTraceClient {
 
     private static final int RELAXED_GPS_ACCURACY = 10;
     private static final int RELAXED_SEARCH_RADIUS = 35;
+    private static final List<String> TRACE_ATTRIBUTE_FILTERS = List.of(
+            "edge.length",
+            "edge.begin_shape_index",
+            "edge.end_shape_index",
+            "edge.names",
+            "matched.point",
+            "matched.type",
+            "matched.edge_index",
+            "shape_attributes.length"
+    );
     private static final Logger log = LoggerFactory.getLogger(ValhallaTraceClient.class);
     private static final ObjectMapper LOG_OBJECT_MAPPER = new ObjectMapper();
 
@@ -495,7 +505,12 @@ public class ValhallaTraceClient {
      * 내부 명령 객체를 Valhalla trace_attributes 요청 바디 형식으로 변환합니다.
      */
     private Map<String, Object> buildTraceAttributesPayload(ValhallaTraceRequest request) {
-        return buildCommonPayload(request);
+        Map<String, Object> payload = buildCommonPayload(request);
+        payload.put("filters", Map.of(
+                "action", "include",
+                "attributes", TRACE_ATTRIBUTE_FILTERS
+        ));
+        return payload;
     }
 
     private Map<String, Object> buildCommonPayload(ValhallaTraceRequest request) {
@@ -610,7 +625,9 @@ public class ValhallaTraceClient {
 
         List<MatchedRoutePoint> matchedPoints = new ArrayList<>();
         for (JsonNode matchedPointNode : matchedPointsNode) {
-            JsonNode pointNode = matchedPointNode.path("matched_point");
+            JsonNode pointNode = matchedPointNode.has("matched_point")
+                    ? matchedPointNode.path("matched_point")
+                    : matchedPointNode;
             matchedPoints.add(new MatchedRoutePoint(
                     pointNode.path("lat").asDouble(),
                     pointNode.path("lon").asDouble(),

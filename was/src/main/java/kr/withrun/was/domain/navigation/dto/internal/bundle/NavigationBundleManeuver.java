@@ -13,6 +13,7 @@ public record NavigationBundleManeuver(
         Boolean verbalMultiCue,
         String verbalSuccinctTransitionInstruction,
         Integer type,
+        NavigationBundleManeuverSampleAction sampleAction,
         Integer bearingBefore,
         Integer bearingAfter,
         List<NavigationBundleVoiceInstruction> voiceInstructions,

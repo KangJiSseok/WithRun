@@ -4,6 +4,7 @@ import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleDocument;
 import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleManeuver;
 import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleMetadata;
+import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleManeuverSampleAction;
 import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleVoiceInstruction;
 import kr.withrun.was.domain.navigation.dto.internal.valhalla.NavigationManeuver;
 import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaVoiceInstruction;
@@ -107,6 +108,7 @@ public class NavigationBundleDocumentBuilder {
 
             double startDistanceMeters = cumulativeDistances.get(maneuver.beginShapeIndex());
             double endDistanceMeters = cumulativeDistances.get(maneuver.endShapeIndex());
+            ManeuverMetadata maneuverMetadata = classifyManeuver(maneuver.type());
             normalizedManeuvers.add(new NavigationBundleManeuver(
                     maneuver.instruction(),
                     maneuver.verbalTransitionAlertInstruction(),
@@ -115,6 +117,7 @@ public class NavigationBundleDocumentBuilder {
                     maneuver.verbalMultiCue(),
                     maneuver.verbalSuccinctTransitionInstruction(),
                     maneuver.type(),
+                    maneuverMetadata.sampleAction(),
                     maneuver.bearingBefore(),
                     maneuver.bearingAfter(),
                     normalizeVoiceInstructions(maneuver.voiceInstructions()),
@@ -128,6 +131,22 @@ public class NavigationBundleDocumentBuilder {
         }
 
         return List.copyOf(normalizedManeuvers);
+    }
+
+    private ManeuverMetadata classifyManeuver(Integer type) {
+        if (type == null) {
+            return ManeuverMetadata.empty();
+        }
+
+        return switch (type) {
+            case 0, 1, 2, 3, 7, 8, 17, 22, 25, 26, 27, 28, 29, 30, 31, 32,
+                    33, 34, 35, 36, 39, 40, 41, 42, 43, 44, 45 -> new ManeuverMetadata(NavigationBundleManeuverSampleAction.STRAIGHT);
+            case 4, 5, 6 -> new ManeuverMetadata(NavigationBundleManeuverSampleAction.ARRIVAL);
+            case 9, 10, 11, 18, 20, 23, 37 -> new ManeuverMetadata(NavigationBundleManeuverSampleAction.RIGHT);
+            case 12, 13 -> new ManeuverMetadata(NavigationBundleManeuverSampleAction.UTURN);
+            case 14, 15, 16, 19, 21, 24, 38 -> new ManeuverMetadata(NavigationBundleManeuverSampleAction.LEFT);
+            default -> new ManeuverMetadata(NavigationBundleManeuverSampleAction.STRAIGHT);
+        };
     }
 
     private List<NavigationBundleVoiceInstruction> normalizeVoiceInstructions(
@@ -154,6 +173,13 @@ public class NavigationBundleDocumentBuilder {
                     NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
                     "Maneuver " + fieldName + "ShapeIndex is out of range"
             );
+        }
+    }
+
+    private record ManeuverMetadata(NavigationBundleManeuverSampleAction sampleAction) {
+
+        private static ManeuverMetadata empty() {
+            return new ManeuverMetadata(null);
         }
     }
 }

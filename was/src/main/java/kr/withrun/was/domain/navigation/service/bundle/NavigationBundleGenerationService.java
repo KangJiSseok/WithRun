@@ -50,7 +50,7 @@ public class NavigationBundleGenerationService {
             NavigationBundleDocumentValidator navigationBundleDocumentValidator,
             NavigationBundleStore navigationBundleStore,
             @Value("${app.cdn.base-url:}") String cdnBaseUrl,
-            @Value("${app.navigation.trace-attributes-enabled:false}") boolean traceAttributesEnabled
+            @Value("${app.navigation.trace-attributes-enabled:true}") boolean traceAttributesEnabled
     ) {
         this.courseRepository = courseRepository;
         this.courseTraceRequestMapper = courseTraceRequestMapper;
@@ -71,7 +71,7 @@ public class NavigationBundleGenerationService {
                 .orElseThrow(() -> new NavigationBundleGenerationException(
                         NavigationBundleFailureCode.COURSE_NOT_FOUND,
                         "Course not found for latest navigation bundle generation: " + courseId
-        ));
+                ));
 
         ValhallaTraceRequest traceRequest = courseTraceRequestMapper.map(course);
         ValhallaRouteTraceResult routeTraceResult = valhallaTraceClient.requestRouteTrace(traceRequest);
