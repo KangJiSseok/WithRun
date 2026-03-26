@@ -6,6 +6,7 @@ import { useSearchParams } from 'react-router-dom';
 import { bridge } from '@/bridge';
 import {
   buildSocialLoginUrl,
+  buildWebSocialLoginUrl,
   type SocialProvider,
 } from '@/apis/auth';
 
@@ -38,15 +39,15 @@ export function LoginScreen() {
   );
 
   async function handleLogin(provider: SocialProvider) {
-    const authorizationUrl = buildSocialLoginUrl(provider);
-
     if (bridge.isWebViewBridgeAvailable) {
-      // 모바일 WebView 안에서는 외부 브라우저/Auth Session 을 네이티브 브릿지로 여는 쪽이 더 안정적이다.
+      // 모바일 WebView 는 기존 네이티브 브릿지 경로를 유지해 앱 딥링크 복귀 흐름을 그대로 사용한다.
+      const authorizationUrl = buildSocialLoginUrl(provider);
       await bridge.startSocialLogin(authorizationUrl);
       return;
     }
 
-    // 일반 웹에서는 백엔드 OAuth 진입점으로 바로 이동한다.
+    // 일반 웹은 현재 origin 을 백엔드에 알려줘야 Vercel/SSAFY 중 시작한 도메인으로 다시 돌아올 수 있다.
+    const authorizationUrl = buildWebSocialLoginUrl(provider);
     window.location.assign(authorizationUrl);
   }
 

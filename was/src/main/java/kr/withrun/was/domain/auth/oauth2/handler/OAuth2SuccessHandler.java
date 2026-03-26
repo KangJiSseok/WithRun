@@ -40,6 +40,7 @@ import java.util.Locale;
 public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
     private static final String OAUTH_TARGET_COOKIE_NAME = "withrun_oauth_target";
+    private static final String OAUTH_ORIGIN_COOKIE_NAME = "withrun_oauth_origin";
 
     private final UserRepository userRepository;
     private final UserAuthAccountRepository userAuthAccountRepository;
@@ -111,6 +112,8 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
 
         // mobile/web 분기에만 필요했던 힌트 쿠키는 callback redirect 전에 바로 제거합니다.
         response.addHeader(HttpHeaders.SET_COOKIE, clearOAuthTargetCookie().toString());
+        // 웹 origin 힌트도 OAuth 완료 직후에는 더 이상 필요 없으므로 함께 제거합니다.
+        response.addHeader(HttpHeaders.SET_COOKIE, clearOAuthOriginCookie().toString());
 
         String redirectUrl = resolveCallbackRedirectUrl(request);
 
@@ -126,11 +129,37 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                     .toUriString();
         }
 
+        String origin = resolveWebOriginCookie(request);
+        if (StringUtils.hasText(origin)) {
+            // 웹은 로그인 시작 origin 이 검증된 값으로 남아 있으면 그 도메인의 callback 으로 되돌립니다.
+            return UriComponentsBuilder
+                    .fromUriString(origin)
+                    .path("/auth/callback")
+                    .build(true)
+                    .toUriString();
+        }
+
         return UriComponentsBuilder
                 .fromUriString(authProperties.getFrontendBaseUrl())
                 .path("/auth/callback")
                 .build(true)
                 .toUriString();
+    }
+
+    private String resolveWebOriginCookie(HttpServletRequest request) {
+        Cookie[] cookies = request.getCookies();
+
+        if (cookies == null) {
+            return null;
+        }
+
+        return Arrays.stream(cookies)
+                .filter(cookie -> OAUTH_ORIGIN_COOKIE_NAME.equals(cookie.getName()))
+                .map(Cookie::getValue)
+                // 쿠키를 다시 한번 화이트리스트로 검증해 신뢰 가능한 origin 만 사용합니다.
+                .filter(this::isAllowedOrigin)
+                .findFirst()
+                .orElse(null);
     }
 
     private boolean isMobileLoginRequest(HttpServletRequest request) {
@@ -153,6 +182,19 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 .path("/")
                 .maxAge(0)
                 .build();
+    }
+
+    private ResponseCookie clearOAuthOriginCookie() {
+        return ResponseCookie.from(OAUTH_ORIGIN_COOKIE_NAME, "")
+                .httpOnly(true)
+                .sameSite("Lax")
+                .path("/")
+                .maxAge(0)
+                .build();
+    }
+
+    private boolean isAllowedOrigin(String origin) {
+        return authProperties.getAllowedOrigins().contains(origin);
     }
 
     private String buildTemporaryNickname(String provider, String providerUserId) {

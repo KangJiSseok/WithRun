@@ -45,3 +45,12 @@ export function buildSocialLoginUrl(provider: SocialProvider): string {
   // 웹과 모바일이 모두 같은 백엔드 OAuth 진입점 규칙을 공유한다.
   return buildServerUrl(`/oauth2/authorization/${provider}`);
 }
+
+export function buildWebSocialLoginUrl(provider: SocialProvider): string {
+  // 현재 웹 origin 을 함께 넘겨야 백엔드가 OAuth 완료 후 같은 도메인의 callback 으로 돌려보낼 수 있다.
+  const origin = encodeURIComponent(window.location.origin);
+
+  return buildServerUrl(
+    `/web/oauth2/authorization/${provider}?origin=${origin}`,
+  );
+}
