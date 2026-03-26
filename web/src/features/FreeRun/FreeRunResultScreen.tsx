@@ -4,7 +4,7 @@ import { Award, Home, MapPin, Activity, Timer, Check, UploadCloud } from 'lucide
 import { cn, formatDuration, formatPace } from '@/shared/utils';
 import { CourseShareModal } from './CourseShareModal';
 import { useGeneratePaceData } from '@/hooks/FreeRun/useGeneratePaceData';
-import type { RunningResult } from './FreeRunningScreen';
+import type { CompleteRunningSessionResponse } from '@/apis/runningSessions';
 
 // 회원 시스템 구현 전 임시 mock 유저
 // 추후 변경 시 => auth context에서 실제 유저 정보 받아오기
@@ -13,13 +13,6 @@ const MOCK_USER = { name: '러너' };
 // 심박수 mock 데이터 (워치 연동 예정)
 // 추후 변경 시 => state.heartRate로 대체 (min, avg, max 계산해서 저장)
 const MOCK_HEART_RATE = { min: 118, avg: 142, max: 168 };
-
-interface FreeRunResultScreenProps {
-  result: RunningResult | null;
-  courseId: number | null;
-  runningSessionId: number | null;
-  onCourseRegistered: (courseId: number) => void;
-}
 
 interface StatItemProps {
   label: string;
@@ -37,14 +30,19 @@ function StatItem({ label, value, unit }: StatItemProps) {
   );
 }
 
-export function FreeRunResultScreen({ result, courseId, runningSessionId, onCourseRegistered }: FreeRunResultScreenProps) {
+interface FreeRunResultScreenProps {
+  result: CompleteRunningSessionResponse;
+}
+
+export function FreeRunResultScreen({ result }: FreeRunResultScreenProps) {
   const navigate = useNavigate();
   const [showShareModal, setShowShareModal] = useState(false);
+  const [courseId, setCourseId] = useState<number | null>(null);
 
-  const durationSec = result?.durationSec ?? 0;
-  const distanceM = result?.distanceM ?? 0;
-  const caloriesKcal = result?.caloriesKcal ?? 0;
-  const avgPaceSecPerKm = result?.avgPaceSecPerKm ?? 0;
+  const durationSec = result.durationSec;
+  const distanceM = result.distanceM;
+  const caloriesKcal = result.caloriesKcal;
+  const avgPaceSecPerKm = result.avgPaceSecPerKm;
 
   const time = formatDuration(durationSec);
   const distance = (distanceM / 1000).toFixed(2);
@@ -179,8 +177,8 @@ export function FreeRunResultScreen({ result, courseId, runningSessionId, onCour
       <CourseShareModal
         isOpen={showShareModal}
         onClose={() => setShowShareModal(false)}
-        runningSessionId={runningSessionId}
-        onRegistered={onCourseRegistered}
+        runningSessionId={result.runningSessionId}
+        onRegistered={setCourseId}
       />
     </div>
   );
