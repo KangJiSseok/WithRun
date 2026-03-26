@@ -32,11 +32,7 @@ export function RunningCourseCard({
     >
       <div className="relative h-44 overflow-hidden">
         <img
-          src={
-            course.snapshotImageUrl
-              ? `http://${course.snapshotImageUrl}`
-              : '/course-fallback.svg'
-          }
+          src={course.snapshotImageUrl || '/course-fallback.svg'}
           alt={course.title}
           draggable={false}
           className="absolute inset-0 h-full w-full object-fit"

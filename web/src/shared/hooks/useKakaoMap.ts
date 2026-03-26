@@ -1,6 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import type { CoordinatePoint } from '@/apis';
+import { loadKakaoMapSdk } from '@/shared/utils';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 // 폴리라인 스타일 상수
@@ -25,11 +26,15 @@ export function useKakaoMap(
     if (!containerRef.current) return;
 
     const container = containerRef.current;
+    let cancelled = false;
 
-    kakao.maps.load(() => {
+    loadKakaoMapSdk().then(() => {
+      if (cancelled) return;
       const center = new kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
       mapRef.current = new kakao.maps.Map(container, { center, level: 3 });
     });
+
+    return () => { cancelled = true; };
   }, [containerRef]);
 
   // 폴리라인 렌더링

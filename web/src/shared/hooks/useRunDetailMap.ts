@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import type { CoordinatePoint } from '@/apis';
-import { createMarkerContent } from '@/shared/utils';
+import { createMarkerContent, loadKakaoMapSdk } from '@/shared/utils';
 import { useRunLocation } from './useRunLocation';
 
 // 폴리라인 스타일
@@ -99,7 +99,10 @@ export function useRunDetailMap(
       endLongitude,
     } = course;
 
-    kakao.maps.load(() => {
+    let cancelled = false;
+
+    loadKakaoMapSdk().then(() => {
+      if (cancelled) return;
       const startLatLng = new kakao.maps.LatLng(startLatitude, startLongitude);
 
       mapRef.current = new kakao.maps.Map(container, {
@@ -157,6 +160,8 @@ export function useRunDetailMap(
         zIndex: 10,
       });
     });
+
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [containerRef]);
 

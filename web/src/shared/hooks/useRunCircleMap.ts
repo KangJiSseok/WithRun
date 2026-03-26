@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { CourseItem } from '@/apis';
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
-import { createMarkerContent } from '@/shared/utils';
+import { createMarkerContent, loadKakaoMapSdk } from '@/shared/utils';
 
 export type CircleMode = 'USER_LOCATION' | 'AREA_NEARBY' | 'AREA_EXPLORE';
 
@@ -80,10 +80,13 @@ export function useRunCircleMap(
 
     const signal = { cancelled: false };
 
+    // SDK 로드를 GPS 획득과 병렬로 즉시 시작
+    const sdkReady = loadKakaoMapSdk();
+
     function initMap(initLat: number, initLon: number) {
       if (signal.cancelled || !containerRef.current) return;
 
-      kakao.maps.load(() => {
+      sdkReady.then(() => {
         if (signal.cancelled) return;
 
         const initLatLng = new kakao.maps.LatLng(initLat, initLon);
@@ -187,7 +190,8 @@ export function useRunCircleMap(
                 latitude: coords.latitude,
                 longitude: coords.longitude,
               }),
-            reject
+            reject,
+            { enableHighAccuracy: false, maximumAge: 30000, timeout: 10000 }
           )
         );
         if (!signal.cancelled) {

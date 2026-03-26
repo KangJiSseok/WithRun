@@ -1,9 +1,14 @@
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { GhostRunDetailScreen } from '@/features/GhostRun';
 import { useGhostRunCourseDetail } from '@/hooks/GhostRun/useGhostRunCourseDetail';
+import { loadKakaoMapSdk } from '@/shared/utils';
 
 export function GhostRunDetailPage() {
+  // API 호출과 병렬로 SDK 미리 로드
+  useEffect(() => { loadKakaoMapSdk(); }, []);
+
   const { courseId } = useParams();
   const { courseDetail, isLoading, error } = useGhostRunCourseDetail(
     courseId ? Number(courseId) : undefined
