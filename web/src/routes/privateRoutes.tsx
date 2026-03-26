@@ -31,6 +31,14 @@ export const privateRoutes: RouteObject[] = [
   //   ],
   // },
   {
+    element: <MainLayout showTopNav showBottomNav />,
+    children: [
+      { path: '/', element: <HomePage /> },
+      { path: '/profile', element: <ProfilePage /> },
+      { path: '/calendar', element: <CalendarPage /> },
+    ],
+  },
+  {
     element: <MainLayout showBottomNav fullScreen />,
     children: [
       { path: '/normal-run', element: <NormalRunPage /> },
@@ -45,43 +53,16 @@ export const privateRoutes: RouteObject[] = [
     children: [
       { path: '/free-run-session', element: <FreeRunSessionPage /> },
       {
-        element: <MainLayout showBottomNav />,
-        children: [{ path: '/', element: <HomePage /> }],
-      },
-      {
-        element: <MainLayout showBottomNav fullScreen />,
-        children: [{ path: '/profile', element: <ProfilePage /> }],
-      },
-      {
-        element: <MainLayout showTopNav showBottomNav />,
-        children: [{ path: '/calendar', element: <CalendarPage /> }],
-      },
-      {
-        element: <MainLayout showBottomNav fullScreen />,
-        children: [
-          { path: '/normal-run', element: <NormalRunPage /> },
-          { path: '/normal-run/:courseId', element: <NormalRunDetailPage /> },
-          { path: '/free-run', element: <FreeRunPage /> },
-          { path: '/ghost-run', element: <GhostRunPage /> },
-        ],
-      },
-      {
-        element: <MainLayout fullScreen />,
-        children: [
-          { path: '/free-run-session', element: <FreeRunSessionPage /> },
-          {
-            path: '/normal-run-session/:courseId',
-            element: <NormalRunSessionPage />,
-          },
-          {
-            path: '/calendar/:runningSessionId',
-            element: <CalendarDetailPage />,
-          },
-        ],
-      },
-      {
         path: '/ghost-run-session/:courseId',
         element: <GhostRunSessionPage />,
+      },
+      {
+        path: '/normal-run-session/:courseId',
+        element: <NormalRunSessionPage />,
+      },
+      {
+        path: '/calendar/:runningSessionId',
+        element: <CalendarDetailPage />,
       },
     ],
   },
