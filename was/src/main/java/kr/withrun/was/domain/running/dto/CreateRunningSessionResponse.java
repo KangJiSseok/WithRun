@@ -3,6 +3,7 @@ package kr.withrun.was.domain.running.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.type.RunningMode;
+import org.springframework.util.StringUtils;
 
 import java.util.List;
 
@@ -16,6 +17,13 @@ public record CreateRunningSessionResponse(
 
         @Schema(description = "연결된 코스 ID. 자유 러닝이면 null 이다.", example = "12", nullable = true)
         Long courseId,
+
+        @Schema(
+                description = "네비게이션 번들 URL. 코스가 없거나 아직 생성되지 않았으면 null 이다.",
+                example = "https://cdn.withrun.kr/navigation/latest/12.json",
+                nullable = true
+        )
+        String navigationBundleUrl,
 
         @Schema(description = "목표 고스트 세션 ID. 고스트 러닝이 아니면 null 이다.", example = "77", nullable = true)
         Long ghostTargetRunningSessionId,
@@ -47,6 +55,9 @@ public record CreateRunningSessionResponse(
                 runningSession.getCourse() != null
                         ? runningSession.getCourse().getId()
                         : null,
+                runningSession.getCourse() != null
+                        ? normalizeNavigationBundleUrl(runningSession.getCourse().getNavigationBundleUrl())
+                        : null,
                 runningSession.getGhostTargetRunningSession() != null
                         ? runningSession.getGhostTargetRunningSession().getId()
                         : null,
@@ -55,5 +66,9 @@ public record CreateRunningSessionResponse(
                 runningSession.getCaloriesKcal(),
                 Boolean.TRUE.equals(runningSession.getIsCompleted())
         );
+    }
+
+    private static String normalizeNavigationBundleUrl(String navigationBundleUrl) {
+        return StringUtils.hasText(navigationBundleUrl) ? navigationBundleUrl : null;
     }
 }

@@ -17,7 +17,6 @@ import kr.withrun.was.domain.running.dto.RunningHealthSampleResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
-import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.common.type.TimeSlot;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
@@ -84,6 +83,7 @@ class RunningSessionControllerTest {
                 300L,
                 null,
                 null,
+                null,
                 0,
                 0,
                 false
@@ -100,6 +100,7 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.runningSessionId").value(901L))
                 .andExpect(jsonPath("$.data.mode").value(COURSE.name()))
                 .andExpect(jsonPath("$.data.courseId").value(300L))
+                .andExpect(jsonPath("$.data.navigationBundleUrl").value(Matchers.nullValue()))
                 .andExpect(jsonPath("$.data.ghostTargetRunningSessionId").value(Matchers.nullValue()))
                 .andExpect(jsonPath("$.data.ghostTargetGpsSamples").value(Matchers.nullValue()))
                 .andExpect(jsonPath("$.data.startedAt").doesNotExist())
@@ -118,6 +119,7 @@ class RunningSessionControllerTest {
                 902L,
                 GHOST,
                 300L,
+                "https://cdn.withrun.kr/navigation/latest/300.json",
                 44L,
                 java.util.List.of(
                         new RunningGpsSampleResponse(
@@ -146,6 +148,7 @@ class RunningSessionControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.data.runningSessionId").value(902L))
                 .andExpect(jsonPath("$.data.mode").value(GHOST.name()))
+                .andExpect(jsonPath("$.data.navigationBundleUrl").value("https://cdn.withrun.kr/navigation/latest/300.json"))
                 .andExpect(jsonPath("$.data.ghostTargetRunningSessionId").value(44L))
                 .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].sampledAt").value("2026-03-12T06:30:05"))
                 .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].time").value(0))

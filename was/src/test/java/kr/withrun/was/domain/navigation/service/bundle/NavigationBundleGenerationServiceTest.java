@@ -115,7 +115,7 @@ class NavigationBundleGenerationServiceTest {
         assertThat(result.storageKey()).isEqualTo("navigation/latest/10.json");
         assertThat(result.status()).isEqualTo(NavigationBundleStatus.READY);
         assertThat(result.generatedAt()).isEqualTo(Instant.parse("2026-03-24T07:35:00Z"));
-        assertThat(course.getLatestNavigationBundleUrl()).isEqualTo("https://cdn.withrun.kr/navigation/latest/10.json");
+        assertThat(course.getNavigationBundleUrl()).isEqualTo("https://cdn.withrun.kr/navigation/latest/10.json");
         verify(navigationBundleDocumentValidator).validate(document);
     }
 

@@ -53,11 +53,11 @@ public class NavigationBundleService {
     public GetLatestNavigationBundleResponse getLatestBundle(Long courseId) {
         return courseRepository.findNotDeletedCourse(courseId)
                 .map(course -> {
-                    if (StringUtils.hasText(course.getLatestNavigationBundleUrl())) {
+                    if (StringUtils.hasText(course.getNavigationBundleUrl())) {
                         return new GetLatestNavigationBundleResponse(
                                 courseId,
                                 NavigationBundleStatus.READY.name(),
-                                course.getLatestNavigationBundleUrl()
+                                course.getNavigationBundleUrl()
                         );
                     }
                     return createPendingResponse(courseId);

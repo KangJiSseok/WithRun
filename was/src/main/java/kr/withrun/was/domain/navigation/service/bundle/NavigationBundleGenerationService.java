@@ -80,7 +80,7 @@ public class NavigationBundleGenerationService {
 
         navigationBundleDocumentValidator.validate(document);
         String storageKey = navigationBundleStore.storeLatest(courseId, document);
-        course.updateLatestNavigationBundleUrl(buildDownloadUrl(storageKey));
+        course.updateNavigationBundleUrl(buildDownloadUrl(storageKey));
         courseRepository.save(course);
 
         return new NavigationBundleGenerationResult(

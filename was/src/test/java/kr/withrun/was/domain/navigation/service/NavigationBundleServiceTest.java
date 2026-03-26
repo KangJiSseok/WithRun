@@ -81,11 +81,11 @@ class NavigationBundleServiceTest {
                 .isEqualTo(ResponseCode.NAVIGATION_BUNDLE_FAILED);
     }
 
-    @DisplayName("코스에 저장된 latest navigation bundle URL 이 있으면 READY 응답을 반환한다")
+    @DisplayName("코스에 저장된 navigation bundle URL 이 있으면 READY 응답을 반환한다")
     @Test
     void returnsReadyLatestNavigationBundle() {
         Course course = course(42L);
-        course.updateLatestNavigationBundleUrl("https://cdn.withrun.kr/navigation/latest/42.json");
+        course.updateNavigationBundleUrl("https://cdn.withrun.kr/navigation/latest/42.json");
 
         when(courseRepository.findNotDeletedCourse(42L)).thenReturn(Optional.of(course));
 
@@ -95,9 +95,9 @@ class NavigationBundleServiceTest {
         assertThat(response.downloadUrl()).isEqualTo("https://cdn.withrun.kr/navigation/latest/42.json");
     }
 
-    @DisplayName("코스에 latest navigation bundle URL 이 없으면 PENDING 응답을 반환한다")
+    @DisplayName("코스에 navigation bundle URL 이 없으면 PENDING 응답을 반환한다")
     @Test
-    void returnsPendingWhenLatestNavigationBundleUrlDoesNotExist() {
+    void returnsPendingWhenNavigationBundleUrlDoesNotExist() {
         when(courseRepository.findNotDeletedCourse(42L)).thenReturn(Optional.of(course(42L)));
 
         GetLatestNavigationBundleResponse response = navigationBundleService.getLatestBundle(42L);

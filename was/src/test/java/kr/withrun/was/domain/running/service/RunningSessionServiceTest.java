@@ -303,6 +303,42 @@ class RunningSessionServiceTest {
         assertThat(response.mode()).isEqualTo(COURSE);
     }
 
+    @DisplayName("COURSE 모드 시작 응답은 코스의 navigation bundle URL 을 포함한다")
+    @Test
+    void includesNavigationBundleUrlInCreateResponse() {
+        User user = user(22L);
+        Course course = course(320L, CourseStatus.OFFICIAL);
+        course.updateNavigationBundleUrl("https://cdn.withrun.kr/navigation/latest/320.json");
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 922L));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(22L, COURSE, 320L, null, 30.0, 176.0)
+        );
+
+        assertThat(recordComponentNames(CreateRunningSessionResponse.class)).contains("navigationBundleUrl");
+        assertThat(invokeAccessor(response, "navigationBundleUrl"))
+                .isEqualTo("https://cdn.withrun.kr/navigation/latest/320.json");
+    }
+
+    @DisplayName("COURSE 모드 시작 응답은 빈 navigation bundle URL 을 null 로 반환한다")
+    @Test
+    void returnsNullWhenNavigationBundleUrlIsBlank() {
+        User user = user(23L);
+        Course course = course(321L, CourseStatus.OFFICIAL);
+        course.updateNavigationBundleUrl("   ");
+        stubUser(user);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 923L));
+
+        CreateRunningSessionResponse response = runningSessionService.createRunningSession(
+                new CreateRunningSessionRequest(23L, COURSE, 321L, null, 30.0, 176.0)
+        );
+
+        assertThat(response.navigationBundleUrl()).isNull();
+    }
+
     @DisplayName("GHOST 모드는 공식 코스와 완료된 고스트 대상으로 세션을 생성한다")
     @Test
     void createsGhostRunningSessionWithEligibleGhostTarget() {
