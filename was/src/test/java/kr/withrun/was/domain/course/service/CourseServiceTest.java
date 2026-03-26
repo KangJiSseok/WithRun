@@ -52,6 +52,7 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -104,7 +105,7 @@ class CourseServiceTest {
                 hybridRecommendationService,
                 cloudFrontSignedUrlService
         );
-        when(cloudFrontSignedUrlService.generateSignedUrl(org.mockito.ArgumentMatchers.any()))
+        lenient().when(cloudFrontSignedUrlService.generateSignedUrl(org.mockito.ArgumentMatchers.any()))
                 .thenAnswer(invocation -> {
                     Object value = invocation.getArgument(0);
                     return value == null ? null : "signed::" + value;

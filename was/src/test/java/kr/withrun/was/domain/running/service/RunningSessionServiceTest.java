@@ -72,6 +72,7 @@ import static kr.withrun.was.domain.running.type.RunningMode.GHOST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -146,11 +147,11 @@ class RunningSessionServiceTest {
                 courseSignalService,
                 cloudFrontSignedUrlService
         );
-        when(cloudFrontSignedUrlService.generateSignedUrl(any())).thenAnswer(invocation -> {
+        lenient().when(cloudFrontSignedUrlService.generateSignedUrl(any())).thenAnswer(invocation -> {
             Object value = invocation.getArgument(0);
             return value == null ? null : "signed::" + value;
         });
-        when(cloudFrontSignedUrlService.normalizeObjectKey(any())).thenAnswer(invocation -> {
+        lenient().when(cloudFrontSignedUrlService.normalizeObjectKey(any())).thenAnswer(invocation -> {
             String value = invocation.getArgument(0);
             if (value == null || value.isBlank()) {
                 return null;
