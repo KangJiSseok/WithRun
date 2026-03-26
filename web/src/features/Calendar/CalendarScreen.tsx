@@ -1,4 +1,5 @@
 import { ChevronDown } from 'lucide-react';
+import { useEffect, useRef } from 'react';
 import { cn, formatDateLabel } from '@/shared/utils';
 import { useCalendar } from '@/hooks/Calendar';
 import { CalendarHeader } from './CalendarHeader';
@@ -7,7 +8,11 @@ import { ActivitySummary } from './ActivitySummary';
 import { RunningHistoryList } from './RunningHistoryList';
 import { StreakCard } from './StreakCard';
 
+const SCROLL_KEY = 'calendarScrollY';
+
 export function CalendarScreen() {
+  const scrollRef = useRef<HTMLDivElement>(null);
+
   const {
     year,
     month,
@@ -29,6 +34,30 @@ export function CalendarScreen() {
     isCalendarOpen,
     setIsCalendarOpen,
   } = useCalendar();
+
+  // 상세 페이지에서 돌아올 때만 스크롤 위치 복원
+  // RunningHistoryList에서 상세로 이동 시 클릭 시점의 scrollTop을 저장
+  // calendarScrollY가 있으면 상세에서 온 것 → 복원 후 제거
+  // isHistoryLoading이 false가 되는 시점(= 데이터 준비 완료)에 1회만 실행
+  
+  // 복원 했는가에 대한 플래그
+  const didRestoreRef = useRef(false);
+  useEffect(() => {
+    // 데이터 로딩 중이거나 이미 복원한 경우 아무 작업도 하지 않음
+    if (isHistoryLoading || didRestoreRef.current) return;
+    // 저장된 스크롤 위치 읽고 즉시 제거.
+    // 다음번 캘릳너 진입 시 잘못 복원되는 걸 막기 위함
+    const saved = sessionStorage.getItem(SCROLL_KEY);
+    sessionStorage.removeItem(SCROLL_KEY);
+    // 상세 페이지에서 온 경우 스크롤 위치 복원, 다른 곳에서 온 경우 맨 위 유지
+    if (saved && scrollRef.current) {
+      scrollRef.current.scrollTop = Number(saved);
+    }
+    // 복원 완료 표시
+    // isHistoryLoading이 바뀔 때마다 실행되지만, didRestoreRef가 true가 되면
+    // 두 번째부터는 바로 return
+    didRestoreRef.current = true;
+  }, [isHistoryLoading]);
 
   // 상단 요약 통계
   // - 달력 닫힘: "전체 요약" + lifetime 데이터
@@ -52,7 +81,7 @@ export function CalendarScreen() {
       : `${year}년 ${month}월 활동`;
 
   return (
-    <div className="flex flex-col gap-[var(--space-4)] h-full overflow-y-auto pb-[var(--space-6)]">
+    <div ref={scrollRef} className="flex flex-col gap-[var(--space-4)] h-full overflow-y-auto pb-[var(--space-6)]">
       {/* 화면 제목 */}
       <p className="h3-b text-[hsl(var(--text-primary))]">활동 캘린더</p>
 
@@ -142,6 +171,7 @@ export function CalendarScreen() {
         isScrollLoading={isScrollLoading}
         // 날짜 미선택 상태(전체/월별)에서만 날짜 헤더 표시
         showDateHeader={!selectedDate}
+        scrollRef={scrollRef}
         onLoadMore={loadMore}
       />
     </div>

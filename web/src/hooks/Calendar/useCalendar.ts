@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
+import { useInfiniteQuery } from '@tanstack/react-query';
 import {
   getMonthlyCalendarApi,
   getCalendarSummaryApi,
@@ -7,9 +8,27 @@ import {
 } from '@/apis/userCalendar';
 import {
   getRunningHistoryApi,
-  type GetRunningHistoryResponse,
   type GetRunningHistoryParams,
 } from '@/apis/runningSessions';
+
+// 현재 컨텍스트(전체/월별/일별)에 맞는 history API 파라미터 생성
+// useInfiniteQuery의 queryKey에 이 파라미터 객체를 넣어서 컨텍스트마다 캐시 분리
+function buildHistoryParams(
+  isCalendarOpen: boolean,
+  year: number,
+  month: number,
+  selectedDate: string | null,
+): GetRunningHistoryParams {
+  // 1. 달력 닫힘 (전체 기록 조회)
+  if (!isCalendarOpen) return {};
+  // 2. 달력 열림 + 날짜 선택됨 (일별 기록 조회)
+  if (selectedDate) {
+    const [y, m, d] = selectedDate.split('-');
+    return { year: Number(y), month: Number(m), day: Number(d) };
+  }
+  // 3. 달력 열림 + 날짜 선택 안됨 (월별 기록 조회)
+  return { year, month };
+}
 
 export function useCalendar() {
   // 날짜 표시 방법
@@ -34,12 +53,6 @@ export function useCalendar() {
   // 전체 기간 요약 (달력 닫힌 상태에서 ActivitySummary에 표시)
   const [summaryData, setSummaryData] = useState<CalendarSummaryData | null>(null);
   const [isSummaryLoading, setIsSummaryLoading] = useState(false);
-  // 러닝 기록 리스트 (항상 표시, 상태에 따라 전체/월별/일별 전환)
-  const [historyData, setHistoryData] = useState<GetRunningHistoryResponse | null>(null);
-  // 초기/컨텍스트 전환 로딩용
-  const [isHistoryLoading, setIsHistoryLoading] = useState(false);
-  // 무한스크롤 추가 로딩 중인지 구분 (중복 호출 방지용)
-  const [isScrollLoading, setIsScrollLoading] = useState(false);
   // 선택한 날짜 (달력에서 클릭, 재클릭 시 해제)
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
   // 달력 그리드 표시 여부 (토글 버튼으로 제어)
@@ -49,65 +62,34 @@ export function useCalendar() {
     year === today.getFullYear() && month === today.getMonth() + 1;
 
   // 각 effect는 .then/.catch/.finally 체이닝 방식으로 작성
-  // (단, loadHistory는 params 분기 로직으로 async/await 유지)
 
-  // 마운트 시 1회: 전체 기간 요약 + 전체 러닝 기록 조회
+  // 마운트 시 1회: 전체 기간 요약 조회
   // 컴포넌트 마운트 -> getCalendarSummaryApi() 호출
   // -> 성공: setSummaryData(응답 데이터)
   // -> 실패: setSummaryData(null) (에러 메시지 대신 빈 화면)
-  // --> setIsHistoryLoading(true) -> 로딩 스피너 표시
-  // -> getRunningHistoryApi({}) 호출 (매개변수 없이 전체 기록 조회)
-  // -> 성공: setHistoryData(응답 데이터)
-  // -> 실패: setHistoryData(null)
-  // --> finally: setIsHistoryLoading(false) -> 로딩 스피너 숨김
   useEffect(() => {
     let cancelled = false;
-    async function loadInitial() {
-      setIsSummaryLoading(true);
-      try {
-        const summary = await getCalendarSummaryApi();
-        if (!cancelled) setSummaryData(summary.data);
-      } catch {
-        if (!cancelled) setSummaryData(null);
-      } finally {
-        if (!cancelled) setIsSummaryLoading(false);
-      }
-      if (cancelled) return;
-      setIsHistoryLoading(true);
-      try {
-        const history = await getRunningHistoryApi({});
-        if (!cancelled) setHistoryData(history.data);
-      } catch {
-        if (!cancelled) setHistoryData(null);
-      } finally {
-        if (!cancelled) setIsHistoryLoading(false);
-      }
-    }
-    loadInitial();
-    return () => { cancelled = true; };
-  }, []);
-
-  // 달력이 닫힐 때 (true → false): summary + 전체 history 재조회
-  // [isCalendarOpen] 의존성 배열 (달력 닫힐 때 재조회)
-  const prevShowCalendarRef = useRef<boolean | null>(null);
-  useEffect(() => {
-    const wasOpen = prevShowCalendarRef.current === true;
-    prevShowCalendarRef.current = isCalendarOpen;
-    // 이전 값이 true(달력 열려있었음) && 현재 값이 false(달력 닫힘)
-    if (!wasOpen || isCalendarOpen) return;
-    let cancelled = false;
-    // 성공: summaryData에 새 데이터, 실패: summaryData = null
     setIsSummaryLoading(true);
     getCalendarSummaryApi()
       .then((res) => { if (!cancelled) setSummaryData(res.data); })
       .catch(() => { if (!cancelled) setSummaryData(null); })
       .finally(() => { if (!cancelled) setIsSummaryLoading(false); });
-    // 달력 닫히면 전체 기록으로 복귀 → params 없이 호출
-    setIsHistoryLoading(true);
-    getRunningHistoryApi({})
-      .then((res) => { if (!cancelled) setHistoryData(res.data); })
-      .catch(() => { if (!cancelled) setHistoryData(null); })
-      .finally(() => { if (!cancelled) setIsHistoryLoading(false); });
+    return () => { cancelled = true; };
+  }, []);
+
+  // 달력이 닫힐 때 (true → false): summary 재조회
+  // [isCalendarOpen] 의존성 배열 (달력 닫힐 때 재조회)
+  const prevShowCalendarRef = useRef<boolean | null>(null);
+  useEffect(() => {
+    const wasOpen = prevShowCalendarRef.current === true;
+    prevShowCalendarRef.current = isCalendarOpen;
+    if (!wasOpen || isCalendarOpen) return;
+    let cancelled = false;
+    setIsSummaryLoading(true);
+    getCalendarSummaryApi()
+      .then((res) => { if (!cancelled) setSummaryData(res.data); })
+      .catch(() => { if (!cancelled) setSummaryData(null); })
+      .finally(() => { if (!cancelled) setIsSummaryLoading(false); });
     return () => { cancelled = true; };
   }, [isCalendarOpen]);
 
@@ -125,42 +107,30 @@ export function useCalendar() {
     return () => { cancelled = true; };
   }, [isCalendarOpen, year, month]);
 
-  // 러닝 기록: 달력이 열릴 때 / year·month·selectedDate 변경 시 재조회
-  // 달력이 닫히면 skip → 닫힐 때의 전체 기록 재조회는 위 effect에서 처리
-  // params 분기 로직이 있어 .then 체이닝보다 async/await이 가독성에 유리
-  // [isCalendarOpen, year, month, selectedDate] 의존성 배열
-  useEffect(() => {
-    // 달력 닫혀있으면 skip (닫힐 때 전체 기록 재조회는 위 effect에서 처리)
-    if (!isCalendarOpen) return;
-    let cancelled = false;
-    async function loadHistory() {
-      setIsHistoryLoading(true);
-      try {
-        // 파라미터 결정 (selectedDate 있으면 일별, 없으면 월별)
-        let params: { year?: number; month?: number; day?: number } = {};
-        if (selectedDate) {
-          // "2026-03-16" -> { year: 2026, month: 3, day: 16 }
-          const parts = selectedDate.split('-');
-          params = {
-            year: Number(parts[0]),
-            month: Number(parts[1]),
-            day: Number(parts[2]),
-          };
-        } else {
-          params = { year, month };
-        }
-        const history = await getRunningHistoryApi(params);
-        // 이전 요청보다 늦게 도착한 응답은 무시 (race condition 방지)
-        if (!cancelled) setHistoryData(history.data);
-      } catch {
-        if (!cancelled) setHistoryData(null);
-      } finally {
-        if (!cancelled) setIsHistoryLoading(false);
-      }
-    }
-    loadHistory();
-    return () => { cancelled = true; };
-  }, [isCalendarOpen, year, month, selectedDate]);
+  // 러닝 기록: useInfiniteQuery로 관리
+  // - queryKey가 컨텍스트(전체/월별/일별)마다 달라서 자동으로 캐시 분리
+  // - 돌아왔을 때 캐시된 데이터를 즉시 복원 (staleTime: 5분, main.tsx에서 전역 설정)
+  const historyParams = buildHistoryParams(isCalendarOpen, year, month, selectedDate);
+  const {
+    data: historyPages,
+    isLoading: isHistoryLoading,
+    isFetchingNextPage: isScrollLoading,
+    fetchNextPage,
+    hasNextPage,
+  } = useInfiniteQuery({
+    queryKey: ['runningHistory', historyParams],
+    queryFn: async ({ pageParam }: { pageParam: string | undefined }) => {
+      const res = await getRunningHistoryApi(
+        pageParam ? { ...historyParams, cursor: pageParam } : historyParams,
+      );
+      return res.data;
+    },
+    getNextPageParam: (lastPage) => lastPage.hasMore ? lastPage.nextCursor : undefined,
+    initialPageParam: undefined as string | undefined,
+  });
+
+  const historyItems = historyPages?.pages.flatMap((p) => p.items) ?? [];
+  const hasMore = hasNextPage ?? false;
 
   function goPrev() {
     if (month === 1) {
@@ -189,7 +159,6 @@ export function useCalendar() {
   // Set을 쓰는 이유: CalendarGrid에서 날짜 클릭마다 activeDates.has("2026-03-05")
   // 로 체크 - 배열의 .includes()보다 빠름
   const activeDates = new Set(
-    // .map((s) => s.calendarDate) — 날짜 문자열만 추출
     monthlyData?.dailySummaries.map((s) => s.calendarDate) ?? [],
   );
 
@@ -198,37 +167,6 @@ export function useCalendar() {
     setSelectedDate((prev) => (prev === date ? null : date));
   }
 
-  // 다음 페이지 로드: 현재 컨텍스트(전체/월별/일별)에 cursor를 추가해 요청 후 items에 append
-  const loadMore = useCallback(async () => {
-    // 중복 호출 방지
-    if (!historyData?.hasMore || !historyData.nextCursor || isScrollLoading) return;
-    const cursor = historyData.nextCursor;
-    // 현재 컨텍스트에 맞는 파라미터 구성
-    let params: GetRunningHistoryParams = { cursor };
-    if (isCalendarOpen) {
-      // 일별
-      if (selectedDate) {
-        const parts = selectedDate.split('-');
-        params = { year: Number(parts[0]), month: Number(parts[1]), day: Number(parts[2]), cursor };
-      // 월별
-      } else {
-        params = { year, month, cursor };
-      }
-    }
-    setIsScrollLoading(true);
-    try {
-      const more = await getRunningHistoryApi(params);
-      setHistoryData((prev) =>
-        // 새로 받은 items를 기존 items 뒤에 append (덮어쓰지 않음)
-        prev ? { ...more.data, items: [...prev.items, ...more.data.items] } : more.data,
-      );
-    } catch {
-      // 더 보기 실패 시 기존 목록 유지
-    } finally {
-      setIsScrollLoading(false);
-    }
-  }, [historyData, isScrollLoading, isCalendarOpen, selectedDate, year, month]);
-
   return {
     year,
     month,
@@ -236,10 +174,10 @@ export function useCalendar() {
     isMonthlyLoading,
     summaryData,
     isSummaryLoading,
-    historyData,
+    historyData: { items: historyItems, hasMore },
     isHistoryLoading,
     isScrollLoading,
-    loadMore,
+    loadMore: fetchNextPage,
     selectedDate,
     toggleDate,
     activeDates,
