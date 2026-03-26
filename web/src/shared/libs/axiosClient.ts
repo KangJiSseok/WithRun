@@ -116,8 +116,10 @@ axiosClient.interceptors.response.use(
 
       return axiosClient(originalRequest);
     } catch (refreshError) {
-      useAuthStore.getState().clearAuth();
-      redirectToLogin();
+      if (!import.meta.env.DEV) {
+        useAuthStore.getState().clearAuth();
+        redirectToLogin();
+      }
       return Promise.reject(refreshError);
     }
   },
