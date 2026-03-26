@@ -1,29 +1,34 @@
-import { ChevronLeft, Activity, Timer, MapPin } from 'lucide-react';
+import { X, Activity, Timer, MapPin } from 'lucide-react';
 import { useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 import { cn } from '@/shared/utils';
-import { formatDuration, formatPace } from '@/shared/utils';
+import { formatDuration, formatPace, formatStartTime } from '@/shared/utils';
 import { useNormalRunResultMap } from '@/hooks/NormalRun/useNormalRunResultMap';
 import type { RunningSessionDetailResponse } from '@/apis/runningSessions';
 import type { GpsSample, HealthSample, SplitResult } from '@/apis/runningSessions';
 
-// GPS 경로 지도
+// GPS 경로 지도 (div 하나 만들고 ref 연결)
 function DetailMap({ gpsSamples }: { gpsSamples: GpsSample[] }) {
+  // div 가리키는 ref 만들기 (지도 라이브러리에서 이 div에 지도를 그릴 예정)
   const containerRef = useRef<HTMLDivElement>(null);
   useNormalRunResultMap(containerRef, gpsSamples);
+  // 빈 div 반환 (지도 라이브러리가 이 div에 지도를 그릴 예정)
   return <div ref={containerRef} className="w-full h-full" />;
 }
 
 // 심박수 폴리라인 섹션
 function HeartRateSection({ samples }: { samples: HealthSample[] }) {
+  // healthSamples에서 heartRate만 추출해서 배열로 만들기 (0 이하 값은 제외)
   const rates = samples.map((s) => s.heartRate).filter((r) => r > 0);
+  // 워치 연동 안되어있거나, 심박수 데이터 없으면 null 반환해서 이 섹션 자체를 숨김
   if (rates.length === 0) return null;
 
   const min = Math.min(...rates);
   const max = Math.max(...rates);
   const avg = Math.round(rates.reduce((a, b) => a + b, 0) / rates.length);
 
+  // SVG 좌표 변환
   const W = 300;
   const H = 64;
   const PAD = 4;
@@ -31,7 +36,10 @@ function HeartRateSection({ samples }: { samples: HealthSample[] }) {
     rates.length >= 2
       ? rates
           .map((hr, i) => {
+            // x: 시간축 (왼쪽 -> 오른쪽, 균등 간격)
             const x = PAD + (i / (rates.length - 1)) * (W - PAD * 2);
+            // y: 심박수축 (높을수록 위쪽)
+            // SVG는 y가 위 -> 아래라 H에서 빼기 
             const y = H - PAD - ((hr - min) / (max - min || 1)) * (H - PAD * 2);
             return `${x.toFixed(1)},${y.toFixed(1)}`;
           })
@@ -64,6 +72,7 @@ function HeartRateSection({ samples }: { samples: HealthSample[] }) {
       </div>
       {points && (
         <svg viewBox={`0 0 ${W} ${H}`} className="w-full" style={{ height: 64 }} preserveAspectRatio="none">
+          {/* polyline으로 연결 */}
           <polyline
             points={points}
             fill="none"
@@ -79,9 +88,13 @@ function HeartRateSection({ samples }: { samples: HealthSample[] }) {
 }
 
 // 구간별 페이스 섹션
+// SplitResult 타입의 배열을 받음
+// splitIndex -> 몇 번째 1km 구간인지 (1부터 시작)
+// splitPaceSecPerKm -> 해당 구간의 페이스 (초/킬로미터)
 function SplitsSection({ splits }: { splits: SplitResult[] }) {
+  // 구간 데이터 없으면 섹션 전체 숨김
   if (splits.length === 0) return null;
-
+  // 평균 페이스 계산 (전체 구간의 페이스 평균) - 각 구간의 페이스 합 / 구간 수
   const avgSplitSec =
     splits.reduce((sum, s) => sum + s.splitPaceSecPerKm, 0) / splits.length;
 
@@ -104,7 +117,10 @@ function SplitsSection({ splits }: { splits: SplitResult[] }) {
             {splits.map((split) => (
               <tr key={split.splitIndex}>
                 <td className="px-[var(--space-3)] py-[var(--space-3)] caption-m text-[hsl(var(--text-primary))]">
-                  {split.splitIndex}km
+                  {/* 구간이 1km 미만이면 미터 단위로 표시 */}
+                  {split.splitDistanceM < 1000
+                    ? `${split.splitDistanceM}m`
+                    : `${split.splitIndex}km`}
                 </td>
                 <td className="px-[var(--space-3)] py-[var(--space-3)] caption-m text-[hsl(var(--primary))] font-bold">
                   {formatPace(split.splitPaceSecPerKm)}
@@ -114,6 +130,7 @@ function SplitsSection({ splits }: { splits: SplitResult[] }) {
                     className={cn(
                       'w-2 h-2 rounded-full',
                       split.splitPaceSecPerKm < avgSplitSec
+                        // 평균 페이스보다 빠르면 초록, 느리면 노랑
                         ? 'bg-[hsl(var(--success))]'
                         : 'bg-[hsl(var(--warning))]',
                     )}
@@ -142,24 +159,25 @@ export function CalendarDetailScreen({ detail }: CalendarDetailScreenProps) {
   })();
 
   // "2026-03-12T06:30:00" → "06:30"
-  const timeLabel = (() => {
-    const date = new Date(detail.startedAt);
-    return `${String(date.getHours()).padStart(2, '0')}:${String(date.getMinutes()).padStart(2, '0')}`;
-  })();
+  const timeLabel = formatStartTime(detail.startedAt);
 
   return (
     <div className="absolute inset-0 bg-[hsl(var(--background))] overflow-y-auto">
       <div className="flex flex-col gap-[var(--space-4)] px-[var(--space-5)] pb-[var(--space-10)]">
         {/* 헤더 */}
-        <div className="flex items-center gap-[var(--space-3)] pt-[var(--space-5)]">
-          <button
-            type="button"
-            onClick={() => navigate('/calendar')}
-            className="p-[var(--space-1)] -ml-[var(--space-1)]"
-            aria-label="뒤로가기"
-          >
-            <ChevronLeft size={24} className="text-[hsl(var(--text-primary))]" />
-          </button>
+        <div className="flex flex-col gap-[var(--space-2)] pt-[var(--space-5)]">
+          {/* X 버튼 라인 */}
+          <div className="flex justify-end">
+            <button
+              type="button"
+              onClick={() => navigate('/calendar')}
+              className="w-8 h-8 flex items-center justify-center rounded-full bg-[hsl(var(--surface-subtle))]"
+              aria-label="닫기"
+            >
+              <X size={18} className="text-[hsl(var(--text-primary))]" />
+            </button>
+          </div>
+          {/* 날짜 + 시간 */}
           <div className="flex flex-col">
             <span className="body-b text-[hsl(var(--text-primary))]">{dateLabel}</span>
             <span className="caption-r text-[hsl(var(--text-secondary))]">{timeLabel}</span>
@@ -214,6 +232,9 @@ export function CalendarDetailScreen({ detail }: CalendarDetailScreenProps) {
               {detail.caloriesKcal}
             </span>
             <span className="caption-r text-[hsl(var(--text-secondary))]">kcal</span>
+            {detail.caloriesKcal === 0 && (
+              <span className="caption-r text-[hsl(var(--text-secondary))]">워치 미연동</span>
+            )}
           </div>
           <div className="flex-1 flex flex-col items-center gap-[var(--space-1)] rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] py-[var(--space-4)] px-[var(--space-2)]">
             <span className="caption-r text-[hsl(var(--text-secondary))]">누적 고도</span>

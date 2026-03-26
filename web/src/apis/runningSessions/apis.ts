@@ -85,8 +85,7 @@ export const getRunningSessionDetailApi = async (
   runningSessionId: number,
 ): Promise<ApiResponse<RunningSessionDetailResponse>> => {
   const { data } = await axiosClient.get<ApiResponse<RunningSessionDetailResponse>>(
-    `/running-sessions/${runningSessionId}/detail`,
-    { data: { userId: MOCK_USER_ID } },
+    `/running-sessions/${runningSessionId}/detail/${MOCK_USER_ID}`,
   );
   return data;
 };
