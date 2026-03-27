@@ -2,14 +2,22 @@ import { Navigate, Outlet } from 'react-router-dom';
 
 import { useAuthStore } from '@/stores/Auth';
 
+function resolveAuthenticatedPath(
+  profileCompleted: boolean | undefined
+): string {
+  return profileCompleted ? '/home' : '/onboarding';
+}
+
 function AuthPendingScreen() {
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#101116] px-6 text-center text-white">
-      <div className="space-y-3">
-        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-white/15 border-t-[#FF5858]" />
+    <div className="flex min-h-screen items-center justify-center bg-[hsl(var(--surface-subtle))] px-6 text-center text-[hsl(var(--text-primary))]">
+      <div className="space-y-4 rounded-[var(--radius-2xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-8 py-10 shadow-[var(--shadow-lg)]">
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[hsl(var(--border-default))] border-t-[hsl(var(--primary-1))]" />
         <div className="space-y-1">
-          <p className="text-lg font-bold">로그인 상태를 확인하고 있어요</p>
-          <p className="text-sm text-white/60">
+          <p className="text-lg font-bold text-[hsl(var(--text-primary))]">
+            로그인 상태를 확인하고 있어요
+          </p>
+          <p className="text-sm text-[hsl(var(--text-secondary))]">
             잠시만 기다리면 바로 다음 화면으로 이동합니다.
           </p>
         </div>
@@ -20,9 +28,13 @@ function AuthPendingScreen() {
 
 export function PublicOnlyRoute() {
   const status = useAuthStore((state) => state.status);
+  const profileCompleted = useAuthStore(
+    (state) => state.user?.profileCompleted
+  );
 
   if (status === 'authenticated') {
-    return <Navigate to="/home" replace />;
+    // 이미 로그인된 사용자는 login 화면 대신 현재 프로필 완료 상태에 맞는 목적지로 보낸다.
+    return <Navigate to={resolveAuthenticatedPath(profileCompleted)} replace />;
   }
 
   return <Outlet />;
@@ -38,10 +50,12 @@ export function OnboardingRoute() {
     if (accessToken && user === null) {
       return <AuthPendingScreen />;
     }
+
     if (!accessToken) {
       return <Navigate to="/login" replace />;
     }
-    // accessToken 있고 user snapshot 있음 → profileCompleted 체크로 fall-through
+
+    // accessToken 있고 user snapshot 있음 -> profileCompleted 체크로 fall-through
   }
 
   if (status === 'unauthenticated') {
