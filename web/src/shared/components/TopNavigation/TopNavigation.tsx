@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Bookmark, User } from 'lucide-react';
+import { Bookmark, Settings2 } from 'lucide-react';
 import { Button } from '../shadcn/button';
 
 export default function TopNavigation() {
@@ -11,11 +11,12 @@ export default function TopNavigation() {
         type="button"
         variant="outline"
         size="icon"
-        // 상단 공통 프로필 버튼은 마이페이지 도입 후 /profile 로 통일합니다.
+        // 상단 공통 설정 버튼은 현재 /profile 경로를 설정 화면으로 재정의해서 사용합니다.
         onClick={() => navigate('/profile')}
+        aria-label="설정으로 이동"
         className="h-12 w-12 rounded-full border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))]"
       >
-        <User size={20} />
+        <Settings2 size={20} />
       </Button>
 
       <Button

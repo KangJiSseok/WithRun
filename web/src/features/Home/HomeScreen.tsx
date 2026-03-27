@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bookmark, HeartPulse, Route, Settings2, UserRound } from 'lucide-react';
+import { Bookmark, HeartPulse, Route, Settings2 } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
@@ -296,9 +296,9 @@ export function HomeScreen() {
               type="button"
               onClick={() => navigate('/profile')}
               className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-sm"
-              aria-label="프로필로 이동"
+              aria-label="설정으로 이동"
             >
-              <UserRound size={20} />
+              <Settings2 size={20} />
             </button>
             <button
               type="button"
