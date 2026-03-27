@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { useNormalRunLocation } from '@/hooks/NormalRun/useNormalRunLocation';
+import { useRunLocation } from '@/shared/hooks/useRunLocation';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const LERP = 0.12;
@@ -59,7 +59,7 @@ function createUserMarkerContent(): { element: HTMLElement; coneEl: HTMLElement 
 }
 
 export function useFreeRunningMap(containerRef: React.RefObject<HTMLDivElement | null>): void {
-  const { location } = useNormalRunLocation();
+  const { location } = useRunLocation();
   const mapRef = useRef<kakao.maps.Map | null>(null);
   const userDotRef = useRef<kakao.maps.CustomOverlay | null>(null);
   const animStateRef = useRef({
