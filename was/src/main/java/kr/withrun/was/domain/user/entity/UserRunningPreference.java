@@ -21,7 +21,9 @@ import lombok.Getter;
 import lombok.NoArgsConstructor;
 
 import java.util.ArrayList;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Set;
 
 @Getter
 @Entity
@@ -98,26 +100,49 @@ public class UserRunningPreference extends BaseEntity {
     }
 
     public void replacePurposes(List<kr.withrun.was.domain.user.type.Purpose> purposes) {
-        // 같은 값을 여러 번 보내도 DB unique 제약에 걸리지 않도록 중복을 제거합니다.
-        this.purposes.clear();
-        purposes.stream()
-                .distinct()
+        // 기존 값을 유지한 채 일부만 바꾸는 경우 clear 후 재삽입하면 unique 제약에 걸릴 수 있어 diff 기반으로 교체합니다.
+        Set<kr.withrun.was.domain.user.type.Purpose> nextPurposes = new LinkedHashSet<>(purposes);
+
+        this.purposes.removeIf(currentPurpose -> !nextPurposes.contains(currentPurpose.getPurpose()));
+
+        Set<kr.withrun.was.domain.user.type.Purpose> existingPurposes = this.purposes.stream()
+                .map(UserPreferencePurpose::getPurpose)
+                .collect(LinkedHashSet::new, Set::add, Set::addAll);
+
+        nextPurposes.stream()
+                .filter(nextPurpose -> !existingPurposes.contains(nextPurpose))
                 .map(UserPreferencePurpose::create)
                 .forEach(this::addPurpose);
     }
 
     public void replaceCourseTypes(List<kr.withrun.was.domain.course.type.CourseType> courseTypes) {
-        this.courseTypes.clear();
-        courseTypes.stream()
-                .distinct()
+        Set<kr.withrun.was.domain.course.type.CourseType> nextCourseTypes = new LinkedHashSet<>(courseTypes);
+
+        this.courseTypes.removeIf(
+                currentCourseType -> !nextCourseTypes.contains(currentCourseType.getCourseType())
+        );
+
+        Set<kr.withrun.was.domain.course.type.CourseType> existingCourseTypes = this.courseTypes.stream()
+                .map(UserPreferenceCourseType::getCourseType)
+                .collect(LinkedHashSet::new, Set::add, Set::addAll);
+
+        nextCourseTypes.stream()
+                .filter(nextCourseType -> !existingCourseTypes.contains(nextCourseType))
                 .map(UserPreferenceCourseType::create)
                 .forEach(this::addCourseType);
     }
 
     public void replaceTimeSlots(List<kr.withrun.was.global.common.type.TimeSlot> timeSlots) {
-        this.timeSlots.clear();
-        timeSlots.stream()
-                .distinct()
+        Set<kr.withrun.was.global.common.type.TimeSlot> nextTimeSlots = new LinkedHashSet<>(timeSlots);
+
+        this.timeSlots.removeIf(currentTimeSlot -> !nextTimeSlots.contains(currentTimeSlot.getTimeSlot()));
+
+        Set<kr.withrun.was.global.common.type.TimeSlot> existingTimeSlots = this.timeSlots.stream()
+                .map(UserPreferenceTimeSlot::getTimeSlot)
+                .collect(LinkedHashSet::new, Set::add, Set::addAll);
+
+        nextTimeSlots.stream()
+                .filter(nextTimeSlot -> !existingTimeSlots.contains(nextTimeSlot))
                 .map(UserPreferenceTimeSlot::create)
                 .forEach(this::addTimeSlot);
     }
