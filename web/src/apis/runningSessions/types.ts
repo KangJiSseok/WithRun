@@ -1,4 +1,4 @@
-import type { RunningMode, CourseDifficulty, CourseType, CourseStatus, CourseRegistrationMode } from '@/shared/types/api.type';
+import type { RunningMode, CourseDifficulty, CourseType, CourseStatus, CourseRegistrationMode, RouteType } from '@/shared/types/api.type';
 
 // GET /running-sessions/history/past - 과거 러닝 세션 항목
 export type RunningHistoryItem = {
@@ -168,9 +168,10 @@ export type RunningSessionDetailResponse = {
 
 export type RegisterCourseRequest = {
   title: string;
+  mode: CourseRegistrationMode;
   difficulty: CourseDifficulty;
   courseTypes: CourseType[];
-  mode: CourseRegistrationMode;
+  routeType: RouteType;
   snapshotImageUrl?: string;
 };
 

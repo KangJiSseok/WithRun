@@ -11,7 +11,7 @@ import {
   DrawerTitle,
 } from '@/shared/components/shadcn/drawer';
 import { cn } from '@/shared/utils';
-import type { CourseDifficulty, CourseType, CourseRegistrationMode } from '@/shared/types/api.type';
+import type { CourseDifficulty, CourseType, CourseRegistrationMode, RouteType } from '@/shared/types/api.type';
 import { useCourseSurveys } from '@/hooks/FreeRun/useCourseSurveys';
 import { registerCourse } from '@/apis/runningSessions';
 
@@ -30,7 +30,8 @@ export function CourseShareModal({ isOpen, onClose, runningSessionId, onRegister
   const [difficultyOverride, setDifficultyOverride] = useState<CourseDifficulty | null>(null);
   // 선택된 코스 타입 목록 (서버 enum 값, 복수 선택 가능)
   const [courseTypes, setCourseTypes] = useState<CourseType[]>([]);
-  const [courseMode, setCourseMode] = useState<CourseRegistrationMode>('COMMUNITY');
+  const [courseModeOverride, setCourseModeOverride] = useState<CourseRegistrationMode | null>(null);
+  const [routeTypeOverride, setRouteTypeOverride] = useState<RouteType | null>(null);
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   // isOpen이 true가 될 때 GET /meta/course/register API 호출
@@ -39,7 +40,9 @@ export function CourseShareModal({ isOpen, onClose, runningSessionId, onRegister
   const { surveyData, isLoading } = useCourseSurveys(isOpen);
 
   // 사용자가 선택한 값이 있으면 그 값, 없으면 API 첫 번째 항목을 기본값으로 사용
+  const courseMode = courseModeOverride ?? (surveyData?.mode[0]?.data as CourseRegistrationMode | undefined);
   const difficulty = difficultyOverride ?? (surveyData?.difficulties[0]?.data as CourseDifficulty | undefined);
+  const routeType = routeTypeOverride ?? (surveyData?.routeTypes[0]?.data as RouteType | undefined);
 
   function toggleCourseType(data: CourseType) {
     setCourseTypes((prev) =>
@@ -48,14 +51,15 @@ export function CourseShareModal({ isOpen, onClose, runningSessionId, onRegister
   }
 
   async function handleSubmit() {
-    if (!difficulty || !runningSessionId) return;
+    if (!courseMode || !difficulty || !routeType || !runningSessionId) return;
     setIsSubmitting(true);
     try {
       const res = await registerCourse(runningSessionId, {
         title: courseTitle,
+        mode: courseMode,
         difficulty,
         courseTypes,
-        mode: courseMode,
+        routeType,
       });
       onRegistered(res.data.courseId);
       onClose();
@@ -99,7 +103,7 @@ export function CourseShareModal({ isOpen, onClose, runningSessionId, onRegister
                   {surveyData.mode.map(({ data, label }) => (
                     <button
                       key={data}
-                      onClick={() => setCourseMode(data as CourseRegistrationMode)}
+                      onClick={() => setCourseModeOverride(data as CourseRegistrationMode)}
                       className={cn(
                         'flex-1 py-2 rounded-xl caption-m transition-colors border',
                         courseMode === data
@@ -124,6 +128,27 @@ export function CourseShareModal({ isOpen, onClose, runningSessionId, onRegister
                       className={cn(
                         'flex-1 py-2 rounded-xl caption-m transition-colors border',
                         difficulty === data
+                          ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
+                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
+                      )}
+                    >
+                      {label}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              {/* 경로 유형 */}
+              <div className="space-y-[var(--space-2)]">
+                <label className="caption-b text-[hsl(var(--text-inverse))]">경로 유형</label>
+                <div className="flex gap-2">
+                  {surveyData.routeTypes.map(({ data, label }) => (
+                    <button
+                      key={data}
+                      onClick={() => setRouteTypeOverride(data as RouteType)}
+                      className={cn(
+                        'flex-1 py-2 rounded-xl caption-m transition-colors border',
+                        routeType === data
                           ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
                           : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
                       )}

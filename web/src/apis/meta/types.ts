@@ -21,5 +21,6 @@ export type GetNormalRunCourseFilterData = {
 export type GetCourseRegisterMetaResponse = {
   courseTypes: MetaOption[];
   mode: MetaOption[];
+  routeTypes: MetaOption[];
   difficulties: MetaOption[];
 };
