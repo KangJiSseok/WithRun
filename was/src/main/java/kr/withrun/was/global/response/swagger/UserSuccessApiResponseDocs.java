@@ -1,6 +1,7 @@
 package kr.withrun.was.global.response.swagger;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import kr.withrun.was.domain.user.dto.NicknameAvailabilityResponse;
 import kr.withrun.was.domain.user.dto.UserProfileResponse;
 import kr.withrun.was.domain.user.dto.UserRunningPreferenceResponse;
 
@@ -30,6 +31,19 @@ public final class UserSuccessApiResponseDocs {
             String code,
             @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
             String message
+    ) {
+    }
+
+    @Schema(name = "UserNicknameAvailabilityApiResponse", description = "현재 로그인 사용자 닉네임 사용 가능 여부 조회 성공 응답")
+    public record UserNicknameAvailabilityApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "닉네임 사용 가능 여부 데이터")
+            NicknameAvailabilityResponse data
     ) {
     }
 

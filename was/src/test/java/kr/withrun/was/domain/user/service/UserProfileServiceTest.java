@@ -1,6 +1,7 @@
 package kr.withrun.was.domain.user.service;
 
 import kr.withrun.was.domain.user.dto.UpdateUserProfileRequest;
+import kr.withrun.was.domain.user.dto.NicknameAvailabilityResponse;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.repository.UserRepository;
 import kr.withrun.was.domain.user.type.Gender;
@@ -103,6 +104,26 @@ class UserProfileServiceTest {
                 .isInstanceOf(CustomException.class)
                 .extracting(exception -> ((CustomException) exception).getResponseCode())
                 .isEqualTo(ResponseCode.NICKNAME_ALREADY_EXISTS);
+    }
+
+    @Test
+    @DisplayName("다른 활성 사용자가 닉네임을 사용 중이면 사용 불가를 반환한다")
+    void returnsUnavailableWhenNicknameAlreadyExists() {
+        given(userRepository.existsActiveUserByNickname("runner-next")).willReturn(true);
+
+        NicknameAvailabilityResponse response = userProfileService.getNicknameAvailability("  runner-next  ");
+
+        assertThat(response.available()).isFalse();
+    }
+
+    @Test
+    @DisplayName("활성 사용자가 쓰지 않는 닉네임이면 사용 가능을 반환한다")
+    void returnsAvailableWhenNicknameCanBeUsed() {
+        given(userRepository.existsActiveUserByNickname("runner")).willReturn(false);
+
+        NicknameAvailabilityResponse response = userProfileService.getNicknameAvailability("  runner  ");
+
+        assertThat(response.available()).isTrue();
     }
 
     @Test

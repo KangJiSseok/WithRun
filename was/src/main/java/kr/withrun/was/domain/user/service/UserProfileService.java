@@ -1,5 +1,6 @@
 package kr.withrun.was.domain.user.service;
 
+import kr.withrun.was.domain.user.dto.NicknameAvailabilityResponse;
 import kr.withrun.was.domain.user.dto.UpdateUserProfileRequest;
 import kr.withrun.was.domain.user.dto.UserProfileResponse;
 import kr.withrun.was.domain.user.entity.User;
@@ -25,6 +26,15 @@ public class UserProfileService {
                 .orElseThrow(() -> new CustomException(ResponseCode.USER_NOT_FOUND));
 
         return UserProfileResponse.from(user);
+    }
+
+    public NicknameAvailabilityResponse getNicknameAvailability(String nickname) {
+        String normalizedNickname = nickname.trim();
+        validateNickname(normalizedNickname);
+
+        return new NicknameAvailabilityResponse(
+                !userRepository.existsActiveUserByNickname(normalizedNickname)
+        );
     }
 
     @Transactional

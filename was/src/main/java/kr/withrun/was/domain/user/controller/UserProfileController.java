@@ -12,6 +12,7 @@ import jakarta.servlet.http.HttpServletResponse;
 import jakarta.validation.Valid;
 import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.auth.service.AuthService;
+import kr.withrun.was.domain.user.dto.NicknameAvailabilityResponse;
 import kr.withrun.was.domain.user.dto.UpdateUserProfileRequest;
 import kr.withrun.was.domain.user.dto.UserProfileResponse;
 import kr.withrun.was.domain.user.service.UserProfileService;
@@ -29,17 +30,58 @@ import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 @Tag(name = "User Profile", description = "현재 로그인한 사용자 프로필 조회 및 수정 API")
 @RestController
-@RequestMapping("/api/users/me")
+@RequestMapping("/api/users")
 @RequiredArgsConstructor
 public class UserProfileController {
 
     private final UserProfileService userProfileService;
     private final AuthService authService;
+
+    @Operation(
+            summary = "닉네임을 사용할 수 있는지 확인한다",
+            description = "인증 없이 nickname 하나만 받아 현재 활성 사용자 기준으로 사용 가능한 닉네임인지 확인한다.",
+            parameters = {
+                    @Parameter(
+                            name = "nickname",
+                            in = ParameterIn.QUERY,
+                            required = true,
+                            description = "사용 가능 여부를 확인할 닉네임",
+                            example = "runner-next"
+                    )
+            }
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "닉네임 사용 가능 여부 조회 성공",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = UserSuccessApiResponseDocs.UserNicknameAvailabilityApiResponse.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.USER_NICKNAME_AVAILABILITY_SUCCESS)
+                    )
+            ),
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "400",
+                    description = "닉네임 값이 비어 있거나 길이 제한을 초과함",
+                    content = @Content(
+                            mediaType = "application/json",
+                            schema = @Schema(implementation = ErrorApiResponseDoc.class),
+                            examples = @ExampleObject(value = SwaggerExampleValues.VALIDATION_ERROR_USER_PROFILE)
+                    )
+            )
+    })
+    @GetMapping("/nickname-availability")
+    public ResponseEntity<ApiResponse<NicknameAvailabilityResponse>> getNicknameAvailability(
+            @RequestParam String nickname
+    ) {
+        return ApiResponse.successEntity(userProfileService.getNicknameAvailability(nickname));
+    }
 
     @Operation(
             summary = "현재 로그인 사용자의 프로필을 조회한다",
@@ -86,7 +128,7 @@ public class UserProfileController {
                     )
             )
     })
-    @GetMapping
+    @GetMapping("/me")
     public ResponseEntity<ApiResponse<UserProfileResponse>> getProfile(
             @Parameter(hidden = true)
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
@@ -159,7 +201,7 @@ public class UserProfileController {
                     )
             )
     })
-    @PutMapping
+    @PutMapping("/me")
     public ResponseEntity<ApiResponse<Void>> updateProfile(
             @Parameter(hidden = true)
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
@@ -224,7 +266,7 @@ public class UserProfileController {
                     )
             )
     })
-    @DeleteMapping
+    @DeleteMapping("/me")
     public ResponseEntity<ApiResponse<Void>> deleteProfile(
             @Parameter(hidden = true)
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
