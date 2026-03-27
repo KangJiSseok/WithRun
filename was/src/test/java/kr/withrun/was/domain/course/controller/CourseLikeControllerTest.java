@@ -1,5 +1,7 @@
 package kr.withrun.was.domain.course.controller;
 
+import kr.withrun.was.domain.auth.security.AuthenticatedUser;
+import org.junit.jupiter.api.AfterEach;
 import kr.withrun.was.domain.course.dto.CourseLikeStatusResponse;
 import kr.withrun.was.domain.course.service.CourseLikeService;
 import kr.withrun.was.domain.course.type.CourseStatus;
@@ -10,11 +12,17 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.testSecurityContext;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -43,6 +51,11 @@ class CourseLikeControllerTest {
         System.clearProperty("spring.config.import");
     }
 
+    @AfterEach
+    void clearSecurityContext() {
+        TestSecurityContextHolder.clearContext();
+    }
+
     @DisplayName("코스 좋아요 응답을 성공 응답 포맷으로 감싼다")
     @Test
     void wrapsLikeCourseResponseInSuccessEnvelope() throws Exception {
@@ -51,7 +64,8 @@ class CourseLikeControllerTest {
         CourseLikeStatusResponse response = new CourseLikeStatusResponse(courseId, true, 14L, CourseStatus.OFFICIAL);
         given(courseLikeService.likeCourse(courseId, userId)).willReturn(response);
 
-        mockMvc.perform(post("/api/courses/{courseId}/like/{userId}", courseId, userId))
+        mockMvc.perform(post("/api/courses/{courseId}/like", courseId)
+                        .with(authenticated(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
@@ -72,7 +86,8 @@ class CourseLikeControllerTest {
         CourseLikeStatusResponse response = new CourseLikeStatusResponse(courseId, false, 13L, CourseStatus.OFFICIAL);
         given(courseLikeService.unlikeCourse(courseId, userId)).willReturn(response);
 
-        mockMvc.perform(delete("/api/courses/{courseId}/like/{userId}", courseId, userId))
+        mockMvc.perform(delete("/api/courses/{courseId}/like", courseId)
+                        .with(authenticated(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
@@ -93,7 +108,8 @@ class CourseLikeControllerTest {
         given(courseLikeService.likeCourse(courseId, userId))
                 .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
 
-        mockMvc.perform(post("/api/courses/{courseId}/like/{userId}", courseId, userId))
+        mockMvc.perform(post("/api/courses/{courseId}/like", courseId)
+                        .with(authenticated(userId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()));
@@ -109,11 +125,27 @@ class CourseLikeControllerTest {
         given(courseLikeService.unlikeCourse(courseId, userId))
                 .willThrow(new CustomException(ResponseCode.USER_NOT_FOUND));
 
-        mockMvc.perform(delete("/api/courses/{courseId}/like/{userId}", courseId, userId))
+        mockMvc.perform(delete("/api/courses/{courseId}/like", courseId)
+                        .with(authenticated(userId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.USER_NOT_FOUND.getCode()));
 
         then(courseLikeService).should().unlikeCourse(courseId, userId);
+    }
+
+    private Authentication authenticatedUser(Long userId) {
+        return UsernamePasswordAuthenticationToken.authenticated(
+                new AuthenticatedUser(userId, "google", true),
+                null,
+                java.util.List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+    }
+
+    private RequestPostProcessor authenticated(Long userId) {
+        return request -> {
+            TestSecurityContextHolder.setAuthentication(authenticatedUser(userId));
+            return testSecurityContext().postProcessRequest(request);
+        };
     }
 }

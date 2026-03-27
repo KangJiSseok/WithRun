@@ -1,20 +1,24 @@
 package kr.withrun.was.domain.user.controller;
 
+import kr.withrun.was.domain.auth.jwt.JwtProvider;
 import kr.withrun.was.domain.user.dto.UserCalendarMonthlyResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarSummaryResponse;
 import kr.withrun.was.domain.user.dto.UserCalendarWeeklyResponse;
+import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.service.UserCalendarService;
+import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 
+import java.lang.reflect.Field;
 import java.time.LocalDate;
 import java.util.List;
 
@@ -25,27 +29,24 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = UserCalendarController.class, properties = "spring.config.import=")
-@AutoConfigureMockMvc(addFilters = false)
+@SpringBootTest(
+        properties = {
+                "spring.config.import=",
+                "spring.cloud.aws.parameterstore.enabled=false"
+        }
+)
+@AutoConfigureMockMvc
 @DisplayName("사용자 캘린더 컨트롤러")
 class UserCalendarControllerTest {
-
-    static {
-        System.setProperty("spring.cloud.aws.parameterstore.enabled", "false");
-        System.setProperty("spring.config.import", "");
-    }
 
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private JwtProvider jwtProvider;
+
     @MockitoBean
     private UserCalendarService userCalendarService;
-
-    @AfterAll
-    static void clearConfigOverrides() {
-        System.clearProperty("spring.cloud.aws.parameterstore.enabled");
-        System.clearProperty("spring.config.import");
-    }
 
     @DisplayName("월별 캘린더 응답을 성공 응답 포맷으로 감싼다")
     @Test
@@ -76,7 +77,8 @@ class UserCalendarControllerTest {
         );
         given(userCalendarService.findMonthlyCalendar(userId, year, month)).willReturn(response);
 
-        mockMvc.perform(get("/api/calendars/{userId}", userId)
+        mockMvc.perform(get("/api/calendars/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(userId))
                         .queryParam("year", String.valueOf(year))
                         .queryParam("month", String.valueOf(month)))
                 .andExpect(status().isOk())
@@ -105,7 +107,8 @@ class UserCalendarControllerTest {
     @DisplayName("월 파라미터가 범위를 벗어나면 잘못된 입력 응답을 반환한다")
     @Test
     void returnsInvalidInputWhenMonthIsOutOfRange() throws Exception {
-        mockMvc.perform(get("/api/calendars/{userId}", 30L)
+        mockMvc.perform(get("/api/calendars/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(30L))
                         .queryParam("year", "2026")
                         .queryParam("month", "13"))
                 .andExpect(status().isBadRequest())
@@ -118,7 +121,8 @@ class UserCalendarControllerTest {
     @DisplayName("연도 파라미터가 없으면 잘못된 입력 응답을 반환한다")
     @Test
     void returnsInvalidInputWhenYearIsMissing() throws Exception {
-        mockMvc.perform(get("/api/calendars/{userId}", 30L)
+        mockMvc.perform(get("/api/calendars/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(30L))
                         .queryParam("month", "3"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
@@ -130,7 +134,8 @@ class UserCalendarControllerTest {
     @DisplayName("월 파라미터가 없으면 잘못된 입력 응답을 반환한다")
     @Test
     void returnsInvalidInputWhenMonthIsMissing() throws Exception {
-        mockMvc.perform(get("/api/calendars/{userId}", 30L)
+        mockMvc.perform(get("/api/calendars/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(30L))
                         .queryParam("year", "2026"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
@@ -142,7 +147,8 @@ class UserCalendarControllerTest {
     @DisplayName("연도 파라미터가 허용 범위를 넘으면 잘못된 입력 응답을 반환한다")
     @Test
     void returnsInvalidInputWhenYearIsOutOfRange() throws Exception {
-        mockMvc.perform(get("/api/calendars/{userId}", 30L)
+        mockMvc.perform(get("/api/calendars/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(30L))
                         .queryParam("year", "1000000000")
                         .queryParam("month", "3"))
                 .andExpect(status().isBadRequest())
@@ -159,7 +165,8 @@ class UserCalendarControllerTest {
         given(userCalendarService.findMonthlyCalendar(userId, 2026, 3))
                 .willThrow(new CustomException(ResponseCode.USER_NOT_FOUND));
 
-        mockMvc.perform(get("/api/calendars/{userId}", userId)
+        mockMvc.perform(get("/api/calendars/me")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(userId))
                         .queryParam("year", "2026")
                         .queryParam("month", "3"))
                 .andExpect(status().isNotFound())
@@ -186,7 +193,8 @@ class UserCalendarControllerTest {
         );
         given(userCalendarService.findSummary(userId)).willReturn(response);
 
-        mockMvc.perform(get("/api/calendars/{userId}/summary", userId))
+        mockMvc.perform(get("/api/calendars/me/summary")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
@@ -210,7 +218,8 @@ class UserCalendarControllerTest {
         given(userCalendarService.findSummary(userId))
                 .willThrow(new CustomException(ResponseCode.USER_NOT_FOUND));
 
-        mockMvc.perform(get("/api/calendars/{userId}/summary", userId))
+        mockMvc.perform(get("/api/calendars/me/summary")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(userId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.USER_NOT_FOUND.getCode()))
@@ -231,7 +240,8 @@ class UserCalendarControllerTest {
         );
         given(userCalendarService.findWeeklySummary(userId)).willReturn(response);
 
-        mockMvc.perform(get("/api/calendars/{userId}/weekly", userId))
+        mockMvc.perform(get("/api/calendars/me/weekly")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
@@ -251,12 +261,48 @@ class UserCalendarControllerTest {
         given(userCalendarService.findWeeklySummary(userId))
                 .willThrow(new CustomException(ResponseCode.USER_NOT_FOUND));
 
-        mockMvc.perform(get("/api/calendars/{userId}/weekly", userId))
+        mockMvc.perform(get("/api/calendars/me/weekly")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(userId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.USER_NOT_FOUND.getCode()))
                 .andExpect(jsonPath("$.message").value(ResponseCode.USER_NOT_FOUND.getMessage()));
 
         then(userCalendarService).should().findWeeklySummary(userId);
+    }
+
+    private String bearerToken(Long userId) {
+        return "Bearer " + jwtProvider.generateTokenPair(completedUser(userId), "google").accessToken();
+    }
+
+    private User completedUser(Long id) {
+        User user = User.createPendingSocialUser();
+        setField(user, "id", id);
+        user.completeProfile(
+                "runner",
+                LocalDate.of(1999, 1, 2),
+                Gender.MALE,
+                180.0,
+                72.5
+        );
+        return user;
+    }
+
+    private void setField(Object target, String fieldName, Object value) {
+        Class<?> currentClass = target.getClass();
+        while (currentClass != null) {
+            try {
+                Field field = currentClass.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(target, value);
+                return;
+            } catch (NoSuchFieldException exception) {
+                currentClass = currentClass.getSuperclass();
+            } catch (IllegalAccessException exception) {
+                throw new IllegalStateException("Failed to set field " + fieldName, exception);
+            }
+        }
+
+        throw new IllegalArgumentException("Field not found: " + fieldName);
     }
 }

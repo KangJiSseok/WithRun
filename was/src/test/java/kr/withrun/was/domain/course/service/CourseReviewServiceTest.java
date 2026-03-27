@@ -64,47 +64,51 @@ class CourseReviewServiceTest {
     @DisplayName("코스 리뷰를 생성하면 평점, 난이도, 코스 타입을 저장하고 응답을 반환한다")
     @Test
     void createsCourseReviewAndReturnsSavedReview() {
-        Course course = course(101L);
-        User user = user(1L);
-        CreateCourseReviewRequest request = new CreateCourseReviewRequest(1L, 5, List.of("RIVERSIDE", "URBAN"), "MEDIUM");
+        long courseId = 101L;
+        long userId = 1L;
+        Course course = course(courseId);
+        User user = user(userId);
+        CreateCourseReviewRequest request = new CreateCourseReviewRequest(5, List.of("RIVERSIDE", "URBAN"), "MEDIUM");
         CourseReview savedReview = review(501L, course, user, 5, Difficulty.MEDIUM, LocalDateTime.of(2026, 3, 8, 21, 0));
 
-        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
-        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
-        when(courseReviewRepository.existsByCourseIdAndUserId(course.getId(), user.getId())).thenReturn(false);
+        when(courseRepository.findNotDeletedCourse(courseId)).thenReturn(Optional.of(course));
+        when(userRepository.findNotDeletedUser(userId)).thenReturn(Optional.of(user));
+        when(courseReviewRepository.existsByCourseIdAndUserId(courseId, userId)).thenReturn(false);
         when(courseReviewRepository.save(any(CourseReview.class))).thenReturn(savedReview);
 
-        CreateCourseReviewResponse response = courseReviewService.createCourseReview(course.getId(), request);
+        CreateCourseReviewResponse response = courseReviewService.createCourseReview(courseId, userId, request);
 
-        assertThat(response.courseReviewId()).isEqualTo(savedReview.getId());
-        assertThat(response.courseId()).isEqualTo(course.getId());
+        assertThat(response.courseReviewId()).isEqualTo(getField(savedReview, "id", Long.class));
+        assertThat(response.courseId()).isEqualTo(courseId);
         assertThat(response.rating()).isEqualTo(5);
         assertThat(response.courseTypes()).containsExactly(
                 new CreateCourseReviewResponse.CourseTypeOption("RIVERSIDE", "강변"),
                 new CreateCourseReviewResponse.CourseTypeOption("URBAN", "도심")
         );
         assertThat(response.submittedDifficulty()).isEqualTo(new CreateCourseReviewResponse.DifficultyOption("MEDIUM", "보통"));
-        assertThat(response.createdAt()).isEqualTo(savedReview.getCreatedAt());
+        assertThat(response.createdAt()).isEqualTo(getField(savedReview, "createdAt", LocalDateTime.class));
 
         ArgumentCaptor<List<CourseReviewCourseType>> courseTypesCaptor = ArgumentCaptor.forClass(List.class);
         verify(courseReviewCourseTypeRepository).saveAll(courseTypesCaptor.capture());
         assertThat(courseTypesCaptor.getValue())
-                .extracting(CourseReviewCourseType::getCourseType)
+                .extracting(courseReviewCourseType -> getField(courseReviewCourseType, "courseType", CourseType.class))
                 .containsExactly(CourseType.RIVERSIDE, CourseType.URBAN);
     }
 
     @DisplayName("이미 작성한 리뷰가 있으면 REVIEW_ALREADY_EXISTS 예외를 던진다")
     @Test
     void throwsReviewAlreadyExistsWhenDuplicateReviewIsRequested() {
-        Course course = course(102L);
-        User user = user(2L);
-        CreateCourseReviewRequest request = new CreateCourseReviewRequest(2L, 4, List.of("PARK"), "EASY");
+        long courseId = 102L;
+        long userId = 2L;
+        Course course = course(courseId);
+        User user = user(userId);
+        CreateCourseReviewRequest request = new CreateCourseReviewRequest(4, List.of("PARK"), "EASY");
 
-        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
-        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
-        when(courseReviewRepository.existsByCourseIdAndUserId(course.getId(), user.getId())).thenReturn(true);
+        when(courseRepository.findNotDeletedCourse(courseId)).thenReturn(Optional.of(course));
+        when(userRepository.findNotDeletedUser(userId)).thenReturn(Optional.of(user));
+        when(courseReviewRepository.existsByCourseIdAndUserId(courseId, userId)).thenReturn(true);
 
-        assertThatThrownBy(() -> courseReviewService.createCourseReview(course.getId(), request))
+        assertThatThrownBy(() -> courseReviewService.createCourseReview(courseId, userId, request))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.REVIEW_ALREADY_EXISTS);
@@ -116,17 +120,19 @@ class CourseReviewServiceTest {
     @DisplayName("리뷰 저장 중 유니크 제약 위반이 발생하면 REVIEW_ALREADY_EXISTS 예외로 변환한다")
     @Test
     void throwsReviewAlreadyExistsWhenUniqueConstraintIsViolatedDuringSave() {
-        Course course = course(105L);
-        User user = user(5L);
-        CreateCourseReviewRequest request = new CreateCourseReviewRequest(5L, 4, List.of("PARK"), "EASY");
+        long courseId = 105L;
+        long userId = 5L;
+        Course course = course(courseId);
+        User user = user(userId);
+        CreateCourseReviewRequest request = new CreateCourseReviewRequest(4, List.of("PARK"), "EASY");
 
-        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
-        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
-        when(courseReviewRepository.existsByCourseIdAndUserId(course.getId(), user.getId())).thenReturn(false);
+        when(courseRepository.findNotDeletedCourse(courseId)).thenReturn(Optional.of(course));
+        when(userRepository.findNotDeletedUser(userId)).thenReturn(Optional.of(user));
+        when(courseReviewRepository.existsByCourseIdAndUserId(courseId, userId)).thenReturn(false);
         when(courseReviewRepository.save(any(CourseReview.class)))
                 .thenThrow(new DataIntegrityViolationException("duplicate review"));
 
-        assertThatThrownBy(() -> courseReviewService.createCourseReview(course.getId(), request))
+        assertThatThrownBy(() -> courseReviewService.createCourseReview(courseId, userId, request))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.REVIEW_ALREADY_EXISTS);
@@ -137,9 +143,9 @@ class CourseReviewServiceTest {
     @DisplayName("유효하지 않은 코스 타입이 포함되면 잘못된 입력 예외를 던진다")
     @Test
     void throwsInvalidInputValueWhenCourseTypeIsInvalid() {
-        CreateCourseReviewRequest request = new CreateCourseReviewRequest(3L, 5, List.of("RIVERSIDE", "BEACH"), "MEDIUM");
+        CreateCourseReviewRequest request = new CreateCourseReviewRequest(5, List.of("RIVERSIDE", "BEACH"), "MEDIUM");
 
-        assertThatThrownBy(() -> courseReviewService.createCourseReview(103L, request))
+        assertThatThrownBy(() -> courseReviewService.createCourseReview(103L, 3L, request))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
@@ -148,28 +154,27 @@ class CourseReviewServiceTest {
     @DisplayName("유효하지 않은 난이도가 들어오면 잘못된 입력 예외를 던진다")
     @Test
     void throwsInvalidInputValueWhenDifficultyIsInvalid() {
-        CreateCourseReviewRequest request = new CreateCourseReviewRequest(4L, 5, List.of("RIVERSIDE"), "VERY_HARD");
+        CreateCourseReviewRequest request = new CreateCourseReviewRequest(5, List.of("RIVERSIDE"), "VERY_HARD");
 
-        assertThatThrownBy(() -> courseReviewService.createCourseReview(104L, request))
+        assertThatThrownBy(() -> courseReviewService.createCourseReview(104L, 4L, request))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
     }
 
     private Course course(Long id) {
-        Course course = Course.builder()
-                .title("Course " + id)
-                .status(CourseStatus.OFFICIAL)
-                .distanceM(5000)
-                .elevationGainM(120)
-                .snapshotImageUrl("snapshot-" + id)
-                .startLatitude(37.5665)
-                .startLongitude(126.9780)
-                .endLatitude(37.5700)
-                .endLongitude(126.9820)
-                .coordinates(new Coordinates(List.of(37.5665), List.of(126.9780), List.of(12.0)))
-                .build();
+        Course course = instantiateCourse();
         setField(course, "id", id);
+        setField(course, "title", "Course " + id);
+        setField(course, "status", CourseStatus.OFFICIAL);
+        setField(course, "distanceM", 5000);
+        setField(course, "elevationGainM", 120);
+        setField(course, "snapshotImageUrl", "snapshot-" + id);
+        setField(course, "startLatitude", 37.5665);
+        setField(course, "startLongitude", 126.9780);
+        setField(course, "endLatitude", 37.5700);
+        setField(course, "endLongitude", 126.9820);
+        setField(course, "coordinates", new Coordinates(List.of(37.5665), List.of(126.9780), List.of(12.0)));
         return course;
     }
 
@@ -206,6 +211,33 @@ class CourseReviewServiceTest {
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Failed to instantiate user", exception);
         }
+    }
+
+    private Course instantiateCourse() {
+        try {
+            Constructor<Course> constructor = Course.class.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Failed to instantiate course", exception);
+        }
+    }
+
+    private <T> T getField(Object target, String fieldName, Class<T> type) {
+        Class<?> currentClass = target.getClass();
+        while (currentClass != null) {
+            try {
+                Field field = currentClass.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                return type.cast(field.get(target));
+            } catch (NoSuchFieldException exception) {
+                currentClass = currentClass.getSuperclass();
+            } catch (IllegalAccessException exception) {
+                throw new IllegalStateException("Failed to read field " + fieldName, exception);
+            }
+        }
+
+        throw new IllegalArgumentException("Field not found: " + fieldName);
     }
 
     private void setField(Object target, String fieldName, Object value) {

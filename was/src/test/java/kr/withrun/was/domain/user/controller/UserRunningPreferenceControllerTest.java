@@ -142,6 +142,16 @@ class UserRunningPreferenceControllerTest {
         then(userRunningPreferenceService).should(never()).getRunningPreference(any());
     }
 
+    @Test
+    @DisplayName("임시 userId 경로 조회는 더 이상 제공하지 않는다")
+    void removesTemporaryUserIdRoute() throws Exception {
+        mockMvc.perform(get("/api/users/me/running-preferences/10")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(10L)))
+                .andExpect(status().isNotFound());
+
+        then(userRunningPreferenceService).should(never()).getRunningPreference(any());
+    }
+
     private String bearerToken(Long userId) {
         return "Bearer " + jwtProvider.generateTokenPair(completedUser(userId), "google").accessToken();
     }

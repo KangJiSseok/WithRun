@@ -27,27 +27,25 @@ class PastRunningSessionsDtoTest {
     @Test
     void exposesExactRequestComponents() {
         assertThat(componentNamesOf(PastRunningSessionsRequest.class))
-                .containsExactly("userId", "year", "month", "day", "pageSize", "cursor");
+                .containsExactly("year", "month", "day", "pageSize", "cursor");
     }
 
     @DisplayName("유효한 전체 조회 요청은 허용한다")
     @Test
     void acceptsValidRequestWithoutDateFilters() {
         Set<ConstraintViolation<PastRunningSessionsRequest>> violations = validate(
-                new PastRunningSessionsRequest(7L, null, null, null, 10, null)
+                new PastRunningSessionsRequest(null, null, null, 10, null)
         );
 
         assertThat(violations).isEmpty();
     }
 
-    @DisplayName("userId는 필수이면서 양수여야 한다")
+    @DisplayName("pageSize가 없으면 기본값 10을 적용한다")
     @Test
-    void rejectsMissingUserId() {
-        Set<ConstraintViolation<PastRunningSessionsRequest>> violations = validate(
-                new PastRunningSessionsRequest(null, 2026, 3, 16, 10, null)
-        );
+    void defaultsMissingPageSizeToTen() {
+        PastRunningSessionsRequest request = new PastRunningSessionsRequest(2026, 3, 16, null, null);
 
-        assertOnlyViolationOn(violations, "userId");
+        assertThat(request.pageSize()).isEqualTo(10);
     }
 
     @DisplayName("연도는 양수여야 한다")
@@ -55,7 +53,7 @@ class PastRunningSessionsDtoTest {
     @ValueSource(ints = {0, -1})
     void rejectsNonPositiveYear(int year) {
         Set<ConstraintViolation<PastRunningSessionsRequest>> violations = validate(
-                new PastRunningSessionsRequest(7L, year, 3, 16, 10, null)
+                new PastRunningSessionsRequest(year, 3, 16, 10, null)
         );
 
         assertOnlyViolationOn(violations, "year");
@@ -66,7 +64,7 @@ class PastRunningSessionsDtoTest {
     @ValueSource(ints = {0, 13})
     void rejectsMonthOutsideCalendarRange(int month) {
         Set<ConstraintViolation<PastRunningSessionsRequest>> violations = validate(
-                new PastRunningSessionsRequest(7L, 2026, month, 16, 10, null)
+                new PastRunningSessionsRequest(2026, month, 16, 10, null)
         );
 
         assertOnlyViolationOn(violations, "calendarDateValid");
@@ -77,7 +75,7 @@ class PastRunningSessionsDtoTest {
     @ValueSource(ints = {0, 32})
     void rejectsDayOutsideCalendarRange(int day) {
         Set<ConstraintViolation<PastRunningSessionsRequest>> violations = validate(
-                new PastRunningSessionsRequest(7L, 2026, 3, day, 10, null)
+                new PastRunningSessionsRequest(2026, 3, day, 10, null)
         );
 
         assertOnlyViolationOn(violations, "calendarDateValid");
@@ -88,7 +86,7 @@ class PastRunningSessionsDtoTest {
     @ValueSource(ints = {0, -1})
     void rejectsNonPositivePageSize(int pageSize) {
         Set<ConstraintViolation<PastRunningSessionsRequest>> violations = validate(
-                new PastRunningSessionsRequest(7L, null, null, null, pageSize, null)
+                new PastRunningSessionsRequest(null, null, null, pageSize, null)
         );
 
         assertOnlyViolationOn(violations, "pageSize");
@@ -98,7 +96,7 @@ class PastRunningSessionsDtoTest {
     @Test
     void rejectsMonthWithoutYearInsideDto() {
         Set<ConstraintViolation<PastRunningSessionsRequest>> violations = validate(
-                new PastRunningSessionsRequest(7L, null, 3, null, 10, null)
+                new PastRunningSessionsRequest(null, 3, null, 10, null)
         );
 
         assertOnlyViolationOn(violations, "dateFilterCombinationValid");
@@ -108,7 +106,7 @@ class PastRunningSessionsDtoTest {
     @Test
     void rejectsImpossibleCalendarDateInsideDto() {
         Set<ConstraintViolation<PastRunningSessionsRequest>> violations = validate(
-                new PastRunningSessionsRequest(7L, 2026, 2, 30, 10, null)
+                new PastRunningSessionsRequest(2026, 2, 30, 10, null)
         );
 
         assertOnlyViolationOn(violations, "calendarDateValid");
@@ -118,7 +116,7 @@ class PastRunningSessionsDtoTest {
     @Test
     void acceptsMaxYearAtDtoValidationLayer() {
         Set<ConstraintViolation<PastRunningSessionsRequest>> violations = validate(
-                new PastRunningSessionsRequest(7L, 999999999, null, null, 10, null)
+                new PastRunningSessionsRequest(999999999, null, null, 10, null)
         );
 
         assertThat(violations).isEmpty();

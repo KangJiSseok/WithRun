@@ -1,12 +1,13 @@
 package kr.withrun.was.domain.running.controller;
 
+import kr.withrun.was.domain.auth.jwt.JwtProvider;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
+import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
-import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionItemResponse;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsRequest;
 import kr.withrun.was.domain.running.dto.PastRunningSessionsResponse;
@@ -17,11 +18,12 @@ import kr.withrun.was.domain.running.dto.RunningHealthSampleResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
+import kr.withrun.was.domain.user.entity.User;
+import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.common.type.TimeSlot;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
@@ -30,11 +32,14 @@ import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 
+import java.lang.reflect.Field;
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 
 import static kr.withrun.was.domain.running.type.RunningMode.COURSE;
@@ -50,32 +55,29 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-@WebMvcTest(controllers = RunningSessionController.class, properties = "spring.config.import=")
-@AutoConfigureMockMvc(addFilters = false)
+@SpringBootTest(
+        properties = {
+                "spring.config.import=",
+                "spring.cloud.aws.parameterstore.enabled=false"
+        }
+)
+@AutoConfigureMockMvc
 @DisplayName("러닝 세션 컨트롤러")
 class RunningSessionControllerTest {
-
-
-    static {
-        System.setProperty("spring.cloud.aws.parameterstore.enabled", "false");
-        System.setProperty("spring.config.import", "");
-    }
 
     @Autowired
     private MockMvc mockMvc;
 
+    @Autowired
+    private JwtProvider jwtProvider;
+
     @MockitoBean
     private RunningSessionService runningSessionService;
-
-    @AfterAll
-    static void clearConfigOverrides() {
-        System.clearProperty("spring.cloud.aws.parameterstore.enabled");
-        System.clearProperty("spring.config.import");
-    }
 
     @DisplayName("러닝 세션 생성 응답을 생성 성공 포맷으로 감싼다")
     @Test
     void wrapsCreateRunningSessionResponseInCreatedEnvelope() throws Exception {
+        long currentUserId = 1L;
         CreateRunningSessionRequest request = validCreateRequest();
         CreateRunningSessionResponse response = new CreateRunningSessionResponse(
                 901L,
@@ -88,9 +90,10 @@ class RunningSessionControllerTest {
                 0,
                 false
         );
-        given(runningSessionService.createRunningSession(request)).willReturn(response);
+        given(runningSessionService.createRunningSession(currentUserId, request)).willReturn(response);
 
         mockMvc.perform(post("/api/running-sessions")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCreateRequestBody()))
                 .andExpect(status().isCreated())
@@ -108,12 +111,13 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.caloriesKcal").value(0))
                 .andExpect(jsonPath("$.data.isCompleted").value(false));
 
-        then(runningSessionService).should().createRunningSession(request);
+        then(runningSessionService).should().createRunningSession(currentUserId, request);
     }
 
     @DisplayName("GHOST 모드 세션 생성 응답은 대상 세션 GPS 샘플을 함께 직렬화한다")
     @Test
     void serializesGhostTargetGpsSamplesInCreateResponse() throws Exception {
+        long currentUserId = 1L;
         CreateRunningSessionRequest request = ghostCreateRequest();
         CreateRunningSessionResponse response = new CreateRunningSessionResponse(
                 902L,
@@ -140,9 +144,10 @@ class RunningSessionControllerTest {
                 0,
                 false
         );
-        given(runningSessionService.createRunningSession(request)).willReturn(response);
+        given(runningSessionService.createRunningSession(currentUserId, request)).willReturn(response);
 
         mockMvc.perform(post("/api/running-sessions")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(ghostCreateRequestBody()))
                 .andExpect(status().isCreated())
@@ -155,14 +160,15 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].latitude").value(37.5665))
                 .andExpect(jsonPath("$.data.ghostTargetGpsSamples[0].longitude").value(126.9780));
 
-        then(runningSessionService).should().createRunningSession(request);
+        then(runningSessionService).should().createRunningSession(currentUserId, request);
     }
 
     @DisplayName("필수 요청 필드가 없으면 잘못된 입력 응답을 반환한다")
     @ParameterizedTest(name = "누락된 필드: {0}")
-    @ValueSource(strings = {"userId", "mode", "startLatitude", "startLongitude"})
+    @ValueSource(strings = {"mode", "startLatitude", "startLongitude"})
     void returnsInvalidInputValueWhenRequiredRequestFieldIsMissing(String missingField) throws Exception {
         mockMvc.perform(post("/api/running-sessions")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(1L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBodyWithout(missingField)))
                 .andExpect(status().isBadRequest())
@@ -184,6 +190,7 @@ class RunningSessionControllerTest {
     })
     void returnsInvalidInputValueWhenCoordinatesAreOutOfRange(String fieldName, String invalidValue) throws Exception {
         mockMvc.perform(post("/api/running-sessions")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(1L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBodyWith(fieldName, invalidValue)))
                 .andExpect(status().isBadRequest())
@@ -199,6 +206,7 @@ class RunningSessionControllerTest {
     @Test
     void returnsInternalServerErrorWhenRunningModeIsInvalid() throws Exception {
         mockMvc.perform(post("/api/running-sessions")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(1L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(requestBodyWith("mode", "\"MARATHON\"")))
                 .andExpect(status().isInternalServerError())
@@ -212,11 +220,13 @@ class RunningSessionControllerTest {
     @DisplayName("서비스가 없는 코스를 감지하면 코스 없음 응답을 반환한다")
     @Test
     void returnsCourseNotFoundWhenServiceRejectsCourse() throws Exception {
+        long currentUserId = 1L;
         CreateRunningSessionRequest request = validCreateRequest();
-        given(runningSessionService.createRunningSession(request))
+        given(runningSessionService.createRunningSession(currentUserId, request))
                 .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
 
         mockMvc.perform(post("/api/running-sessions")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validCreateRequestBody()))
                 .andExpect(status().isNotFound())
@@ -224,17 +234,19 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()))
                 .andExpect(jsonPath("$.message").value(ResponseCode.COURSE_NOT_FOUND.getMessage()));
 
-        then(runningSessionService).should().createRunningSession(request);
+        then(runningSessionService).should().createRunningSession(currentUserId, request);
     }
 
     @DisplayName("서비스가 없는 고스트 대상을 감지하면 해당 응답을 반환한다")
     @Test
     void returnsGhostTargetNotFoundWhenServiceRejectsGhostTarget() throws Exception {
+        long currentUserId = 1L;
         CreateRunningSessionRequest request = ghostCreateRequest();
-        given(runningSessionService.createRunningSession(request))
+        given(runningSessionService.createRunningSession(currentUserId, request))
                 .willThrow(new CustomException(ResponseCode.GHOST_TARGET_NOT_FOUND));
 
         mockMvc.perform(post("/api/running-sessions")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(ghostCreateRequestBody()))
                 .andExpect(status().isNotFound())
@@ -242,17 +254,19 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.GHOST_TARGET_NOT_FOUND.getCode()))
                 .andExpect(jsonPath("$.message").value(ResponseCode.GHOST_TARGET_NOT_FOUND.getMessage()));
 
-        then(runningSessionService).should().createRunningSession(request);
+        then(runningSessionService).should().createRunningSession(currentUserId, request);
     }
 
     @DisplayName("서비스가 유효하지 않은 고스트 대상을 거부하면 해당 응답을 반환한다")
     @Test
     void returnsInvalidGhostTargetWhenServiceRejectsGhostTargetEligibility() throws Exception {
+        long currentUserId = 1L;
         CreateRunningSessionRequest request = ghostCreateRequest();
-        given(runningSessionService.createRunningSession(request))
+        given(runningSessionService.createRunningSession(currentUserId, request))
                 .willThrow(new CustomException(ResponseCode.INVALID_GHOST_TARGET));
 
         mockMvc.perform(post("/api/running-sessions")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(ghostCreateRequestBody()))
                 .andExpect(status().isBadRequest())
@@ -260,17 +274,18 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_GHOST_TARGET.getCode()))
                 .andExpect(jsonPath("$.message").value(ResponseCode.INVALID_GHOST_TARGET.getMessage()));
 
-        then(runningSessionService).should().createRunningSession(request);
+        then(runningSessionService).should().createRunningSession(currentUserId, request);
     }
 
     @DisplayName("러닝 세션 종료 응답을 성공 응답 포맷으로 감싼다")
     @Test
     void wrapsCompleteRunningSessionResponseInSuccessEnvelope() throws Exception {
+        long currentUserId = 1L;
         long runningSessionId = 901L;
         RunningSessionDetailResponse response = new RunningSessionDetailResponse(
                 true,
                 runningSessionId,
-                1L,
+                currentUserId,
                 null,
                 LocalDateTime.parse("2026-03-12T06:30:00"),
                 LocalDateTime.parse("2026-03-12T07:12:00"),
@@ -301,10 +316,11 @@ class RunningSessionControllerTest {
                 java.util.List.of(),
                 null
         );
-        given(runningSessionService.completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class)))
+        given(runningSessionService.completeRunningSession(eq(runningSessionId), eq(currentUserId), any(CompleteRunningSessionRequest.class)))
                 .willReturn(response);
 
         mockMvc.perform(patch("/api/running-sessions/{runningSessionId}", runningSessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateRequestJson()))
                 .andExpect(status().isOk())
@@ -312,7 +328,7 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
                 .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
                 .andExpect(jsonPath("$.data.runningSessionId").value(runningSessionId))
-                .andExpect(jsonPath("$.data.userId").value(1L))
+                .andExpect(jsonPath("$.data.userId").value(currentUserId))
                 .andExpect(jsonPath("$.data.startedAt").value("2026-03-12T06:30:00"))
                 .andExpect(jsonPath("$.data.endedAt").value("2026-03-12T07:12:00"))
                 .andExpect(jsonPath("$.data.distanceM").value(10023))
@@ -336,7 +352,7 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.ghostRunningResult").doesNotExist());
 
         ArgumentCaptor<CompleteRunningSessionRequest> requestCaptor = ArgumentCaptor.forClass(CompleteRunningSessionRequest.class);
-        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), requestCaptor.capture());
+        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), eq(currentUserId), requestCaptor.capture());
 
         CompleteRunningSessionRequest capturedRequest = requestCaptor.getValue();
         assertThat(capturedRequest.gpsSamples()).hasSize(1);
@@ -351,46 +367,50 @@ class RunningSessionControllerTest {
     @DisplayName("이미 종료된 세션은 충돌 응답을 반환한다")
     @Test
     void returnsConflictWhenRunningSessionIsAlreadyCompleted() throws Exception {
+        long currentUserId = 1L;
         long runningSessionId = 901L;
-        given(runningSessionService.completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class)))
+        given(runningSessionService.completeRunningSession(eq(runningSessionId), eq(currentUserId), any(CompleteRunningSessionRequest.class)))
                 .willThrow(new CustomException(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED));
 
         mockMvc.perform(patch("/api/running-sessions/{runningSessionId}", runningSessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateRequestJson()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED.getCode()));
 
-        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class));
+        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), eq(currentUserId), any(CompleteRunningSessionRequest.class));
     }
 
     @DisplayName("존재하지 않는 세션은 찾을 수 없음 응답을 반환한다")
     @Test
     void returnsNotFoundWhenRunningSessionDoesNotExist() throws Exception {
+        long currentUserId = 1L;
         long runningSessionId = 999L;
-        given(runningSessionService.completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class)))
+        given(runningSessionService.completeRunningSession(eq(runningSessionId), eq(currentUserId), any(CompleteRunningSessionRequest.class)))
                 .willThrow(new CustomException(ResponseCode.RUNNING_SESSION_NOT_FOUND));
 
         mockMvc.perform(patch("/api/running-sessions/{runningSessionId}", runningSessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validUpdateRequestJson()))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.RUNNING_SESSION_NOT_FOUND.getCode()));
 
-        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), any(CompleteRunningSessionRequest.class));
+        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), eq(currentUserId), any(CompleteRunningSessionRequest.class));
     }
 
     @DisplayName("러닝 세션 상세 조회 응답은 완료 여부를 포함한다")
     @Test
     void wrapsRunningSessionDetailResponseWithCompletionState() throws Exception {
+        long currentUserId = 1L;
         long runningSessionId = 777L;
-        long userId = 1L;
         RunningSessionDetailResponse response = new RunningSessionDetailResponse(
                 true,
                 runningSessionId,
-                userId,
+                currentUserId,
                 "https://cdn.withrun.app/snapshots/777.png",
                 LocalDateTime.parse("2026-03-12T06:30:00"),
                 LocalDateTime.parse("2026-03-12T07:12:00"),
@@ -405,15 +425,16 @@ class RunningSessionControllerTest {
                 java.util.List.of(),
                 null
         );
-        given(runningSessionService.findRunningSessionDetail(runningSessionId, userId)).willReturn(response);
+        given(runningSessionService.findRunningSessionDetail(runningSessionId, currentUserId)).willReturn(response);
 
-        mockMvc.perform(get("/api/running-sessions/{runningSessionId}/detail/{userId}", runningSessionId, userId))
+        mockMvc.perform(get("/api/running-sessions/{runningSessionId}/detail", runningSessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.runningSessionId").value(runningSessionId))
                 .andExpect(jsonPath("$.data.isCompleted").value(true));
 
-        then(runningSessionService).should().findRunningSessionDetail(runningSessionId, userId);
+        then(runningSessionService).should().findRunningSessionDetail(runningSessionId, currentUserId);
     }
 
     @DisplayName("유효하지 않은 종료 요청은 잘못된 입력 응답을 반환한다")
@@ -422,11 +443,10 @@ class RunningSessionControllerTest {
         long runningSessionId = 901L;
 
         mockMvc.perform(patch("/api/running-sessions/{runningSessionId}", runningSessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(1L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
-                                  "userId": 1,
-                                  "endedAt": "2026-03-12T07:12:00",
                                   "distanceM": -1,
                                   "caloriesKcal": 642,
                                   "endLatitude": 30,
@@ -449,6 +469,7 @@ class RunningSessionControllerTest {
     @DisplayName("러닝 기록 코스 등록 응답을 생성 성공 포맷으로 감싼다")
     @Test
     void wrapsRegisterRunningSessionCourseResponseInCreatedEnvelope() throws Exception {
+        long currentUserId = 7L;
         long runningSessionId = 901L;
         RegisterRunningSessionCourseRequest request = validRegisterCourseRequest();
         RegisterRunningSessionCourseResponse response = new RegisterRunningSessionCourseResponse(
@@ -468,9 +489,10 @@ class RunningSessionControllerTest {
                         new GeoPoint(37.574501, 126.989001, 1.0)
                 ))
         );
-        given(runningSessionService.registerRunningSessionCourse(runningSessionId, request)).willReturn(response);
+        given(runningSessionService.registerRunningSessionCourse(runningSessionId, currentUserId, request)).willReturn(response);
 
         mockMvc.perform(post("/api/running-sessions/{runningSessionId}/register-course", runningSessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRegisterCourseRequestBody()))
                 .andExpect(status().isCreated())
@@ -484,7 +506,7 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.coordinates[0].latitude").value(37.566501))
                 .andExpect(jsonPath("$.data.coordinates[0].elevationM").value(0.0));
 
-        then(runningSessionService).should().registerRunningSessionCourse(runningSessionId, request);
+        then(runningSessionService).should().registerRunningSessionCourse(runningSessionId, currentUserId, request);
     }
 
     @DisplayName("코스 등록 요청에 필수 필드가 없으면 잘못된 입력 응답을 반환한다")
@@ -492,6 +514,7 @@ class RunningSessionControllerTest {
     @ValueSource(strings = {"title", "mode", "difficulty", "courseTypes", "routeType"})
     void returnsInvalidInputValueWhenRegisterCourseRequiredFieldIsMissing(String missingField) throws Exception {
         mockMvc.perform(post("/api/running-sessions/{runningSessionId}/register-course", 901L)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(7L))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(registerCourseRequestBodyWithout(missingField)))
                 .andExpect(status().isBadRequest())
@@ -505,43 +528,48 @@ class RunningSessionControllerTest {
     @DisplayName("완료되지 않은 세션의 코스 등록 요청은 충돌 응답을 반환한다")
     @Test
     void returnsConflictWhenRegisterCourseRequestedForIncompleteSession() throws Exception {
+        long currentUserId = 7L;
         long runningSessionId = 901L;
         RegisterRunningSessionCourseRequest request = validRegisterCourseRequest();
-        given(runningSessionService.registerRunningSessionCourse(runningSessionId, request))
+        given(runningSessionService.registerRunningSessionCourse(runningSessionId, currentUserId, request))
                 .willThrow(new CustomException(ResponseCode.RUNNING_SESSION_NOT_COMPLETED));
 
         mockMvc.perform(post("/api/running-sessions/{runningSessionId}/register-course", runningSessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRegisterCourseRequestBody()))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.RUNNING_SESSION_NOT_COMPLETED.getCode()));
 
-        then(runningSessionService).should().registerRunningSessionCourse(runningSessionId, request);
+        then(runningSessionService).should().registerRunningSessionCourse(runningSessionId, currentUserId, request);
     }
 
     @DisplayName("코스 등록 중 네비게이션 번들 생성이 실패하면 서비스 불가 응답을 반환한다")
     @Test
     void returnsServiceUnavailableWhenRegisterCourseNavigationBundleGenerationFails() throws Exception {
+        long currentUserId = 7L;
         long runningSessionId = 901L;
         RegisterRunningSessionCourseRequest request = validRegisterCourseRequest();
-        given(runningSessionService.registerRunningSessionCourse(runningSessionId, request))
+        given(runningSessionService.registerRunningSessionCourse(runningSessionId, currentUserId, request))
                 .willThrow(new CustomException(ResponseCode.NAVIGATION_BUNDLE_FAILED));
 
         mockMvc.perform(post("/api/running-sessions/{runningSessionId}/register-course", runningSessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(validRegisterCourseRequestBody()))
                 .andExpect(status().isServiceUnavailable())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.NAVIGATION_BUNDLE_FAILED.getCode()));
 
-        then(runningSessionService).should().registerRunningSessionCourse(runningSessionId, request);
+        then(runningSessionService).should().registerRunningSessionCourse(runningSessionId, currentUserId, request);
     }
 
     @DisplayName("과거 러닝 세션 조회 응답을 성공 응답 포맷으로 감싼다")
     @Test
     void wrapsPastRunningSessionsResponseInSuccessEnvelope() throws Exception {
-        PastRunningSessionsRequest request = new PastRunningSessionsRequest(7L, 2026, 3, 16, 10, "cursor-token");
+        long currentUserId = 7L;
+        PastRunningSessionsRequest request = new PastRunningSessionsRequest(2026, 3, 16, 10, "cursor-token");
         PastRunningSessionsResponse response = new PastRunningSessionsResponse(
                 java.util.List.of(
                         new PastRunningSessionItemResponse(
@@ -561,10 +589,10 @@ class RunningSessionControllerTest {
                 true,
                 "next-cursor"
         );
-        given(runningSessionService.findPastRunningSessions(request)).willReturn(response);
+        given(runningSessionService.findPastRunningSessions(currentUserId, request)).willReturn(response);
 
         mockMvc.perform(get("/api/running-sessions/history/past")
-                        .queryParam("userId", "7")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .queryParam("year", "2026")
                         .queryParam("month", "3")
                         .queryParam("day", "16")
@@ -581,48 +609,50 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.hasMore").value(true))
                 .andExpect(jsonPath("$.data.nextCursor").value("next-cursor"));
 
-        then(runningSessionService).should().findPastRunningSessions(request);
+        then(runningSessionService).should().findPastRunningSessions(currentUserId, request);
     }
 
     @DisplayName("pageSize가 없으면 기본값 10으로 과거 러닝 세션을 조회한다")
     @Test
     void usesDefaultPageSizeWhenPastRunningSessionsPageSizeIsMissing() throws Exception {
-        PastRunningSessionsRequest request = new PastRunningSessionsRequest(7L, null, null, null, 10, null);
-        given(runningSessionService.findPastRunningSessions(request))
+        long currentUserId = 7L;
+        PastRunningSessionsRequest request = new PastRunningSessionsRequest(null, null, null, 10, null);
+        given(runningSessionService.findPastRunningSessions(currentUserId, request))
                 .willReturn(new PastRunningSessionsResponse(java.util.List.of(), false, null));
 
         mockMvc.perform(get("/api/running-sessions/history/past")
-                        .queryParam("userId", "7"))
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.items").isArray())
                 .andExpect(jsonPath("$.data.hasMore").value(false));
 
-        then(runningSessionService).should().findPastRunningSessions(request);
+        then(runningSessionService).should().findPastRunningSessions(currentUserId, request);
     }
 
-    @DisplayName("userId를 포함한 쿼리 기반 과거 조회 요청을 서비스에 전달한다")
+    @DisplayName("과거 조회는 인증된 사용자 ID를 서비스에 전달한다")
     @Test
-    void passesQueryUserIdToService() throws Exception {
-        PastRunningSessionsRequest request = new PastRunningSessionsRequest(7L, 2026, 3, null, 10, null);
-        given(runningSessionService.findPastRunningSessions(request))
+    void passesAuthenticatedUserIdToPastSessionsService() throws Exception {
+        long currentUserId = 7L;
+        PastRunningSessionsRequest request = new PastRunningSessionsRequest(2026, 3, null, 10, null);
+        given(runningSessionService.findPastRunningSessions(currentUserId, request))
                 .willReturn(new PastRunningSessionsResponse(java.util.List.of(), false, null));
 
         mockMvc.perform(get("/api/running-sessions/history/past")
-                        .queryParam("userId", "7")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
                         .queryParam("year", "2026")
                         .queryParam("month", "3"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        then(runningSessionService).should().findPastRunningSessions(request);
+        then(runningSessionService).should().findPastRunningSessions(currentUserId, request);
     }
 
     @DisplayName("month만 전달된 과거 조회는 잘못된 입력 응답을 반환한다")
     @Test
     void returnsBadRequestWhenPastRunningSessionFiltersAreInvalid() throws Exception {
         mockMvc.perform(get("/api/running-sessions/history/past")
-                        .queryParam("userId", "7")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(7L))
                         .queryParam("month", "3"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
@@ -635,7 +665,7 @@ class RunningSessionControllerTest {
     @Test
     void returnsBadRequestWhenPastRunningSessionDateIsImpossible() throws Exception {
         mockMvc.perform(get("/api/running-sessions/history/past")
-                        .queryParam("userId", "7")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(7L))
                         .queryParam("year", "2026")
                         .queryParam("month", "2")
                         .queryParam("day", "30"))
@@ -647,17 +677,16 @@ class RunningSessionControllerTest {
     }
 
     private static CreateRunningSessionRequest validCreateRequest() {
-        return new CreateRunningSessionRequest(1L, COURSE, 300L, null, 30.0, 176.0);
+        return new CreateRunningSessionRequest(COURSE, 300L, null, 30.0, 176.0);
     }
 
     private static CreateRunningSessionRequest ghostCreateRequest() {
-        return new CreateRunningSessionRequest(1L, GHOST, 300L, 44L, 30.0, 176.0);
+        return new CreateRunningSessionRequest(GHOST, 300L, 44L, 30.0, 176.0);
     }
 
     private static String validCreateRequestBody() {
         return """
                 {
-                  "userId": 1,
                   "mode": "COURSE",
                   "courseId": 300,
                   "ghostTargetRunningSessionId": null,
@@ -671,7 +700,6 @@ class RunningSessionControllerTest {
     private static String ghostCreateRequestBody() {
         return """
                 {
-                  "userId": 1,
                   "mode": "GHOST",
                   "courseId": 300,
                   "ghostTargetRunningSessionId": 44,
@@ -684,39 +712,17 @@ class RunningSessionControllerTest {
 
     private static String requestBodyWithout(String missingField) {
         return switch (missingField) {
-            case "userId" -> """
-                    {
-                      "mode": "COURSE",
-                      "courseId": 300,
-                      "ghostTargetRunningSessionId": null,
-                      "startedAt": "2026-03-12T06:30:00",
-                      "startLatitude": 30.0,
-                      "startLongitude": 176.0
-                    }
-                    """;
             case "mode" -> """
                     {
-                      "userId": 1,
+                      "courseId": 300,
+                      "ghostTargetRunningSessionId": null,
                       "startedAt": "2026-03-12T06:30:00",
-                      "courseId": 300,
-                      "ghostTargetRunningSessionId": null,
-                      "startLatitude": 30.0,
-                      "startLongitude": 176.0
-                    }
-                    """;
-            case "startedAt" -> """
-                    {
-                      "userId": 1,
-                      "mode": "COURSE",
-                      "courseId": 300,
-                      "ghostTargetRunningSessionId": null,
                       "startLatitude": 30.0,
                       "startLongitude": 176.0
                     }
                     """;
             case "startLatitude" -> """
                     {
-                      "userId": 1,
                       "mode": "COURSE",
                       "courseId": 300,
                       "ghostTargetRunningSessionId": null,
@@ -726,7 +732,6 @@ class RunningSessionControllerTest {
                     """;
             case "startLongitude" -> """
                     {
-                      "userId": 1,
                       "mode": "COURSE",
                       "courseId": 300,
                       "ghostTargetRunningSessionId": null,
@@ -767,7 +772,6 @@ class RunningSessionControllerTest {
 
         return """
                 {
-                  "userId": 1,
                   "mode": %s,
                   "courseId": %s,
                   "ghostTargetRunningSessionId": %s,
@@ -856,8 +860,6 @@ class RunningSessionControllerTest {
     private static String validUpdateRequestJson() {
         return """
                 {
-                  "userId": 1,
-                  "endedAt": "2026-03-12T07:12:00",
                   "distanceM": 10023,
                   "caloriesKcal": 642,
                   "endLatitude": 30,
@@ -891,5 +893,40 @@ class RunningSessionControllerTest {
                   "splits": []
                 }
                 """;
+    }
+
+    private String bearerToken(Long userId) {
+        return "Bearer " + jwtProvider.generateTokenPair(completedUser(userId), "google").accessToken();
+    }
+
+    private User completedUser(Long id) {
+        User user = User.createPendingSocialUser();
+        setField(user, "id", id);
+        user.completeProfile(
+                "runner",
+                LocalDate.of(1999, 1, 2),
+                Gender.MALE,
+                180.0,
+                72.5
+        );
+        return user;
+    }
+
+    private void setField(Object target, String fieldName, Object value) {
+        Class<?> currentClass = target.getClass();
+        while (currentClass != null) {
+            try {
+                Field field = currentClass.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(target, value);
+                return;
+            } catch (NoSuchFieldException exception) {
+                currentClass = currentClass.getSuperclass();
+            } catch (IllegalAccessException exception) {
+                throw new IllegalStateException("Failed to set field " + fieldName, exception);
+            }
+        }
+
+        throw new IllegalArgumentException("Field not found: " + fieldName);
     }
 }

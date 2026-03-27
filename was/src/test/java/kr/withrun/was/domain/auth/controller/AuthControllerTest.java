@@ -133,7 +133,18 @@ class AuthControllerTest {
     }
 
     @Test
-    @DisplayName("로그아웃은 refresh cookie 만료 헤더를 내려준다")
+    @DisplayName("Authorization 헤더가 없으면 로그아웃은 인증 필요 응답을 반환한다")
+    void logoutRequiresAuthentication() throws Exception {
+        mockMvc.perform(post("/api/auth/logout"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.UNAUTHORIZED.getCode()));
+
+        then(authService).should(never()).expireRefreshTokenCookie();
+    }
+
+    @Test
+    @DisplayName("유효한 access token이면 로그아웃은 refresh cookie 만료 헤더를 내려준다")
     void logoutExpiresRefreshCookie() throws Exception {
         ResponseCookie expiredCookie = ResponseCookie.from("refresh_token", "")
                 .httpOnly(true)
@@ -143,7 +154,8 @@ class AuthControllerTest {
                 .build();
         given(authService.expireRefreshTokenCookie()).willReturn(expiredCookie);
 
-        mockMvc.perform(post("/api/auth/logout"))
+        mockMvc.perform(post("/api/auth/logout")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(10L)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.USER_LOGGED_OUT.getCode()))
