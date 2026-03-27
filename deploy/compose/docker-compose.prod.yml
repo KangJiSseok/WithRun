@@ -9,6 +9,36 @@ services:
       AWS_REGION: ${AWS_REGION}
       AWS_ACCESS_KEY_ID: ${AWS_ACCESS_KEY_ID}
       AWS_SECRET_ACCESS_KEY: ${AWS_SECRET_ACCESS_KEY}
+      VALHALLA_BASE_URL: ${VALHALLA_BASE_URL:-http://valhalla:8002}
+    depends_on:
+      valhalla:
+        condition: service_healthy
+    restart: unless-stopped
+
+  valhalla:
+    image: ${VALHALLA_IMAGE:-ghcr.io/valhalla/valhalla-scripted:latest}
+    container_name: withrun-valhalla-prod
+    expose:
+      - "8002"
+    volumes:
+      - ${VALHALLA_CUSTOM_FILES_DIR:-./valhalla/custom_files}:/custom_files
+    environment:
+      tile_urls: ${VALHALLA_TILE_URL:-https://download.geofabrik.de/asia/south-korea-latest.osm.pbf}
+      use_tiles_ignore_pbf: ${VALHALLA_USE_TILES_IGNORE_PBF:-False}
+      force_rebuild: ${VALHALLA_FORCE_REBUILD:-False}
+      build_tar: ${VALHALLA_BUILD_TAR:-False}
+      server_threads: ${VALHALLA_SERVER_THREADS:-1}
+      use_default_speeds_config: ${VALHALLA_USE_DEFAULT_SPEEDS_CONFIG:-False}
+    healthcheck:
+      test:
+        [
+          "CMD-SHELL",
+          "curl --fail --silent http://localhost:8002/status >/dev/null 2>&1 || wget -qO- http://localhost:8002/status >/dev/null 2>&1 || exit 1"
+        ]
+      interval: 10s
+      timeout: 5s
+      retries: 30
+      start_period: 30s
     restart: unless-stopped
 
   web:

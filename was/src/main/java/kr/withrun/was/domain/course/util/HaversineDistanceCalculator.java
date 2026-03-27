@@ -61,8 +61,17 @@ public final class HaversineDistanceCalculator {
         }
 
         return OptionalInt.of(roundToNearestMeter(
-                haversineDistanceMeters(targetLatitude, targetLongitude, startLatitude, startLongitude)
+                calculatePreciseDistanceMeters(startLatitude, startLongitude, targetLatitude, targetLongitude)
         ));
+    }
+
+    public static double calculatePreciseDistanceMeters(
+            double startLatitude,
+            double startLongitude,
+            double endLatitude,
+            double endLongitude
+    ) {
+        return haversineDistanceMeters(startLatitude, startLongitude, endLatitude, endLongitude);
     }
 
     private static double haversineDistanceMeters(
