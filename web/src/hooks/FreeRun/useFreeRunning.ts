@@ -68,7 +68,8 @@ export function useFreeRunning() {
   const getCollectedData = useCallback(() => {
     const distanceM = Math.round(distanceKm * 1000);
     const avgSpeedMps = durationSec > 0 ? distanceM / durationSec : 0;
-    const avgPaceSecPerKm = distanceKm > 0 ? Math.round(durationSec / distanceKm) : 0;
+    // distanceKm=0(GPS 없음)이면 서버 validation 통과 최솟값 1 사용
+    const avgPaceSecPerKm = distanceKm > 0 ? Math.round(durationSec / distanceKm) : 1;
 
     return {
       durationSec,

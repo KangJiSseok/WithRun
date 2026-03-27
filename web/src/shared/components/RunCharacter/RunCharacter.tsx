@@ -2,12 +2,13 @@ import { Mascot } from '@/shared/components/Mascot';
 import { cn } from '@/shared/utils';
 import type { RunCharacterProps } from './RunCharacter.types';
 
-export function RunCharacter({ isRunning, onClick }: RunCharacterProps) {
+export function RunCharacter({ onClick, disabled }: RunCharacterProps) {
   return (
     <button
       onClick={onClick}
-      aria-label={isRunning ? '러닝 종료' : '러닝 시작'}
-      className={cn('flex flex-col items-center gap-4 focus:outline-none hover:scale-105 active:scale-95 transition-transform')}
+      disabled={disabled}
+      aria-label="러닝 시작"
+      className={cn('flex flex-col items-center gap-4 focus:outline-none transition-transform', !disabled && 'hover:scale-105 active:scale-95')}
     >
       {/* 캐릭터 원형 프레임 */}
       <div className="relative">
@@ -27,7 +28,7 @@ export function RunCharacter({ isRunning, onClick }: RunCharacterProps) {
       <span
         className="caption-b px-4 py-1 rounded-full font-bold tracking-widest animate-bounce text-[hsl(var(--text-inverse))] text-shadow-[0_2px_4px_hsl(var(--black)/80%)]"
       >
-        {isRunning ? '탭하여 종료' : 'RUN!'}
+        {disabled ? '로딩중..' : 'RUN!'}
       </span>
     </button>
   );
