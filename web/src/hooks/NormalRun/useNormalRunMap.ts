@@ -1,7 +1,8 @@
 import { useEffect, useRef } from 'react';
 
 import type { CoordinatePoint } from '@/apis';
-import { useNormalRunLocation } from './useNormalRunLocation';
+import { useRunLocation } from '@/shared/hooks/useRunLocation';
+import { loadKakaoMapSdk } from '@/shared/utils';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 
@@ -71,7 +72,7 @@ export function useNormalRunMap(
     courseAnchor: { latitude: number; longitude: number } | null;
   }
 ): void {
-  const { location } = useNormalRunLocation();
+  const { location } = useRunLocation();
   const mapRef = useRef<kakao.maps.Map | null>(null);
   const userDotRef = useRef<kakao.maps.CustomOverlay | null>(null);
   const safeZoneCircleRef = useRef<kakao.maps.Circle | null>(null);
@@ -95,7 +96,10 @@ export function useNormalRunMap(
     const container = containerRef.current;
     const { coordinates } = params;
 
-    kakao.maps.load(() => {
+    let cancelled = false;
+
+    loadKakaoMapSdk().then(() => {
+      if (cancelled) return;
       const center = new kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
       mapRef.current = new kakao.maps.Map(container, { center, level: 5 });
 
@@ -159,6 +163,7 @@ export function useNormalRunMap(
     });
 
     return () => {
+      cancelled = true;
       const s = animStateRef.current;
       if (s.rafId !== null) {
         cancelAnimationFrame(s.rafId);

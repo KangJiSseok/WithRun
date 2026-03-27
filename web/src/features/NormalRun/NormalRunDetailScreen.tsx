@@ -4,7 +4,7 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
-import { useNormalRunDetailMap } from '@/hooks/NormalRun/useNormalRunDetailMap';
+import { useRunDetailMap } from '@/shared/hooks/useRunDetailMap';
 import type { CourseDetail } from '@/apis/course';
 import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
 import { createRunningSession } from '@/apis/runningSessions';
@@ -43,7 +43,7 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
   const setSession = useNormalRunSessionStore((s) => s.setSession);
 
-  const { isNearStart } = useNormalRunDetailMap(containerRef, {
+  const { isNearStart } = useRunDetailMap(containerRef, {
     coordinates: course.coordinates,
     startLatitude: course.startLatitude,
     startLongitude: course.startLongitude,

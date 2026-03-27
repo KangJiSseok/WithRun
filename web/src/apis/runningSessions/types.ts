@@ -1,4 +1,11 @@
-import type { RunningMode, CourseDifficulty, CourseType, CourseStatus, CourseRegistrationMode, RouteType } from '@/shared/types/api.type';
+import type {
+  RunningMode,
+  CourseDifficulty,
+  CourseType,
+  CourseStatus,
+  CourseRegistrationMode,
+  RouteType,
+} from '@/shared/types/api.type';
 
 // GET /running-sessions/history/past - 과거 러닝 세션 항목
 export type RunningHistoryItem = {
@@ -89,6 +96,7 @@ export type SplitRecord = {
 
 // PATCH /running-sessions/{id} 요청
 export type CompleteRunningSessionRequest = {
+  isCompleted: boolean;
   userId: number;
   distanceM: number;
   caloriesKcal: number;

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { CourseItem } from '@/apis';
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
-import { createMarkerContent } from '@/shared/utils';
+import { createMarkerContent, loadKakaoMapSdk } from '@/shared/utils';
 
 export type CircleMode = 'USER_LOCATION' | 'AREA_NEARBY' | 'AREA_EXPLORE';
 
@@ -44,17 +44,18 @@ function eastPoint(
 
 type Center = { latitude: number; longitude: number };
 
-type UseNormalRunCircleMapReturn = {
+type UseRunCircleMapReturn = {
   containerRef: React.RefObject<HTMLDivElement | null>;
   center: Center | null;
   radiusM: number;
 };
 
-export function useNormalRunCircleMap(
+export function useRunCircleMap(
   courses: CourseItem[],
   circleMode: CircleMode,
-  onMapTouched?: () => void
-): UseNormalRunCircleMapReturn {
+  onMapTouched?: () => void,
+  markerColor = '#22C55E'
+): UseRunCircleMapReturn {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
 
@@ -79,10 +80,13 @@ export function useNormalRunCircleMap(
 
     const signal = { cancelled: false };
 
+    // SDK 로드를 GPS 획득과 병렬로 즉시 시작
+    const sdkReady = loadKakaoMapSdk();
+
     function initMap(initLat: number, initLon: number) {
       if (signal.cancelled || !containerRef.current) return;
 
-      kakao.maps.load(() => {
+      sdkReady.then(() => {
         if (signal.cancelled) return;
 
         const initLatLng = new kakao.maps.LatLng(initLat, initLon);
@@ -186,7 +190,8 @@ export function useNormalRunCircleMap(
                 latitude: coords.latitude,
                 longitude: coords.longitude,
               }),
-            reject
+            reject,
+            { enableHighAccuracy: false, maximumAge: 30000, timeout: 10000 }
           )
         );
         if (!signal.cancelled) {
@@ -210,8 +215,6 @@ export function useNormalRunCircleMap(
   }, []);
 
   // circleMode 변경 시 map click listener 관리
-  // Mode 1(USER_LOCATION): 클릭 무반응, 엣지 드래그로만 반경 조정
-  // Mode 2(AREA_NEARBY) & 3(AREA_EXPLORE): 지도 클릭 → 구심점 이동
   useEffect(() => {
     if (!mapRef.current) return;
 
@@ -230,7 +233,6 @@ export function useNormalRunCircleMap(
         const newLatLng = e.latLng;
         centerMarkerRef.current?.setPosition(newLatLng);
         circleRef.current?.setPosition(newLatLng);
-        // 엣지 마커: 현재 radiusM 유지하면서 새 구심점 기준 정동쪽으로 재배치
         edgeMarkerRef.current?.setPosition(
           eastPoint(newLatLng.getLat(), newLatLng.getLng(), radiusMRef.current)
         );
@@ -263,14 +265,14 @@ export function useNormalRunCircleMap(
           course.startLatitude,
           course.startLongitude
         ),
-        content: createMarkerContent(course.title, '#22C55E'),
+        content: createMarkerContent(course.title, markerColor),
         xAnchor: 0.5,
         yAnchor: 1.0,
         zIndex: 5,
       });
       courseMarkersRef.current.push(overlay);
     });
-  }, [courses]);
+  }, [courses, markerColor]);
 
   return { containerRef, center, radiusM };
 }

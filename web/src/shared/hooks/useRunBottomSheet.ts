@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDragControls, type PanInfo } from 'motion/react';
 
-export const useNormalRunBottomSheet = () => {
+export const useRunBottomSheet = () => {
   const sheetRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const [sheetHeight, setSheetHeight] = useState(0);

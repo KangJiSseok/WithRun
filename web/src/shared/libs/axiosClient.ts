@@ -44,17 +44,12 @@ function shouldSkipRefresh(config?: RetryableAxiosRequestConfig): boolean {
   );
 }
 
-function redirectToLogin(): void {
-  if (typeof window === 'undefined') {
-    return;
-  }
-
-  if (window.location.pathname === '/login') {
-    return;
-  }
-
-  window.location.replace('/login');
-}
+// TODO: 인증 시스템 구현 완료 후 활성화
+// function redirectToLogin(): void {
+//   if (typeof window === 'undefined') return;
+//   if (window.location.pathname === '/login') return;
+//   window.location.replace('/login');
+// }
 
 async function requestAccessTokenRefresh(): Promise<string> {
   // refresh token 은 HttpOnly cookie 에 있으므로 재발급 요청은 별도 헤더 없이 쿠키 기반으로만 보낸다.
@@ -116,8 +111,11 @@ axiosClient.interceptors.response.use(
 
       return axiosClient(originalRequest);
     } catch (refreshError) {
-      useAuthStore.getState().clearAuth();
-      redirectToLogin();
+      // TODO: 인증 시스템 구현 완료 후 활성화
+      // if (!import.meta.env.DEV) {
+      //   useAuthStore.getState().clearAuth();
+      //   redirectToLogin();
+      // }
       return Promise.reject(refreshError);
     }
   },

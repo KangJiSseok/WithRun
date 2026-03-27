@@ -1,9 +1,14 @@
+import { useEffect } from 'react';
 import { useParams } from 'react-router-dom';
 
 import { NormalRunDetailScreen } from '@/features/NormalRun';
 import { useNormalRunCourseDetail } from '@/hooks/NormalRun/useNormalRunCourseDetail';
+import { loadKakaoMapSdk } from '@/shared/utils';
 
 export function NormalRunDetailPage() {
+  // API 호출과 병렬로 SDK 미리 로드
+  useEffect(() => { loadKakaoMapSdk(); }, []);
+
   const { courseId } = useParams();
   const { courseDetail, isLoading, error } = useNormalRunCourseDetail(
     courseId ? Number(courseId) : undefined

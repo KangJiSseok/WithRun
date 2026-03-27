@@ -16,9 +16,8 @@ export function AuthCallbackScreen() {
     const authCode = searchParams.get('code');
 
     if (error) {
-      // 백엔드 실패 이유는 onboarding 화면이 그대로 보여주는 UX 로 다시 합친다.
       clearAuth();
-      navigate(`/onboarding?error=${encodeURIComponent(error)}`, {
+      navigate(`/login?error=${encodeURIComponent(error)}`, {
         replace: true,
       });
       return;
@@ -47,7 +46,7 @@ export function AuthCallbackScreen() {
         }
 
         clearAuth();
-        navigate('/onboarding?error=server_error', { replace: true });
+        navigate('/login?error=server_error', { replace: true });
       }
     })();
 

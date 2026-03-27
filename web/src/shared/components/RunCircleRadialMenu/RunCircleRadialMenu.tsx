@@ -2,7 +2,7 @@ import { MapPin } from 'lucide-react';
 import { AnimatePresence, motion } from 'motion/react';
 import { useState } from 'react';
 
-import type { CircleMode } from '@/hooks/NormalRun/useNormalRunCircleMap';
+import type { CircleMode } from '@/shared/hooks/useRunCircleMap';
 
 const MODE_BUTTONS: {
   mode: CircleMode;
@@ -15,15 +15,15 @@ const MODE_BUTTONS: {
   { mode: 'AREA_EXPLORE', label: '지역 탐색', dx: 0, dy: 70 },
 ];
 
-type NormalRunRadialMenuProps = {
+type RunCircleRadialMenuProps = {
   circleMode: CircleMode;
   onCircleModeChange: (mode: CircleMode) => void;
 };
 
-export function NormalRunRadialMenu({
+export function RunCircleRadialMenu({
   circleMode,
   onCircleModeChange,
-}: NormalRunRadialMenuProps) {
+}: RunCircleRadialMenuProps) {
   const [radialOpen, setRadialOpen] = useState(false);
 
   return (

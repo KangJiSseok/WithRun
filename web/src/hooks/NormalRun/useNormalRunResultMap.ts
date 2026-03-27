@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 import type { GpsSample } from '@/apis/runningSessions';
-import { createMarkerContent } from '@/shared/utils';
+import { createMarkerContent, loadKakaoMapSdk } from '@/shared/utils';
 
 const POLYLINE_STROKE_WEIGHT = 5;
 const POLYLINE_STROKE_COLOR = '#4F80FF';
@@ -15,8 +15,10 @@ export function useNormalRunResultMap(
     if (!containerRef.current) return;
 
     const container = containerRef.current;
+    let cancelled = false;
 
-    kakao.maps.load(() => {
+    loadKakaoMapSdk().then(() => {
+      if (cancelled) return;
       const first = gpsSamples[0];
       const center = first
         ? new kakao.maps.LatLng(first.latitude, first.longitude)
@@ -57,6 +59,8 @@ export function useNormalRunResultMap(
         });
       }
     });
+
+    return () => { cancelled = true; };
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [containerRef]);
 }

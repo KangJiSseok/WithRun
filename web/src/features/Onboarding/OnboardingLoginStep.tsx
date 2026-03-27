@@ -2,12 +2,8 @@ import { AnimatePresence, motion } from 'motion/react';
 import { AlertCircle, Chrome, LoaderCircle, MessageCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
-import { bridge } from '@/bridge';
-import {
-  buildSocialLoginUrl,
-  buildWebSocialLoginUrl,
-  type SocialProvider,
-} from '@/apis/auth';
+import type { SocialProvider } from '@/apis/auth';
+import { useSocialLogin } from '@/hooks/Auth/useSocialLogin';
 import { ONBOARDING_LOGIN_COPY_TEXTS } from '@/constants/Onboarding';
 
 type LoginErrorCode = 'cancelled' | 'access_denied' | 'server_error';
@@ -41,15 +37,16 @@ function resolveLoginError(error: string | null): LoginErrorCode | null {
 export function OnboardingLoginStep({ error }: OnboardingLoginStepProps) {
   const [copyIndex, setCopyIndex] = useState(0);
   const [pendingProvider, setPendingProvider] = useState<SocialProvider | null>(
-    null,
+    null
   );
+  const startSocialLogin = useSocialLogin();
   const loginError = useMemo(() => resolveLoginError(error), [error]);
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
       setCopyIndex(
         (currentIndex) =>
-          (currentIndex + 1) % ONBOARDING_LOGIN_COPY_TEXTS.length,
+          (currentIndex + 1) % ONBOARDING_LOGIN_COPY_TEXTS.length
       );
     }, 3000);
 
@@ -60,16 +57,7 @@ export function OnboardingLoginStep({ error }: OnboardingLoginStepProps) {
     setPendingProvider(provider);
 
     try {
-      if (bridge.isWebViewBridgeAvailable) {
-        // 모바일에서는 네이티브가 외부 브라우저와 딥링크 복귀를 책임지도록 위임한다.
-        const authorizationUrl = buildSocialLoginUrl(provider);
-        await bridge.startSocialLogin(authorizationUrl);
-        return;
-      }
-
-      // 일반 웹에서는 로그인 시작 origin 을 함께 넘겨 callback 도메인을 동적으로 맞춘다.
-      const authorizationUrl = buildWebSocialLoginUrl(provider);
-      window.location.assign(authorizationUrl);
+      await startSocialLogin(provider);
     } catch {
       setPendingProvider(null);
     }

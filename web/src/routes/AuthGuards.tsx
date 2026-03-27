@@ -2,10 +2,6 @@ import { Navigate, Outlet } from 'react-router-dom';
 
 import { useAuthStore } from '@/stores/Auth';
 
-function resolveAuthenticatedPath(profileCompleted: boolean | undefined): string {
-  return profileCompleted ? '/home' : '/onboarding';
-}
-
 function AuthPendingScreen() {
   return (
     <div className="flex min-h-screen items-center justify-center bg-[#101116] px-6 text-center text-white">
@@ -24,30 +20,35 @@ function AuthPendingScreen() {
 
 export function PublicOnlyRoute() {
   const status = useAuthStore((state) => state.status);
-  const profileCompleted = useAuthStore(
-    (state) => state.user?.profileCompleted,
-  );
 
   if (status === 'authenticated') {
-    // 이미 로그인된 사용자는 login 화면 대신 현재 프로필 완료 상태에 맞는 목적지로 보낸다.
-    return (
-      <Navigate
-        to={resolveAuthenticatedPath(profileCompleted)}
-        replace
-      />
-    );
+    return <Navigate to="/home" replace />;
   }
 
   return <Outlet />;
 }
 
-export function RequireOnboardingRoute() {
+export function OnboardingRoute() {
   const status = useAuthStore((state) => state.status);
-  const profileCompleted = useAuthStore(
-    (state) => state.user?.profileCompleted,
-  );
+  const accessToken = useAuthStore((state) => state.accessToken);
+  const user = useAuthStore((state) => state.user);
+  const profileCompleted = user?.profileCompleted;
 
-  if (status === 'authenticated' && profileCompleted) {
+  if (status === 'idle' || status === 'bootstrapping') {
+    if (accessToken && user === null) {
+      return <AuthPendingScreen />;
+    }
+    if (!accessToken) {
+      return <Navigate to="/login" replace />;
+    }
+    // accessToken 있고 user snapshot 있음 → profileCompleted 체크로 fall-through
+  }
+
+  if (status === 'unauthenticated') {
+    return <Navigate to="/login" replace />;
+  }
+
+  if (profileCompleted) {
     return <Navigate to="/home" replace />;
   }
 
@@ -61,8 +62,6 @@ export function RequireAuthRoute() {
   const profileCompleted = user?.profileCompleted;
 
   if (status === 'idle' || status === 'bootstrapping') {
-    // 새로고침 직후에는 localStorage 에 남아 있는 사용자 정보가 있으면 화면을 먼저 보여주고,
-    // 완전히 비어 있는 경우에만 온보딩으로 돌려보낸다.
     if (profileCompleted) {
       return <Outlet />;
     }
@@ -71,11 +70,11 @@ export function RequireAuthRoute() {
       return <AuthPendingScreen />;
     }
 
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (status === 'unauthenticated') {
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (!profileCompleted) {

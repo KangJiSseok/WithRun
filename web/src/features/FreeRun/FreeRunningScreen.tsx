@@ -33,8 +33,15 @@ function StatItem({ label, value, sub }: StatItemProps) {
 
 export function FreeRunningScreen() {
   const navigate = useNavigate();
-  const { time, distance, pace, calories, isPaused, togglePause, getCollectedData } =
-    useFreeRunning();
+  const {
+    time,
+    distance,
+    pace,
+    calories,
+    isPaused,
+    togglePause,
+    getCollectedData,
+  } = useFreeRunning();
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
   const session = useFreeRunSessionStore((s) => s.session);
   const setResult = useFreeRunSessionStore((s) => s.setResult);
@@ -56,12 +63,17 @@ export function FreeRunningScreen() {
   useEffect(() => {
     if (import.meta.env.DEV) return;
     return () => {
-      const { session: s, result: r, clearAll: ca } = useFreeRunSessionStore.getState();
+      const {
+        session: s,
+        result: r,
+        clearAll: ca,
+      } = useFreeRunSessionStore.getState();
       if (!s || r) return;
       const data = latestGetCollectedDataRef.current();
       const gps = latestGpsLocationRef.current;
       completeRunningSession(s.runningSessionId, {
         userId: MOCK_USER_ID,
+        isCompleted: false,
         ...data,
         endLatitude: gps?.latitude ?? 0,
         endLongitude: gps?.longitude ?? 0,
@@ -78,6 +90,7 @@ export function FreeRunningScreen() {
       const data = getCollectedData();
       const res = await completeRunningSession(session.runningSessionId, {
         userId: MOCK_USER_ID,
+        isCompleted: true,
         ...data,
         endLatitude: gpsLocation?.latitude ?? 0,
         endLongitude: gpsLocation?.longitude ?? 0,
@@ -90,7 +103,15 @@ export function FreeRunningScreen() {
     } finally {
       setIsEnding(false);
     }
-  }, [isEnding, session, getCollectedData, gpsLocation, setResult, clearAll, navigate]);
+  }, [
+    isEnding,
+    session,
+    getCollectedData,
+    gpsLocation,
+    setResult,
+    clearAll,
+    navigate,
+  ]);
 
   return (
     <div className="absolute inset-0 overflow-hidden">
@@ -114,7 +135,7 @@ export function FreeRunningScreen() {
             <span
               className={cn(
                 'font-bold leading-none tabular-nums text-white',
-                time.length > 5 ? 'text-7xl' : 'text-8xl',
+                time.length > 5 ? 'text-7xl' : 'text-8xl'
               )}
             >
               {time}
@@ -148,7 +169,7 @@ export function FreeRunningScreen() {
                 'absolute flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white transition-all duration-300',
                 isPaused
                   ? 'translate-x-20 opacity-100'
-                  : 'pointer-events-none translate-x-[50px] opacity-0',
+                  : 'pointer-events-none translate-x-[50px] opacity-0'
               )}
               aria-label={isEnding ? '종료 중...' : '러닝 종료'}
             >

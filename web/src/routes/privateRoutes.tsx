@@ -1,4 +1,4 @@
-import type { RouteObject } from 'react-router-dom';
+import { type RouteObject } from 'react-router-dom';
 
 import { CalendarPage } from '@/pages/private/CalendarPage';
 import { CalendarDetailPage } from '@/pages/private/CalendarDetailPage';
@@ -12,6 +12,8 @@ import { ProfilePage } from '@/pages/private/profile';
 import { RequireAuthRoute } from '@/routes/AuthGuards';
 import { MainLayout } from '@/shared/layouts/MainLayout';
 import { GhostRunPage } from '@/pages/private/GhostRun';
+import { GhostRunDetailPage } from '@/pages/private/GhostRunDetail';
+import { GhostRunSessionPage } from '@/pages/private/GhostRunSession';
 
 export const privateRoutes: RouteObject[] = [
   {
@@ -19,16 +21,12 @@ export const privateRoutes: RouteObject[] = [
     element: <RequireAuthRoute />,
     children: [
       {
-        element: <MainLayout showBottomNav />,
-        children: [{ path: '/home', element: <HomePage /> }],
-      },
-      {
-        element: <MainLayout showBottomNav fullScreen />,
-        children: [{ path: '/profile', element: <ProfilePage /> }],
-      },
-      {
         element: <MainLayout showTopNav showBottomNav />,
-        children: [{ path: '/calendar', element: <CalendarPage /> }],
+        children: [
+          { path: '/home', element: <HomePage /> },
+          { path: '/profile', element: <ProfilePage /> },
+          { path: '/calendar', element: <CalendarPage /> },
+        ],
       },
       {
         element: <MainLayout showBottomNav fullScreen />,
@@ -37,6 +35,7 @@ export const privateRoutes: RouteObject[] = [
           { path: '/normal-run/:courseId', element: <NormalRunDetailPage /> },
           { path: '/free-run', element: <FreeRunPage /> },
           { path: '/ghost-run', element: <GhostRunPage /> },
+          { path: '/ghost-run/:courseId', element: <GhostRunDetailPage /> },
         ],
       },
       {
@@ -44,10 +43,17 @@ export const privateRoutes: RouteObject[] = [
         children: [
           { path: '/free-run-session', element: <FreeRunSessionPage /> },
           {
+            path: '/ghost-run-session/:courseId',
+            element: <GhostRunSessionPage />,
+          },
+          {
             path: '/normal-run-session/:courseId',
             element: <NormalRunSessionPage />,
           },
-          { path: '/calendar/:runningSessionId', element: <CalendarDetailPage /> },
+          {
+            path: '/calendar/:runningSessionId',
+            element: <CalendarDetailPage />,
+          },
         ],
       },
     ],

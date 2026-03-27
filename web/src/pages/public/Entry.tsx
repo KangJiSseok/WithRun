@@ -38,11 +38,11 @@ export function EntryPage() {
       );
     }
 
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   if (status === 'unauthenticated') {
-    return <Navigate to="/onboarding" replace />;
+    return <Navigate to="/login" replace />;
   }
 
   return (

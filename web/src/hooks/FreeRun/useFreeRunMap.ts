@@ -1,5 +1,7 @@
 import { useEffect, useRef } from 'react';
 
+import { loadKakaoMapSdk } from '@/shared/utils';
+
 // GPS는 비동기라 응답이 늦게 오기에 먼저 서울 지도를 보여주고,
 // GPS 응답이 오면, 실제 위치로 이동하게 해줌.
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
@@ -25,10 +27,13 @@ export function useFreeRunMap() {
     if (!containerRef.current) return;
 
     const container = containerRef.current;
+    let cancelled = false;
     // watchPosition ID를 useEffect 스코프에 선언해야 cleanup에서 접근 가능
     let watchId: number;
 
-    kakao.maps.load(() => {
+    loadKakaoMapSdk().then(() => {
+      if (cancelled) return;
+
       // 1. 서울 좌표로 지도 생성
       const kakaoCenter = new kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
       mapRef.current = new kakao.maps.Map(container, { center: kakaoCenter, level: 3 });
@@ -65,6 +70,7 @@ export function useFreeRunMap() {
     // useEffect의 return이어야 React가 cleanup을 실행함
     // [다른 탭으로 이동: useEffect cleanup 실행 → watchPosition 해제 → GPS 추적 중단]
     return () => {
+      cancelled = true;
       if (watchId !== undefined) navigator.geolocation.clearWatch(watchId);
     };
   }, []);
