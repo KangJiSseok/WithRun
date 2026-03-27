@@ -2,6 +2,8 @@ package kr.withrun.was.domain.navigation.service.bundle;
 
 import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleDocument;
 import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleManeuver;
+import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleManeuverType;
+import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleSegment;
 import kr.withrun.was.domain.navigation.exception.NavigationBundleGenerationException;
 import kr.withrun.was.domain.navigation.type.NavigationBundleFailureCode;
 import org.springframework.stereotype.Component;
@@ -14,6 +16,8 @@ import java.util.List;
  */
 public class NavigationBundleDocumentValidator {
 
+    private static final double DISTANCE_TOLERANCE_METERS = 1d;
+
     /**
      * shape, edge, 거리 정보가 유효한지 확인하고 문제가 있으면 예외를 던집니다.
      */
@@ -25,19 +29,68 @@ public class NavigationBundleDocumentValidator {
             );
         }
 
-        if (document.metadata() == null || document.metadata().distanceMeters() <= 0d) {
+        if (document.metadata() == null || document.totalDistanceMeters() < 0d) {
             throw new NavigationBundleGenerationException(
                     NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
-                    "Latest navigation bundle metadata distance must be positive"
+                    "Latest navigation bundle metadata and total distance must be valid"
             );
         }
 
-        validateManeuvers(document.maneuvers(), document.shape().size(), document.metadata().distanceMeters());
+        validateSegments(document.segments(), document.shape().size(), document.totalDistanceMeters());
+        validateManeuvers(document.maneuvers(), document.shape().size(), document.totalDistanceMeters());
+    }
 
-        if (document.shapeLengths() != null && document.shapeLengths().stream().anyMatch(length -> length == null || length < 0d)) {
+    private void validateSegments(List<NavigationBundleSegment> segments, int shapeSize, double totalDistanceMeters) {
+        if (segments == null || segments.size() != shapeSize - 1) {
             throw new NavigationBundleGenerationException(
                     NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
-                    "Latest navigation bundle shape lengths must be non-negative"
+                    "Latest navigation bundle segments must match shape continuity"
+            );
+        }
+
+        double previousEndCumulativeDistanceMeters = 0d;
+        for (int segmentIndex = 0; segmentIndex < segments.size(); segmentIndex++) {
+            NavigationBundleSegment segment = segments.get(segmentIndex);
+            if (segment == null
+                    || segment.startShapeIndex() != segmentIndex
+                    || segment.endShapeIndex() != segmentIndex + 1) {
+                throw new NavigationBundleGenerationException(
+                        NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
+                        "Latest navigation bundle segment shape range is invalid"
+                );
+            }
+
+            if (segment.distanceMeters() < 0d
+                    || segment.startCumulativeDistanceMeters() < 0d
+                    || segment.endCumulativeDistanceMeters() < 0d
+                    || segment.startCumulativeDistanceMeters() > segment.endCumulativeDistanceMeters()) {
+                throw new NavigationBundleGenerationException(
+                        NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
+                        "Latest navigation bundle segment distances are invalid"
+                );
+            }
+
+            if (segmentIndex == 0) {
+                if (Math.abs(segment.startCumulativeDistanceMeters()) > DISTANCE_TOLERANCE_METERS) {
+                    throw new NavigationBundleGenerationException(
+                            NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
+                            "Latest navigation bundle first segment must start at zero distance"
+                    );
+                }
+            } else if (Math.abs(segment.startCumulativeDistanceMeters() - previousEndCumulativeDistanceMeters) > DISTANCE_TOLERANCE_METERS) {
+                throw new NavigationBundleGenerationException(
+                        NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
+                        "Latest navigation bundle segment cumulative distances must be contiguous"
+                );
+            }
+
+            previousEndCumulativeDistanceMeters = segment.endCumulativeDistanceMeters();
+        }
+
+        if (Math.abs(previousEndCumulativeDistanceMeters - totalDistanceMeters) > DISTANCE_TOLERANCE_METERS) {
+            throw new NavigationBundleGenerationException(
+                    NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
+                    "Latest navigation bundle total distance and segments must match"
             );
         }
     }
@@ -50,47 +103,35 @@ public class NavigationBundleDocumentValidator {
             );
         }
 
-        int previousEndShapeIndex = -1;
-        double previousEndDistanceMeters = -1d;
+        double previousCumulativeDistanceMeters = -1d;
         for (NavigationBundleManeuver maneuver : maneuvers) {
-            if (maneuver.beginShapeIndex() < 0
-                    || maneuver.endShapeIndex() < maneuver.beginShapeIndex()
-                    || maneuver.endShapeIndex() >= shapeSize) {
+            if (maneuver == null
+                    || maneuver.shapeIndex() < 0
+                    || maneuver.shapeIndex() >= shapeSize
+                    || maneuver.cumulativeDistanceMeters() < 0d
+                    || maneuver.cumulativeDistanceMeters() > totalDistanceMeters + DISTANCE_TOLERANCE_METERS) {
                 throw new NavigationBundleGenerationException(
                         NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
-                        "Latest navigation bundle maneuver shape range is invalid"
+                        "Latest navigation bundle maneuver data is invalid"
                 );
             }
-            if (maneuver.beginShapeIndex() < previousEndShapeIndex) {
+
+            if (maneuver.cumulativeDistanceMeters() + DISTANCE_TOLERANCE_METERS < previousCumulativeDistanceMeters) {
                 throw new NavigationBundleGenerationException(
                         NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
                         "Latest navigation bundle maneuvers must be ordered"
                 );
             }
-            if (maneuver.startDistanceMeters() > maneuver.endDistanceMeters()
-                    || maneuver.endDistanceMeters() < previousEndDistanceMeters
-                    || maneuver.distanceMeters() < 0d) {
-                throw new NavigationBundleGenerationException(
-                        NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
-                        "Latest navigation bundle maneuver distances are invalid"
-                );
-            }
 
-            previousEndShapeIndex = maneuver.endShapeIndex();
-            previousEndDistanceMeters = maneuver.endDistanceMeters();
+            previousCumulativeDistanceMeters = maneuver.cumulativeDistanceMeters();
         }
 
-        if (maneuvers.get(0).beginShapeIndex() != 0 || maneuvers.get(maneuvers.size() - 1).endShapeIndex() != shapeSize - 1) {
+        NavigationBundleManeuver finalManeuver = maneuvers.get(maneuvers.size() - 1);
+        if (finalManeuver.maneuverType() != NavigationBundleManeuverType.ARRIVAL
+                || finalManeuver.shapeIndex() != shapeSize - 1) {
             throw new NavigationBundleGenerationException(
                     NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
-                    "Latest navigation bundle maneuvers must cover the full route"
-            );
-        }
-
-        if (Math.abs(maneuvers.get(maneuvers.size() - 1).cumulativeDistanceMeters() - totalDistanceMeters) > 1d) {
-            throw new NavigationBundleGenerationException(
-                    NavigationBundleFailureCode.BUNDLE_VALIDATION_FAILED,
-                    "Latest navigation bundle total distance and maneuver coverage must match"
+                    "Latest navigation bundle must end with an arrival maneuver at the final shape index"
             );
         }
     }

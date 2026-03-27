@@ -6,14 +6,15 @@ import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleDocument;
 import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleGenerationResult;
-import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaRequestPoint;
-import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaRouteTraceResult;
-import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaTraceAttributes;
-import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaTraceRequest;
+import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleManeuver;
+import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleManeuverSampleAction;
+import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleManeuverType;
+import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleMetadata;
+import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleSegment;
+import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleShapePoint;
 import kr.withrun.was.domain.navigation.exception.NavigationBundleGenerationException;
 import kr.withrun.was.domain.navigation.service.artifact.NavigationBundleStore;
-import kr.withrun.was.domain.navigation.service.input.CourseTraceRequestMapper;
-import kr.withrun.was.domain.navigation.service.valhalla.ValhallaTraceClient;
+import kr.withrun.was.domain.navigation.service.bundle.polyline.PolylineBundleDocumentFactory;
 import kr.withrun.was.domain.navigation.type.NavigationBundleFailureCode;
 import kr.withrun.was.domain.navigation.type.NavigationBundleStatus;
 import org.junit.jupiter.api.BeforeEach;
@@ -29,9 +30,8 @@ import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 @ExtendWith(MockitoExtension.class)
@@ -42,13 +42,7 @@ class NavigationBundleGenerationServiceTest {
     private CourseRepository courseRepository;
 
     @Mock
-    private CourseTraceRequestMapper courseTraceRequestMapper;
-
-    @Mock
-    private ValhallaTraceClient valhallaTraceClient;
-
-    @Mock
-    private NavigationBundleDocumentBuilder navigationBundleDocumentBuilder;
+    private PolylineBundleDocumentFactory polylineBundleDocumentFactory;
 
     @Mock
     private NavigationBundleDocumentValidator navigationBundleDocumentValidator;
@@ -62,50 +56,21 @@ class NavigationBundleGenerationServiceTest {
     void setUp() {
         navigationBundleGenerationService = new NavigationBundleGenerationService(
                 courseRepository,
-                courseTraceRequestMapper,
-                valhallaTraceClient,
-                navigationBundleDocumentBuilder,
+                polylineBundleDocumentFactory,
                 navigationBundleDocumentValidator,
-                navigationBundleStore,
-                true
+                navigationBundleStore
         );
     }
 
-    @DisplayName("코스 기준으로 latest bundle 생성 파이프라인을 완성한다")
+    @DisplayName("Course.coordinates 로 최신 번들을 생성하고 저장한다")
     @Test
     void generatesLatestNavigationBundle() {
         Course course = course(10L);
-        ValhallaTraceRequest traceRequest = new ValhallaTraceRequest(
-                List.of(new ValhallaRequestPoint(37.5, 127.0), new ValhallaRequestPoint(37.6, 127.1)),
-                "pedestrian",
-                "map_snap",
-                5,
-                20,
-                500,
-                "ko-KR",
-                "kilometers"
-        );
-        ValhallaRouteTraceResult routeTraceResult = new ValhallaRouteTraceResult(List.of(), List.of());
-        ValhallaTraceAttributes traceAttributes = new ValhallaTraceAttributes(List.of(), List.of(), List.of(12.0));
-        NavigationBundleDocument document = new NavigationBundleDocument(
-                List.of(),
-                List.of(),
-                new kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleMetadata(
-                        1200d,
-                        Instant.parse("2026-03-24T07:35:00Z"),
-                        "valhalla-test",
-                        "ko-KR"
-                ),
-                List.of(),
-                List.of(),
-                List.of(12.0)
-        );
+        Coordinates coordinates = course.getCoordinates();
+        NavigationBundleDocument document = validDocument();
 
         when(courseRepository.findNotDeletedCourse(10L)).thenReturn(Optional.of(course));
-        when(courseTraceRequestMapper.map(course)).thenReturn(traceRequest);
-        when(valhallaTraceClient.requestRouteTrace(traceRequest)).thenReturn(routeTraceResult);
-        when(valhallaTraceClient.requestTraceAttributes(traceRequest)).thenReturn(traceAttributes);
-        when(navigationBundleDocumentBuilder.build(course, routeTraceResult, traceAttributes)).thenReturn(document);
+        when(polylineBundleDocumentFactory.build(coordinates)).thenReturn(document);
         when(navigationBundleStore.storeLatest(10L, document)).thenReturn("navigation/latest/10.json");
 
         NavigationBundleGenerationResult result = navigationBundleGenerationService.generate(10L);
@@ -115,55 +80,25 @@ class NavigationBundleGenerationServiceTest {
         assertThat(result.status()).isEqualTo(NavigationBundleStatus.READY);
         assertThat(result.generatedAt()).isEqualTo(Instant.parse("2026-03-24T07:35:00Z"));
         assertThat(course.getNavigationBundleUrl()).isEqualTo("navigation/latest/10.json");
+        verify(polylineBundleDocumentFactory).build(coordinates);
         verify(navigationBundleDocumentValidator).validate(document);
     }
 
-    @DisplayName("trace_attributes 보강이 실패해도 기본 번들 생성은 계속 진행한다")
+    @DisplayName("잘못된 coordinates 는 저장 전에 즉시 실패한다")
     @Test
-    void continuesWhenTraceAttributesFails() {
+    void failsFastWhenCoordinatesAreInvalid() {
         Course course = course(10L);
-        ValhallaTraceRequest traceRequest = new ValhallaTraceRequest(
-                List.of(new ValhallaRequestPoint(37.5, 127.0), new ValhallaRequestPoint(37.6, 127.1)),
-                "pedestrian",
-                "map_snap",
-                5,
-                20,
-                500,
-                "ko-KR",
-                "kilometers"
-        );
-        ValhallaRouteTraceResult routeTraceResult = new ValhallaRouteTraceResult(List.of(), List.of());
-        ValhallaTraceAttributes emptyTraceAttributes = new ValhallaTraceAttributes(List.of(), List.of(), List.of());
-        NavigationBundleDocument document = new NavigationBundleDocument(
-                List.of(),
-                List.of(),
-                new kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleMetadata(
-                        1200d,
-                        Instant.parse("2026-03-24T07:35:00Z"),
-                        "valhalla-test",
-                        "ko-KR"
-                ),
-                List.of(),
-                List.of(),
-                List.of()
+        NavigationBundleGenerationException failure = new NavigationBundleGenerationException(
+                NavigationBundleFailureCode.INVALID_COURSE_COORDINATES,
+                "At least two course coordinates are required"
         );
 
         when(courseRepository.findNotDeletedCourse(10L)).thenReturn(Optional.of(course));
-        when(courseTraceRequestMapper.map(course)).thenReturn(traceRequest);
-        when(valhallaTraceClient.requestRouteTrace(traceRequest)).thenReturn(routeTraceResult);
-        when(valhallaTraceClient.requestTraceAttributes(traceRequest)).thenThrow(
-                new NavigationBundleGenerationException(
-                        NavigationBundleFailureCode.VALHALLA_TRACE_ATTRIBUTES_FAILED,
-                        "trace_attributes failed"
-                )
-        );
-        when(navigationBundleDocumentBuilder.build(eq(course), eq(routeTraceResult), any(ValhallaTraceAttributes.class))).thenReturn(document);
-        when(navigationBundleStore.storeLatest(10L, document)).thenReturn("navigation/latest/10.json");
+        when(polylineBundleDocumentFactory.build(course.getCoordinates())).thenThrow(failure);
 
-        NavigationBundleGenerationResult result = navigationBundleGenerationService.generate(10L);
-
-        assertThat(result.status()).isEqualTo(NavigationBundleStatus.READY);
-        verify(navigationBundleDocumentBuilder).build(course, routeTraceResult, emptyTraceAttributes);
+        assertThatThrownBy(() -> navigationBundleGenerationService.generate(10L))
+                .isSameAs(failure);
+        verifyNoInteractions(navigationBundleStore, navigationBundleDocumentValidator);
     }
 
     @DisplayName("코스가 없으면 COURSE_NOT_FOUND 실패로 종료한다")
@@ -201,5 +136,38 @@ class NavigationBundleGenerationServiceTest {
         } catch (ReflectiveOperationException exception) {
             throw new IllegalStateException("Failed to set course id", exception);
         }
+    }
+
+    private static NavigationBundleDocument validDocument() {
+        return new NavigationBundleDocument(
+                List.of(
+                        new NavigationBundleShapePoint(37.5, 127.0, 10.0),
+                        new NavigationBundleShapePoint(37.6, 127.1, 12.0)
+                ),
+                List.of(new NavigationBundleSegment(0, 1, 1200d, 45, 0d, 1200d)),
+                List.of(new NavigationBundleManeuver(
+                        NavigationBundleManeuverType.ARRIVAL,
+                        null,
+                        NavigationBundleManeuverSampleAction.ARRIVAL,
+                        "목적지에 도착",
+                        1,
+                        1200d,
+                        null,
+                        null,
+                        null,
+                        null,
+                        null
+                )),
+                1200d,
+                new NavigationBundleMetadata(
+                        Instant.parse("2026-03-24T07:35:00Z"),
+                        "polyline-navigation-bundle",
+                        "v1",
+                        "ko-KR",
+                        "course.coordinates",
+                        2,
+                        1
+                )
+        );
     }
 }

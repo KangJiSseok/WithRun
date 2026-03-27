@@ -4,22 +4,13 @@ import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleDocument;
 import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleGenerationResult;
-import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaRouteTraceResult;
-import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaTraceAttributes;
-import kr.withrun.was.domain.navigation.dto.internal.valhalla.ValhallaTraceRequest;
 import kr.withrun.was.domain.navigation.exception.NavigationBundleGenerationException;
 import kr.withrun.was.domain.navigation.service.artifact.NavigationBundleStore;
-import kr.withrun.was.domain.navigation.service.input.CourseTraceRequestMapper;
-import kr.withrun.was.domain.navigation.service.valhalla.ValhallaTraceClient;
+import kr.withrun.was.domain.navigation.service.bundle.polyline.PolylineBundleDocumentFactory;
 import kr.withrun.was.domain.navigation.type.NavigationBundleFailureCode;
 import kr.withrun.was.domain.navigation.type.NavigationBundleStatus;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-
-import java.util.List;
 
 @Service
 /**
@@ -27,35 +18,24 @@ import java.util.List;
  */
 public class NavigationBundleGenerationService {
 
-    private static final Logger log = LoggerFactory.getLogger(NavigationBundleGenerationService.class);
-
     private final CourseRepository courseRepository;
-    private final CourseTraceRequestMapper courseTraceRequestMapper;
-    private final ValhallaTraceClient valhallaTraceClient;
-    private final NavigationBundleDocumentBuilder navigationBundleDocumentBuilder;
+    private final PolylineBundleDocumentFactory polylineBundleDocumentFactory;
     private final NavigationBundleDocumentValidator navigationBundleDocumentValidator;
     private final NavigationBundleStore navigationBundleStore;
-    private final boolean traceAttributesEnabled;
 
     /**
      * 번들 생성 파이프라인에 필요한 구성 요소를 주입받는 생성자입니다.
      */
     public NavigationBundleGenerationService(
             CourseRepository courseRepository,
-            CourseTraceRequestMapper courseTraceRequestMapper,
-            ValhallaTraceClient valhallaTraceClient,
-            NavigationBundleDocumentBuilder navigationBundleDocumentBuilder,
+            PolylineBundleDocumentFactory polylineBundleDocumentFactory,
             NavigationBundleDocumentValidator navigationBundleDocumentValidator,
-            NavigationBundleStore navigationBundleStore,
-            @Value("${app.navigation.trace-attributes-enabled:true}") boolean traceAttributesEnabled
+            NavigationBundleStore navigationBundleStore
     ) {
         this.courseRepository = courseRepository;
-        this.courseTraceRequestMapper = courseTraceRequestMapper;
-        this.valhallaTraceClient = valhallaTraceClient;
-        this.navigationBundleDocumentBuilder = navigationBundleDocumentBuilder;
+        this.polylineBundleDocumentFactory = polylineBundleDocumentFactory;
         this.navigationBundleDocumentValidator = navigationBundleDocumentValidator;
         this.navigationBundleStore = navigationBundleStore;
-        this.traceAttributesEnabled = traceAttributesEnabled;
     }
 
     @Transactional
@@ -69,10 +49,7 @@ public class NavigationBundleGenerationService {
                         "Course not found for latest navigation bundle generation: " + courseId
                 ));
 
-        ValhallaTraceRequest traceRequest = courseTraceRequestMapper.map(course);
-        ValhallaRouteTraceResult routeTraceResult = valhallaTraceClient.requestRouteTrace(traceRequest);
-        ValhallaTraceAttributes traceAttributes = fetchTraceAttributes(traceRequest);
-        NavigationBundleDocument document = navigationBundleDocumentBuilder.build(course, routeTraceResult, traceAttributes);
+        NavigationBundleDocument document = polylineBundleDocumentFactory.build(course.getCoordinates());
 
         navigationBundleDocumentValidator.validate(document);
         String storageKey = navigationBundleStore.storeLatest(courseId, document);
@@ -85,22 +62,5 @@ public class NavigationBundleGenerationService {
                 document.metadata().generatedAt(),
                 NavigationBundleStatus.READY
         );
-    }
-
-    private ValhallaTraceAttributes fetchTraceAttributes(ValhallaTraceRequest traceRequest) {
-        if (!traceAttributesEnabled) {
-            return emptyTraceAttributes();
-        }
-
-        try {
-            return valhallaTraceClient.requestTraceAttributes(traceRequest);
-        } catch (NavigationBundleGenerationException exception) {
-            log.warn("trace_attributes enrichment skipped. failureCode={}, message={}", exception.getFailureCode(), exception.getMessage());
-            return emptyTraceAttributes();
-        }
-    }
-
-    private ValhallaTraceAttributes emptyTraceAttributes() {
-        return new ValhallaTraceAttributes(List.of(), List.of(), List.of());
     }
 }

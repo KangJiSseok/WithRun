@@ -88,6 +88,17 @@ app:
     frontend-base-url: http://localhost:5173
     # 모바일 WebView/딥링크 복귀에 사용할 기본 주소
     mobile-deep-link-base: ${app.auth.mobile-deep-link-base:withrun://auth/callback}
+  navigation:
+    polyline:
+      language: ko-KR
+      generator: polyline-navigation-bundle
+      noise-floor-meters: 6.0
+      anchor-window-meters: 15.0
+      merge-distance-meters: 24.0
+      straight-threshold-deg: 30
+      mild-threshold-deg: 60
+      normal-threshold-deg: 125
+      u-turn-threshold-deg: 170
   recommendation:
     weight:
       location: 0.45
