@@ -26,6 +26,7 @@ import org.springframework.http.HttpHeaders;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -86,24 +87,23 @@ public class UserRunningPreferenceController {
     @GetMapping
     public ResponseEntity<ApiResponse<UserRunningPreferenceResponse>> getRunningPreference(
             @Parameter(hidden = true)
-            @Positive Long userId
-    ) {
-        return ApiResponse.successEntity(
-                userRunningPreferenceService.getRunningPreference(userId)
-        );
-    }
-
-    /*
-    임시 주석 (로그인 이슈로 인한 인증 제거)
-    public ResponseEntity<ApiResponse<UserRunningPreferenceResponse>> getRunningPreference(
-            @Parameter(hidden = true)
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
         return ApiResponse.successEntity(
                 userRunningPreferenceService.getRunningPreference(resolveUserId(authenticatedUser))
         );
     }
-    */
+
+    //임시 API
+    @GetMapping("/{userId}")
+    public ResponseEntity<ApiResponse<UserRunningPreferenceResponse>> getRunningPreference(
+            @Parameter(hidden = true)
+            @PathVariable @Positive Long userId
+    ) {
+        return ApiResponse.successEntity(
+                userRunningPreferenceService.getRunningPreference(userId)
+        );
+    }
 
     @Operation(
             summary = "현재 로그인 사용자의 러닝 선호 설정을 수정한다",
