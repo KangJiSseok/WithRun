@@ -15,10 +15,11 @@ function resolveInitialPhase(
   hasAccessToken: boolean,
   hasLoginError: boolean,
 ): LoginPhase {
-  // 토큰이 있거나 로그인 에러가 있으면 intro 스킵 — 사용자가 이미 시도한 상태
+  // 토큰이 있거나 로그인 에러가 있으면 intro 스킵 - 사용자가 이미 시도한 상태
   if (hasAccessToken || hasLoginError) {
     return 'login';
   }
+
   return 'intro';
 }
 

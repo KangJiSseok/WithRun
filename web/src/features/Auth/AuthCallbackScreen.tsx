@@ -56,15 +56,12 @@ export function AuthCallbackScreen() {
   }, [bootstrapAuth, clearAuth, navigate, searchParams, setAuthenticated]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[#101116] px-6 text-center text-white">
-      <div className="space-y-3">
-        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-white/15 border-t-[#FF5858]" />
-        <div className="space-y-1">
-          <p className="text-lg font-bold">로그인 정보를 확인하고 있어요</p>
-          <p className="text-sm text-white/60">
-            세션을 복구한 뒤 바로 다음 화면으로 이동합니다.
-          </p>
-        </div>
+    <div className="flex min-h-screen items-center justify-center bg-[hsl(var(--surface-subtle))] px-6 text-center text-[hsl(var(--text-primary))]">
+      <div className="space-y-4 rounded-[var(--radius-2xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-8 py-10 shadow-[var(--shadow-lg)]">
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[hsl(var(--border-default))] border-t-[hsl(var(--primary-1))]" />
+        <p className="body-r text-[hsl(var(--text-secondary))]">
+          처리 중입니다...
+        </p>
       </div>
     </div>
   );

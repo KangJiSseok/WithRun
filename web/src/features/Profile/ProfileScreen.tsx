@@ -1,10 +1,8 @@
 import {
-  Camera,
-  ChevronLeft,
   LogOut,
   PencilLine,
   ShieldAlert,
-  UserRound,
+  Settings2,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -38,20 +36,16 @@ function createProfileState(): UserProfileResponse {
   };
 }
 
-function resolveInitial(nickname: string | null): string {
-  return nickname?.trim().charAt(0).toUpperCase() || 'W';
-}
-
 function formatProvider(provider: string | null | undefined): string {
   if (provider === 'kakao') {
-    return '카카오 계정';
+    return 'Kakao';
   }
 
   if (provider === 'google') {
-    return 'Google 계정';
+    return 'Google';
   }
 
-  return 'With Run 계정';
+  return 'With Run';
 }
 
 function formatBirthDate(value: string | null): string | null {
@@ -95,8 +89,8 @@ function syncProfileIntoAuthStore(profile: UserProfileResponse): void {
 
 function ProfileMetricChip({ label, value }: ProfileMetricChipProps) {
   return (
-    <div className="rounded-full border border-white/10 bg-white/8 px-4 py-2 text-sm font-semibold text-white/85">
-      <span className="text-white/50">{label}</span> {value}
+    <div className="rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--primary-5))] px-4 py-2 text-sm font-semibold text-[hsl(var(--text-primary))]">
+      <span className="text-[hsl(var(--text-secondary))]">{label}</span> {value}
     </div>
   );
 }
@@ -190,61 +184,38 @@ export function ProfileScreen() {
     }
   }
 
-  function handleBack() {
-    if (window.history.length > 1) {
-      navigate(-1);
-      return;
-    }
-
-    navigate('/home');
-  }
-
   return (
     <>
       <div className="min-h-[calc(100dvh-5rem)] overflow-y-auto bg-[hsl(var(--surface-subtle))] px-5 pb-10 pt-6">
         <div className="mx-auto flex max-w-[430px] flex-col gap-5">
           <header className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={handleBack}
-              className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-sm"
-              aria-label="이전으로"
-            >
-              <ChevronLeft size={20} />
-            </button>
-            <div>
-              <p className="text-sm font-semibold text-[hsl(var(--text-secondary))]">
-                내 프로필
-              </p>
-              <h1 className="text-2xl font-black text-[hsl(var(--text-primary))]">
-                프로필 관리
-              </h1>
+            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--primary-2))] shadow-sm">
+              <Settings2 size={20} />
             </div>
+            <h1 className="text-2xl font-black text-[hsl(var(--text-primary))]">
+              설정
+            </h1>
           </header>
 
-          <section className="overflow-hidden rounded-[2rem] bg-[linear-gradient(180deg,#3D2020_0%,#1A1E26_58%,#202938_100%)] p-6 text-white shadow-[0_24px_60px_rgba(0,0,0,0.18)]">
+          <section className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border-default))] bg-[linear-gradient(180deg,hsl(var(--primary-5))_0%,hsl(var(--surface-default))_62%,hsl(var(--surface-subtle))_100%)] p-6 text-[hsl(var(--text-primary))] shadow-[var(--shadow-lg)]">
             <div className="flex items-center justify-between">
-              <div className="text-lg font-black">프로필</div>
-              <div className="text-sm font-medium text-white/45">
+              <div className="text-sm font-semibold tracking-[0.08em] text-[hsl(var(--text-secondary))]">
+                계정
+              </div>
+              <div className="text-xs font-semibold text-[hsl(var(--text-secondary))]">
                 {providerLabel}
               </div>
             </div>
 
             <div className="mt-8 flex flex-col items-center text-center">
-              <div className="relative flex h-24 w-24 items-center justify-center rounded-full bg-[radial-gradient(circle_at_top,#6D4A2D,#2B231F)] shadow-[0_16px_36px_rgba(0,0,0,0.24)]">
-                <span className="text-3xl font-black text-white/95">
-                  {resolveInitial(profile.nickname)}
-                </span>
-                <div className="absolute bottom-0 right-0 flex h-8 w-8 items-center justify-center rounded-full border border-white/10 bg-white/10 text-white/90 backdrop-blur">
-                  <Camera size={14} />
-                </div>
-              </div>
-
-              <div className="mt-5 space-y-1">
+              <div className="mt-0 space-y-1">
                 <h2 className="text-3xl font-black">
                   {profile.nickname ?? 'Runner'}
                 </h2>
-                <p className="text-sm text-white/60">
+                <p className="text-xs font-semibold text-[hsl(var(--text-secondary))]">
+                  {providerLabel}
+                </p>
+                <p className="text-sm text-[hsl(var(--text-secondary))]">
                   {birthDateLabel ?? '생년월일 미등록'}
                   {birthDateLabel && genderLabel ? ' · ' : ''}
                   {genderLabel ?? '성별 미등록'}
@@ -266,14 +237,6 @@ export function ProfileScreen() {
                 ) : null}
               </div>
 
-              <button
-                type="button"
-                onClick={() => setIsEditOpen(true)}
-                className="mt-6 inline-flex items-center gap-2 text-sm font-black text-[#FF6A6A]"
-              >
-                <PencilLine size={16} />
-                프로필 수정
-              </button>
             </div>
           </section>
 
@@ -287,6 +250,16 @@ export function ProfileScreen() {
             <Button
               type="button"
               variant="outline"
+              onClick={() => setIsEditOpen(true)}
+              className="h-14 w-full rounded-[1.5rem] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-primary))] shadow-sm hover:bg-[hsl(var(--surface-subtle))]"
+            >
+              <PencilLine size={18} />
+              프로필 수정
+            </Button>
+
+            <Button
+              type="button"
+              variant="outline"
               onClick={() => void handleLogout()}
               disabled={isLoggingOut}
               className="h-14 w-full rounded-[1.5rem] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-primary))] shadow-sm hover:bg-[hsl(var(--surface-subtle))]"
@@ -294,6 +267,18 @@ export function ProfileScreen() {
               <LogOut size={18} />
               {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
             </Button>
+          </section>
+
+          <section className="space-y-3 rounded-[1.5rem] border border-[hsl(var(--error)/0.16)] bg-[hsl(var(--error)/0.04)] p-4">
+            <div className="space-y-1">
+              <p className="text-xs font-semibold tracking-[0.08em] text-[hsl(var(--text-error))]">
+                위험 구역
+              </p>
+              <p className="text-sm text-[hsl(var(--text-secondary))]">
+                회원탈퇴를 진행하면 현재 로그인 상태와 연결된 소셜 계정 매핑도
+                함께 정리됩니다.
+              </p>
+            </div>
 
             <Button
               type="button"
@@ -301,7 +286,7 @@ export function ProfileScreen() {
               onClick={() => void handleDeleteAccount()}
               disabled={isDeletingAccount}
               className={cn(
-                'h-14 w-full rounded-[1.5rem] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--primary-1))] shadow-sm hover:bg-[hsl(var(--surface-subtle))]',
+                'h-14 w-full rounded-[1.5rem] border-[hsl(var(--error)/0.22)] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-error))] shadow-sm hover:bg-[hsl(var(--error)/0.05)]',
                 isDeletingAccount ? 'opacity-70' : undefined
               )}
             >
@@ -309,18 +294,6 @@ export function ProfileScreen() {
               {isDeletingAccount ? '회원탈퇴 처리 중...' : '회원탈퇴'}
             </Button>
           </section>
-
-          <div className="flex items-start gap-3 rounded-[1.5rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-4 py-4 text-sm text-[hsl(var(--text-secondary))]">
-            <UserRound
-              size={18}
-              className="mt-0.5 shrink-0 text-[hsl(var(--primary-1))]"
-            />
-            <p>
-              프로필 이미지는 다음 단계에서 백엔드 응답에 맞춰 연결할 수 있도록
-              구조만 열어뒀어요. 회원탈퇴를 진행하면 현재 로그인 상태와 연결된
-              소셜 계정 매핑도 함께 정리됩니다.
-            </p>
-          </div>
         </div>
       </div>
 

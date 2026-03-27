@@ -175,3 +175,114 @@ ESLint enforces: recommended TypeScript rules, React Hooks rules, React Refresh 
 - When editing Kotlin files, run `./gradlew :app:compileDebugKotlin` to check for compile errors.
 - The project is early-stage (greenfield); no test infrastructure exists yet — do not assume tests are running.
 - Each sub-project (`mobile/`, `web/`, `wear/`) manages its own dependencies independently; do not mix them.
+
+---
+
+## Figma Design System Rules
+
+### Scope
+
+- Treat `web/` as the primary product UI codebase. The mobile app ships these screens inside a React Native WebView shell.
+- Default to mobile-first layouts sized for `375px` to `430px` wide viewports.
+- Only implement in `mobile/` when the request is about native shell behavior, device permissions, or bridge UX. Otherwise build screen UI in `web/src/**`.
+
+### Visual Direction
+
+- Use a bright illustrated running-companion style: cheerful, outdoorsy, energetic, and approachable.
+- Treat the app as a mobile companion product, not a desktop dashboard or a marketing site.
+- Use a `soft claymorphism-lite` direction: soft depth, rounded shells, warm highlights, and gentle layering without toy-like heavy borders.
+- Prefer light surfaces and vivid accents over dark dashboards or enterprise-looking UI.
+- Keep each screen to one primary brand color plus at most two support accents.
+- Favor warm white surfaces, bright orange primary actions, clear sky-blue support highlights, sun-tinted accents, and deep navy-gray text.
+- Treat green as a semantic success color, not as a competing core brand accent.
+- Avoid black-heavy UI, neon cyberpunk palettes, hard neubrutalist outlines, glassmorphism-first styling, or dense desktop-style information layouts for entry flows.
+- Treat illustrations as part of the product language rather than as disposable decoration.
+
+### Tokens and Styling
+
+- Use the design tokens in `web/src/shared/styles/tokens/` for colors, typography, spacing, radius, shadow, and z-index.
+- Use HSL channel tokens only. Do not hardcode hex or RGB values in component class names or inline styles.
+- Route shadcn variables through `web/src/shared/styles/shadcn.css`. If Figma introduces a new semantic color, add it to the token files first and then map it through the shadcn bridge.
+- Use Tailwind v4 utilities backed by tokens via `web/src/shared/styles/index.css`.
+- Preserve the `@` path alias for `web/src/**`.
+- Keep `Pretendard Variable` as the base UI typeface unless the user explicitly asks for a typography migration.
+- If Figma exploration suggests playful display fonts, use that as mood reference for headlines only. Do not replace the core app type system without a deliberate token update.
+  - Recommended palette direction for new Figma work:
+    - Primary action: bright orange
+    - Support accent: clear sky blue
+    - Warm highlight: soft yellow
+    - Base background: cream or warm off-white
+    - Main text: deep navy-gray
+  - When updating tokens later, move toward this palette through semantic variables instead of one-off screen colors.
+
+### Component Organization
+
+- Reuse low-level primitives from `web/src/shared/components/shadcn/` before creating new controls.
+- Place reusable app-wide UI in `web/src/shared/components/`.
+- Place screen-specific compositions in `web/src/features/<Feature>/`.
+- Keep route wrappers thin in `web/src/pages/**` and put actual UI structure in feature components.
+- Reuse `MainLayout`, navigation shells, and shared wrappers before introducing new page chrome.
+
+### Mobile App Layout Rules
+
+- Design for thumb reach and app-like flows. Prefer bottom sheets, stacked cards, large buttons, and single-column layouts.
+- Keep primary actions full-width and close to the lower interaction zone when the flow allows it.
+- Keep touch targets at least `44x44px`.
+- Keep at least `8px` spacing between adjacent touch targets.
+- Do not introduce desktop-only patterns such as top mega-nav, hover-only reveals, sidebars, or dense multi-column forms in core mobile flows.
+- Assume screens run inside a WebView. Keep transitions, scroll behavior, and input handling smooth and lightweight.
+- Do not rely on hover-only meaning. All primary interactions must read clearly on touch devices.
+
+### Illustration Rules
+
+- Build scenes from simple shapes, soft gradients, rounded geometry, and slightly tinted outlines rather than harsh black strokes.
+- Keep mascot, landscape, and motion language consistent across onboarding, empty states, and celebratory surfaces.
+- Use one hero illustration or character stage per screen. Do not let illustration compete with the primary CTA or form.
+- Use illustration colors from the token palette instead of one-off art-only colors.
+- If an illustration needs a new accent, promote that accent into tokens first.
+- Let orange and sky blue lead the illustration language, with yellow used only as a small warmth accent.
+- Avoid full toy-like claymorphism with `3px` to `4px` borders everywhere. Borrow the softness, not the exaggerated thickness.
+
+### Motion Rules
+
+- Use quick, friendly motion: `180ms` to `240ms` for standard transitions and spring motion for mascot or celebratory moments.
+- Use motion to guide progress, confirm state changes, or support scene transitions.
+- Avoid long ambient loops, heavy parallax, or motion that distracts during data entry.
+- Respect reduced-motion when adding large animated scenes.
+- Use soft press feedback and small depth changes rather than large scaling that shifts layout.
+
+### Icons and Assets
+
+- Use `lucide-react` as the default icon system for functional UI.
+- Do not add new icon packages for Figma work unless the user explicitly requests it.
+- Store build-time imported assets in `web/src/assets/`.
+- Use `web/public/` only for assets that must be served by URL.
+- If the Figma MCP payload provides SVG or image assets, use those assets directly and keep filenames descriptive.
+
+### Figma MCP Workflow
+
+1. Run `get_design_context` for the exact node first.
+2. If the payload is too large, run `get_metadata`, narrow the target, then run `get_design_context` again.
+3. Run `get_screenshot` for visual parity.
+4. Translate the result into this codebase's patterns: React 19, Tailwind v4, shadcn primitives, token CSS, and mobile-first layouts.
+5. Reuse existing components and layout shells before creating new structures.
+6. Validate the final implementation against the screenshot and against `375px` to `430px` viewport behavior before finishing.
+7. When a Figma concept conflicts with this project, prefer:
+   mobile companion app rules over generic landing-page guidance
+   bright illustration over dark app-store aesthetics
+   Pretendard and current token architecture over imported font systems
+
+### Screen Guidance for Onboarding and Entry Flows
+
+- Prefer bottom-sheet composition like the current onboarding and login flows rather than centered desktop cards.
+- Use short copy, one primary action, and visible progress.
+- Keep form steps sequential and calm. Reduce background motion once the user is typing or selecting options.
+- Use illustration to reinforce emotion and context, not to explain the form.
+- For onboarding, borrow the friendliness of Claymorphism and soft rounded systems, but keep controls production-ready and accessible.
+
+### Quality Gates
+
+- Run `npm run lint` in `web/` after Figma-driven UI edits.
+- Preserve the existing React Router structure in `web/src/routes/**`.
+- Maintain accessible contrast even when using bright palettes.
+- Never bypass tokens for quick visual matching.
