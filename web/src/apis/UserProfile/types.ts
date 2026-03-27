@@ -16,3 +16,7 @@ export type UpdateUserProfileRequest = {
   height: number;
   weight: number;
 };
+
+export type NicknameAvailabilityResponse = {
+  available: boolean;
+};

@@ -2,6 +2,7 @@ import type { ApiResponse } from '@/shared/types/api.type';
 
 import axiosClient from '@/shared/libs/axiosClient';
 import type {
+  NicknameAvailabilityResponse,
   UpdateUserProfileRequest,
   UserProfileResponse,
 } from './types';
@@ -24,4 +25,14 @@ export async function updateUserProfile(
 export async function deleteUserProfile(): Promise<void> {
   // 회원탈퇴는 현재 로그인 사용자 기준 soft delete 이므로 별도 id 없이 /users/me 로 호출한다.
   await axiosClient.delete<ApiResponse<void>>('/users/me');
+}
+
+export async function checkNicknameAvailability(
+  nickname: string,
+): Promise<NicknameAvailabilityResponse> {
+  const { data } = await axiosClient.get<
+    ApiResponse<NicknameAvailabilityResponse>
+  >('/users/nickname-availability', { params: { nickname } });
+
+  return data.data;
 }

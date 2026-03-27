@@ -40,7 +40,7 @@ public class User extends BaseEntity {
     @Column(name = "user_id")
     private Long id;
 
-    @Column(name = "nickname", length = 40)
+    @Column(name = "nickname", length = 16)
     private String nickname;
 
     @Column(name = "birth_date")

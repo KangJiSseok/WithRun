@@ -129,7 +129,7 @@ class UserCalendarRepositoryTest {
     void findsActiveCalendarByUserIdAndDateFromCustomRepository() throws NoSuchMethodException {
         User user = persistUser("calendar-runner");
         UserCalendar calendar = persistCalendar(user, LocalDate.of(2026, 3, 18), 6500, 0, 1, 0, false);
-        persistCalendar(persistUser("another-calendar-runner"), LocalDate.of(2026, 3, 18), 7200, 1, 0, 0, false);
+        persistCalendar(persistUser("other-runner-2"), LocalDate.of(2026, 3, 18), 7200, 1, 0, 0, false);
 
         entityManager.flush();
         entityManager.clear();
