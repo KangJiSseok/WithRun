@@ -117,9 +117,8 @@ function SplitsSection({ splits }: { splits: SplitResult[] }) {
             {splits.map((split) => (
               <tr key={split.splitIndex}>
                 <td className="px-[var(--space-3)] py-[var(--space-3)] caption-m text-[hsl(var(--text-primary))]">
-                  {/* 구간이 1km 미만이면 미터 단위로 표시 */}
                   {split.splitDistanceM < 1000
-                    ? `${split.splitDistanceM}m`
+                    ? `${parseFloat((split.splitDistanceM / 1000).toFixed(2))}km`
                     : `${split.splitIndex}km`}
                 </td>
                 <td className="px-[var(--space-3)] py-[var(--space-3)] caption-m text-[hsl(var(--primary))] font-bold">
