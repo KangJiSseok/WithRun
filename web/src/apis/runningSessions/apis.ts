@@ -21,10 +21,9 @@ import type {
 export const createRunningSession = async (
   body: CreateRunningSessionRequest
 ): Promise<ApiResponse<CreateRunningSessionResponse>> => {
-  const { data } = await axiosClient.post<ApiResponse<CreateRunningSessionResponse>>(
-    '/running-sessions',
-    body
-  );
+  const { data } = await axiosClient.post<
+    ApiResponse<CreateRunningSessionResponse>
+  >('/running-sessions', body);
   return data;
 };
 
@@ -49,12 +48,11 @@ export const getRunningHistoryApi = async (
  */
 export const completeRunningSession = async (
   runningSessionId: number,
-  body: CompleteRunningSessionRequest,
+  body: CompleteRunningSessionRequest
 ): Promise<ApiResponse<CompleteRunningSessionResponse>> => {
-  const { data } = await axiosClient.patch<ApiResponse<CompleteRunningSessionResponse>>(
-    `/running-sessions/${runningSessionId}`,
-    body,
-  );
+  const { data } = await axiosClient.patch<
+    ApiResponse<CompleteRunningSessionResponse>
+  >(`/running-sessions/${runningSessionId}`, body);
   return data;
 };
 
@@ -63,11 +61,11 @@ export const completeRunningSession = async (
  * GET /running-sessions/{runningSessionId}/detail
  */
 export const getRunningSessionDetailApi = async (
-  runningSessionId: number,
+  runningSessionId: number
 ): Promise<ApiResponse<RunningSessionDetailResponse>> => {
-  const { data } = await axiosClient.get<ApiResponse<RunningSessionDetailResponse>>(
-    `/running-sessions/${runningSessionId}/detail`,
-  );
+  const { data } = await axiosClient.get<
+    ApiResponse<RunningSessionDetailResponse>
+  >(`/running-sessions/${runningSessionId}/detail`);
   return data;
 };
 
