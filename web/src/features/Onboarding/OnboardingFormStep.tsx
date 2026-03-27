@@ -5,7 +5,8 @@ import {
   Ruler,
   Weight,
 } from 'lucide-react';
-import { useState, type ReactNode } from 'react';
+import { useState, useMemo, type ReactNode } from 'react';
+import Picker from 'react-mobile-picker';
 import { toast } from 'sonner';
 
 import {
@@ -18,7 +19,7 @@ import {
 } from '@/constants/Onboarding';
 import { getCurrentUser } from '@/apis/auth';
 import { updateUserRunningPreferences } from '@/apis/RunningPreferences';
-import { updateUserProfile } from '@/apis/UserProfile';
+import { checkNicknameAvailability, updateUserProfile } from '@/apis/UserProfile';
 import { cn } from '@/shared/utils';
 import { useAuthStore } from '@/stores/Auth';
 import type {
@@ -175,19 +176,32 @@ function toggleSelection<TValue extends string>(
     : [...selectedValues, value];
 }
 
+type NicknameCheckStatus = 'idle' | 'checking' | 'available' | 'unavailable';
+
+type NicknameCheckState = {
+  status: NicknameCheckStatus;
+  checkedNickname: string | null;
+};
+
 function isStepComplete(
   stepId: OnboardingStepId,
   formState: OnboardingFormState,
+  nicknameCheck: NicknameCheckState,
+  physicalTouched: { height: boolean; weight: boolean },
 ): boolean {
   switch (stepId) {
     case 'nickname':
-      return formState.nickname.trim().length > 0;
+      return (
+        formState.nickname.trim().length > 0 &&
+        nicknameCheck.status === 'available' &&
+        nicknameCheck.checkedNickname === formState.nickname.trim()
+      );
     case 'gender':
       return formState.gender !== null;
     case 'birthdate':
       return formState.birthdate.length > 0;
     case 'physical':
-      return formState.height > 0 && formState.weight > 0;
+      return physicalTouched.height && physicalTouched.weight;
     case 'purposes':
       return formState.purposes.length > 0;
     case 'timeSlots':
@@ -212,19 +226,77 @@ export function OnboardingFormStep({
   const accessToken = useAuthStore((state) => state.accessToken);
   const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [formState, setFormState] = useState(DEFAULT_ONBOARDING_FORM_STATE);
+  const [formState, setFormState] = useState(() => ({
+    ...DEFAULT_ONBOARDING_FORM_STATE,
+    birthdate: '2000-01-01',
+  }));
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [nicknameCheck, setNicknameCheck] = useState<NicknameCheckState>({
+    status: 'idle',
+    checkedNickname: null,
+  });
+  const [physicalTouched, setPhysicalTouched] = useState({
+    height: false,
+    weight: false,
+  });
+  const [birthdatePicker, setBirthdatePicker] = useState({
+    year: '2000',
+    month: '01',
+    day: '01',
+  });
+
+  const pickerOptions = useMemo(() => {
+    const currentYear = new Date().getFullYear();
+    const years = Array.from({ length: currentYear - 1939 }, (_, i) =>
+      String(1940 + i),
+    );
+    const months = Array.from({ length: 12 }, (_, i) =>
+      String(i + 1).padStart(2, '0'),
+    );
+    const daysInMonth = new Date(
+      Number(birthdatePicker.year),
+      Number(birthdatePicker.month),
+      0,
+    ).getDate();
+    const days = Array.from({ length: daysInMonth }, (_, i) =>
+      String(i + 1).padStart(2, '0'),
+    );
+
+    return { years, months, days };
+  }, [birthdatePicker.year, birthdatePicker.month]);
 
   const currentStep = ONBOARDING_STEPS[currentStepIndex];
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === ONBOARDING_STEPS.length - 1;
-  const isCurrentStepValid = isStepComplete(currentStep.id, formState);
+  const isCurrentStepValid = isStepComplete(currentStep.id, formState, nicknameCheck, physicalTouched);
 
   function setField<K extends keyof OnboardingFormState>(
     field: K,
     value: OnboardingFormState[K],
   ) {
     setFormState((previousState) => updateField(previousState, field, value));
+  }
+
+  function handleNicknameChange(value: string) {
+    setField('nickname', value);
+    // 입력이 바뀌면 이전 중복 체크 결과를 초기화한다.
+    setNicknameCheck({ status: 'idle', checkedNickname: null });
+  }
+
+  async function handleNicknameCheck() {
+    const trimmed = formState.nickname.trim();
+    if (!trimmed) return;
+
+    setNicknameCheck({ status: 'checking', checkedNickname: null });
+    try {
+      const { available } = await checkNicknameAvailability(trimmed);
+      setNicknameCheck({
+        status: available ? 'available' : 'unavailable',
+        checkedNickname: trimmed,
+      });
+    } catch {
+      setNicknameCheck({ status: 'unavailable', checkedNickname: trimmed });
+    }
   }
 
   function handlePrevious() {
@@ -304,14 +376,43 @@ export function OnboardingFormStep({
               </h2>
             </div>
 
-            <input
-              type="text"
-              value={formState.nickname}
-              onChange={(event) => setField('nickname', event.target.value)}
-              placeholder="닉네임 입력"
-              className="w-full border-b-2 border-gray-300 bg-transparent py-2 text-center text-2xl font-bold text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-[#3388FF]"
-              autoFocus
-            />
+            <div className="grid grid-cols-[1fr_auto] items-center gap-x-2">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={formState.nickname}
+                  onChange={(event) => handleNicknameChange(event.target.value)}
+                  placeholder="닉네임 입력"
+                  maxLength={16}
+                  className="w-full border-b-2 border-gray-300 bg-transparent py-2 text-center text-2xl font-bold text-gray-900 outline-none transition-colors placeholder:text-gray-400 focus:border-[#3388FF]"
+                  autoFocus
+                />
+                <span className="absolute bottom-1 right-0 text-xs text-gray-400">
+                  {formState.nickname.length}/16
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => void handleNicknameCheck()}
+                disabled={
+                  !formState.nickname.trim() ||
+                  nicknameCheck.status === 'checking'
+                }
+                className="rounded-xl bg-gray-700 px-3 py-2 text-sm font-bold text-white transition-colors hover:bg-gray-900 disabled:opacity-40"
+              >
+                {nicknameCheck.status === 'checking' ? '확인 중...' : '중복 확인'}
+              </button>
+              {nicknameCheck.status === 'available' && (
+                <p className="col-start-1 mt-2 text-center text-sm font-medium text-green-600">
+                  사용 가능한 닉네임이에요.
+                </p>
+              )}
+              {nicknameCheck.status === 'unavailable' && (
+                <p className="col-start-1 mt-2 text-center text-sm font-medium text-red-500">
+                  이미 사용 중인 닉네임이에요.
+                </p>
+              )}
+            </div>
           </StepFrame>
         );
       case 'gender':
@@ -356,12 +457,88 @@ export function OnboardingFormStep({
               </h2>
             </div>
 
-            <input
-              type="date"
-              value={formState.birthdate}
-              onChange={(event) => setField('birthdate', event.target.value)}
-              className="w-full rounded-xl border-2 border-gray-200 bg-white/60 p-3 font-medium text-gray-800 outline-none transition-colors focus:border-[#3388FF]"
-            />
+            <div className="relative overflow-hidden rounded-2xl border border-white/50 bg-white/80 shadow-sm backdrop-blur-sm">
+              {/* 선택 영역 하이라이트 */}
+              <div className="pointer-events-none absolute inset-x-0 top-1/2 z-10 h-10 -translate-y-1/2 border-y border-gray-200 bg-gray-100/60" />
+
+              <Picker
+                value={birthdatePicker}
+                onChange={(next) => {
+                  const newPicker = next as typeof birthdatePicker;
+                  // 월이 바뀌면 day를 유효 범위로 클램핑
+                  const daysInNewMonth = new Date(
+                    Number(newPicker.year),
+                    Number(newPicker.month),
+                    0,
+                  ).getDate();
+                  const clampedDay = String(
+                    Math.min(Number(newPicker.day), daysInNewMonth),
+                  ).padStart(2, '0');
+                  const resolved = { ...newPicker, day: clampedDay };
+                  setBirthdatePicker(resolved);
+                  setField(
+                    'birthdate',
+                    `${resolved.year}-${resolved.month}-${resolved.day}`,
+                  );
+                }}
+                wheelMode="natural"
+                className="flex h-40 select-none"
+              >
+                <Picker.Column name="year">
+                  {pickerOptions.years.map((y) => (
+                    <Picker.Item key={y} value={y}>
+                      {({ selected }) => (
+                        <span
+                          className={
+                            selected
+                              ? 'text-base font-bold text-gray-900'
+                              : 'text-sm text-gray-400'
+                          }
+                        >
+                          {y}년
+                        </span>
+                      )}
+                    </Picker.Item>
+                  ))}
+                </Picker.Column>
+
+                <Picker.Column name="month">
+                  {pickerOptions.months.map((m) => (
+                    <Picker.Item key={m} value={m}>
+                      {({ selected }) => (
+                        <span
+                          className={
+                            selected
+                              ? 'text-base font-bold text-gray-900'
+                              : 'text-sm text-gray-400'
+                          }
+                        >
+                          {m}월
+                        </span>
+                      )}
+                    </Picker.Item>
+                  ))}
+                </Picker.Column>
+
+                <Picker.Column name="day">
+                  {pickerOptions.days.map((d) => (
+                    <Picker.Item key={d} value={d}>
+                      {({ selected }) => (
+                        <span
+                          className={
+                            selected
+                              ? 'text-base font-bold text-gray-900'
+                              : 'text-sm text-gray-400'
+                          }
+                        >
+                          {d}일
+                        </span>
+                      )}
+                    </Picker.Item>
+                  ))}
+                </Picker.Column>
+              </Picker>
+            </div>
           </StepFrame>
         );
       case 'physical':
@@ -390,9 +567,10 @@ export function OnboardingFormStep({
                   min="140"
                   max="220"
                   value={formState.height}
-                  onChange={(event) =>
-                    setField('height', Number(event.target.value))
-                  }
+                  onChange={(event) => {
+                    setField('height', Number(event.target.value));
+                    setPhysicalTouched((prev) => ({ ...prev, height: true }));
+                  }}
                   className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-[#3388FF]"
                 />
               </div>
@@ -413,9 +591,10 @@ export function OnboardingFormStep({
                   min="40"
                   max="150"
                   value={formState.weight}
-                  onChange={(event) =>
-                    setField('weight', Number(event.target.value))
-                  }
+                  onChange={(event) => {
+                    setField('weight', Number(event.target.value));
+                    setPhysicalTouched((prev) => ({ ...prev, weight: true }));
+                  }}
                   className="h-1.5 w-full cursor-pointer appearance-none rounded-lg bg-gray-200 accent-[#35A55B]"
                 />
               </div>
