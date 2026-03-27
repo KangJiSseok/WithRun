@@ -77,6 +77,17 @@ public final class SwaggerExampleValues {
             }
             """;
 
+    public static final String USER_NICKNAME_AVAILABILITY_SUCCESS = """
+            {
+              "success": true,
+              "code": "S001",
+              "message": "요청이 성공했습니다.",
+              "data": {
+                "available": true
+              }
+            }
+            """;
+
     // 프로필 화면의 회원탈퇴 버튼이 기대하는 표준 성공 응답 예시입니다.
     public static final String USER_DELETE_SUCCESS = """
             {

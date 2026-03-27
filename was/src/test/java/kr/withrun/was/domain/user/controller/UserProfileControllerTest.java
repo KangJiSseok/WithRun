@@ -2,6 +2,7 @@ package kr.withrun.was.domain.user.controller;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import kr.withrun.was.domain.auth.jwt.JwtProvider;
+import kr.withrun.was.domain.user.dto.NicknameAvailabilityResponse;
 import kr.withrun.was.domain.user.dto.UpdateUserProfileRequest;
 import kr.withrun.was.domain.user.dto.UserProfileResponse;
 import kr.withrun.was.domain.user.entity.User;
@@ -75,6 +76,22 @@ class UserProfileControllerTest {
                 .andExpect(jsonPath("$.data.weight").value(52.3));
 
         then(userProfileService).should().getProfile(10L);
+    }
+
+    @Test
+    @DisplayName("닉네임만 전달하면 공개 닉네임 사용 가능 여부를 반환한다")
+    void returnsNicknameAvailabilityWithoutAuthentication() throws Exception {
+        given(userProfileService.getNicknameAvailability("runner-next")).willReturn(
+                new NicknameAvailabilityResponse(true)
+        );
+
+        mockMvc.perform(get("/api/users/nickname-availability")
+                        .queryParam("nickname", "runner-next"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.data.available").value(true));
+
+        then(userProfileService).should().getNicknameAvailability("runner-next");
     }
 
     @Test
