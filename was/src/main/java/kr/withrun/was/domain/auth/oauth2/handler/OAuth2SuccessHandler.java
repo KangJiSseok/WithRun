@@ -218,6 +218,6 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
                 : providerUserId.replaceAll("[^a-zA-Z0-9]", "");
 
         String candidate = "pending-" + normalizedProvider + "-" + normalizedProviderUserId;
-        return candidate.length() <= 40 ? candidate : candidate.substring(0, 40);
+        return candidate.length() <= 16 ? candidate : candidate.substring(0, 16);
     }
 }

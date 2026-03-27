@@ -81,8 +81,8 @@ public class UserProfileService {
     }
 
     private void validateNickname(String nickname) {
-        // 닉네임 길이 제한은 User 컬럼 길이(40)와 맞춰둡니다.
-        if (nickname.isBlank() || nickname.length() > 40) {
+        // 닉네임 길이 제한은 User 컬럼 길이(16)와 맞춰둡니다.
+        if (nickname.isBlank() || nickname.length() > 16) {
             throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
         }
     }
