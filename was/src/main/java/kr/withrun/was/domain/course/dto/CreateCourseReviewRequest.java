@@ -7,17 +7,11 @@ import jakarta.validation.constraints.Min;
 import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 
 import java.util.List;
 
 @Schema(description = "코스 리뷰 작성 요청")
 public record CreateCourseReviewRequest(
-        @Schema(description = "리뷰 작성 사용자 ID", example = "7", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull
-        @Positive
-        Long userId,
-
         @Schema(description = "코스 평점(1~5점)", example = "4", minimum = "1", maximum = "5", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull
         @Min(1)

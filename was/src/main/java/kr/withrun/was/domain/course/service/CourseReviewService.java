@@ -35,11 +35,11 @@ public class CourseReviewService {
     private final CourseSignalService courseSignalService;
 
     @Transactional
-    public CreateCourseReviewResponse createCourseReview(Long courseId, CreateCourseReviewRequest request) {
+    public CreateCourseReviewResponse createCourseReview(Long courseId, Long currentUserId, CreateCourseReviewRequest request) {
         List<CourseType> courseTypes = parseCourseTypes(request.courseTypes());
         Difficulty difficulty = parseDifficulty(request.submittedDifficulty());
         Course course = getCourse(courseId);
-        User user = getUser(request.userId());
+        User user = getUser(currentUserId);
 
         if (courseReviewRepository.existsByCourseIdAndUserId(courseId, user.getId())) {
             throw new CustomException(ResponseCode.REVIEW_ALREADY_EXISTS);

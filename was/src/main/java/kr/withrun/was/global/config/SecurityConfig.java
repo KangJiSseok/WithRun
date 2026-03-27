@@ -62,15 +62,16 @@ public class SecurityConfig {
                         // 소셜 로그인 관련 주소(/oauth2, /login/oauth2 등)는 로그인 안 한 사람도 100% 무사 통과(permitAll)
                         // /mobile/oauth2/** 는 모바일용, /web/oauth2/** 는 origin 을 기억하는 웹용 OAuth 진입점입니다.
                         .requestMatchers("/oauth2/**", "/login/oauth2/**", "/mobile/oauth2/**", "/web/oauth2/**").permitAll()
-                        // refresh 재발급/로그아웃과 모바일 code 교환은 로그인 직전 단계라 비인증 접근을 허용합니다.
-                        .requestMatchers(HttpMethod.POST, "/api/auth/reissue", "/api/auth/logout", "/api/auth/exchange").permitAll()
+                        // 개발/운영에서 API 문서와 Swagger UI는 인증 없이 열어둡니다.
+                        .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // refresh 재발급과 모바일 code 교환은 로그인 직전 단계라 비인증 접근을 허용합니다.
+                        .requestMatchers(HttpMethod.POST, "/api/auth/reissue", "/api/auth/exchange").permitAll()
                         // 현재 사용자 조회는 access token 인증이 필요합니다.
                         .requestMatchers(HttpMethod.GET, "/api/auth/me").authenticated()
                         // Step 4부터는 "내 프로필 저장" API만 access token 인증을 반드시 거치게 합니다.
                         .requestMatchers("/api/users/me/**").authenticated()
-                        // 그 외 나머지 다른 모든 주소도 일단 지금은 무사 통과! 
-                        // (🚨 나중에는 .authenticated()로 바꿔서 "로그인한 사람만 통과"하게 설정해야 합니다)
-                        .anyRequest().permitAll()
+                        // 로그인 부트스트랩을 제외한 애플리케이션 API는 전부 access token 인증을 요구합니다.
+                        .anyRequest().authenticated()
                 )
                 
                 // 5. OAuth2 소셜 로그인 기능 켜주세요! (기능 on)

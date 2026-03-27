@@ -7,15 +7,19 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.course.dto.CreateCourseReviewRequest;
 import kr.withrun.was.domain.course.dto.CreateCourseReviewResponse;
 import kr.withrun.was.domain.course.service.CourseReviewService;
+import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ApiResponse;
+import kr.withrun.was.global.response.ResponseCode;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
 import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -62,6 +66,8 @@ public class CourseReviewController {
     })
     @PostMapping("/{courseId}/reviews")
     public ResponseEntity<ApiResponse<CreateCourseReviewResponse>> createCourseReview(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @Parameter(description = "리뷰를 작성할 코스 ID", example = "12")
             @PathVariable Long courseId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -70,6 +76,14 @@ public class CourseReviewController {
             )
             @Valid @RequestBody CreateCourseReviewRequest request
     ) {
-        return ApiResponse.successEntity(CREATED, courseReviewService.createCourseReview(courseId, request));
+        return ApiResponse.successEntity(CREATED, courseReviewService.createCourseReview(courseId, resolveUserId(authenticatedUser), request));
+    }
+
+    private Long resolveUserId(AuthenticatedUser authenticatedUser) {
+        if (authenticatedUser == null || authenticatedUser.userId() == null) {
+            throw new CustomException(ResponseCode.UNAUTHORIZED);
+        }
+
+        return authenticatedUser.userId();
     }
 }

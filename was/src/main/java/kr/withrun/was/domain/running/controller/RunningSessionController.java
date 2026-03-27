@@ -8,6 +8,7 @@ import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
 import jakarta.validation.constraints.Positive;
+import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningSessionResponse;
@@ -17,13 +18,16 @@ import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseRequest;
 import kr.withrun.was.domain.running.dto.RegisterRunningSessionCourseResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
+import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ApiResponse;
+import kr.withrun.was.global.response.ResponseCode;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
 import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
 import lombok.RequiredArgsConstructor;
 import org.springdoc.core.annotations.ParameterObject;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.ModelAttribute;
@@ -68,13 +72,15 @@ public class RunningSessionController {
     })
     @PostMapping
     public ResponseEntity<ApiResponse<CreateRunningSessionResponse>> createRunningSession(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
                     required = true,
-                    description = "러닝 시작 시점의 사용자, 모드, 시작 좌표를 담은 요청 본문"
+                    description = "러닝 시작 시점의 모드와 시작 좌표를 담은 요청 본문"
             )
             @Valid @RequestBody CreateRunningSessionRequest request
     ) {
-        return ApiResponse.successEntity(CREATED, runningSessionService.createRunningSession(request));
+        return ApiResponse.successEntity(CREATED, runningSessionService.createRunningSession(resolveUserId(authenticatedUser), request));
     }
 
     @Operation(
@@ -105,6 +111,8 @@ public class RunningSessionController {
     })
     @PatchMapping("/{runningSessionId}")
     public ResponseEntity<ApiResponse<RunningSessionDetailResponse>> completeRunningSession(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @Parameter(description = "종료 처리할 러닝 세션 ID", example = "91")
             @PathVariable Long runningSessionId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -113,7 +121,9 @@ public class RunningSessionController {
             )
             @Valid @RequestBody CompleteRunningSessionRequest request
     ) {
-        return ApiResponse.successEntity(runningSessionService.completeRunningSession(runningSessionId, request));
+        return ApiResponse.successEntity(
+                runningSessionService.completeRunningSession(runningSessionId, resolveUserId(authenticatedUser), request)
+        );
     }
 
     @Operation(
@@ -139,9 +149,11 @@ public class RunningSessionController {
     })
     @GetMapping("/history/past")
     public ResponseEntity<ApiResponse<PastRunningSessionsResponse>> findPastRunningSessions(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @Valid @ParameterObject @ModelAttribute PastRunningSessionsRequest request
     ) {
-        return ApiResponse.successEntity(runningSessionService.findPastRunningSessions(request));
+        return ApiResponse.successEntity(runningSessionService.findPastRunningSessions(resolveUserId(authenticatedUser), request));
     }
 
     @Operation(
@@ -172,6 +184,8 @@ public class RunningSessionController {
     })
     @PostMapping("/{runningSessionId}/register-course")
     public ResponseEntity<ApiResponse<RegisterRunningSessionCourseResponse>> registerRunningSessionCourse(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @Parameter(description = "코스로 등록할 완료된 러닝 세션 ID", example = "91")
             @PathVariable Long runningSessionId,
             @io.swagger.v3.oas.annotations.parameters.RequestBody(
@@ -180,7 +194,10 @@ public class RunningSessionController {
             )
             @Valid @RequestBody RegisterRunningSessionCourseRequest request
     ) {
-        return ApiResponse.successEntity(CREATED, runningSessionService.registerRunningSessionCourse(runningSessionId, request));
+        return ApiResponse.successEntity(
+                CREATED,
+                runningSessionService.registerRunningSessionCourse(runningSessionId, resolveUserId(authenticatedUser), request)
+        );
     }
 
     @Operation(
@@ -195,7 +212,7 @@ public class RunningSessionController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "400",
-                    description = "runningSessionId 또는 userId 경로 값이 유효하지 않음",
+                    description = "runningSessionId 경로 값이 유효하지 않음",
                     content = @Content(schema = @Schema(implementation = ValidationErrorApiResponseDoc.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -204,13 +221,21 @@ public class RunningSessionController {
                     content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
             )
     })
-    @GetMapping("/{runningSessionId}/detail/{userId}")
+    @GetMapping("/{runningSessionId}/detail")
     public ResponseEntity<ApiResponse<RunningSessionDetailResponse>> findRunningSessionDetail(
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser,
             @Parameter(description = "상세 조회할 러닝 세션 ID", example = "91")
-            @PathVariable @Positive Long runningSessionId,
-            @Parameter(description = "상세 조회를 요청하는 사용자 ID", example = "1")
-            @PathVariable @Positive Long userId
+            @PathVariable @Positive Long runningSessionId
     ) {
-        return ApiResponse.successEntity(runningSessionService.findRunningSessionDetail(runningSessionId, userId));
+        return ApiResponse.successEntity(runningSessionService.findRunningSessionDetail(runningSessionId, resolveUserId(authenticatedUser)));
+    }
+
+    private Long resolveUserId(AuthenticatedUser authenticatedUser) {
+        if (authenticatedUser == null || authenticatedUser.userId() == null) {
+            throw new CustomException(ResponseCode.UNAUTHORIZED);
+        }
+
+        return authenticatedUser.userId();
     }
 }

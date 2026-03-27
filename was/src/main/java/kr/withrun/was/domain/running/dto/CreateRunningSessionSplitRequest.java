@@ -2,16 +2,10 @@ package kr.withrun.was.domain.running.dto;
 
 import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
 @Schema(description = "러닝 세션 구간 기록 저장 요청")
 public record CreateRunningSessionSplitRequest(
-        @NotNull
-        @Positive
-        @Schema(description = "구간 기록 작성 사용자 ID", example = "7", minimum = "1", requiredMode = Schema.RequiredMode.REQUIRED)
-        Long userId,
-
         @NotNull
         @PositiveOrZero
         @Schema(description = "1부터 시작하는 구간 순번", example = "1", minimum = "1", requiredMode = Schema.RequiredMode.REQUIRED)
