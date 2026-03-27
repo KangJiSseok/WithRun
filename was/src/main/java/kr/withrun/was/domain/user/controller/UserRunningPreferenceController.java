@@ -9,6 +9,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import jakarta.validation.Valid;
+import jakarta.validation.constraints.Positive;
 import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.user.dto.UpdateUserRunningPreferenceRequest;
 import kr.withrun.was.domain.user.dto.UserRunningPreferenceResponse;
@@ -85,12 +86,24 @@ public class UserRunningPreferenceController {
     @GetMapping
     public ResponseEntity<ApiResponse<UserRunningPreferenceResponse>> getRunningPreference(
             @Parameter(hidden = true)
+            @Positive Long userId
+    ) {
+        return ApiResponse.successEntity(
+                userRunningPreferenceService.getRunningPreference(userId)
+        );
+    }
+
+    /*
+    임시 주석 (로그인 이슈로 인한 인증 제거)
+    public ResponseEntity<ApiResponse<UserRunningPreferenceResponse>> getRunningPreference(
+            @Parameter(hidden = true)
             @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
         return ApiResponse.successEntity(
                 userRunningPreferenceService.getRunningPreference(resolveUserId(authenticatedUser))
         );
     }
+    */
 
     @Operation(
             summary = "현재 로그인 사용자의 러닝 선호 설정을 수정한다",
