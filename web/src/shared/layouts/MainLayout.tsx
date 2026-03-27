@@ -20,7 +20,9 @@ export function MainLayout({
       }
     >
       <div className="flex h-dvh w-full flex-col overflow-hidden bg-white shadow-xl">
-        {showTopNav && <TopNavigation />}
+        <header className="shrink-0 bg-[hsl(var(--surface-subtle))] px-5 pt-6">
+          {showTopNav && <TopNavigation />}
+        </header>
 
         <main
           className={cn(
