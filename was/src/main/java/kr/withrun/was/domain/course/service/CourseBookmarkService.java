@@ -37,10 +37,11 @@ public class CourseBookmarkService {
     private final UserRepository userRepository;
     private final CourseSignalService courseSignalService;
     private final CloudFrontSignedUrlService cloudFrontSignedUrlService;
+    private final CourseAccessPolicy courseAccessPolicy;
 
     @Transactional
     public CourseBookmarkAddResponse addBookmark(Long courseId, Long userId) {
-        Course course = getCourse(courseId);
+        Course course = getCourse(courseId, userId);
         User user = getUser(userId);
 
         return courseBookmarkRepository.findByCourseIdAndUserId(courseId, userId)
@@ -50,7 +51,7 @@ public class CourseBookmarkService {
 
     @Transactional
     public CourseBookmarkRemoveResponse removeBookmark(Long courseId, Long userId) {
-        getCourse(courseId);
+        getCourse(courseId, userId);
         getUser(userId);
 
         return courseBookmarkRepository.findByCourseIdAndUserId(courseId, userId)
@@ -145,9 +146,8 @@ public class CourseBookmarkService {
         return new CourseBookmarkAddResponse(course.getId(), true, bookmark.getCreatedAt());
     }
 
-    private Course getCourse(Long courseId) {
-        return courseRepository.findNotDeletedCourse(courseId)
-                .orElseThrow(() -> new CustomException(ResponseCode.COURSE_NOT_FOUND));
+    private Course getCourse(Long courseId, Long userId) {
+        return courseAccessPolicy.getAccessibleCourse(courseRepository, courseId, userId);
     }
 
     private User getUser(Long userId) {

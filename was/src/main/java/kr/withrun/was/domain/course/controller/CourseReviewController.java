@@ -40,7 +40,7 @@ public class CourseReviewController {
 
     @Operation(
             summary = "코스 리뷰를 작성한다",
-            description = "특정 코스에 대한 평점, 유형 태그, 체감 난이도를 저장한다. 같은 사용자는 같은 코스에 한 번만 리뷰를 작성할 수 있다."
+            description = "특정 코스에 대한 평점, 유형 태그, 체감 난이도를 저장한다. 같은 사용자는 같은 코스에 한 번만 리뷰를 작성할 수 있다. PRIVATE 코스는 소유자만 요청할 수 있으며 비소유자에게는 404를 반환한다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -55,7 +55,7 @@ public class CourseReviewController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "코스 또는 사용자를 찾을 수 없음",
+                    description = "코스 또는 사용자를 찾을 수 없거나 접근 권한이 없음",
                     content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

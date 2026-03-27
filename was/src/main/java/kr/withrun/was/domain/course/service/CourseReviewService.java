@@ -33,12 +33,13 @@ public class CourseReviewService {
     private final CourseReviewCourseTypeRepository courseReviewCourseTypeRepository;
     private final UserRepository userRepository;
     private final CourseSignalService courseSignalService;
+    private final CourseAccessPolicy courseAccessPolicy;
 
     @Transactional
     public CreateCourseReviewResponse createCourseReview(Long courseId, Long currentUserId, CreateCourseReviewRequest request) {
         List<CourseType> courseTypes = parseCourseTypes(request.courseTypes());
         Difficulty difficulty = parseDifficulty(request.submittedDifficulty());
-        Course course = getCourse(courseId);
+        Course course = getCourse(courseId, currentUserId);
         User user = getUser(currentUserId);
 
         if (courseReviewRepository.existsByCourseIdAndUserId(courseId, user.getId())) {
@@ -71,9 +72,8 @@ public class CourseReviewService {
         return CreateCourseReviewResponse.from(savedCourseReview, courseTypes);
     }
 
-    private Course getCourse(Long courseId) {
-        return courseRepository.findNotDeletedCourse(courseId)
-                .orElseThrow(() -> new CustomException(ResponseCode.COURSE_NOT_FOUND));
+    private Course getCourse(Long courseId, Long currentUserId) {
+        return courseAccessPolicy.getAccessibleCourse(courseRepository, courseId, currentUserId);
     }
 
     private User getUser(Long userId) {

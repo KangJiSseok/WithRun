@@ -71,7 +71,8 @@ class CourseBookmarkServiceTest {
                 courseBookmarkRepository,
                 userRepository,
                 courseSignalService,
-                cloudFrontSignedUrlService
+                cloudFrontSignedUrlService,
+                new CourseAccessPolicy()
         );
         lenient().when(cloudFrontSignedUrlService.generateSignedUrl(org.mockito.ArgumentMatchers.any()))
                 .thenAnswer(invocation -> {
@@ -351,6 +352,63 @@ class CourseBookmarkServiceTest {
                 .isEqualTo(ResponseCode.USER_NOT_FOUND);
     }
 
+    @DisplayName("owner 는 private 코스에 북마크를 추가할 수 있다")
+    @Test
+    void addsBookmarkToOwnedPrivateCourse() {
+        User owner = user(29L);
+        Course course = course(19L, CourseStatus.PRIVATE, owner);
+        CourseBookmark savedBookmark = bookmark(39L, course, owner, LocalDateTime.of(2026, 3, 11, 8, 0));
+        stubCourseAndUser(course, owner);
+        when(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), owner.getId())).thenReturn(Optional.empty());
+        when(courseBookmarkRepository.save(any(CourseBookmark.class))).thenReturn(savedBookmark);
+
+        CourseBookmarkAddResponse response = courseBookmarkService.addBookmark(course.getId(), owner.getId());
+
+        assertThat(response.courseId()).isEqualTo(course.getId());
+        assertThat(response.isBookmarked()).isTrue();
+    }
+
+    @DisplayName("non-owner 는 private 코스에 북마크를 추가할 수 없다")
+    @Test
+    void throwsCourseNotFoundWhenAddingBookmarkToPrivateCourseOwnedByAnotherUser() {
+        Course course = course(20L, CourseStatus.PRIVATE, user(199L));
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseBookmarkService.addBookmark(course.getId(), 30L))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
+    }
+
+    @DisplayName("owner 는 private 코스의 북마크를 해제할 수 있다")
+    @Test
+    void removesBookmarkFromOwnedPrivateCourse() {
+        User owner = user(31L);
+        Course course = course(21L, CourseStatus.PRIVATE, owner);
+        CourseBookmark existingBookmark = bookmark(41L, course, owner, LocalDateTime.of(2026, 3, 11, 9, 0));
+        stubCourseAndUser(course, owner);
+        when(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), owner.getId()))
+                .thenReturn(Optional.of(existingBookmark));
+
+        CourseBookmarkRemoveResponse response = courseBookmarkService.removeBookmark(course.getId(), owner.getId());
+
+        assertThat(response.courseId()).isEqualTo(course.getId());
+        assertThat(response.isBookmarked()).isFalse();
+        verify(courseBookmarkRepository).deleteBookmark(course.getId(), owner.getId());
+    }
+
+    @DisplayName("non-owner 는 private 코스의 북마크를 해제할 수 없다")
+    @Test
+    void throwsCourseNotFoundWhenRemovingBookmarkFromPrivateCourseOwnedByAnotherUser() {
+        Course course = course(22L, CourseStatus.PRIVATE, user(299L));
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseBookmarkService.removeBookmark(course.getId(), 32L))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
+    }
+
     @DisplayName("삭제되지 않은 사용자는 활성 상태 플래그 없이도 북마크를 추가할 수 있다")
     @Test
     void addsBookmarkWithoutUserActiveFlag() {
@@ -422,9 +480,13 @@ class CourseBookmarkServiceTest {
     }
 
     private Course course(Long id) {
+        return course(id, CourseStatus.OFFICIAL, null);
+    }
+
+    private Course course(Long id, CourseStatus status, User owner) {
         Course course = Course.builder()
                 .title("Course " + id)
-                .status(CourseStatus.OFFICIAL)
+                .status(status)
                 .distanceM(5000)
                 .elevationGainM(120)
                 .snapshotImageUrl("snapshot-" + id)
@@ -436,6 +498,9 @@ class CourseBookmarkServiceTest {
                 .build();
         setField(course, "id", id);
         setField(course, "routeType", RouteType.LOOP);
+        if (owner != null) {
+            setField(course, "user", owner);
+        }
         return course;
     }
 

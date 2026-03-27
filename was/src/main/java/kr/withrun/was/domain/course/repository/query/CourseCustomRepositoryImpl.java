@@ -17,6 +17,7 @@ import kr.withrun.was.domain.course.entity.QCourseLike;
 import kr.withrun.was.domain.course.entity.QCourseTypeMap;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCoursePageRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyRecommendationCandidateRow;
+import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
 import kr.withrun.was.domain.course.type.NearbyGhostCourseSortBy;
 import kr.withrun.was.domain.running.entity.QRunningSession;
@@ -263,7 +264,8 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
     private BooleanBuilder nearbyCourseWhereClause(QCourse course, List<PreferredDistanceRange> preferredDistanceMs) {
         BooleanBuilder whereClause = new BooleanBuilder()
                 .and(course.deletedAt.isNull())
-                .and(course.coordinates.isNotNull());
+                .and(course.coordinates.isNotNull())
+                .and(isVisibleOnPublicFeeds(course));
 
         if (preferredDistanceMs == null || preferredDistanceMs.isEmpty()) {
             return whereClause;
@@ -275,6 +277,10 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
         }
 
         return whereClause.and(preferredDistancePredicate);
+    }
+
+    private BooleanBuilder isVisibleOnPublicFeeds(QCourse course) {
+        return new BooleanBuilder(course.status.in(CourseStatus.OFFICIAL, CourseStatus.COMMUNITY));
     }
 
     private NumberExpression<Integer> distanceMetersExpression(

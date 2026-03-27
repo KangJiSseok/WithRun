@@ -8,6 +8,7 @@ import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
+import kr.withrun.was.domain.course.service.CourseAccessPolicy;
 import kr.withrun.was.domain.course.service.CourseSignalService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
@@ -83,6 +84,7 @@ public class RunningSessionService {
     private final CourseSignalService courseSignalService;
     private final CloudFrontSignedUrlService cloudFrontSignedUrlService;
     private final NavigationBundleGenerationService navigationBundleGenerationService;
+    private final CourseAccessPolicy courseAccessPolicy;
 
     @Transactional
     public CreateRunningSessionResponse createRunningSession(Long currentUserId, CreateRunningSessionRequest request) {
@@ -546,20 +548,7 @@ public class RunningSessionService {
             throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
         }
 
-        return courseRepository.findNotDeletedCourse(courseId)
-                .filter(course -> isRunnableCourse(user, course))
-                .orElseThrow(() -> new CustomException(ResponseCode.COURSE_NOT_FOUND));
-    }
-
-    private boolean isRunnableCourse(User user, Course course) {
-        if (course.getStatus() == CourseStatus.OFFICIAL || course.getStatus() == CourseStatus.COMMUNITY) {
-            return true;
-        }
-
-        return course.getStatus() == CourseStatus.PRIVATE
-                && course.getUser() != null
-                && user != null
-                && course.getUser().getId().equals(user.getId());
+        return courseAccessPolicy.getAccessibleCourse(courseRepository, courseId, user == null ? null : user.getId());
     }
 
     private RunningSession getGhostTargetRunningSession(RunningMode mode, Long ghostTargetRunningSessionId) {

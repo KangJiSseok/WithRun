@@ -8,6 +8,8 @@ import kr.withrun.was.domain.course.entity.CourseTypeMap;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyRecommendationCandidateRow;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
+import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
+import kr.withrun.was.domain.course.type.NearbyGhostCourseSortBy;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.global.common.type.Difficulty;
@@ -147,6 +149,7 @@ class CourseRepositoryRowTest {
         Course lowerBoundaryCourse = persistCourse("Lower Boundary Course", 4800, CourseStatus.OFFICIAL, createdAt);
         persistCourse("Outside Course", 5201, CourseStatus.OFFICIAL, createdAt);
         Course communityCourse = persistCourse("Community Course", 5000, CourseStatus.COMMUNITY, createdAt);
+        persistCourse("Private Course", 5000, CourseStatus.PRIVATE, createdAt);
 
         List<NearbyRecommendationCandidateRow> results =
                 findNearbyRecommendationCandidates(List.of(new PreferredDistanceRange(4800, 5200)));
@@ -154,6 +157,72 @@ class CourseRepositoryRowTest {
         assertThat(results)
                 .extracting(NearbyRecommendationCandidateRow::courseId)
                 .containsExactlyInAnyOrder(matchedCourse.getId(), lowerBoundaryCourse.getId(), communityCourse.getId());
+    }
+
+    @DisplayName("주변 코스 row 조회와 count 는 private 코스를 제외한다")
+    @Test
+    void excludesPrivateCoursesFromNearbyCourseRowsAndCount() {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 3, 11, 5, 0);
+        Course officialCourse = persistCourse("Official Nearby", 5000, CourseStatus.OFFICIAL, createdAt);
+        Course communityCourse = persistCourse("Community Nearby", 5000, CourseStatus.COMMUNITY, createdAt);
+        persistCourse("Private Nearby", 5000, CourseStatus.PRIVATE, createdAt);
+
+        List<Long> rowCourseIds = courseRepository.findNearbyCoursePageRows(
+                        List.of(new PreferredDistanceRange(4800, 5200)),
+                        37.5665,
+                        126.9780,
+                        37.5665,
+                        126.9780,
+                        NearbyCourseSortBy.DISTANCE,
+                        3000,
+                        0,
+                        10
+                ).stream()
+                .map(row -> row.courseId())
+                .toList();
+
+        long totalCount = courseRepository.countNearbyCourses(
+                List.of(new PreferredDistanceRange(4800, 5200)),
+                37.5665,
+                126.9780,
+                3000
+        );
+
+        assertThat(rowCourseIds).containsExactlyInAnyOrder(officialCourse.getId(), communityCourse.getId());
+        assertThat(totalCount).isEqualTo(2L);
+    }
+
+    @DisplayName("주변 고스트 코스 row 조회와 count 는 private 코스를 제외한다")
+    @Test
+    void excludesPrivateCoursesFromNearbyGhostCourseRowsAndCount() {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 3, 11, 6, 0);
+        Course officialCourse = persistCourse("Official Ghost", 5000, CourseStatus.OFFICIAL, createdAt);
+        Course communityCourse = persistCourse("Community Ghost", 5000, CourseStatus.COMMUNITY, createdAt);
+        persistCourse("Private Ghost", 5000, CourseStatus.PRIVATE, createdAt);
+
+        List<Long> rowCourseIds = courseRepository.findNearbyGhostCoursePageRows(
+                        List.of(new PreferredDistanceRange(4800, 5200)),
+                        37.5665,
+                        126.9780,
+                        37.5665,
+                        126.9780,
+                        NearbyGhostCourseSortBy.DISTANCE,
+                        3000,
+                        0,
+                        10
+                ).stream()
+                .map(row -> row.courseId())
+                .toList();
+
+        long totalCount = courseRepository.countNearbyGhostCourses(
+                List.of(new PreferredDistanceRange(4800, 5200)),
+                37.5665,
+                126.9780,
+                3000
+        );
+
+        assertThat(rowCourseIds).containsExactlyInAnyOrder(officialCourse.getId(), communityCourse.getId());
+        assertThat(totalCount).isEqualTo(2L);
     }
 
     @DisplayName("복수 선호 거리 중 하나에 맞으면 공식 코스 후보로 조회한다")

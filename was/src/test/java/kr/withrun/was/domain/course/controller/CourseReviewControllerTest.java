@@ -130,6 +130,27 @@ class CourseReviewControllerTest {
         then(courseReviewService).should().createCourseReview(courseId, currentUserId, request);
     }
 
+    @DisplayName("다른 사용자의 private 코스에 리뷰를 생성하면 코스 없음 응답을 반환한다")
+    @Test
+    void returnsCourseNotFoundWhenCreatingReviewForPrivateCourseOwnedByAnotherUser() throws Exception {
+        long currentUserId = 1L;
+        long courseId = 102L;
+        CreateCourseReviewRequest request = validRequest();
+        given(courseReviewService.createCourseReview(courseId, currentUserId, request))
+                .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
+
+        mockMvc.perform(post("/api/courses/{courseId}/reviews", courseId)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validRequestBody()))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()))
+                .andExpect(jsonPath("$.message").value(ResponseCode.COURSE_NOT_FOUND.getMessage()));
+
+        then(courseReviewService).should().createCourseReview(courseId, currentUserId, request);
+    }
+
     private static CreateCourseReviewRequest validRequest() {
         return new CreateCourseReviewRequest(5, List.of("RIVERSIDE", "URBAN"), "MEDIUM");
     }

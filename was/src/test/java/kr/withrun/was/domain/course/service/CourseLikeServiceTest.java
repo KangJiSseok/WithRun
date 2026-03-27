@@ -53,7 +53,7 @@ class CourseLikeServiceTest {
 
     @BeforeEach
     void setUp() {
-        courseLikeService = new CourseLikeService(courseRepository, courseLikeRepository, userRepository, courseSignalService);
+        courseLikeService = new CourseLikeService(courseRepository, courseLikeRepository, userRepository, courseSignalService, new CourseAccessPolicy());
     }
 
     @DisplayName("서비스는 클래스 기본 readOnly와 쓰기 메서드 트랜잭션을 함께 사용한다")
@@ -181,6 +181,75 @@ class CourseLikeServiceTest {
         verify(courseLikeRepository, never()).findByCourseIdAndUserId(eq(1L), eq(2L));
     }
 
+    @DisplayName("owner 는 private 코스에 좋아요를 남길 수 있다")
+    @Test
+    void likesOwnedPrivateCourse() {
+        long courseId = 91L;
+        long userId = 2L;
+        User owner = ownerUser(userId);
+        Course course = privateCourse(courseId, owner);
+        given(courseRepository.findNotDeletedCourse(courseId)).willReturn(Optional.of(course));
+        given(userRepository.findNotDeletedUser(userId)).willReturn(Optional.of(user));
+        given(courseLikeRepository.findByCourseIdAndUserId(courseId, userId)).willReturn(Optional.empty());
+        given(courseLikeRepository.save(any(kr.withrun.was.domain.course.entity.CourseLike.class))).willAnswer(invocation -> invocation.getArgument(0));
+        given(courseLikeRepository.countByCourseId(courseId)).willReturn(1L);
+
+        CourseLikeStatusResponse response = courseLikeService.likeCourse(courseId, userId);
+
+        assertThat(response.courseId()).isEqualTo(courseId);
+        assertThat(response.isLiked()).isTrue();
+    }
+
+    @DisplayName("non-owner 는 private 코스에 좋아요를 남길 수 없다")
+    @Test
+    void throwsCourseNotFoundWhenLikingPrivateCourseOwnedByAnotherUser() {
+        long courseId = 92L;
+        Course course = privateCourse(courseId, ownerUser(99L));
+        given(courseRepository.findNotDeletedCourse(courseId)).willReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseLikeService.likeCourse(courseId, 2L))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
+
+        verify(userRepository, never()).findNotDeletedUser(any());
+    }
+
+    @DisplayName("owner 는 private 코스의 좋아요를 취소할 수 있다")
+    @Test
+    void unlikesOwnedPrivateCourse() {
+        long courseId = 93L;
+        long userId = 2L;
+        User owner = ownerUser(userId);
+        Course course = privateCourse(courseId, owner);
+        kr.withrun.was.domain.course.entity.CourseLike courseLike = mockExistingLike();
+        given(courseRepository.findNotDeletedCourse(courseId)).willReturn(Optional.of(course));
+        given(userRepository.findNotDeletedUser(userId)).willReturn(Optional.of(user));
+        given(courseLikeRepository.findByCourseIdAndUserId(courseId, userId)).willReturn(Optional.of(courseLike));
+        given(courseLikeRepository.countByCourseId(courseId)).willReturn(0L);
+
+        CourseLikeStatusResponse response = courseLikeService.unlikeCourse(courseId, userId);
+
+        assertThat(response.courseId()).isEqualTo(courseId);
+        assertThat(response.isLiked()).isFalse();
+        verify(courseLikeRepository).delete(courseLike);
+    }
+
+    @DisplayName("non-owner 는 private 코스의 좋아요를 취소할 수 없다")
+    @Test
+    void throwsCourseNotFoundWhenUnlikingPrivateCourseOwnedByAnotherUser() {
+        long courseId = 94L;
+        Course course = privateCourse(courseId, ownerUser(199L));
+        given(courseRepository.findNotDeletedCourse(courseId)).willReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseLikeService.unlikeCourse(courseId, 2L))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
+
+        verify(userRepository, never()).findNotDeletedUser(any());
+    }
+
     private void givenActiveCourseAndUser(Course course) {
         given(courseRepository.findNotDeletedCourse(1L)).willReturn(Optional.of(course));
         given(userRepository.findNotDeletedUser(2L)).willReturn(Optional.of(user));
@@ -199,6 +268,48 @@ class CourseLikeServiceTest {
                 .endLongitude(127.1)
                 .coordinates(new Coordinates(List.of(37.5, 37.6), List.of(127.0, 127.1), List.of(10.0, 12.0)))
                 .build();
+    }
+
+    private Course privateCourse(Long id, User owner) {
+        Course course = Course.builder()
+                .title("Private Course")
+                .status(CourseStatus.PRIVATE)
+                .distanceM(8000)
+                .elevationGainM(120)
+                .snapshotImageUrl("snapshot")
+                .startLatitude(37.5)
+                .startLongitude(127.0)
+                .endLatitude(37.6)
+                .endLongitude(127.1)
+                .coordinates(new Coordinates(List.of(37.5, 37.6), List.of(127.0, 127.1), List.of(10.0, 12.0)))
+                .build();
+        setField(course, "id", id);
+        setField(course, "user", owner);
+        return course;
+    }
+
+    private User ownerUser(Long id) {
+        User owner = org.mockito.Mockito.mock(User.class);
+        given(owner.getId()).willReturn(id);
+        return owner;
+    }
+
+    private void setField(Object target, String fieldName, Object value) {
+        Class<?> currentClass = target.getClass();
+        while (currentClass != null) {
+            try {
+                java.lang.reflect.Field field = currentClass.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(target, value);
+                return;
+            } catch (NoSuchFieldException exception) {
+                currentClass = currentClass.getSuperclass();
+            } catch (IllegalAccessException exception) {
+                throw new IllegalStateException("Failed to set field " + fieldName, exception);
+            }
+        }
+
+        throw new IllegalArgumentException("Field not found: " + fieldName);
     }
 
     private kr.withrun.was.domain.course.entity.CourseLike mockExistingLike() {

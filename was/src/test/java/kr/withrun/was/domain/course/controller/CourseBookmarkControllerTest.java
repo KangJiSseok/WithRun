@@ -255,6 +255,23 @@ class CourseBookmarkControllerTest {
         then(courseBookmarkService).should().addBookmark(courseId, userId);
     }
 
+    @DisplayName("다른 사용자의 private 코스에 북마크를 추가하면 코스 없음 응답을 반환한다")
+    @Test
+    void returnsCourseNotFoundWhenAddingBookmarkToPrivateCourseOwnedByAnotherUser() throws Exception {
+        long courseId = 888L;
+        long userId = 20L;
+        given(courseBookmarkService.addBookmark(courseId, userId))
+                .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
+
+        mockMvc.perform(post("/api/courses/{courseId}/bookmark", courseId)
+                        .with(authenticated(userId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()));
+
+        then(courseBookmarkService).should().addBookmark(courseId, userId);
+    }
+
     @DisplayName("없는 사용자가 북마크를 삭제하면 사용자 없음 응답을 반환한다")
     @Test
     void returnsUserNotFoundWhenRemovingBookmarkForMissingUser() throws Exception {
@@ -269,6 +286,23 @@ class CourseBookmarkControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.USER_NOT_FOUND.getCode()))
                 .andExpect(jsonPath("$.message").value(ResponseCode.USER_NOT_FOUND.getMessage()));
+
+        then(courseBookmarkService).should().removeBookmark(courseId, userId);
+    }
+
+    @DisplayName("다른 사용자의 private 코스 북마크 해제는 코스 없음 응답을 반환한다")
+    @Test
+    void returnsCourseNotFoundWhenRemovingBookmarkFromPrivateCourseOwnedByAnotherUser() throws Exception {
+        long courseId = 889L;
+        long userId = 20L;
+        given(courseBookmarkService.removeBookmark(courseId, userId))
+                .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
+
+        mockMvc.perform(delete("/api/courses/{courseId}/bookmark", courseId)
+                        .with(authenticated(userId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()));
 
         then(courseBookmarkService).should().removeBookmark(courseId, userId);
     }

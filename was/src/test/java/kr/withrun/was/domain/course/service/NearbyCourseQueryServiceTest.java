@@ -82,7 +82,8 @@ class NearbyCourseQueryServiceTest {
                 courseGhostLeaderboardRepository,
                 userRepository,
                 hybridRecommendationService,
-                cloudFrontSignedUrlService
+                cloudFrontSignedUrlService,
+                new CourseAccessPolicy()
         );
         when(cloudFrontSignedUrlService.generateSignedUrl(org.mockito.ArgumentMatchers.any()))
                 .thenAnswer(invocation -> {
@@ -203,6 +204,39 @@ class NearbyCourseQueryServiceTest {
         assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(2L);
     }
 
+    @Test
+    @DisplayName("추천 코스 응답은 repository 가 private 후보를 넘겨도 private 코스를 제외한다")
+    void excludesPrivateCourseFromRecommendedResponseEvenWhenRepositoryReturnsIt() {
+        NearbyCoursesRequest request = request(3000, 0, 3);
+        List<NearbyRecommendationCandidateRow> rows = List.of(
+                candidateRow(10L, CourseStatus.PRIVATE, CourseType.RIVERSIDE, Difficulty.EASY, 37.5700, 126.9820, "snapshot-10"),
+                candidateRow(20L, CourseStatus.OFFICIAL, CourseType.PARK, Difficulty.MEDIUM, 37.5710, 126.9830, "snapshot-20")
+        );
+
+        when(courseRepository.findNearbyRecommendationCandidates(
+                request.preferredDistanceMs(),
+                request.targetLatitude(),
+                request.targetLongitude(),
+                request.latitude(),
+                request.longitude(),
+                request.radiusM()
+        )).thenReturn(rows);
+        when(hybridRecommendationService.scoreNearbyCourses(
+                org.mockito.ArgumentMatchers.isNull(),
+                org.mockito.ArgumentMatchers.eq(request.radiusM()),
+                org.mockito.ArgumentMatchers.anyList()
+        )).thenReturn(Map.of(
+                10L, new CourseRecommendationScore(10L, 0.5, 0.5, 0.5, 0.0, 0.5, 0.90),
+                20L, new CourseRecommendationScore(20L, 0.5, 0.5, 0.5, 0.0, 0.5, 0.70)
+        ));
+        when(courseLikeRepository.countByCourseIds(List.of(20L))).thenReturn(Map.of(20L, 7L));
+        when(courseBookmarkRepository.countByCourseIds(List.of(20L))).thenReturn(Map.of(20L, 2L));
+
+        NearbyCoursesResponse response = courseService.findRecommendedNearbyCourses(request, null);
+
+        assertThat(response.items()).extracting(item -> item.courseId()).containsExactly(20L);
+    }
+
     private NearbyCoursesRequest request(int radiusM, Integer page, Integer size) {
         return request(radiusM, NearbyCourseSortBy.DISTANCE, page, size);
     }
@@ -223,6 +257,7 @@ class NearbyCourseQueryServiceTest {
 
     private NearbyRecommendationCandidateRow candidateRow(
             Long courseId,
+            CourseStatus status,
             CourseType courseType,
             Difficulty difficulty,
             double latitude,
@@ -232,7 +267,7 @@ class NearbyCourseQueryServiceTest {
         return new NearbyRecommendationCandidateRow(
                 courseId,
                 "Course " + courseId,
-                CourseStatus.OFFICIAL,
+                status,
                 RouteType.LOOP,
                 5000,
                 120,
@@ -251,6 +286,17 @@ class NearbyCourseQueryServiceTest {
                 250,
                 120
         );
+    }
+
+    private NearbyRecommendationCandidateRow candidateRow(
+            Long courseId,
+            CourseType courseType,
+            Difficulty difficulty,
+            double latitude,
+            double longitude,
+            String snapshotImageUrl
+    ) {
+        return candidateRow(courseId, CourseStatus.OFFICIAL, courseType, difficulty, latitude, longitude, snapshotImageUrl);
     }
 
     private void setField(Object target, String fieldName, Object value) {

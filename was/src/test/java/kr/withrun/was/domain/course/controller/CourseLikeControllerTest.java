@@ -117,6 +117,23 @@ class CourseLikeControllerTest {
         then(courseLikeService).should().likeCourse(courseId, userId);
     }
 
+    @DisplayName("다른 사용자의 private 코스에 좋아요를 누르면 코스 없음 응답을 반환한다")
+    @Test
+    void returnsCourseNotFoundWhenLikingPrivateCourseOwnedByAnotherUser() throws Exception {
+        long courseId = 777L;
+        long userId = 10L;
+        given(courseLikeService.likeCourse(courseId, userId))
+                .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
+
+        mockMvc.perform(post("/api/courses/{courseId}/like", courseId)
+                        .with(authenticated(userId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()));
+
+        then(courseLikeService).should().likeCourse(courseId, userId);
+    }
+
     @DisplayName("존재하지 않는 사용자의 좋아요 취소는 사용자 없음 응답을 반환한다")
     @Test
     void returnsUserNotFoundWhenUnlikeCourseUserDoesNotExist() throws Exception {
@@ -130,6 +147,23 @@ class CourseLikeControllerTest {
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.USER_NOT_FOUND.getCode()));
+
+        then(courseLikeService).should().unlikeCourse(courseId, userId);
+    }
+
+    @DisplayName("다른 사용자의 private 코스 좋아요 취소는 코스 없음 응답을 반환한다")
+    @Test
+    void returnsCourseNotFoundWhenUnlikingPrivateCourseOwnedByAnotherUser() throws Exception {
+        long courseId = 778L;
+        long userId = 10L;
+        given(courseLikeService.unlikeCourse(courseId, userId))
+                .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
+
+        mockMvc.perform(delete("/api/courses/{courseId}/like", courseId)
+                        .with(authenticated(userId)))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()));
 
         then(courseLikeService).should().unlikeCourse(courseId, userId);
     }
