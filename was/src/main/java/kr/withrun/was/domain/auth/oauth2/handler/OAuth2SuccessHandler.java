@@ -32,7 +32,7 @@ import org.springframework.web.util.UriComponentsBuilder;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Locale;
+import java.util.UUID;
 
 @Component
 @RequiredArgsConstructor
@@ -82,10 +82,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         } else {
             // 처음 로그인한 계정이면 온보딩 전 상태의 User를 먼저 생성합니다.
             user = userRepository.save(
-                    User.createPendingSocialUser(buildTemporaryNickname(
-                            userInfo.getProvider(),
-                            userInfo.getProviderUserId()
-                    ))
+                    User.createPendingSocialUser(generateRandomNickname())
             );
 
             // 생성한 User와 소셜 계정을 연결하는 매핑 정보를 저장합니다.
@@ -208,16 +205,7 @@ public class OAuth2SuccessHandler implements AuthenticationSuccessHandler {
         return authProperties.getAllowedOrigins().contains(origin);
     }
 
-    private String buildTemporaryNickname(String provider, String providerUserId) {
-        // pending user 저장 시 닉네임 unique/length 제약에 걸리지 않도록 provider 식별자를 기반으로 임시 닉네임을 만듭니다.
-        String normalizedProvider = provider == null
-                ? "social"
-                : provider.toLowerCase(Locale.ROOT).replaceAll("[^a-z0-9]", "");
-        String normalizedProviderUserId = providerUserId == null
-                ? "user"
-                : providerUserId.replaceAll("[^a-zA-Z0-9]", "");
-
-        String candidate = "pending-" + normalizedProvider + "-" + normalizedProviderUserId;
-        return candidate.length() <= 16 ? candidate : candidate.substring(0, 16);
+    private String generateRandomNickname() {
+        return UUID.randomUUID().toString().replace("-", "").substring(0, 16);
     }
 }
