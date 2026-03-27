@@ -25,8 +25,12 @@ function getPageWindow(current: number, total: number): (number | '...')[] {
   return pages;
 }
 
-export function CoursePageNav({ currentPage, totalPages, onPageChange }: Props) {
-  if (totalPages <= 1) return null;
+export function CoursePageNav({
+  currentPage,
+  totalPages,
+  onPageChange,
+}: Props) {
+  if (totalPages === 0) return null;
 
   const pages = getPageWindow(currentPage, totalPages);
 

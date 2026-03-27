@@ -22,7 +22,7 @@ function joinUrl(baseUrl: string, path: string): string {
 
 // VITE_API_BASE_URL 이 /api 를 포함하든 말든, 서버 URL 과 API URL 을 둘 다 안정적으로 계산한다.
 const rawBaseUrl = trimTrailingSlash(
-  import.meta.env.VITE_API_BASE_URL ?? getWindowOrigin(),
+  import.meta.env.VITE_API_BASE_URL ?? getWindowOrigin()
 );
 
 const serverBaseUrl = rawBaseUrl.endsWith('/api')

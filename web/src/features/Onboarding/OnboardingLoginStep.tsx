@@ -1,27 +1,10 @@
 import { AnimatePresence, motion } from 'motion/react';
 import { AlertCircle, Chrome, LoaderCircle, MessageCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 
 import { bridge } from '@/bridge';
-import {
-  buildSocialLoginUrl,
-  type AuthUser,
-  type SocialProvider,
-} from '@/apis/auth';
+import { buildSocialLoginUrl, type SocialProvider } from '@/apis/auth';
 import { ONBOARDING_LOGIN_COPY_TEXTS } from '@/constants/Onboarding';
-import { useAuthStore } from '@/stores/Auth';
-
-const SKIP_MOCK_USER: AuthUser = {
-  userId: 0,
-  provider: 'kakao',
-  profileCompleted: true,
-  nickname: '게스트',
-  birthDate: null,
-  gender: null,
-  height: null,
-  weight: null,
-};
 
 type LoginErrorCode = 'cancelled' | 'access_denied' | 'server_error';
 
@@ -57,13 +40,6 @@ export function OnboardingLoginStep({ error }: OnboardingLoginStepProps) {
     null
   );
   const loginError = useMemo(() => resolveLoginError(error), [error]);
-  const navigate = useNavigate();
-  const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
-
-  function handleSkip() {
-    setAuthenticated({ accessToken: 'guest-skip', user: SKIP_MOCK_USER });
-    navigate('/home', { replace: true });
-  }
 
   useEffect(() => {
     const intervalId = window.setInterval(() => {
@@ -158,13 +134,6 @@ export function OnboardingLoginStep({ error }: OnboardingLoginStepProps) {
             <Chrome size={18} />
           )}
           구글로 시작하기
-        </button>
-        <button
-          type="button"
-          onClick={handleSkip}
-          className="w-full py-2 text-sm text-gray-400"
-        >
-          로그인 없이 둘러보기
         </button>
       </div>
     </motion.div>

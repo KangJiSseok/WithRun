@@ -13,7 +13,10 @@ import {
   RunningCourseSearchBar,
 } from '@/shared/components';
 import { Button } from '@/shared/components/shadcn/button';
-import { useRunCircleMap, type CircleMode } from '@/shared/hooks/useRunCircleMap';
+import {
+  useRunCircleMap,
+  type CircleMode,
+} from '@/shared/hooks/useRunCircleMap';
 import { useRunMapFilter } from '@/shared/hooks/useRunMapFilter';
 import { useRunBottomSheet } from '@/shared/hooks/useRunBottomSheet';
 import { useGhostRunMapCourses } from '@/hooks/GhostRun/useGhostRunMapCourses';
@@ -207,7 +210,7 @@ export function GhostRunScreen() {
         </div>
 
         {/* 페이지 네비게이션 */}
-        {totalPages > 1 && (
+        {totalPages > 0 && (
           <div
             className="shrink-0 py-2"
             style={{ paddingBottom: BOTTOM_NAV_HEIGHT + 8 }}
