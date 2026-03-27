@@ -10,7 +10,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { toast } from 'sonner';
 
-import { logout } from '@/apis/auth';
+import { useLogout } from '@/hooks/Auth';
 import {
   deleteUserProfile,
   getUserProfile,
@@ -103,28 +103,26 @@ function ProfileMetricChip({ label, value }: ProfileMetricChipProps) {
 
 export function ProfileScreen() {
   const navigate = useNavigate();
-  const accessToken = useAuthStore((state) => state.accessToken);
   const user = useAuthStore((state) => state.user);
   const clearAuth = useAuthStore((state) => state.clearAuth);
-  const [profile, setProfile] = useState<UserProfileResponse>(
-    createProfileState(),
-  );
+  const { handleLogout, isLoggingOut } = useLogout();
+  const [profile, setProfile] =
+    useState<UserProfileResponse>(createProfileState());
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isEditOpen, setIsEditOpen] = useState(false);
-  const [isLoggingOut, setIsLoggingOut] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const providerLabel = useMemo(
     () => formatProvider(user?.provider),
-    [user?.provider],
+    [user?.provider]
   );
   const genderLabel = useMemo(
     () => formatGender(profile.gender),
-    [profile.gender],
+    [profile.gender]
   );
   const birthDateLabel = useMemo(
     () => formatBirthDate(profile.birthDate),
-    [profile.birthDate],
+    [profile.birthDate]
   );
 
   useEffect(() => {
@@ -164,31 +162,13 @@ export function ProfileScreen() {
     syncProfileIntoAuthStore(nextProfile);
   }
 
-  async function handleLogout() {
-    if (isLoggingOut) {
-      return;
-    }
-
-    setIsLoggingOut(true);
-
-    try {
-      await logout(accessToken);
-    } catch {
-      toast.error('로그아웃 처리 중 오류가 있었지만 세션은 정리할게요.');
-    } finally {
-      clearAuth();
-      navigate('/onboarding', { replace: true });
-      setIsLoggingOut(false);
-    }
-  }
-
   async function handleDeleteAccount() {
     if (isDeletingAccount) {
       return;
     }
 
     const shouldDelete = window.confirm(
-      '회원탈퇴를 진행할까요?\n탈퇴하면 계정과 현재 로그인 상태가 정리됩니다.',
+      '회원탈퇴를 진행할까요?\n탈퇴하면 계정과 현재 로그인 상태가 정리됩니다.'
     );
 
     if (!shouldDelete) {
@@ -322,7 +302,7 @@ export function ProfileScreen() {
               disabled={isDeletingAccount}
               className={cn(
                 'h-14 w-full rounded-[1.5rem] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--primary-1))] shadow-sm hover:bg-[hsl(var(--surface-subtle))]',
-                isDeletingAccount ? 'opacity-70' : undefined,
+                isDeletingAccount ? 'opacity-70' : undefined
               )}
             >
               <ShieldAlert size={18} />
