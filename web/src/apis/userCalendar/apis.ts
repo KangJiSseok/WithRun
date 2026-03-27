@@ -1,14 +1,20 @@
 import axiosClient from '@/shared/libs/axiosClient';
 import type { ApiResponse } from '@/shared/types/api.type';
-import type { CalendarSummaryData, MonthlyCalendarData, WeeklyCalendarData } from './types';
+import type {
+  CalendarSummaryData,
+  MonthlyCalendarData,
+  WeeklyCalendarData,
+} from './types';
 
 /**
  * 이번 주 요약 조회
  * GET /calendars/me/weekly
  */
-export const getWeeklyCalendarApi = async (): Promise<ApiResponse<WeeklyCalendarData>> => {
+export const getWeeklyCalendarApi = async (): Promise<
+  ApiResponse<WeeklyCalendarData>
+> => {
   const { data } = await axiosClient.get<ApiResponse<WeeklyCalendarData>>(
-    '/calendars/me/weekly',
+    '/calendars/me/weekly'
   );
   return data;
 };
@@ -17,9 +23,11 @@ export const getWeeklyCalendarApi = async (): Promise<ApiResponse<WeeklyCalendar
  * 전체 기간 누적 요약 + 스트릭 조회
  * GET /calendars/me/summary
  */
-export const getCalendarSummaryApi = async (): Promise<ApiResponse<CalendarSummaryData>> => {
+export const getCalendarSummaryApi = async (): Promise<
+  ApiResponse<CalendarSummaryData>
+> => {
   const { data } = await axiosClient.get<ApiResponse<CalendarSummaryData>>(
-    '/calendars/me/summary',
+    '/calendars/me/summary'
   );
   return data;
 };
@@ -30,11 +38,11 @@ export const getCalendarSummaryApi = async (): Promise<ApiResponse<CalendarSumma
  */
 export const getMonthlyCalendarApi = async (
   year: number,
-  month: number,
+  month: number
 ): Promise<ApiResponse<MonthlyCalendarData>> => {
   const { data } = await axiosClient.get<ApiResponse<MonthlyCalendarData>>(
     '/calendars/me',
-    { params: { year, month } },
+    { params: { year, month } }
   );
   return data;
 };

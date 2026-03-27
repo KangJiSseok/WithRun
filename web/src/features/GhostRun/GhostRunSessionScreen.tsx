@@ -21,7 +21,9 @@ interface StatItemProps {
 function StatItem({ label, value, valueClassName, sub }: StatItemProps) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="body-r tracking-wide text-[hsl(var(--secondary-5))]">{label}</span>
+      <span className="body-r tracking-wide text-[hsl(var(--secondary-5))]">
+        {label}
+      </span>
       <span
         className={cn(
           'h2-b tabular-nums [text-shadow:0_2px_8px_hsl(var(--black)/0.35)]',
@@ -30,7 +32,11 @@ function StatItem({ label, value, valueClassName, sub }: StatItemProps) {
       >
         {value}
       </span>
-      {sub && <span className="body-r font-semibold text-[hsl(var(--secondary-5))]">{sub}</span>}
+      {sub && (
+        <span className="body-r font-semibold text-[hsl(var(--secondary-5))]">
+          {sub}
+        </span>
+      )}
     </div>
   );
 }

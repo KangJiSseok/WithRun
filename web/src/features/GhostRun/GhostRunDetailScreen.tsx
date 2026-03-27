@@ -101,7 +101,8 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
   };
 
   const hasNoRecords = !course.myRecord && items.length === 0;
-  const isDisabled = !isNearStart || (!selectedTarget && !hasNoRecords) || isStarting;
+  const isDisabled =
+    !isNearStart || (!selectedTarget && !hasNoRecords) || isStarting;
 
   return (
     <div className="relative h-screen w-full">

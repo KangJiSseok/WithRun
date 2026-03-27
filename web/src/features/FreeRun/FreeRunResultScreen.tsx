@@ -40,13 +40,20 @@ export function FreeRunResultScreen({
 
   return (
     <div className="absolute inset-0 bg-[hsl(var(--secondary-1))]">
-      <div className={cn('absolute inset-0 flex flex-col', showShareModal ? 'overflow-hidden' : 'overflow-y-auto')}>
+      <div
+        className={cn(
+          'absolute inset-0 flex flex-col',
+          showShareModal ? 'overflow-hidden' : 'overflow-y-auto'
+        )}
+      >
         {/* 헤더 */}
         <div className="relative flex flex-col items-center pt-10 pb-6 px-6">
           <div className="p-4 rounded-full bg-primary/20 border border-primary/30 mb-4">
             <Award size={40} className="text-primary" />
           </div>
-          <h1 className="h2-b text-[hsl(var(--text-inverse))] mb-1">수고하셨습니다, {nickname}님!</h1>
+          <h1 className="h2-b text-[hsl(var(--text-inverse))] mb-1">
+            수고하셨습니다, {nickname}님!
+          </h1>
         </div>
 
         {/* 지도 영역 — 러닝 경로 폴리라인 */}
@@ -82,10 +89,21 @@ export function FreeRunResultScreen({
               { label: '평균 페이스', value: pace, unit: '/km' },
               { label: '칼로리', value: String(caloriesKcal), unit: 'kcal' },
             ].map(({ label, value, unit }) => (
-              <div key={label} className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-2))] rounded-2xl py-4 px-2">
-                <span className="caption-r text-[hsl(var(--secondary-5))]">{label}</span>
-                <span className="h3-b text-[hsl(var(--text-inverse))]">{value}</span>
-                {unit && <span className="caption-r text-[hsl(var(--secondary-5))]">{unit}</span>}
+              <div
+                key={label}
+                className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-2))] rounded-2xl py-4 px-2"
+              >
+                <span className="caption-r text-[hsl(var(--secondary-5))]">
+                  {label}
+                </span>
+                <span className="h3-b text-[hsl(var(--text-inverse))]">
+                  {value}
+                </span>
+                {unit && (
+                  <span className="caption-r text-[hsl(var(--secondary-5))]">
+                    {unit}
+                  </span>
+                )}
               </div>
             ))}
           </div>
@@ -104,10 +122,14 @@ export function FreeRunResultScreen({
               'w-full py-4 rounded-2xl body-b flex items-center justify-center gap-2 transition-colors',
               courseId !== null
                 ? 'bg-[hsl(var(--secondary-4))] text-[hsl(var(--secondary-5))] cursor-default'
-                : 'bg-primary/20 border border-primary/30 text-primary',
+                : 'bg-primary/20 border border-primary/30 text-primary'
             )}
           >
-            {courseId !== null ? <Check size={18} /> : <UploadCloud size={18} />}
+            {courseId !== null ? (
+              <Check size={18} />
+            ) : (
+              <UploadCloud size={18} />
+            )}
             {courseId !== null ? '등록 완료' : '코스 등록'}
           </button>
 

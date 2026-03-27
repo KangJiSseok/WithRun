@@ -60,7 +60,7 @@ export function FreeRunScreen() {
         setIsStarting(false);
         setError('위치를 가져올 수 없습니다. 위치 권한을 확인해주세요.');
       },
-      { timeout: 20000 },
+      { timeout: 20000 }
     );
   };
 
