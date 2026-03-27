@@ -146,7 +146,7 @@ export function FreeRunResultScreen({ result }: FreeRunResultScreenProps) {
                     <tr key={split.splitIndex}>
                       <td className="px-4 py-3 caption-m text-[hsl(var(--text-inverse))]">
                         {split.splitDistanceM < 1000
-                          ? `${(split.splitDistanceM / 1000).toFixed(2)}km`
+                          ? `${parseFloat((split.splitDistanceM / 1000).toFixed(2))}km`
                           : `${split.splitIndex}km`}
                       </td>
                       <td className="px-4 py-3 caption-m text-primary font-bold">{formatPace(split.splitPaceSecPerKm)}</td>
