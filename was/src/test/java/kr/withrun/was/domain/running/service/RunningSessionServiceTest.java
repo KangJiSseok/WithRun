@@ -43,6 +43,7 @@ import kr.withrun.was.domain.running.repository.RunningSessionSplitRepository;
 import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
 import kr.withrun.was.domain.user.entity.UserCalendar;
 import kr.withrun.was.domain.user.entity.User;
@@ -226,7 +227,7 @@ class RunningSessionServiceTest {
         assertThat(savedSession.getStartedAt()).isNotNull();
         assertThat(savedSession.getDistanceM()).isZero();
         assertThat(savedSession.getCaloriesKcal()).isZero();
-        assertThat(savedSession.getIsCompleted()).isFalse();
+        assertThat(savedSession.getCompleteState()).isNull();
 
         assertThat(response.runningSessionId()).isEqualTo(901L);
         assertThat(response.mode()).isEqualTo(FREE);
@@ -234,7 +235,7 @@ class RunningSessionServiceTest {
         assertThat(response.ghostTargetRunningSessionId()).isNull();
         assertThat(response.distanceM()).isZero();
         assertThat(response.caloriesKcal()).isZero();
-        assertThat(response.isCompleted()).isFalse();
+        assertThat(response.completeState()).isNull();
 
         verifyNoInteractions(courseRepository);
     }
@@ -266,7 +267,7 @@ class RunningSessionServiceTest {
         assertThat(response.ghostTargetRunningSessionId()).isNull();
         assertThat(response.distanceM()).isZero();
         assertThat(response.caloriesKcal()).isZero();
-        assertThat(response.isCompleted()).isFalse();
+        assertThat(response.completeState()).isNull();
     }
 
     @DisplayName("COURSE 모드는 커뮤니티 코스로도 세션을 생성한다")
@@ -388,7 +389,7 @@ class RunningSessionServiceTest {
         assertThat(response.ghostTargetRunningSessionId()).isEqualTo(44L);
         assertThat(response.distanceM()).isZero();
         assertThat(response.caloriesKcal()).isZero();
-        assertThat(response.isCompleted()).isFalse();
+        assertThat(response.completeState()).isNull();
     }
 
     @DisplayName("GHOST 모드는 커뮤니티 코스로도 세션을 생성한다")
@@ -787,8 +788,8 @@ class RunningSessionServiceTest {
 
         assertThat(response.endedAt()).isBetween(beforeComplete, afterComplete);
         assertThat(runningSession.getEndedAt()).isEqualTo(response.endedAt());
-        assertThat(runningSession.getIsCompleted()).isTrue();
-        assertThat(response.isCompleted()).isTrue();
+        assertThat(runningSession.getCompleteState()).isEqualTo(RunningSessionCompleteState.SUCCESS);
+        assertThat(response.completeState()).isEqualTo(RunningSessionCompleteState.SUCCESS);
     }
 
     @DisplayName("상세 조회 응답은 러닝 세션 완료 여부를 포함한다")
@@ -804,7 +805,7 @@ class RunningSessionServiceTest {
 
         RunningSessionDetailResponse response = runningSessionService.findRunningSessionDetail(93L, 1L);
 
-        assertThat(response.isCompleted()).isTrue();
+        assertThat(response.completeState()).isEqualTo(RunningSessionCompleteState.SUCCESS);
         assertThat(response.snapshotImageUrl()).isEqualTo("signed::snapshots/93.png");
     }
 
@@ -934,7 +935,7 @@ class RunningSessionServiceTest {
 
         RunningSessionDetailResponse response = runningSessionService.completeRunningSession(runningSession.getId(), user.getId(), request);
 
-        assertThat(response.isCompleted()).isTrue();
+        assertThat(response.completeState()).isEqualTo(RunningSessionCompleteState.SUCCESS);
         assertThat(response.ghostRunningResult()).isNull();
         verify(ghostRunningResultRepository, never()).save(any());
 
@@ -1483,7 +1484,7 @@ class RunningSessionServiceTest {
                         420,
                         "snapshots/121.png",
                         40,
-                        true,
+                        RunningSessionCompleteState.SUCCESS,
                         RunningMode.GHOST,
                         GhostResultStatus.WIN
                 ),
@@ -1495,7 +1496,7 @@ class RunningSessionServiceTest {
                         310,
                         null,
                         15,
-                        false,
+                        null,
                         RunningMode.FREE,
                         null
                 )
@@ -1515,7 +1516,7 @@ class RunningSessionServiceTest {
                         420,
                         "signed::snapshots/121.png",
                         40,
-                        true,
+                        RunningSessionCompleteState.SUCCESS,
                         RunningMode.GHOST,
                         GhostResultStatus.WIN,
                         TimeSlot.EVENING
@@ -1605,14 +1606,18 @@ class RunningSessionServiceTest {
         return runningSession(id, true);
     }
 
-    private RunningSession runningSession(Long id, boolean isCompleted) {
+    private RunningSession runningSession(Long id, boolean completedSuccessfully) {
         RunningSession runningSession = instantiate(RunningSession.class);
         setField(runningSession, "id", id);
-        setField(runningSession, "isCompleted", isCompleted);
+        setField(
+                runningSession,
+                "completeState",
+                completedSuccessfully ? RunningSessionCompleteState.SUCCESS : null
+        );
         return runningSession;
     }
 
-    private RunningSession runningSession(Long id, Long userId, boolean isCompleted, LocalDateTime startedAt) {
+    private RunningSession runningSession(Long id, Long userId, boolean completedSuccessfully, LocalDateTime startedAt) {
         RunningSession runningSession = instantiate(RunningSession.class);
         setField(runningSession, "id", id);
         setField(runningSession, "startedAt", startedAt);
@@ -1622,7 +1627,11 @@ class RunningSessionServiceTest {
         setField(runningSession, "startLatitude", 37.5);
         setField(runningSession, "startLongitude", 127.0);
         setField(runningSession, "isPublic", false);
-        setField(runningSession, "isCompleted", isCompleted);
+        setField(
+                runningSession,
+                "completeState",
+                completedSuccessfully ? RunningSessionCompleteState.SUCCESS : null
+        );
         setField(runningSession, "user", user(userId));
         setField(runningSession, "mode", RunningMode.FREE);
         return runningSession;

@@ -18,6 +18,7 @@ import kr.withrun.was.domain.running.dto.RunningHealthSampleResponse;
 import kr.withrun.was.domain.running.dto.RunningSessionDetailResponse;
 import kr.withrun.was.domain.running.service.RunningSessionService;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.common.type.TimeSlot;
@@ -88,7 +89,7 @@ class RunningSessionControllerTest {
                 null,
                 0,
                 0,
-                false
+                null
         );
         given(runningSessionService.createRunningSession(currentUserId, request)).willReturn(response);
 
@@ -109,7 +110,7 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.startedAt").doesNotExist())
                 .andExpect(jsonPath("$.data.distanceM").value(0))
                 .andExpect(jsonPath("$.data.caloriesKcal").value(0))
-                .andExpect(jsonPath("$.data.isCompleted").value(false));
+                .andExpect(jsonPath("$.data.completeState").value(Matchers.nullValue()));
 
         then(runningSessionService).should().createRunningSession(currentUserId, request);
     }
@@ -142,7 +143,7 @@ class RunningSessionControllerTest {
                 ),
                 0,
                 0,
-                false
+                null
         );
         given(runningSessionService.createRunningSession(currentUserId, request)).willReturn(response);
 
@@ -283,7 +284,7 @@ class RunningSessionControllerTest {
         long currentUserId = 1L;
         long runningSessionId = 901L;
         RunningSessionDetailResponse response = new RunningSessionDetailResponse(
-                true,
+                RunningSessionCompleteState.SUCCESS,
                 runningSessionId,
                 currentUserId,
                 null,
@@ -336,7 +337,7 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.avgSpeedMps").value(11.0))
                 .andExpect(jsonPath("$.data.durationSec").value(2520))
                 .andExpect(jsonPath("$.data.avgPaceSecPerKm").value(2))
-                .andExpect(jsonPath("$.data.isCompleted").value(true))
+                .andExpect(jsonPath("$.data.completeState").value(RunningSessionCompleteState.SUCCESS.name()))
                 .andExpect(jsonPath("$.data.elevationGainM").value(3))
                 .andExpect(jsonPath("$.data.gpsSamples[0].sampledAt").value("2026-03-12T06:31:30"))
                 .andExpect(jsonPath("$.data.gpsSamples[0].time").value(0))
@@ -402,13 +403,13 @@ class RunningSessionControllerTest {
         then(runningSessionService).should().completeRunningSession(eq(runningSessionId), eq(currentUserId), any(CompleteRunningSessionRequest.class));
     }
 
-    @DisplayName("러닝 세션 상세 조회 응답은 완료 여부를 포함한다")
+    @DisplayName("러닝 세션 상세 조회 응답은 종료 상태를 포함한다")
     @Test
     void wrapsRunningSessionDetailResponseWithCompletionState() throws Exception {
         long currentUserId = 1L;
         long runningSessionId = 777L;
         RunningSessionDetailResponse response = new RunningSessionDetailResponse(
-                true,
+                RunningSessionCompleteState.SUCCESS,
                 runningSessionId,
                 currentUserId,
                 "https://cdn.withrun.app/snapshots/777.png",
@@ -432,7 +433,7 @@ class RunningSessionControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.runningSessionId").value(runningSessionId))
-                .andExpect(jsonPath("$.data.isCompleted").value(true));
+                .andExpect(jsonPath("$.data.completeState").value(RunningSessionCompleteState.SUCCESS.name()));
 
         then(runningSessionService).should().findRunningSessionDetail(runningSessionId, currentUserId);
     }
@@ -580,7 +581,7 @@ class RunningSessionControllerTest {
                                 430,
                                 "https://cdn.withrun.app/snapshots/120.png",
                                 42,
-                                true,
+                                RunningSessionCompleteState.SUCCESS,
                                 GHOST,
                                 GhostResultStatus.WIN,
                                 TimeSlot.EVENING

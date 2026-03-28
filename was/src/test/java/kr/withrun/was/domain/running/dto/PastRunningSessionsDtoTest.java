@@ -5,6 +5,7 @@ import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import kr.withrun.was.global.common.type.TimeSlot;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -134,7 +135,7 @@ class PastRunningSessionsDtoTest {
                         "caloriesKcal",
                         "snapshotImageUrl",
                         "elevationGainM",
-                        "isCompleted",
+                        "completeState",
                         "runningMode",
                         "ghostResultStatus",
                         "timeSlot"
@@ -152,7 +153,7 @@ class PastRunningSessionsDtoTest {
                 430,
                 "https://cdn.withrun.app/snapshots/120.png",
                 42,
-                true,
+                RunningSessionCompleteState.SUCCESS,
                 RunningMode.GHOST,
                 GhostResultStatus.WIN,
                 TimeSlot.EVENING
