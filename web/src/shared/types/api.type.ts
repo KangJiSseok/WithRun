@@ -28,3 +28,5 @@ export type RunningMode = 'FREE' | 'COURSE' | 'GHOST';
 export type CourseRegistrationMode = 'PRIVATE' | 'COMMUNITY';
 // 코스 경로 타입
 export type RouteType = 'LOOP' | 'OUT_AND_BACK';
+// 코스 세션 상태
+export type CompleteState = 'SUCCESS' | 'FAIL' | 'GIVEUP';

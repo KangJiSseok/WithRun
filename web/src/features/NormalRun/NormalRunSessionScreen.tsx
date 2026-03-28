@@ -10,7 +10,6 @@ import { completeRunningSession } from '@/apis/runningSessions';
 import { useNormalRunSessionStore } from '@/stores/NormalRun';
 import { useBridgeDataStore } from '@/bridge';
 
-
 interface StatItemProps {
   label: string;
   value: string;
@@ -45,16 +44,27 @@ type NormalRunSessionScreenProps = {
   courseDetail: CourseDetail;
 };
 
-export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenProps) {
+export function NormalRunSessionScreen({
+  courseDetail,
+}: NormalRunSessionScreenProps) {
   const navigate = useNavigate();
 
   // forceStopRef: handleStopRunning ↔ useNormalRunning 순환 의존 해소
   const forceStopRef = useRef<() => void>(() => {});
 
   const {
-    time, distance, pace, calories, isPaused, togglePause, getCollectedData,
-    isDeviating, deviationSec,
-    deviationAnchor, pauseAnchor, isWithinPauseAnchor,
+    time,
+    distance,
+    pace,
+    calories,
+    isPaused,
+    togglePause,
+    getCollectedData,
+    isDeviating,
+    deviationSec,
+    deviationAnchor,
+    pauseAnchor,
+    isWithinPauseAnchor,
   } = useNormalRunning({
     courseCoordinates: courseDetail.coordinates,
     onForceStop: useCallback(() => forceStopRef.current(), []),
@@ -80,12 +90,16 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
   // 비정상 종료 처리 (앱 이탈 시 세션 종료 API fire-and-forget)
   useEffect(() => {
     return () => {
-      const { session: s, result: r, clearAll: ca } = useNormalRunSessionStore.getState();
+      const {
+        session: s,
+        result: r,
+        clearAll: ca,
+      } = useNormalRunSessionStore.getState();
       if (!s || r) return; // 이미 완료됐거나 세션 없으면 skip
       const data = latestGetCollectedDataRef.current();
       const gps = latestGpsLocationRef.current;
       completeRunningSession(s.runningSessionId, {
-        isCompleted: false,
+        completeState: 'FAIL',
         endLatitude: gps?.latitude ?? 0,
         endLongitude: gps?.longitude ?? 0,
         distanceGapM: 0,
@@ -101,7 +115,7 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
     const data = getCollectedData();
     try {
       const res = await completeRunningSession(session.runningSessionId, {
-        isCompleted: true,
+        completeState: 'GIVEUP',
         endLatitude: gpsLocation?.latitude ?? 0,
         endLongitude: gpsLocation?.longitude ?? 0,
         distanceGapM: 0,
@@ -114,7 +128,15 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
     } finally {
       setIsEnding(false);
     }
-  }, [isEnding, session, getCollectedData, gpsLocation, setResult, clearAll, navigate]);
+  }, [
+    isEnding,
+    session,
+    getCollectedData,
+    gpsLocation,
+    setResult,
+    clearAll,
+    navigate,
+  ]);
 
   // forceStopRef를 항상 최신 handleStopRunning으로 유지
   forceStopRef.current = handleStopRunning;
@@ -122,7 +144,10 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
   return (
     <div className="absolute inset-0 overflow-hidden">
       {/* 지도 */}
-      <NormalRunMap coordinates={courseDetail.coordinates} courseAnchor={courseAnchor} />
+      <NormalRunMap
+        coordinates={courseDetail.coordinates}
+        courseAnchor={courseAnchor}
+      />
 
       {/* 상단 통계 오버레이 */}
       <div className="absolute left-0 right-0 top-0 z-sticky flex justify-between px-8 pt-14">
@@ -173,39 +198,41 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
                 안정권으로 복귀 후 재개 가능
               </span>
             )}
-          <div className="relative flex w-full items-center justify-center">
-            {/* 일시정지 / 재개 */}
-            <button
-              onClick={togglePause}
-              disabled={isPaused && !isWithinPauseAnchor}
-              className={cn(
-                'z-10 flex h-20 w-20 items-center justify-center rounded-full bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-soft-lg)]',
-                isPaused && !isWithinPauseAnchor && 'opacity-40 cursor-not-allowed'
-              )}
-              aria-label={isPaused ? '러닝 재개' : '일시정지'}
-            >
-              {isPaused ? (
-                <Play size={30} fill="currentColor" />
-              ) : (
-                <Pause size={30} fill="currentColor" />
-              )}
-            </button>
+            <div className="relative flex w-full items-center justify-center">
+              {/* 일시정지 / 재개 */}
+              <button
+                onClick={togglePause}
+                disabled={isPaused && !isWithinPauseAnchor}
+                className={cn(
+                  'z-10 flex h-20 w-20 items-center justify-center rounded-full bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-soft-lg)]',
+                  isPaused &&
+                    !isWithinPauseAnchor &&
+                    'opacity-40 cursor-not-allowed'
+                )}
+                aria-label={isPaused ? '러닝 재개' : '일시정지'}
+              >
+                {isPaused ? (
+                  <Play size={30} fill="currentColor" />
+                ) : (
+                  <Pause size={30} fill="currentColor" />
+                )}
+              </button>
 
-            {/* 종료 버튼 (일시정지 시 등장) */}
-            <button
-              onClick={handleStopRunning}
-              disabled={isEnding}
-              className={cn(
-                'absolute flex h-14 w-14 items-center justify-center rounded-full border border-[hsl(var(--secondary-4))] bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-md)] transition-all duration-300',
-                isPaused
-                  ? 'translate-x-20 opacity-100'
-                  : 'pointer-events-none translate-x-12.5 opacity-0'
-              )}
-              aria-label={isEnding ? '종료 중...' : '러닝 종료'}
-            >
-              <Square size={22} fill="currentColor" />
-            </button>
-          </div>
+              {/* 종료 버튼 (일시정지 시 등장) */}
+              <button
+                onClick={handleStopRunning}
+                disabled={isEnding}
+                className={cn(
+                  'absolute flex h-14 w-14 items-center justify-center rounded-full border border-[hsl(var(--secondary-4))] bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-md)] transition-all duration-300',
+                  isPaused
+                    ? 'translate-x-20 opacity-100'
+                    : 'pointer-events-none translate-x-12.5 opacity-0'
+                )}
+                aria-label={isEnding ? '종료 중...' : '러닝 종료'}
+              >
+                <Square size={22} fill="currentColor" />
+              </button>
+            </div>
           </div>
         </div>
       </div>

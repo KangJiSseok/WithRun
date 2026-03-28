@@ -92,7 +92,7 @@ export function FreeRunningScreen({
       const data = latestGetCollectedDataRef.current();
       const gps = latestGpsLocationRef.current;
       completeRunningSession(sessionId, {
-        isCompleted: false,
+        completeState: 'FAIL',
         ...data,
         endLatitude: gps?.latitude ?? 0,
         endLongitude: gps?.longitude ?? 0,
@@ -107,7 +107,7 @@ export function FreeRunningScreen({
     try {
       const data = getCollectedData();
       const res = await completeRunningSession(runningSessionId, {
-        isCompleted: true,
+        completeState: 'SUCCESS',
         ...data,
         endLatitude: gpsLocation?.latitude ?? 0,
         endLongitude: gpsLocation?.longitude ?? 0,

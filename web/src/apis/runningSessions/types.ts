@@ -5,6 +5,7 @@ import type {
   CourseStatus,
   CourseRegistrationMode,
   RouteType,
+  CompleteState,
 } from '@/shared/types/api.type';
 
 // GET /running-sessions/history/past - 과거 러닝 세션 항목
@@ -16,7 +17,7 @@ export type RunningHistoryItem = {
   caloriesKcal: number;
   snapshotImageUrl: string | null;
   elevationGainM: number;
-  isCompleted: boolean;
+  completeState: CompleteState;
   runningMode: string;
   ghostResultStatus: string | null;
   timeSlot: string;
@@ -54,7 +55,7 @@ export type CreateRunningSessionResponse = {
   ghostTargetGpsSamples: GpsSample[] | null;
   distanceM: number;
   caloriesKcal: number;
-  isCompleted: boolean;
+  completeState: CompleteState;
 };
 
 // GPS 샘플 (1초 단위 수집)
@@ -90,7 +91,7 @@ export type SplitRecord = {
 
 // PATCH /running-sessions/{id} 요청
 export type CompleteRunningSessionRequest = {
-  isCompleted: boolean;
+  completeState: CompleteState;
   distanceM: number;
   caloriesKcal: number;
   endLatitude: number; // -90 ~ 90
@@ -130,6 +131,7 @@ export type SplitResult = {
 // PATCH /running-sessions/{id} 응답
 // 자유러닝에서는 ghostRunningResult: null
 export type CompleteRunningSessionResponse = {
+  completeState: CompleteState;
   runningSessionId: number;
   userId: number;
   snapshotImageUrl: string | null;
@@ -149,7 +151,7 @@ export type CompleteRunningSessionResponse = {
 
 // GET /running-sessions/{runningSessionId}/detail 응답
 export type RunningSessionDetailResponse = {
-  isCompleted: boolean;
+  completeState: CompleteState;
   runningSessionId: number;
   userId: number;
   snapshotImageUrl: string | null;

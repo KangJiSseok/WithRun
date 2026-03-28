@@ -10,7 +10,6 @@ import { NormalRunMap } from '@/features/NormalRun/NormalRunMap';
 import { cn } from '@/shared/utils';
 import { useGhostRunSessionStore } from '@/stores/GhostRun';
 
-
 interface StatItemProps {
   label: string;
   value: string;
@@ -45,15 +44,26 @@ type GhostRunSessionScreenProps = {
   courseDetail: GhostCourseDetail;
 };
 
-export function GhostRunSessionScreen({ courseDetail }: GhostRunSessionScreenProps) {
+export function GhostRunSessionScreen({
+  courseDetail,
+}: GhostRunSessionScreenProps) {
   const navigate = useNavigate();
 
   const forceStopRef = useRef<() => void>(() => {});
 
   const {
-    time, distance, pace, calories, isPaused, togglePause, getCollectedData,
-    isDeviating, deviationSec,
-    deviationAnchor, pauseAnchor, isWithinPauseAnchor,
+    time,
+    distance,
+    pace,
+    calories,
+    isPaused,
+    togglePause,
+    getCollectedData,
+    isDeviating,
+    deviationSec,
+    deviationAnchor,
+    pauseAnchor,
+    isWithinPauseAnchor,
   } = useNormalRunning({
     courseCoordinates: courseDetail.coordinates,
     onForceStop: useCallback(() => forceStopRef.current(), []),
@@ -77,12 +87,16 @@ export function GhostRunSessionScreen({ courseDetail }: GhostRunSessionScreenPro
   // 비정상 종료 처리
   useEffect(() => {
     return () => {
-      const { session: s, result: r, clearAll: ca } = useGhostRunSessionStore.getState();
+      const {
+        session: s,
+        result: r,
+        clearAll: ca,
+      } = useGhostRunSessionStore.getState();
       if (!s || r) return;
       const data = latestGetCollectedDataRef.current();
       const gps = latestGpsLocationRef.current;
       completeRunningSession(s.runningSessionId, {
-        isCompleted: false,
+        completeState: 'FAIL',
         endLatitude: gps?.latitude ?? 0,
         endLongitude: gps?.longitude ?? 0,
         distanceGapM: 0,
@@ -98,7 +112,7 @@ export function GhostRunSessionScreen({ courseDetail }: GhostRunSessionScreenPro
     const data = getCollectedData();
     try {
       const res = await completeRunningSession(session.runningSessionId, {
-        isCompleted: true,
+        completeState: 'SUCCESS',
         endLatitude: gpsLocation?.latitude ?? 0,
         endLongitude: gpsLocation?.longitude ?? 0,
         distanceGapM: 0,
@@ -111,14 +125,25 @@ export function GhostRunSessionScreen({ courseDetail }: GhostRunSessionScreenPro
     } finally {
       setIsEnding(false);
     }
-  }, [isEnding, session, getCollectedData, gpsLocation, setResult, clearAll, navigate]);
+  }, [
+    isEnding,
+    session,
+    getCollectedData,
+    gpsLocation,
+    setResult,
+    clearAll,
+    navigate,
+  ]);
 
   forceStopRef.current = handleStopRunning;
 
   return (
     <div className="absolute inset-0 overflow-hidden">
       {/* 지도 */}
-      <NormalRunMap coordinates={courseDetail.coordinates} courseAnchor={courseAnchor} />
+      <NormalRunMap
+        coordinates={courseDetail.coordinates}
+        courseAnchor={courseAnchor}
+      />
 
       {/* 상단 통계 오버레이 */}
       <div className="absolute left-0 right-0 top-0 z-sticky flex justify-between px-8 pt-14">
@@ -175,7 +200,9 @@ export function GhostRunSessionScreen({ courseDetail }: GhostRunSessionScreenPro
                 disabled={isPaused && !isWithinPauseAnchor}
                 className={cn(
                   'z-10 flex h-20 w-20 items-center justify-center rounded-full bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-soft-lg)]',
-                  isPaused && !isWithinPauseAnchor && 'opacity-40 cursor-not-allowed'
+                  isPaused &&
+                    !isWithinPauseAnchor &&
+                    'opacity-40 cursor-not-allowed'
                 )}
                 aria-label={isPaused ? '러닝 재개' : '일시정지'}
               >
