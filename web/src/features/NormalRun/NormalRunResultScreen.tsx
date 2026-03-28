@@ -1,4 +1,7 @@
-import { Award, Bookmark, Home, MapPin } from 'lucide-react';
+import { useState } from 'react';
+import { Activity, Award, Bookmark, Home, MapPin, Timer } from 'lucide-react';
+import { NormalRunResultMap } from './NormalRunResultMap';
+import { CourseReviewModal } from './CourseReviewModal';
 import { useNavigate } from 'react-router-dom';
 
 import type { CompleteRunningSessionResponse } from '@/apis/runningSessions';
@@ -15,14 +18,36 @@ type NormalRunResultScreenProps = {
 export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
   const navigate = useNavigate();
   const clearAll = useNormalRunSessionStore((s) => s.clearAll);
+  const courseId = useNormalRunSessionStore((s) => s.session?.courseId ?? null);
+
+  const [showReview, setShowReview] = useState(() => courseId !== null);
+  const [toastVisible, setToastVisible] = useState(false);
 
   const handleHome = () => {
     clearAll();
     navigate('/normal-run');
   };
 
+  function handleReviewDone() {
+    setToastVisible(true);
+    setTimeout(() => setToastVisible(false), 2500);
+  }
+
   return (
     <div className="absolute inset-0 bg-[hsl(var(--secondary-1))] overflow-y-auto">
+      {courseId !== null && (
+        <CourseReviewModal
+          isOpen={showReview}
+          onClose={() => setShowReview(false)}
+          courseId={courseId}
+          onDone={handleReviewDone}
+        />
+      )}
+      {toastVisible && (
+        <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))] px-5 py-3 rounded-2xl body-r shadow-lg z-50 whitespace-nowrap">
+          참여해주셔서 감사합니다
+        </div>
+      )}
       <div className="flex flex-col gap-4 px-6 pb-10">
         {/* 헤더 */}
         <div className="relative flex flex-col items-center pt-10 pb-2">
@@ -36,8 +61,12 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
           <div className="p-4 rounded-full bg-primary/20 border border-primary/30 mb-4">
             <Award size={40} className="text-primary" />
           </div>
-          <h1 className="h2-b text-[hsl(var(--text-inverse))] mb-1">러닝 완료!</h1>
-          <p className="body-r text-[hsl(var(--secondary-5))]">수고하셨습니다</p>
+          <h1 className="h2-b text-[hsl(var(--text-inverse))] mb-1">
+            러닝 완료!
+          </h1>
+          <p className="body-r text-[hsl(var(--secondary-5))]">
+            수고하셨습니다
+          </p>
         </div>
 
         {/* 지도 영역 — GPS 샘플 2개 이상일 때 경로 표시 */}
@@ -68,13 +97,17 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
         {/* 시간 + 평균 페이스 */}
         <div className="flex gap-3">
           <div className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-2))] rounded-2xl py-4 px-2">
-            <span className="caption-r text-[hsl(var(--secondary-5))]">시간</span>
+            <span className="caption-r text-[hsl(var(--secondary-5))]">
+              시간
+            </span>
             <span className="h3-b text-[hsl(var(--text-inverse))] tabular-nums">
               {formatDuration(result.durationSec)}
             </span>
           </div>
           <div className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-2))] rounded-2xl py-4 px-2">
-            <span className="caption-r text-[hsl(var(--secondary-5))]">평균 페이스</span>
+            <span className="caption-r text-[hsl(var(--secondary-5))]">
+              평균 페이스
+            </span>
             <span className="h3-b text-[hsl(var(--text-inverse))] tabular-nums">
               {formatPace(result.avgPaceSecPerKm)}
             </span>
@@ -100,8 +133,7 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
             onClick={handleHome}
             className="w-full py-4 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] body-b flex items-center justify-center gap-2"
           >
-            <Home size={18} />
-            홈
+            <Home size={18} />홈
           </button>
         </div>
       </div>
