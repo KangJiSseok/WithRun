@@ -9,6 +9,8 @@ import type {
   GetGhostLeaderboardData,
   GhostCourseDetail,
   GetNearbyGhostCoursesParams,
+  PostCourseReviewRequest,
+  PostCourseReviewResponse,
 } from './types';
 
 /**
@@ -119,6 +121,21 @@ export const getGhostRunningResultApi = async (
 ): Promise<ApiResponse<GhostRunningResult>> => {
   const { data } = await axiosClient.get<ApiResponse<GhostRunningResult>>(
     `/ghost-runnings/${runningSessionId}/result`
+  );
+  return data;
+};
+
+/**
+ * 코스 리뷰 작성
+ * POST /courses/{courseId}/reviews
+ */
+export const postCourseReviewApi = async (
+  courseId: number,
+  body: PostCourseReviewRequest,
+): Promise<ApiResponse<PostCourseReviewResponse>> => {
+  const { data } = await axiosClient.post<ApiResponse<PostCourseReviewResponse>>(
+    `/courses/${courseId}/reviews`,
+    body,
   );
   return data;
 };
