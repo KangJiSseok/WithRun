@@ -1,10 +1,11 @@
-import { useRef, useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Award, Home, Activity, Timer, Check, UploadCloud } from 'lucide-react';
+import { Award, Home, Check, UploadCloud, MapPin } from 'lucide-react';
 import { cn, formatDuration, formatPace } from '@/shared/utils';
 import { CourseShareModal } from './CourseShareModal';
-import { useGeneratePaceData } from '@/hooks/FreeRun/useGeneratePaceData';
-import { useKakaoMap } from '@/shared/hooks/useKakaoMap';
+import { RunResultMap } from '@/shared/components/Running/RunResultMap';
+import { HeartRateSection } from '@/shared/components/Running/HeartRateSection';
+import { SplitTable } from '@/shared/components/Running/SplitTable';
 import type { RunningResult } from './FreeRunningScreen';
 import { useAuthStore } from '@/stores/Auth';
 
@@ -13,22 +14,6 @@ interface FreeRunResultScreenProps {
   courseId: number | null;
   runningSessionId: number | null;
   onCourseRegistered: (courseId: number) => void;
-}
-
-interface StatItemProps {
-  label: string;
-  value: string;
-  unit: string;
-}
-
-function StatItem({ label, value, unit }: StatItemProps) {
-  return (
-    <div className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-2))] rounded-2xl py-4 px-2">
-      <span className="caption-r text-[hsl(var(--secondary-5))]">{label}</span>
-      <span className="h3-b text-[hsl(var(--text-inverse))]">{value}</span>
-      {unit && <span className="caption-r text-[hsl(var(--secondary-5))]">{unit}</span>}
-    </div>
-  );
 }
 
 export function FreeRunResultScreen({
@@ -41,37 +26,17 @@ export function FreeRunResultScreen({
   const nickname = useAuthStore((s) => s.user?.nickname ?? '러너');
   const [showShareModal, setShowShareModal] = useState(false);
 
-  const mapContainerRef = useRef<HTMLDivElement | null>(null);
-  const mapCoordinates = (result?.gpsSamples ?? []).map((s) => ({
-    latitude: s.latitude,
-    longitude: s.longitude,
-    elevationM: s.altitudeM ?? 0,
-  }));
-  useKakaoMap(mapContainerRef, { coordinates: mapCoordinates });
-
   const durationSec = result?.durationSec ?? 0;
   const distanceM = result?.distanceM ?? 0;
   const caloriesKcal = result?.caloriesKcal ?? 0;
   const avgPaceSecPerKm = result?.avgPaceSecPerKm ?? 0;
+  const gpsSamples = result?.gpsSamples ?? [];
+  const splits = result?.splits ?? [];
+  const healthSamples = result?.healthSamples ?? [];
 
   const time = formatDuration(durationSec);
   const distance = (distanceM / 1000).toFixed(2);
   const pace = formatPace(avgPaceSecPerKm);
-  const calories = caloriesKcal;
-
-  const { paceData, avgSeconds } = useGeneratePaceData(result?.splits ?? []);
-
-  const heartRates = (result?.healthSamples ?? [])
-    .map((s) => s.heartRate)
-    .filter((hr) => hr > 0);
-  const heartRateStats =
-    heartRates.length > 0
-      ? {
-          min: Math.min(...heartRates),
-          avg: Math.round(heartRates.reduce((a, b) => a + b, 0) / heartRates.length),
-          max: Math.max(...heartRates),
-        }
-      : { min: 0, avg: 0, max: 0 };
 
   return (
     <div className="absolute inset-0 bg-[hsl(var(--secondary-1))]">
@@ -85,10 +50,18 @@ export function FreeRunResultScreen({
         </div>
 
         {/* 지도 영역 — 러닝 경로 폴리라인 */}
-        <div
-          ref={mapContainerRef}
-          className="mx-6 mb-4 h-40 rounded-2xl overflow-hidden border border-[hsl(var(--secondary-3))]"
-        />
+        <div className="mx-6 mb-4 h-40 rounded-2xl overflow-hidden border border-[hsl(var(--secondary-3))]">
+          {gpsSamples.length >= 2 ? (
+            <RunResultMap gpsSamples={gpsSamples} />
+          ) : (
+            <div className="h-full bg-[hsl(var(--secondary-2))] flex items-center justify-center">
+              <div className="flex flex-col items-center gap-2 text-[hsl(var(--secondary-5))]">
+                <MapPin size={24} />
+                <span className="caption-r">GPS 데이터 없음</span>
+              </div>
+            </div>
+          )}
+        </div>
 
         <div className="px-6 space-y-4 pb-8">
           {/* 이동 거리 - 크게 표시 */}
@@ -104,79 +77,24 @@ export function FreeRunResultScreen({
 
           {/* 시간, 평균 페이스, 칼로리 */}
           <div className="flex gap-3">
-            <StatItem label="시간" value={time} unit="" />
-            <StatItem label="평균 페이스" value={pace} unit="/km" />
-            <StatItem label="칼로리" value={String(calories)} unit="kcal" />
+            {[
+              { label: '시간', value: time, unit: '' },
+              { label: '평균 페이스', value: pace, unit: '/km' },
+              { label: '칼로리', value: String(caloriesKcal), unit: 'kcal' },
+            ].map(({ label, value, unit }) => (
+              <div key={label} className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-2))] rounded-2xl py-4 px-2">
+                <span className="caption-r text-[hsl(var(--secondary-5))]">{label}</span>
+                <span className="h3-b text-[hsl(var(--text-inverse))]">{value}</span>
+                {unit && <span className="caption-r text-[hsl(var(--secondary-5))]">{unit}</span>}
+              </div>
+            ))}
           </div>
 
           {/* 심박수 변동 */}
-          <div className="bg-[hsl(var(--secondary-2))] rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Activity size={16} className="text-primary" />
-              <span className="caption-b text-[hsl(var(--text-inverse))]">심박수 변동</span>
-            </div>
-            <div className="flex gap-3">
-              {[
-                { label: '최소', value: String(heartRateStats.min) },
-                { label: '평균', value: String(heartRateStats.avg), highlight: true },
-                { label: '최대', value: String(heartRateStats.max) },
-              ].map(({ label, value, highlight }) => (
-                <div
-                  key={label}
-                  className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-3))] rounded-xl py-3"
-                >
-                  <span className="caption-r text-[hsl(var(--secondary-5))]">{label}</span>
-                  <span className={cn('h3-b', highlight ? 'text-primary' : 'text-[hsl(var(--text-inverse))]')}>
-                    {value}
-                  </span>
-                  <span className="caption-r text-[hsl(var(--secondary-5))]">bpm</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          <HeartRateSection samples={healthSamples} />
 
           {/* 구간별 페이스 */}
-          <div className="bg-[hsl(var(--secondary-2))] rounded-2xl p-4">
-            <div className="flex items-center gap-2 mb-4">
-              <Timer size={16} className="text-primary" />
-              <span className="caption-b text-[hsl(var(--text-inverse))]">구간별 페이스 (1km)</span>
-            </div>
-            {paceData.length > 0 ? (
-              <div className="rounded-xl overflow-hidden border border-[hsl(var(--secondary-3))]">
-                <table className="w-full">
-                  <thead className="bg-[hsl(var(--secondary-3))]">
-                    <tr>
-                      <th className="px-4 py-2 text-left caption-r text-[hsl(var(--secondary-5))] font-normal">구간</th>
-                      <th className="px-4 py-2 text-left caption-r text-[hsl(var(--secondary-5))] font-normal">페이스</th>
-                      <th className="px-4 py-2 text-left caption-r text-[hsl(var(--secondary-5))] font-normal">상태</th>
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-[hsl(var(--secondary-3))]">
-                    {paceData.map((item) => (
-                      <tr key={item.km}>
-                        <td className="px-4 py-3 caption-m text-[hsl(var(--text-inverse))]">{item.km}km</td>
-                        <td className="px-4 py-3 caption-m text-primary font-bold">{item.displayPace}</td>
-                        <td className="px-4 py-3">
-                          <div
-                            className={cn(
-                              'w-2 h-2 rounded-full',
-                              item.seconds < avgSeconds
-                                ? 'bg-[hsl(var(--success))]'
-                                : 'bg-[hsl(var(--warning))]',
-                            )}
-                          />
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            ) : (
-              <p className="caption-r text-[hsl(var(--secondary-5))] text-center py-2">
-                1km 미만 러닝으로 구간 데이터가 없습니다.
-              </p>
-            )}
-          </div>
+          <SplitTable splits={splits} />
 
           {/* 코스 등록 버튼 */}
           <button
