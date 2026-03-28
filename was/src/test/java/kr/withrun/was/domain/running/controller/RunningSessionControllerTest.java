@@ -89,7 +89,7 @@ class RunningSessionControllerTest {
                 null,
                 0,
                 0,
-                null
+                RunningSessionCompleteState.FAIL
         );
         given(runningSessionService.createRunningSession(currentUserId, request)).willReturn(response);
 
@@ -110,7 +110,7 @@ class RunningSessionControllerTest {
                 .andExpect(jsonPath("$.data.startedAt").doesNotExist())
                 .andExpect(jsonPath("$.data.distanceM").value(0))
                 .andExpect(jsonPath("$.data.caloriesKcal").value(0))
-                .andExpect(jsonPath("$.data.completeState").value(Matchers.nullValue()));
+                .andExpect(jsonPath("$.data.completeState").value(RunningSessionCompleteState.FAIL.name()));
 
         then(runningSessionService).should().createRunningSession(currentUserId, request);
     }
@@ -143,7 +143,7 @@ class RunningSessionControllerTest {
                 ),
                 0,
                 0,
-                null
+                RunningSessionCompleteState.FAIL
         );
         given(runningSessionService.createRunningSession(currentUserId, request)).willReturn(response);
 
@@ -861,6 +861,7 @@ class RunningSessionControllerTest {
     private static String validUpdateRequestJson() {
         return """
                 {
+                  "completeState": "SUCCESS",
                   "distanceM": 10023,
                   "caloriesKcal": 642,
                   "endLatitude": 30,

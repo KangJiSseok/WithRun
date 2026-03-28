@@ -4,6 +4,7 @@ import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 
@@ -41,6 +42,7 @@ class RunningSessionRequestDtoTest {
     void completeRequestAndSplitRequestDoNotExposeUserIdComponents() {
         assertThat(componentNamesOf(CompleteRunningSessionRequest.class))
                 .containsExactly(
+                        "completeState",
                         "distanceM",
                         "caloriesKcal",
                         "endLatitude",
@@ -69,6 +71,7 @@ class RunningSessionRequestDtoTest {
     @Test
     void acceptsValidCompleteRequest() {
         CompleteRunningSessionRequest request = new CompleteRunningSessionRequest(
+                RunningSessionCompleteState.SUCCESS,
                 5320,
                 328,
                 37.5701,
