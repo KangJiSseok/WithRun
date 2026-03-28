@@ -18,10 +18,10 @@ export const BOTTOM_NAV_HEIGHT = 80;
 
 export function BottomNavigation() {
   return (
-    <div className="fixed flex left-0 bottom-0 w-full z-overlay">
+    <div className="fixed bottom-0 left-0 z-overlay flex w-full">
       <div
         style={{ height: BOTTOM_NAV_HEIGHT }}
-        className="flex mx-auto min-w-[375px] max-w-[430px] w-full px-6 py-2 shadow-sm border-t bg-white"
+        className="mx-auto flex w-full min-w-[375px] max-w-[430px] border-t border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-6 py-2 shadow-[var(--shadow-soft-lg)]"
       >
         <nav className="flex-1 flex items-center justify-between">
           {ITEMS.map((item) => {
@@ -31,15 +31,15 @@ export function BottomNavigation() {
               <NavLink
                 key={item.to}
                 to={item.to}
-                className="flex flex-col items-center gap-1 "
+                className="flex flex-col items-center gap-1.5 rounded-[var(--radius-xl)] px-1 py-1"
               >
                 {({ isActive }) => (
                   <>
                     <div
                       className={
                         isActive
-                          ? 'rounded-full bg-primary p-2 text-primary-foreground'
-                          : 'rounded-full p-2 text-muted-foreground'
+                          ? 'rounded-full bg-[hsl(var(--primary-5))] p-2 text-[hsl(var(--primary-2))] shadow-[var(--shadow-sm)]'
+                          : 'rounded-full p-2 text-[hsl(var(--text-secondary))] transition-colors'
                       }
                     >
                       <Icon className="w-full" />
@@ -47,8 +47,8 @@ export function BottomNavigation() {
                     <span
                       className={
                         isActive
-                          ? 'text-xs font-semibold text-primary'
-                          : 'text-xs text-muted-foreground'
+                          ? 'text-xs font-semibold text-[hsl(var(--primary-2))]'
+                          : 'text-xs text-[hsl(var(--text-secondary))]'
                       }
                     >
                       {item.label}

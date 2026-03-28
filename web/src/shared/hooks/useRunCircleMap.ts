@@ -12,6 +12,23 @@ const DEFAULT_RADIUS_M = 3000;
 const DEFAULT_MAP_LEVEL = 7;
 // 서울 시청 (GPS 모두 실패 시 최종 폴백)
 const FALLBACK_CENTER = { lat: 37.5665, lng: 126.978 };
+const DEFAULT_MARKER_COLOR = 'hsl(29 94% 58%)';
+
+function resolveMapColor(colorOrToken: string): string {
+  if (typeof window === 'undefined') {
+    return DEFAULT_MARKER_COLOR;
+  }
+
+  if (colorOrToken.startsWith('--')) {
+    const resolvedValue = getComputedStyle(document.documentElement)
+      .getPropertyValue(colorOrToken)
+      .trim();
+
+    return resolvedValue ? `hsl(${resolvedValue})` : DEFAULT_MARKER_COLOR;
+  }
+
+  return colorOrToken;
+}
 
 // 두 좌표 간 거리 계산 (Haversine, 단위: 미터)
 function haversineM(
@@ -54,7 +71,7 @@ export function useRunCircleMap(
   courses: CourseItem[],
   circleMode: CircleMode,
   onMapTouched?: () => void,
-  markerColor = '#22C55E'
+  markerColor = '--primary-1'
 ): UseRunCircleMapReturn {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
@@ -70,6 +87,7 @@ export function useRunCircleMap(
 
   const [center, setCenter] = useState<Center | null>(null);
   const [radiusM, setRadiusM] = useState(DEFAULT_RADIUS_M);
+  const resolvedMarkerColor = resolveMapColor(markerColor);
 
   // 최신 radiusM을 click handler에서 stale closure 없이 접근하기 위한 ref
   const radiusMRef = useRef(DEFAULT_RADIUS_M);
@@ -101,10 +119,10 @@ export function useRunCircleMap(
           center: initLatLng,
           radius: DEFAULT_RADIUS_M,
           strokeWeight: 2,
-          strokeColor: '#4F80FF',
+          strokeColor: resolvedMarkerColor,
           strokeOpacity: 0.8,
           strokeStyle: 'solid',
-          fillColor: '#4F80FF',
+          fillColor: resolvedMarkerColor,
           fillOpacity: 0.1,
         });
         circleRef.current.setMap(mapRef.current);
@@ -265,14 +283,14 @@ export function useRunCircleMap(
           course.startLatitude,
           course.startLongitude
         ),
-        content: createMarkerContent(course.title, markerColor),
+        content: createMarkerContent(course.title, resolvedMarkerColor),
         xAnchor: 0.5,
         yAnchor: 1.0,
         zIndex: 5,
       });
       courseMarkersRef.current.push(overlay);
     });
-  }, [courses, markerColor]);
+  }, [courses, resolvedMarkerColor]);
 
   return { containerRef, center, radiusM };
 }

@@ -9,6 +9,12 @@ import { useState, useMemo, type ReactNode } from 'react';
 import Picker from 'react-mobile-picker';
 import { toast } from 'sonner';
 
+import type { AuthGender } from '@/apis/auth';
+import type {
+  Difficulty,
+  Purpose,
+  TimeSlot,
+} from '@/apis/RunningPreferences';
 import {
   DEFAULT_ONBOARDING_FORM_STATE,
   ONBOARDING_COURSE_TYPE_OPTIONS,
@@ -20,13 +26,9 @@ import {
 import { getCurrentUser } from '@/apis/auth';
 import { updateUserRunningPreferences } from '@/apis/RunningPreferences';
 import { checkNicknameAvailability, updateUserProfile } from '@/apis/UserProfile';
+import type { CourseType } from '@/shared/types/api.type';
 import { cn } from '@/shared/utils';
 import { useAuthStore } from '@/stores/Auth';
-import type {
-  OnboardingFormState,
-  OnboardingOption,
-  OnboardingStepId,
-} from '@/types/Onboarding';
 
 type OnboardingFormStepProps = {
   onComplete: () => void;
@@ -42,6 +44,40 @@ type OptionButtonProps = {
   label: string;
   onClick: () => void;
   className?: string;
+};
+
+type OnboardingStepId = (typeof ONBOARDING_STEPS)[number]['id'];
+
+type OnboardingOption<TValue extends string = string> = Readonly<{
+  label: string;
+  value: TValue;
+  accentClassName?: string;
+}>;
+
+type OnboardingFormState = {
+  nickname: string;
+  gender: AuthGender | null;
+  birthdate: string;
+  height: number;
+  weight: number;
+  purposes: Purpose[];
+  timeSlots: TimeSlot[];
+  preferredDistanceKm: number;
+  preferredDifficulty: Difficulty | null;
+  courseTypes: CourseType[];
+};
+
+const DEFAULT_FORM_STATE: OnboardingFormState = {
+  nickname: DEFAULT_ONBOARDING_FORM_STATE.nickname,
+  gender: DEFAULT_ONBOARDING_FORM_STATE.gender,
+  birthdate: DEFAULT_ONBOARDING_FORM_STATE.birthdate,
+  height: DEFAULT_ONBOARDING_FORM_STATE.height,
+  weight: DEFAULT_ONBOARDING_FORM_STATE.weight,
+  purposes: [],
+  timeSlots: [],
+  preferredDistanceKm: DEFAULT_ONBOARDING_FORM_STATE.preferredDistanceKm,
+  preferredDifficulty: DEFAULT_ONBOARDING_FORM_STATE.preferredDifficulty,
+  courseTypes: [],
 };
 
 function StepFrame({ stepKey, children }: StepFrameProps) {
@@ -74,7 +110,7 @@ function OptionButton({
         isSelected
           ? 'border-[#FF5959] bg-[#FF5959]/10 text-[#FF5959]'
           : 'border-white/50 bg-white/75 text-gray-600',
-        className,
+        className
       )}
     >
       {label}
@@ -83,7 +119,7 @@ function OptionButton({
 }
 
 type SingleChoiceGridProps<TValue extends string> = {
-  options: OnboardingOption<TValue>[];
+  options: readonly OnboardingOption<TValue>[];
   selectedValue: TValue | null;
   onSelect: (value: TValue) => void;
   className?: string;
@@ -91,7 +127,7 @@ type SingleChoiceGridProps<TValue extends string> = {
 };
 
 type MultiChoiceGridProps<TValue extends string> = {
-  options: OnboardingOption<TValue>[];
+  options: readonly OnboardingOption<TValue>[];
   selectedValues: TValue[];
   onToggle: (value: TValue) => void;
   className?: string;
@@ -117,8 +153,10 @@ function SingleChoiceGrid<TValue extends string>({
             label={option.label}
             onClick={() => onSelect(option.value)}
             className={cn(
-              option.accentClassName && isSelected ? option.accentClassName : '',
-              itemClassName,
+              option.accentClassName && isSelected
+                ? option.accentClassName
+                : '',
+              itemClassName
             )}
           />
         );
@@ -146,8 +184,10 @@ function MultiChoiceGrid<TValue extends string>({
             label={option.label}
             onClick={() => onToggle(option.value)}
             className={cn(
-              option.accentClassName && isSelected ? option.accentClassName : '',
-              itemClassName,
+              option.accentClassName && isSelected
+                ? option.accentClassName
+                : '',
+              itemClassName
             )}
           />
         );
@@ -159,7 +199,7 @@ function MultiChoiceGrid<TValue extends string>({
 function updateField<K extends keyof OnboardingFormState>(
   previousState: OnboardingFormState,
   field: K,
-  value: OnboardingFormState[K],
+  value: OnboardingFormState[K]
 ): OnboardingFormState {
   return {
     ...previousState,
@@ -169,7 +209,7 @@ function updateField<K extends keyof OnboardingFormState>(
 
 function toggleSelection<TValue extends string>(
   selectedValues: TValue[],
-  value: TValue,
+  value: TValue
 ): TValue[] {
   return selectedValues.includes(value)
     ? selectedValues.filter((currentValue) => currentValue !== value)
@@ -220,14 +260,12 @@ function isStepComplete(
   }
 }
 
-export function OnboardingFormStep({
-  onComplete,
-}: OnboardingFormStepProps) {
+export function OnboardingFormStep({ onComplete }: OnboardingFormStepProps) {
   const accessToken = useAuthStore((state) => state.accessToken);
   const setAuthenticated = useAuthStore((state) => state.setAuthenticated);
   const [currentStepIndex, setCurrentStepIndex] = useState(0);
-  const [formState, setFormState] = useState(() => ({
-    ...DEFAULT_ONBOARDING_FORM_STATE,
+  const [formState, setFormState] = useState<OnboardingFormState>(() => ({
+    ...DEFAULT_FORM_STATE,
     birthdate: '2000-01-01',
   }));
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -272,7 +310,7 @@ export function OnboardingFormStep({
 
   function setField<K extends keyof OnboardingFormState>(
     field: K,
-    value: OnboardingFormState[K],
+    value: OnboardingFormState[K]
   ) {
     setFormState((previousState) => updateField(previousState, field, value));
   }
@@ -430,9 +468,7 @@ export function OnboardingFormStep({
                 label="남성"
                 onClick={() => setField('gender', 'MALE')}
                 className={
-                  formState.gender === 'MALE'
-                    ? 'text-[#3388FF]'
-                    : undefined
+                  formState.gender === 'MALE' ? 'text-[#3388FF]' : undefined
                 }
               />
               <OptionButton
@@ -614,10 +650,7 @@ export function OnboardingFormStep({
               options={ONBOARDING_PURPOSE_OPTIONS}
               selectedValues={formState.purposes}
               onToggle={(value) =>
-                setField(
-                  'purposes',
-                  toggleSelection(formState.purposes, value),
-                )
+                setField('purposes', toggleSelection(formState.purposes, value))
               }
               className="grid-cols-2"
               itemClassName="min-h-20"
@@ -639,7 +672,7 @@ export function OnboardingFormStep({
               onToggle={(value) =>
                 setField(
                   'timeSlots',
-                  toggleSelection(formState.timeSlots, value),
+                  toggleSelection(formState.timeSlots, value)
                 )
               }
               className="grid-cols-2"
@@ -714,7 +747,7 @@ export function OnboardingFormStep({
               onToggle={(value) =>
                 setField(
                   'courseTypes',
-                  toggleSelection(formState.courseTypes, value),
+                  toggleSelection(formState.courseTypes, value)
                 )
               }
               className="grid-cols-3"
@@ -760,7 +793,7 @@ export function OnboardingFormStep({
           disabled={isFirstStep || isSubmitting}
           className={cn(
             'flex flex-1 items-center justify-center gap-1 rounded-xl border border-gray-200 bg-white/80 py-2.5 text-base font-bold text-gray-700 shadow-sm transition-colors',
-            (isFirstStep || isSubmitting) && 'pointer-events-none opacity-45',
+            (isFirstStep || isSubmitting) && 'pointer-events-none opacity-45'
           )}
         >
           <ChevronLeft size={18} />
@@ -773,10 +806,14 @@ export function OnboardingFormStep({
           className={cn(
             'flex flex-1 items-center justify-center gap-1 rounded-xl bg-[#3388FF] py-2.5 text-base font-bold text-white shadow-sm transition-colors hover:bg-blue-600',
             (!isCurrentStepValid || isSubmitting) &&
-              'pointer-events-none opacity-45',
+              'pointer-events-none opacity-45'
           )}
         >
-          {isSubmitting ? '저장 중...' : isLastStep ? '저장하고 시작하기' : '다음'}
+          {isSubmitting
+            ? '저장 중...'
+            : isLastStep
+              ? '저장하고 시작하기'
+              : '다음'}
           {!isLastStep && !isSubmitting ? <ChevronRight size={18} /> : null}
         </button>
       </div>

@@ -22,11 +22,17 @@ interface StatItemProps {
 function StatItem({ label, value, sub }: StatItemProps) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="body-r tracking-wide text-gray-600">{label}</span>
-      <span className="h2-b tabular-nums text-white [text-shadow:0_2px_8px_rgba(0,0,0,0.9)]">
+      <span className="body-r tracking-wide text-[hsl(var(--secondary-5))]">
+        {label}
+      </span>
+      <span className="h2-b tabular-nums text-[hsl(var(--text-inverse))] [text-shadow:0_2px_8px_hsl(var(--black)/0.35)]">
         {value}
       </span>
-      {sub && <span className="body-r font-semibold text-gray-600">{sub}</span>}
+      {sub && (
+        <span className="body-r font-semibold text-[hsl(var(--secondary-5))]">
+          {sub}
+        </span>
+      )}
     </div>
   );
 }
@@ -127,20 +133,20 @@ export function FreeRunningScreen() {
 
       {/* 하단 그라데이션 + 컨트롤 */}
       <div className="absolute bottom-0 left-0 right-0 z-sticky">
-        <div className="h-52 bg-linear-to-b from-transparent to-black/90" />
+        <div className="h-52 bg-linear-to-b from-transparent to-[hsl(var(--surface-inverse))]" />
 
-        <div className="flex flex-col items-center gap-5 bg-black/90 pb-14 pt-2">
+        <div className="flex flex-col items-center gap-5 bg-[hsl(var(--surface-inverse))] pb-14 pt-2">
           {/* 타이머 */}
           <div className="flex flex-col items-center gap-2">
             <span
               className={cn(
-                'font-bold leading-none tabular-nums text-white',
+                'font-bold leading-none tabular-nums text-[hsl(var(--text-inverse))]',
                 time.length > 5 ? 'text-7xl' : 'text-8xl'
               )}
             >
               {time}
             </span>
-            <span className="caption-r tracking-[0.2em] text-white/50 uppercase">
+            <span className="caption-r tracking-[0.2em] text-[hsl(var(--secondary-5))] uppercase">
               Total Time
             </span>
           </div>
@@ -151,7 +157,7 @@ export function FreeRunningScreen() {
             <button
               onClick={togglePause}
               disabled={isEnding}
-              className="z-10 flex h-20 w-20 items-center justify-center rounded-full bg-primary text-white shadow-[0_0_30px_hsl(var(--primary)/50%)] disabled:opacity-50"
+              className="z-10 flex h-20 w-20 items-center justify-center rounded-full bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-soft-lg)] disabled:opacity-50"
               aria-label={isPaused ? '러닝 재개' : '일시정지'}
             >
               {isPaused ? (
@@ -166,7 +172,7 @@ export function FreeRunningScreen() {
               onClick={handleStopRunning}
               disabled={isEnding}
               className={cn(
-                'absolute flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white transition-all duration-300',
+                'absolute flex h-14 w-14 items-center justify-center rounded-full border border-[hsl(var(--secondary-4))] bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-md)] transition-all duration-300',
                 isPaused
                   ? 'translate-x-20 opacity-100'
                   : 'pointer-events-none translate-x-[50px] opacity-0'

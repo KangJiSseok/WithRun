@@ -23,16 +23,22 @@ interface StatItemProps {
 function StatItem({ label, value, valueClassName, sub }: StatItemProps) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="body-r tracking-wide text-gray-600">{label}</span>
+      <span className="body-r tracking-wide text-[hsl(var(--secondary-5))]">
+        {label}
+      </span>
       <span
         className={cn(
-          'h2-b tabular-nums [text-shadow:0_2px_8px_rgba(0,0,0,0.9)]',
-          valueClassName ?? 'text-white'
+          'h2-b tabular-nums [text-shadow:0_2px_8px_hsl(var(--black)/0.35)]',
+          valueClassName ?? 'text-[hsl(var(--text-inverse))]'
         )}
       >
         {value}
       </span>
-      {sub && <span className="body-r font-semibold text-gray-600">{sub}</span>}
+      {sub && (
+        <span className="body-r font-semibold text-[hsl(var(--secondary-5))]">
+          {sub}
+        </span>
+      )}
     </div>
   );
 }
@@ -125,15 +131,15 @@ export function GhostRunSessionScreen({ courseDetail }: GhostRunSessionScreenPro
         <StatItem
           label="칼로리"
           value={String(calories)}
-          valueClassName="text-primary"
-          sub={<span className="text-primary">🔥</span>}
+          valueClassName="text-[hsl(var(--primary-1))]"
+          sub={<span className="text-[hsl(var(--primary-1))]">🔥</span>}
         />
       </div>
 
       {/* 코스 이탈 경고 배너 */}
       {isDeviating && !isPaused && (
         <div className="absolute top-28 left-0 right-0 z-sticky flex justify-center">
-          <div className="rounded-full bg-destructive px-4 py-2 text-white body-b">
+          <div className="rounded-full bg-[hsl(var(--error))] px-4 py-2 text-[hsl(var(--text-inverse))] body-b">
             코스 이탈 중 · {deviationSec}s / 10s
           </div>
         </div>
@@ -141,20 +147,20 @@ export function GhostRunSessionScreen({ courseDetail }: GhostRunSessionScreenPro
 
       {/* 하단 그라데이션 + 컨트롤 */}
       <div className="absolute bottom-0 left-0 right-0 z-sticky">
-        <div className="h-52 bg-linear-to-b from-transparent to-black/90" />
+        <div className="h-52 bg-linear-to-b from-transparent to-[hsl(var(--surface-inverse))]" />
 
-        <div className="flex flex-col items-center gap-5 bg-black/90 pb-14 pt-2">
+        <div className="flex flex-col items-center gap-5 bg-[hsl(var(--surface-inverse))] pb-14 pt-2">
           {/* 타이머 */}
           <div className="flex flex-col items-center gap-2">
             <span
               className={cn(
-                'font-bold leading-none tabular-nums text-white',
+                'font-bold leading-none tabular-nums text-[hsl(var(--text-inverse))]',
                 time.length > 5 ? 'text-7xl' : 'text-8xl'
               )}
             >
               {time}
             </span>
-            <span className="caption-r tracking-[0.2em] text-white/50 uppercase">
+            <span className="caption-r tracking-[0.2em] text-[hsl(var(--secondary-5))] uppercase">
               Total Time
             </span>
           </div>
@@ -162,7 +168,7 @@ export function GhostRunSessionScreen({ courseDetail }: GhostRunSessionScreenPro
           {/* 버튼 영역 */}
           <div className="flex flex-col items-center gap-2">
             {isPaused && !isWithinPauseAnchor && (
-              <span className="caption-r text-center text-white/60">
+              <span className="caption-r text-center text-[hsl(var(--secondary-5))]">
                 안정권으로 복귀 후 재개 가능
               </span>
             )}
@@ -172,7 +178,7 @@ export function GhostRunSessionScreen({ courseDetail }: GhostRunSessionScreenPro
                 onClick={togglePause}
                 disabled={isPaused && !isWithinPauseAnchor}
                 className={cn(
-                  'z-10 flex h-20 w-20 items-center justify-center rounded-full bg-primary text-white shadow-[0_0_30px_hsl(var(--primary)/50%)]',
+                  'z-10 flex h-20 w-20 items-center justify-center rounded-full bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-soft-lg)]',
                   isPaused && !isWithinPauseAnchor && 'opacity-40 cursor-not-allowed'
                 )}
                 aria-label={isPaused ? '러닝 재개' : '일시정지'}
@@ -189,7 +195,7 @@ export function GhostRunSessionScreen({ courseDetail }: GhostRunSessionScreenPro
                 onClick={handleStopRunning}
                 disabled={isEnding}
                 className={cn(
-                  'absolute flex h-14 w-14 items-center justify-center rounded-full bg-white/20 text-white transition-all duration-300',
+                  'absolute flex h-14 w-14 items-center justify-center rounded-full border border-[hsl(var(--secondary-4))] bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-md)] transition-all duration-300',
                   isPaused
                     ? 'translate-x-20 opacity-100'
                     : 'pointer-events-none translate-x-12.5 opacity-0'

@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
-import { Bookmark, HeartPulse, Route, Settings2 } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
+import { HeartPulse, Route, Settings2 } from 'lucide-react';
 import { toast } from 'sonner';
 
 import type {
@@ -36,7 +35,10 @@ type RunningPreferenceFormState = {
 
 type PreferenceChipGroupProps<TValue extends string> = {
   label: string;
-  options: { label: string; value: TValue }[];
+  options: ReadonlyArray<{
+    label: string;
+    value: TValue;
+  }>;
   selectedValues: TValue[];
   onToggle: (value: TValue) => void;
   className?: string;
@@ -44,7 +46,10 @@ type PreferenceChipGroupProps<TValue extends string> = {
 
 type SingleSelectChipGroupProps<TValue extends string> = {
   label: string;
-  options: { label: string; value: TValue }[];
+  options: ReadonlyArray<{
+    label: string;
+    value: TValue;
+  }>;
   selectedValue: TValue | null;
   onSelect: (value: TValue) => void;
 };
@@ -66,7 +71,7 @@ function createDefaultPreferenceState(): RunningPreferenceFormState {
 }
 
 function createPreferenceState(
-  response: UserRunningPreferenceResponse,
+  response: UserRunningPreferenceResponse
 ): RunningPreferenceFormState {
   return {
     purposes: response.purposes,
@@ -79,7 +84,7 @@ function createPreferenceState(
 
 function toggleSelection<TValue extends string>(
   selectedValues: TValue[],
-  value: TValue,
+  value: TValue
 ): TValue[] {
   return selectedValues.includes(value)
     ? selectedValues.filter((currentValue) => currentValue !== value)
@@ -118,7 +123,7 @@ function PreferenceChipGroup<TValue extends string>({
                 'rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
                 isSelected
                   ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
-                  : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]',
+                  : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]'
               )}
             >
               {option.label}
@@ -154,7 +159,7 @@ function SingleSelectChipGroup<TValue extends string>({
                 'rounded-3xl border px-4 py-4 text-base font-semibold transition-colors',
                 isSelected
                   ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
-                  : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]',
+                  : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]'
               )}
             >
               {option.label}
@@ -185,13 +190,12 @@ function SummaryCard({ title, value, unit }: SummaryCardProps) {
 }
 
 export function HomeScreen() {
-  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const { label: healthConnectionLabel, isConnected } =
     useHealthConnectionStatus();
   const summaryStats = useMemo(() => getHomeSummaryStats(), []);
   const [preferences, setPreferences] = useState<RunningPreferenceFormState>(
-    createDefaultPreferenceState(),
+    createDefaultPreferenceState()
   );
   const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
@@ -220,7 +224,7 @@ export function HomeScreen() {
         unit: '시간',
       },
     ],
-    [summaryStats],
+    [summaryStats]
   );
 
   const canSavePreferences =
@@ -291,24 +295,6 @@ export function HomeScreen() {
     <div className="-m-5 min-h-[calc(100dvh-5rem)] overflow-hidden bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-primary))]">
       <div className="relative min-h-full px-5 pb-10 pt-6">
         <div className="relative mx-auto flex max-w-[430px] flex-col gap-6">
-          <header className="flex items-center justify-between">
-            <button
-              type="button"
-              onClick={() => navigate('/profile')}
-              className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-sm"
-              aria-label="설정으로 이동"
-            >
-              <Settings2 size={20} />
-            </button>
-            <button
-              type="button"
-              className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-sm"
-              disabled
-            >
-              <Bookmark size={20} />
-            </button>
-          </header>
-
           <section className="space-y-4">
             <div className="inline-flex items-center gap-2 rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-4 py-2 text-xs font-bold tracking-[0.08em] text-[hsl(var(--text-secondary))]">
               <HeartPulse
@@ -343,7 +329,7 @@ export function HomeScreen() {
 
           <section className="rounded-[2rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-5 shadow-[var(--shadow-md)]">
             <div className="mb-5 flex items-center gap-2 text-xl font-black text-[hsl(var(--text-primary))]">
-              <Settings2 size={18} className="text-[#FF5D5D]" />
+              <Settings2 size={18} className="text-[hsl(var(--primary-1))]" />
               러닝 선호도 설정
             </div>
 
@@ -382,7 +368,7 @@ export function HomeScreen() {
                     <h3 className="text-sm font-semibold text-[hsl(var(--text-secondary))]">
                       선호 러닝 거리
                     </h3>
-                    <p className="text-3xl font-black text-[#FF5D5D]">
+                    <p className="text-3xl font-black text-[hsl(var(--primary-1))]">
                       {preferences.preferredDistanceKm.toFixed(1)}
                       <span className="ml-1 text-lg text-[hsl(var(--text-secondary))]">
                         km
@@ -401,7 +387,7 @@ export function HomeScreen() {
                         preferredDistanceKm: Number(event.target.value),
                       }))
                     }
-                    className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[hsl(var(--border-default))] accent-[#FF5D5D]"
+                    className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[hsl(var(--border-default))] accent-[hsl(var(--primary-1))]"
                   />
                   <div className="flex justify-between text-xs font-semibold text-[hsl(var(--text-secondary))]">
                     <span>1 km</span>
@@ -416,7 +402,10 @@ export function HomeScreen() {
                   onToggle={(value) =>
                     setPreferences((currentState) => ({
                       ...currentState,
-                      courseTypes: toggleSelection(currentState.courseTypes, value),
+                      courseTypes: toggleSelection(
+                        currentState.courseTypes,
+                        value
+                      ),
                     }))
                   }
                   className="gap-2.5"
@@ -439,10 +428,10 @@ export function HomeScreen() {
                   onClick={() => void handleSavePreferences()}
                   disabled={!canSavePreferences || isSavingPreferences}
                   className={cn(
-                    'flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-primary px-4 py-4 text-lg font-black text-primary-foreground transition-colors',
+                    'flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-[hsl(var(--primary-1))] px-4 py-4 text-lg font-black text-[hsl(var(--text-inverse))] transition-colors',
                     canSavePreferences && !isSavingPreferences
-                      ? 'hover:bg-primary/90'
-                      : 'pointer-events-none opacity-45',
+                      ? 'hover:bg-[hsl(var(--primary-1-hover))]'
+                      : 'pointer-events-none opacity-45'
                   )}
                 >
                   <Route size={18} />

@@ -178,7 +178,7 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
                 selectedTarget?.runningSessionId ===
                 course.myRecord.runningSessionId
                   ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1)/0.08)]'
-                  : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-raised))]'
+                  : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))]'
               }`}
             >
               <div className="flex flex-col gap-0.5">

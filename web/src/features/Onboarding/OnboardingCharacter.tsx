@@ -1,14 +1,12 @@
 import { motion } from 'motion/react';
 
-import type { OnboardingCharacterState } from '@/types/Onboarding';
-
 type OnboardingCharacterProps = {
   state: OnboardingCharacterState;
 };
 
-export function OnboardingCharacter({
-  state,
-}: OnboardingCharacterProps) {
+type OnboardingCharacterState = 'intro' | 'login' | 'form';
+
+export function OnboardingCharacter({ state }: OnboardingCharacterProps) {
   // 지금은 임시 JSX 캐릭터지만, 나중에 내부만 Rive로 교체할 수 있도록
   // 온보딩 레이아웃과 상태 흐름에서 분리된 래퍼 컴포넌트로 두었다.
   const containerVariants = {
@@ -24,27 +22,63 @@ export function OnboardingCharacter({
   };
 
   const frontArmVariants = {
-    intro: { rotate: [-30, 30, -30], transition: { repeat: Infinity, duration: 0.42 } },
-    login: { rotate: [0, 6, 0], transition: { repeat: Infinity, duration: 1.4 } },
-    form: { rotate: [-18, 24, -18], transition: { repeat: Infinity, duration: 0.55 } },
+    intro: {
+      rotate: [-30, 30, -30],
+      transition: { repeat: Infinity, duration: 0.42 },
+    },
+    login: {
+      rotate: [0, 6, 0],
+      transition: { repeat: Infinity, duration: 1.4 },
+    },
+    form: {
+      rotate: [-18, 24, -18],
+      transition: { repeat: Infinity, duration: 0.55 },
+    },
   };
 
   const backArmVariants = {
-    intro: { rotate: [30, -30, 30], transition: { repeat: Infinity, duration: 0.42 } },
-    login: { rotate: [0, -6, 0], transition: { repeat: Infinity, duration: 1.4 } },
-    form: { rotate: [18, -24, 18], transition: { repeat: Infinity, duration: 0.55 } },
+    intro: {
+      rotate: [30, -30, 30],
+      transition: { repeat: Infinity, duration: 0.42 },
+    },
+    login: {
+      rotate: [0, -6, 0],
+      transition: { repeat: Infinity, duration: 1.4 },
+    },
+    form: {
+      rotate: [18, -24, 18],
+      transition: { repeat: Infinity, duration: 0.55 },
+    },
   };
 
   const leftLegVariants = {
-    intro: { rotate: [36, -36, 36], transition: { repeat: Infinity, duration: 0.42 } },
-    login: { rotate: [0, 5, 0], transition: { repeat: Infinity, duration: 1.2 } },
-    form: { rotate: [20, -20, 20], transition: { repeat: Infinity, duration: 0.55 } },
+    intro: {
+      rotate: [36, -36, 36],
+      transition: { repeat: Infinity, duration: 0.42 },
+    },
+    login: {
+      rotate: [0, 5, 0],
+      transition: { repeat: Infinity, duration: 1.2 },
+    },
+    form: {
+      rotate: [20, -20, 20],
+      transition: { repeat: Infinity, duration: 0.55 },
+    },
   };
 
   const rightLegVariants = {
-    intro: { rotate: [-36, 36, -36], transition: { repeat: Infinity, duration: 0.42 } },
-    login: { rotate: [0, -5, 0], transition: { repeat: Infinity, duration: 1.2 } },
-    form: { rotate: [-20, 20, -20], transition: { repeat: Infinity, duration: 0.55 } },
+    intro: {
+      rotate: [-36, 36, -36],
+      transition: { repeat: Infinity, duration: 0.42 },
+    },
+    login: {
+      rotate: [0, -5, 0],
+      transition: { repeat: Infinity, duration: 1.2 },
+    },
+    form: {
+      rotate: [-20, 20, -20],
+      transition: { repeat: Infinity, duration: 0.55 },
+    },
   };
 
   return (
