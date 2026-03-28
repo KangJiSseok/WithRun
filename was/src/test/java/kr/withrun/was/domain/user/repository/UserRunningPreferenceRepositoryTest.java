@@ -47,7 +47,7 @@ class UserRunningPreferenceRepositoryTest {
     @Test
     @DisplayName("기존 러닝 선호도를 다시 저장할 때 기존 다중 선택 항목을 교체할 수 있다")
     void updatesExistingRunningPreferenceWithReplacedSelections() {
-        User user = persistUser("runner-preference");
+        User user = persistUser("runner-pref");
 
         UserRunningPreference preference = UserRunningPreference.create(
                 user,

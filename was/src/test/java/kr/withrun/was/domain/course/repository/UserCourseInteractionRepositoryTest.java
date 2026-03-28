@@ -66,8 +66,8 @@ class UserCourseInteractionRepositoryTest {
     void excludesPrivateCoursesFromCollaborativeScoreRows() {
         User currentUser = persistUser("current-user");
         User neighborByPublicSeed = persistUser("neighbor-public");
-        User neighborByPrivateSeed = persistUser("neighbor-private-seed");
-        User neighborForPrivateCandidate = persistUser("neighbor-private-candidate");
+        User neighborByPrivateSeed = persistUser("nbr-private-seed");
+        User neighborForPrivateCandidate = persistUser("nbr-private-cand");
 
         Course publicSeed = persistCourse("public-seed", CourseStatus.OFFICIAL);
         Course privateSeed = persistCourse("private-seed", CourseStatus.PRIVATE);
