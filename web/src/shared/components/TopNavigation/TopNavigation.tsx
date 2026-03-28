@@ -5,7 +5,7 @@ export default function TopNavigation() {
   const navigate = useNavigate();
 
   return (
-    <header className="shrink-0 border-b border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] px-5 py-6">
+    <header className="shrink-0 border-b border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] px-5 py-3">
       <div className="flex items-center justify-between">
         <button
           type="button"
