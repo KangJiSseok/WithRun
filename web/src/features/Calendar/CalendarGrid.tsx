@@ -106,7 +106,8 @@ export function CalendarGrid({
               <span
                 className={cn(
                   'w-8 h-8 flex items-center justify-center rounded-full caption-m transition-colors',
-                  isSelected && 'bg-[hsl(var(--primary-1))] text-white',
+                  isSelected &&
+                    'bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]',
                   !isSelected && isToday && 'border border-[hsl(var(--primary-1))] text-[hsl(var(--primary-1))]',
                   !isSelected && !isToday && !isFuture && 'text-[hsl(var(--text-primary))]',
                   isFuture && 'text-[hsl(var(--text-disabled))]',

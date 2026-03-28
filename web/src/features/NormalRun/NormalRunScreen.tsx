@@ -74,7 +74,7 @@ export function NormalRunScreen() {
     if (!isLoading && courses.length > 0) {
       expand();
     }
-  }, [isLoading, courses.length]);
+  }, [isLoading, courses.length, expand]);
 
   useEffect(() => {
     document.body.style.overflow = 'hidden';
@@ -107,7 +107,7 @@ export function NormalRunScreen() {
           variant="outline"
           size="icon"
           onClick={() => navigate('/home')}
-          className="h-10 w-10 shrink-0 rounded-full border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-lg"
+          className="h-10 w-10 shrink-0 rounded-full border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-[var(--shadow-md)]"
         >
           <Home size={18} />
         </Button>
@@ -122,7 +122,7 @@ export function NormalRunScreen() {
       <div className="absolute right-4 top-4 z-20">
         <button
           onClick={() => setShowFilterDrawer(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-lg"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-[var(--shadow-md)]"
         >
           <Filter size={18} />
         </button>
@@ -154,7 +154,7 @@ export function NormalRunScreen() {
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        className="absolute bottom-0 left-0 right-0 z-10 flex max-h-[60dvh] flex-col rounded-t-[var(--radius-2xl)] bg-[hsl(var(--surface-default))] shadow-[0_-4px_20px_rgba(0,0,0,0.12)]"
+        className="absolute bottom-0 left-0 right-0 z-10 flex max-h-[60dvh] flex-col rounded-t-[var(--radius-2xl)] bg-[hsl(var(--surface-default))] shadow-[var(--shadow-soft-xl)]"
       >
         {/* 시트 헤더 (드래그 타겟 + 탭 버튼) */}
         <div

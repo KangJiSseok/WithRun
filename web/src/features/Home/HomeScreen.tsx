@@ -35,7 +35,10 @@ type RunningPreferenceFormState = {
 
 type PreferenceChipGroupProps<TValue extends string> = {
   label: string;
-  options: { label: string; value: TValue }[];
+  options: ReadonlyArray<{
+    label: string;
+    value: TValue;
+  }>;
   selectedValues: TValue[];
   onToggle: (value: TValue) => void;
   className?: string;
@@ -43,7 +46,10 @@ type PreferenceChipGroupProps<TValue extends string> = {
 
 type SingleSelectChipGroupProps<TValue extends string> = {
   label: string;
-  options: { label: string; value: TValue }[];
+  options: ReadonlyArray<{
+    label: string;
+    value: TValue;
+  }>;
   selectedValue: TValue | null;
   onSelect: (value: TValue) => void;
 };
@@ -323,7 +329,7 @@ export function HomeScreen() {
 
           <section className="rounded-[2rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-5 shadow-[var(--shadow-md)]">
             <div className="mb-5 flex items-center gap-2 text-xl font-black text-[hsl(var(--text-primary))]">
-              <Settings2 size={18} className="text-[#FF5D5D]" />
+              <Settings2 size={18} className="text-[hsl(var(--primary-1))]" />
               러닝 선호도 설정
             </div>
 
@@ -362,7 +368,7 @@ export function HomeScreen() {
                     <h3 className="text-sm font-semibold text-[hsl(var(--text-secondary))]">
                       선호 러닝 거리
                     </h3>
-                    <p className="text-3xl font-black text-[#FF5D5D]">
+                    <p className="text-3xl font-black text-[hsl(var(--primary-1))]">
                       {preferences.preferredDistanceKm.toFixed(1)}
                       <span className="ml-1 text-lg text-[hsl(var(--text-secondary))]">
                         km
@@ -381,7 +387,7 @@ export function HomeScreen() {
                         preferredDistanceKm: Number(event.target.value),
                       }))
                     }
-                    className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[hsl(var(--border-default))] accent-[#FF5D5D]"
+                    className="h-2 w-full cursor-pointer appearance-none rounded-full bg-[hsl(var(--border-default))] accent-[hsl(var(--primary-1))]"
                   />
                   <div className="flex justify-between text-xs font-semibold text-[hsl(var(--text-secondary))]">
                     <span>1 km</span>
@@ -422,9 +428,9 @@ export function HomeScreen() {
                   onClick={() => void handleSavePreferences()}
                   disabled={!canSavePreferences || isSavingPreferences}
                   className={cn(
-                    'flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-primary px-4 py-4 text-lg font-black text-primary-foreground transition-colors',
+                    'flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-[hsl(var(--primary-1))] px-4 py-4 text-lg font-black text-[hsl(var(--text-inverse))] transition-colors',
                     canSavePreferences && !isSavingPreferences
-                      ? 'hover:bg-primary/90'
+                      ? 'hover:bg-[hsl(var(--primary-1-hover))]'
                       : 'pointer-events-none opacity-45'
                   )}
                 >
