@@ -85,9 +85,10 @@ export function CourseShareModal({
       onRegistered(res.data.courseId);
       toast.success('코스가 등록되었습니다!');
       onClose();
+    } catch {
+      toast.error('코스 등록에 실패했습니다.');
     } finally {
       setIsSubmitting(false);
-      toast.error('코스 등록에 실패했습니다.');
     }
   }
 
