@@ -35,7 +35,7 @@ public class CourseLikeController {
 
     @Operation(
             summary = "코스에 좋아요를 누른다",
-            description = "특정 사용자가 코스에 좋아요를 추가한다. 이미 좋아요가 있어도 최종 상태를 true 로 반환한다."
+            description = "특정 사용자가 코스에 좋아요를 추가한다. 이미 좋아요가 있어도 최종 상태를 true 로 반환한다. PRIVATE 코스는 소유자만 요청할 수 있으며 비소유자에게는 404를 반환한다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -45,7 +45,7 @@ public class CourseLikeController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "코스 또는 사용자를 찾을 수 없음",
+                    description = "코스 또는 사용자를 찾을 수 없거나 접근 권한이 없음",
                     content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
             )
     })
@@ -61,7 +61,7 @@ public class CourseLikeController {
 
     @Operation(
             summary = "코스 좋아요를 취소한다",
-            description = "특정 사용자의 코스 좋아요를 취소한다. 좋아요가 없어도 최종 상태를 false 로 반환한다."
+            description = "특정 사용자의 코스 좋아요를 취소한다. 좋아요가 없어도 최종 상태를 false 로 반환한다. PRIVATE 코스는 소유자만 요청할 수 있으며 비소유자에게는 404를 반환한다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -71,7 +71,7 @@ public class CourseLikeController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "코스 또는 사용자를 찾을 수 없음",
+                    description = "코스 또는 사용자를 찾을 수 없거나 접근 권한이 없음",
                     content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
             )
     })

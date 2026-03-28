@@ -45,7 +45,7 @@ public class CourseBookmarkController {
 
     @Operation(
             summary = "코스를 북마크한다",
-            description = "특정 사용자가 코스를 북마크한다. 이미 북마크된 경우에도 현재 북마크 상태를 그대로 반환한다."
+            description = "특정 사용자가 코스를 북마크한다. 이미 북마크된 경우에도 현재 북마크 상태를 그대로 반환한다. PRIVATE 코스는 소유자만 요청할 수 있으며 비소유자에게는 404를 반환한다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -55,7 +55,7 @@ public class CourseBookmarkController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "코스 또는 사용자를 찾을 수 없음",
+                    description = "코스 또는 사용자를 찾을 수 없거나 접근 권한이 없음",
                     content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
             )
     })
@@ -71,7 +71,7 @@ public class CourseBookmarkController {
 
     @Operation(
             summary = "코스 북마크를 해제한다",
-            description = "특정 사용자의 코스 북마크를 해제한다. 북마크가 없어도 최종 상태를 false 로 반환한다."
+            description = "특정 사용자의 코스 북마크를 해제한다. 북마크가 없어도 최종 상태를 false 로 반환한다. PRIVATE 코스는 소유자만 요청할 수 있으며 비소유자에게는 404를 반환한다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
@@ -81,7 +81,7 @@ public class CourseBookmarkController {
             ),
             @io.swagger.v3.oas.annotations.responses.ApiResponse(
                     responseCode = "404",
-                    description = "코스 또는 사용자를 찾을 수 없음",
+                    description = "코스 또는 사용자를 찾을 수 없거나 접근 권한이 없음",
                     content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
             )
     })
@@ -97,7 +97,7 @@ public class CourseBookmarkController {
 
     @Operation(
             summary = "북마크한 코스 OFFICIAL, COMMUNITY 인 목록을 조회한다",
-            description = "특정 사용자가 북마크한 OFFICIAL, COMMUNITY 코스를 최신 북마크 순으로 조회한다. 각 항목에는 누적 좋아요 수와 해당 userId 기준 좋아요 여부가 포함된다. cursor 는 이전 응답의 nextCursor 값을 그대로 전달하는 불투명 토큰이다."
+            description = "특정 사용자가 북마크한 OFFICIAL, COMMUNITY 코스를 최신 북마크 순으로 조회한다. PRIVATE 코스는 소유자여도 이 feed 에 포함되지 않는다. 각 항목에는 누적 좋아요 수와 해당 userId 기준 좋아요 여부가 포함된다. cursor 는 이전 응답의 nextCursor 값을 그대로 전달하는 불투명 토큰이다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

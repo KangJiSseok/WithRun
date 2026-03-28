@@ -22,10 +22,11 @@ public class CourseLikeService {
     private final CourseLikeRepository courseLikeRepository;
     private final UserRepository userRepository;
     private final CourseSignalService courseSignalService;
+    private final CourseAccessPolicy courseAccessPolicy;
 
     @Transactional
     public CourseLikeStatusResponse likeCourse(Long courseId, Long userId) {
-        Course course = getCourse(courseId);
+        Course course = getCourse(courseId, userId);
         User user = getUser(userId);
 
         if (courseLikeRepository.findByCourseIdAndUserId(courseId, userId).isEmpty()) {
@@ -40,7 +41,7 @@ public class CourseLikeService {
 
     @Transactional
     public CourseLikeStatusResponse unlikeCourse(Long courseId, Long userId) {
-        Course course = getCourse(courseId);
+        Course course = getCourse(courseId, userId);
         getUser(userId);
 
         courseLikeRepository.findByCourseIdAndUserId(courseId, userId)
@@ -53,9 +54,8 @@ public class CourseLikeService {
         return new CourseLikeStatusResponse(courseId, false, likeCount, course.getStatus());
     }
 
-    private Course getCourse(Long courseId) {
-        return courseRepository.findNotDeletedCourse(courseId)
-                .orElseThrow(() -> new CustomException(ResponseCode.COURSE_NOT_FOUND));
+    private Course getCourse(Long courseId, Long userId) {
+        return courseAccessPolicy.getAccessibleCourse(courseRepository, courseId, userId);
     }
 
     private User getUser(Long userId) {

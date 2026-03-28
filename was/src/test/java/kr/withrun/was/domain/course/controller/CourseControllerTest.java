@@ -392,6 +392,7 @@ class CourseControllerTest {
     @ParameterizedTest(name = "courseId={0}")
     @ValueSource(longs = {1L, 25L})
     void wrapsCourseDetailResponseInSuccessEnvelope(long courseId) throws Exception {
+        long userId = 7L;
         CourseDetailResponse response = new CourseDetailResponse(
                 courseId,
                 "Han River",
@@ -418,9 +419,10 @@ class CourseControllerTest {
                 false,
                 4.5
         );
-        given(courseService.findCourseDetail(courseId)).willReturn(response);
+        given(courseService.findCourseDetail(courseId, userId)).willReturn(response);
 
-        mockMvc.perform(get("/api/courses/{courseId}", courseId))
+        mockMvc.perform(get("/api/courses/{courseId}", courseId)
+                        .with(authenticated(userId)))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -440,22 +442,58 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.isBookmarked").value(false))
                 .andExpect(jsonPath("$.data.averageRating").value(4.5));
 
-        then(courseService).should().findCourseDetail(courseId);
+        then(courseService).should().findCourseDetail(courseId, userId);
     }
 
     @DisplayName("없는 코스 상세 조회는 코스 없음 응답을 반환한다")
     @ParameterizedTest(name = "courseId={0}")
     @ValueSource(longs = {999L})
     void returnsCourseNotFoundWhenCourseDetailIsMissing(long courseId) throws Exception {
-        given(courseService.findCourseDetail(courseId))
+        long userId = 7L;
+        given(courseService.findCourseDetail(courseId, userId))
                 .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
 
-        mockMvc.perform(get("/api/courses/{courseId}", courseId))
+        mockMvc.perform(get("/api/courses/{courseId}", courseId)
+                        .with(authenticated(userId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()));
 
-        then(courseService).should().findCourseDetail(courseId);
+        then(courseService).should().findCourseDetail(courseId, userId);
+    }
+
+    @DisplayName("코스 상세 조회는 principal user id 를 service 로 전달한다")
+    @Test
+    void forwardsPrincipalToCourseDetailService() throws Exception {
+        long courseId = 77L;
+        long userId = 88L;
+        CourseDetailResponse response = new CourseDetailResponse(
+                courseId,
+                "Private Course",
+                CourseStatus.PRIVATE,
+                RouteType.LOOP,
+                null,
+                5000,
+                100,
+                null,
+                37.57,
+                126.97,
+                37.58,
+                126.98,
+                new Coordinates(List.of()),
+                List.of(),
+                0L,
+                false,
+                false,
+                null
+        );
+        given(courseService.findCourseDetail(courseId, userId)).willReturn(response);
+
+        mockMvc.perform(get("/api/courses/{courseId}", courseId)
+                        .with(authenticated(userId)))
+                .andExpect(status().isOk());
+
+        then(courseService).should().findCourseDetail(courseId, userId);
     }
 
     @DisplayName("코스 고스트 상세 조회 응답을 성공 응답 포맷으로 감싼다")
@@ -510,6 +548,41 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.myRecord.runningSessionId").value(2002L))
                 .andExpect(jsonPath("$.data.myRecord.point").value(980))
                 .andExpect(jsonPath("$.data.myRecord.rank").value(14));
+
+        then(courseService).should().findCourseGhostDetail(courseId, userId);
+    }
+
+    @DisplayName("코스 고스트 상세 조회는 principal user id 를 service 로 전달한다")
+    @Test
+    void forwardsPrincipalToCourseGhostDetailService() throws Exception {
+        long courseId = 13L;
+        long userId = 9L;
+        CourseGhostDetailResponse response = new CourseGhostDetailResponse(
+                courseId,
+                "Private Ghost",
+                CourseStatus.PRIVATE,
+                RouteType.LOOP,
+                null,
+                5000,
+                50,
+                null,
+                37.57,
+                126.97,
+                37.58,
+                126.98,
+                new Coordinates(List.of()),
+                List.of(),
+                0L,
+                false,
+                false,
+                null,
+                null
+        );
+        given(courseService.findCourseGhostDetail(courseId, userId)).willReturn(response);
+
+        mockMvc.perform(get("/api/courses/{courseId}/ghost-detail", courseId)
+                        .with(authenticated(userId)))
+                .andExpect(status().isOk());
 
         then(courseService).should().findCourseGhostDetail(courseId, userId);
     }
@@ -608,6 +681,7 @@ class CourseControllerTest {
     @DisplayName("코스 고스트 리더보드 조회 응답을 성공 응답 포맷으로 감싼다")
     @Test
     void wrapsCourseGhostLeaderboardResponseInSuccessEnvelope() throws Exception {
+        long userId = 7L;
         CourseGhostLeaderboardRequest request = new CourseGhostLeaderboardRequest(20, "b3BhcXVlLWN1cnNvcg");
         CourseGhostLeaderboardResponse response = new CourseGhostLeaderboardResponse(
                 List.of(new CourseGhostLeaderboardItemResponse(
@@ -623,9 +697,10 @@ class CourseControllerTest {
                 true,
                 "opaque-cursor"
         );
-        given(courseService.findCourseGhostLeaderboard(12L, request)).willReturn(response);
+        given(courseService.findCourseGhostLeaderboard(12L, userId, request)).willReturn(response);
 
         mockMvc.perform(get("/api/courses/{courseId}/ghost-leaderboard", 12L)
+                        .with(authenticated(userId))
                         .queryParam("size", "20")
                         .queryParam("cursor", "b3BhcXVlLWN1cnNvcg"))
                 .andExpect(status().isOk())
@@ -640,7 +715,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.hasMore").value(true))
                 .andExpect(jsonPath("$.data.nextCursor").value("opaque-cursor"));
 
-        then(courseService).should().findCourseGhostLeaderboard(12L, request);
+        then(courseService).should().findCourseGhostLeaderboard(12L, userId, request);
     }
 
     @DisplayName("코스 고스트 리더보드 size가 유효하지 않으면 잘못된 입력 응답을 반환한다")
@@ -653,38 +728,58 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
 
-        then(courseService).should(never()).findCourseGhostLeaderboard(any(), any());
+        then(courseService).should(never()).findCourseGhostLeaderboard(any(), any(), any());
     }
 
     @DisplayName("코스 고스트 리더보드 조회에서 서비스가 커서를 거부하면 잘못된 커서 응답을 반환한다")
     @Test
     void returnsInvalidCursorWhenCourseGhostLeaderboardServiceRejectsCursor() throws Exception {
+        long userId = 7L;
         CourseGhostLeaderboardRequest request = new CourseGhostLeaderboardRequest(20, "%%%");
-        given(courseService.findCourseGhostLeaderboard(12L, request))
+        given(courseService.findCourseGhostLeaderboard(12L, userId, request))
                 .willThrow(new CustomException(ResponseCode.INVALID_CURSOR));
 
         mockMvc.perform(get("/api/courses/{courseId}/ghost-leaderboard", 12L)
+                        .with(authenticated(userId))
                         .queryParam("cursor", "%%%"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_CURSOR.getCode()));
 
-        then(courseService).should().findCourseGhostLeaderboard(12L, request);
+        then(courseService).should().findCourseGhostLeaderboard(12L, userId, request);
     }
 
     @DisplayName("없는 코스 고스트 리더보드 조회는 코스 없음 응답을 반환한다")
     @Test
     void returnsCourseNotFoundWhenCourseGhostLeaderboardCourseIsMissing() throws Exception {
+        long userId = 7L;
         CourseGhostLeaderboardRequest request = new CourseGhostLeaderboardRequest(20, null);
-        given(courseService.findCourseGhostLeaderboard(999L, request))
+        given(courseService.findCourseGhostLeaderboard(999L, userId, request))
                 .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
 
-        mockMvc.perform(get("/api/courses/{courseId}/ghost-leaderboard", 999L))
+        mockMvc.perform(get("/api/courses/{courseId}/ghost-leaderboard", 999L)
+                        .with(authenticated(userId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()));
 
-        then(courseService).should().findCourseGhostLeaderboard(999L, request);
+        then(courseService).should().findCourseGhostLeaderboard(999L, userId, request);
+    }
+
+    @DisplayName("코스 고스트 리더보드 조회는 principal user id 를 service 로 전달한다")
+    @Test
+    void forwardsPrincipalToCourseGhostLeaderboardService() throws Exception {
+        long courseId = 55L;
+        long userId = 66L;
+        CourseGhostLeaderboardRequest request = new CourseGhostLeaderboardRequest(20, null);
+        CourseGhostLeaderboardResponse response = new CourseGhostLeaderboardResponse(List.of(), RouteType.LOOP, false, null);
+        given(courseService.findCourseGhostLeaderboard(courseId, userId, request)).willReturn(response);
+
+        mockMvc.perform(get("/api/courses/{courseId}/ghost-leaderboard", courseId)
+                        .with(authenticated(userId)))
+                .andExpect(status().isOk());
+
+        then(courseService).should().findCourseGhostLeaderboard(courseId, userId, request);
     }
 
     @DisplayName("주변 고스트 코스 조회에서 필수 쿼리 파라미터가 없으면 잘못된 입력 응답을 반환한다")

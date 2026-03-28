@@ -8,6 +8,7 @@ import kr.withrun.was.domain.course.repository.CourseDifficultyRepository;
 import kr.withrun.was.domain.course.repository.CourseGhostLeaderboardRepository;
 import kr.withrun.was.domain.course.repository.CourseRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
+import kr.withrun.was.domain.course.service.CourseAccessPolicy;
 import kr.withrun.was.domain.course.service.CourseSignalService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
@@ -154,7 +155,8 @@ class RunningSessionServiceTest {
                 ghostRunningResultService,
                 courseSignalService,
                 cloudFrontSignedUrlService,
-                navigationBundleGenerationService
+                navigationBundleGenerationService,
+                new CourseAccessPolicy()
         );
         lenient().when(cloudFrontSignedUrlService.normalizeObjectKey(any())).thenAnswer(invocation -> {
             String value = invocation.getArgument(0);

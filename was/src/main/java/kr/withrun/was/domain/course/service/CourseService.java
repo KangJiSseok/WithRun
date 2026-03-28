@@ -69,6 +69,7 @@ public class CourseService {
     private final UserRepository userRepository;
     private final HybridRecommendationService hybridRecommendationService;
     private final CloudFrontSignedUrlService cloudFrontSignedUrlService;
+    private final CourseAccessPolicy courseAccessPolicy;
 
     public NearbyCoursesResponse findNearbyCourses(NearbyCoursesRequest request, AuthenticatedUser user) {
         List<NearbyCoursePageRow> pageRows = courseRepository.findNearbyCoursePageRows(
@@ -207,8 +208,8 @@ public class CourseService {
         );
     }
 
-    public CourseDetailResponse findCourseDetail(Long courseId) {
-        Course course = getCourse(courseId);
+    public CourseDetailResponse findCourseDetail(Long courseId, Long currentUserId) {
+        Course course = getCourse(courseId, currentUserId);
 
         return new CourseDetailResponse(
                 course.getId(),
@@ -229,15 +230,14 @@ public class CourseService {
                         .map(CourseDetailResponse.CourseTypeOption::from)
                         .toList(),
                 courseLikeRepository.countByCourseId(courseId),
-                // TODO: 인증에서 userId를 전달받는 방식이 정해지면 isLiked/isBookmarked를 사용자 기준으로 계산하도록 수정해야 한다.
-                false,
-                false,
+                isLiked(courseId, currentUserId),
+                isBookmarked(courseId, currentUserId),
                 courseReviewRepository.findAverageRatingByCourseId(courseId)
         );
     }
 
     public CourseGhostDetailResponse findCourseGhostDetail(Long courseId, Long userId) {
-        Course course = getCourse(courseId);
+        Course course = getCourse(courseId, userId);
 
         return CourseGhostDetailResponse.of(
                 course,
@@ -245,16 +245,16 @@ public class CourseService {
                         .orElse(null),
                 courseTypeMapRepository.findCourseTypesByCourseId(courseId),
                 courseLikeRepository.countByCourseId(courseId),
-                false,
-                false,
+                isLiked(courseId, userId),
+                isBookmarked(courseId, userId),
                 courseReviewRepository.findAverageRatingByCourseId(courseId),
                 cloudFrontSignedUrlService.generateSignedUrl(course.getSnapshotImageUrl()),
                 findMyGhostRecord(courseId, userId)
         );
     }
 
-    public CourseGhostLeaderboardResponse findCourseGhostLeaderboard(Long courseId, CourseGhostLeaderboardRequest request) {
-        Course course = getCourse(courseId);
+    public CourseGhostLeaderboardResponse findCourseGhostLeaderboard(Long courseId, Long currentUserId, CourseGhostLeaderboardRequest request) {
+        Course course = getCourse(courseId, currentUserId);
 
         List<CourseGhostLeaderboardRankRow> rows = courseGhostLeaderboardRepository.findRankedRowsByCourseId(courseId);
         int startIndex = resolveGhostLeaderboardStartIndex(rows, request.cursor());
@@ -278,13 +278,15 @@ public class CourseService {
         return new CourseGhostLeaderboardResponse(items, course.getRouteType(), hasMore, nextCursor);
     }
 
-    private Course getCourse(Long courseId) {
-        Course course = courseRepository.findNotDeletedCourse(courseId)
-                .orElseThrow(() -> new CustomException(ResponseCode.COURSE_NOT_FOUND));
-        return course;
+    private Course getCourse(Long courseId, Long currentUserId) {
+        return courseAccessPolicy.getAccessibleCourse(courseRepository, courseId, currentUserId);
     }
 
     private CourseGhostDetailResponse.MyRecord findMyGhostRecord(Long courseId, Long userId) {
+        if (userId == null) {
+            return null;
+        }
+
         return courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(userId, courseId)
                 .map(leaderboard -> new CourseGhostDetailResponse.MyRecord(
                         leaderboard.getId(),
@@ -295,6 +297,22 @@ public class CourseService {
                         leaderboard.getCreatedAt()
                 ))
                 .orElse(null);
+    }
+
+    private boolean isLiked(Long courseId, Long currentUserId) {
+        if (currentUserId == null) {
+            return false;
+        }
+
+        return courseLikeRepository.findByCourseIdAndUserId(courseId, currentUserId).isPresent();
+    }
+
+    private boolean isBookmarked(Long courseId, Long currentUserId) {
+        if (currentUserId == null) {
+            return false;
+        }
+
+        return courseBookmarkRepository.findByCourseIdAndUserId(courseId, currentUserId).isPresent();
     }
 
     private Long findRank(Long courseId, Long leaderboardId) {
@@ -386,6 +404,7 @@ public class CourseService {
         }
 
         Map<Long, List<NearbyRecommendationCandidateRow>> rowsByCourseId = rows.stream()
+                .filter(row -> isPublicFeedStatus(row.status()))
                 .filter(row -> row.courseId() != null)
                 .collect(Collectors.groupingBy(
                         NearbyRecommendationCandidateRow::courseId,
@@ -397,6 +416,10 @@ public class CourseService {
                 .map(this::toNearbyCourseCandidate)
                 .filter(Objects::nonNull)
                 .toList();
+    }
+
+    private boolean isPublicFeedStatus(CourseStatus status) {
+        return status == CourseStatus.OFFICIAL || status == CourseStatus.COMMUNITY;
     }
 
     private NearbyCourseCandidate toNearbyCourseCandidate(

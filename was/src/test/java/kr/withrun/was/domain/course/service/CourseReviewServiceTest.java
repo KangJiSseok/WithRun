@@ -17,11 +17,11 @@ import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.common.type.Difficulty;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -57,8 +57,19 @@ class CourseReviewServiceTest {
     @Mock
     private CourseSignalService courseSignalService;
 
-    @InjectMocks
     private CourseReviewService courseReviewService;
+
+    @BeforeEach
+    void setUp() {
+        courseReviewService = new CourseReviewService(
+                courseRepository,
+                courseReviewRepository,
+                courseReviewCourseTypeRepository,
+                userRepository,
+                courseSignalService,
+                new CourseAccessPolicy()
+        );
+    }
 
 
     @DisplayName("코스 리뷰를 생성하면 평점, 난이도, 코스 타입을 저장하고 응답을 반환한다")
@@ -162,11 +173,50 @@ class CourseReviewServiceTest {
                 .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
     }
 
+    @DisplayName("owner 는 private 코스에 리뷰를 남길 수 있다")
+    @Test
+    void createsReviewForOwnedPrivateCourse() {
+        long courseId = 106L;
+        long userId = 6L;
+        User owner = user(userId);
+        Course course = course(courseId, CourseStatus.PRIVATE, owner);
+        CreateCourseReviewRequest request = new CreateCourseReviewRequest(5, List.of("PARK"), "EASY");
+        CourseReview savedReview = review(601L, course, owner, 5, Difficulty.EASY, LocalDateTime.of(2026, 3, 9, 8, 0));
+
+        when(courseRepository.findNotDeletedCourse(courseId)).thenReturn(Optional.of(course));
+        when(userRepository.findNotDeletedUser(userId)).thenReturn(Optional.of(owner));
+        when(courseReviewRepository.existsByCourseIdAndUserId(courseId, userId)).thenReturn(false);
+        when(courseReviewRepository.save(any(CourseReview.class))).thenReturn(savedReview);
+
+        CreateCourseReviewResponse response = courseReviewService.createCourseReview(courseId, userId, request);
+
+        assertThat(response.courseId()).isEqualTo(courseId);
+        assertThat(response.rating()).isEqualTo(5);
+    }
+
+    @DisplayName("non-owner 는 private 코스에 리뷰를 남길 수 없다")
+    @Test
+    void throwsCourseNotFoundWhenCreatingReviewForPrivateCourseOwnedByAnotherUser() {
+        long courseId = 107L;
+        Course course = course(courseId, CourseStatus.PRIVATE, user(77L));
+        CreateCourseReviewRequest request = new CreateCourseReviewRequest(4, List.of("PARK"), "EASY");
+        when(courseRepository.findNotDeletedCourse(courseId)).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseReviewService.createCourseReview(courseId, 8L, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
+    }
+
     private Course course(Long id) {
+        return course(id, CourseStatus.OFFICIAL, null);
+    }
+
+    private Course course(Long id, CourseStatus status, User owner) {
         Course course = instantiateCourse();
         setField(course, "id", id);
         setField(course, "title", "Course " + id);
-        setField(course, "status", CourseStatus.OFFICIAL);
+        setField(course, "status", status);
         setField(course, "distanceM", 5000);
         setField(course, "elevationGainM", 120);
         setField(course, "snapshotImageUrl", "snapshot-" + id);
@@ -175,6 +225,9 @@ class CourseReviewServiceTest {
         setField(course, "endLatitude", 37.5700);
         setField(course, "endLongitude", 126.9820);
         setField(course, "coordinates", new Coordinates(List.of(37.5665), List.of(126.9780), List.of(12.0)));
+        if (owner != null) {
+            setField(course, "user", owner);
+        }
         return course;
     }
 

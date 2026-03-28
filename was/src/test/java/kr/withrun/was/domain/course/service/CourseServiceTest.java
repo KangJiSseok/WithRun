@@ -103,7 +103,8 @@ class CourseServiceTest {
                 courseGhostLeaderboardRepository,
                 userRepository,
                 hybridRecommendationService,
-                cloudFrontSignedUrlService
+                cloudFrontSignedUrlService,
+                new CourseAccessPolicy()
         );
         lenient().when(cloudFrontSignedUrlService.generateSignedUrl(org.mockito.ArgumentMatchers.any()))
                 .thenAnswer(invocation -> {
@@ -116,14 +117,17 @@ class CourseServiceTest {
     @Test
     void returnsCourseDetailIncludingCoordinates() {
         Course course = course(1L);
+        Long userId = 7L;
         when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
         when(courseDifficultyRepository.findDifficultyByCourseId(course.getId())).thenReturn(Optional.of(Difficulty.EASY));
         when(courseTypeMapRepository.findCourseTypesByCourseId(course.getId()))
                 .thenReturn(List.of(CourseType.RIVERSIDE, CourseType.PARK));
         when(courseLikeRepository.countByCourseId(course.getId())).thenReturn(14L);
+        when(courseLikeRepository.findByCourseIdAndUserId(course.getId(), userId)).thenReturn(Optional.of(org.mockito.Mockito.mock(kr.withrun.was.domain.course.entity.CourseLike.class)));
+        when(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), userId)).thenReturn(Optional.of(org.mockito.Mockito.mock(kr.withrun.was.domain.course.entity.CourseBookmark.class)));
         when(courseReviewRepository.findAverageRatingByCourseId(course.getId())).thenReturn(4.5);
 
-        CourseDetailResponse response = courseService.findCourseDetail(course.getId());
+        CourseDetailResponse response = courseService.findCourseDetail(course.getId(), userId);
 
         assertThat(response.courseId()).isEqualTo(course.getId());
         assertThat(response.title()).isEqualTo(course.getTitle());
@@ -136,8 +140,8 @@ class CourseServiceTest {
                 new CourseDetailResponse.CourseTypeOption("PARK", "공원")
         );
         assertThat(response.likeCount()).isEqualTo(14L);
-        assertThat(response.isLiked()).isFalse();
-        assertThat(response.isBookmarked()).isFalse();
+        assertThat(response.isLiked()).isTrue();
+        assertThat(response.isBookmarked()).isTrue();
         assertThat(response.averageRating()).isEqualTo(4.5);
     }
 
@@ -194,7 +198,39 @@ class CourseServiceTest {
     void throwsCourseNotFoundWhenCourseIsMissing() {
         when(courseRepository.findNotDeletedCourse(99L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> courseService.findCourseDetail(99L))
+        assertThatThrownBy(() -> courseService.findCourseDetail(99L, 7L))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
+    }
+
+    @DisplayName("private 코스 상세 조회는 owner 에게만 허용한다")
+    @Test
+    void returnsPrivateCourseDetailOnlyForOwner() {
+        User owner = user(41L, "owner");
+        Course course = course(41L, CourseStatus.PRIVATE, owner);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(courseDifficultyRepository.findDifficultyByCourseId(course.getId())).thenReturn(Optional.of(Difficulty.MEDIUM));
+        when(courseTypeMapRepository.findCourseTypesByCourseId(course.getId())).thenReturn(List.of(CourseType.URBAN));
+        when(courseLikeRepository.countByCourseId(course.getId())).thenReturn(2L);
+        when(courseLikeRepository.findByCourseIdAndUserId(course.getId(), owner.getId())).thenReturn(Optional.empty());
+        when(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), owner.getId())).thenReturn(Optional.empty());
+        when(courseReviewRepository.findAverageRatingByCourseId(course.getId())).thenReturn(4.0);
+
+        CourseDetailResponse response = courseService.findCourseDetail(course.getId(), owner.getId());
+
+        assertThat(response.courseId()).isEqualTo(course.getId());
+        assertThat(response.status()).isEqualTo(CourseStatus.PRIVATE);
+    }
+
+    @DisplayName("private 코스 상세 조회는 non-owner 에게 COURSE_NOT_FOUND 를 던진다")
+    @Test
+    void throwsCourseNotFoundWhenPrivateCourseDetailRequestedByNonOwner() {
+        User owner = user(42L, "owner");
+        Course course = course(42L, CourseStatus.PRIVATE, owner);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseService.findCourseDetail(course.getId(), 999L))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
@@ -218,6 +254,8 @@ class CourseServiceTest {
         when(courseTypeMapRepository.findCourseTypesByCourseId(course.getId()))
                 .thenReturn(List.of(CourseType.RIVERSIDE, CourseType.PARK));
         when(courseLikeRepository.countByCourseId(course.getId())).thenReturn(14L);
+        when(courseLikeRepository.findByCourseIdAndUserId(course.getId(), userId)).thenReturn(Optional.of(org.mockito.Mockito.mock(kr.withrun.was.domain.course.entity.CourseLike.class)));
+        when(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), userId)).thenReturn(Optional.of(org.mockito.Mockito.mock(kr.withrun.was.domain.course.entity.CourseBookmark.class)));
         when(courseReviewRepository.findAverageRatingByCourseId(course.getId())).thenReturn(4.5);
         when(courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(userId, course.getId())).thenReturn(Optional.of(myRecord));
         when(courseGhostLeaderboardRepository.findRankedRowsByCourseId(course.getId())).thenReturn(List.of(
@@ -236,6 +274,8 @@ class CourseServiceTest {
                 new CourseGhostDetailResponse.CourseTypeOption("PARK", "공원")
         );
         assertThat(response.likeCount()).isEqualTo(14L);
+        assertThat(response.isLiked()).isTrue();
+        assertThat(response.isBookmarked()).isTrue();
         assertThat(response.averageRating()).isEqualTo(4.5);
         assertThat(response.myRecord()).isEqualTo(new CourseGhostDetailResponse.MyRecord(
                 205L,
@@ -247,10 +287,44 @@ class CourseServiceTest {
         ));
     }
 
+    @DisplayName("private 코스 고스트 상세 조회는 owner 에게만 허용한다")
+    @Test
+    void returnsPrivateCourseGhostDetailOnlyForOwner() {
+        User owner = user(43L, "owner");
+        Course course = course(43L, CourseStatus.PRIVATE, owner);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(courseDifficultyRepository.findDifficultyByCourseId(course.getId())).thenReturn(Optional.of(Difficulty.EASY));
+        when(courseTypeMapRepository.findCourseTypesByCourseId(course.getId())).thenReturn(List.of(CourseType.PARK));
+        when(courseLikeRepository.countByCourseId(course.getId())).thenReturn(0L);
+        when(courseLikeRepository.findByCourseIdAndUserId(course.getId(), owner.getId())).thenReturn(Optional.empty());
+        when(courseBookmarkRepository.findByCourseIdAndUserId(course.getId(), owner.getId())).thenReturn(Optional.empty());
+        when(courseReviewRepository.findAverageRatingByCourseId(course.getId())).thenReturn(4.2);
+        when(courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(owner.getId(), course.getId())).thenReturn(Optional.empty());
+
+        CourseGhostDetailResponse response = courseService.findCourseGhostDetail(course.getId(), owner.getId());
+
+        assertThat(response.courseId()).isEqualTo(course.getId());
+        assertThat(response.status()).isEqualTo(CourseStatus.PRIVATE);
+    }
+
+    @DisplayName("private 코스 고스트 상세 조회는 non-owner 에게 COURSE_NOT_FOUND 를 던진다")
+    @Test
+    void throwsCourseNotFoundWhenPrivateCourseGhostDetailRequestedByNonOwner() {
+        User owner = user(44L, "owner");
+        Course course = course(44L, CourseStatus.PRIVATE, owner);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseService.findCourseGhostDetail(course.getId(), 1000L))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
+    }
+
     @DisplayName("코스 고스트 리더보드는 커서 기준으로 다음 페이지를 잘라 반환한다")
     @Test
     void returnsCourseGhostLeaderboardWithCursorPagination() {
         long courseId = 12L;
+        long userId = 7L;
         Course course = course(courseId);
         CourseGhostLeaderboardRequest request = new CourseGhostLeaderboardRequest(2, null);
         List<CourseGhostLeaderboardRankRow> rows = List.of(
@@ -262,7 +336,7 @@ class CourseServiceTest {
         when(courseRepository.findNotDeletedCourse(courseId)).thenReturn(Optional.of(course));
         when(courseGhostLeaderboardRepository.findRankedRowsByCourseId(courseId)).thenReturn(rows);
 
-        CourseGhostLeaderboardResponse response = courseService.findCourseGhostLeaderboard(courseId, request);
+        CourseGhostLeaderboardResponse response = courseService.findCourseGhostLeaderboard(courseId, userId, request);
 
         assertThat(response.items()).hasSize(2);
         assertThat(response.items().getFirst().leaderboardId()).isEqualTo(101L);
@@ -276,6 +350,7 @@ class CourseServiceTest {
     @Test
     void returnsCourseGhostLeaderboardAfterCursor() {
         long courseId = 12L;
+        long userId = 7L;
         Course course = course(courseId);
         List<CourseGhostLeaderboardRankRow> rows = List.of(
                 new CourseGhostLeaderboardRankRow(101L, 7L, "runner-a", 1001L, 1250, 1L, LocalDateTime.of(2026, 3, 21, 10, 30)),
@@ -290,7 +365,7 @@ class CourseServiceTest {
         when(courseRepository.findNotDeletedCourse(courseId)).thenReturn(Optional.of(course));
         when(courseGhostLeaderboardRepository.findRankedRowsByCourseId(courseId)).thenReturn(rows);
 
-        CourseGhostLeaderboardResponse response = courseService.findCourseGhostLeaderboard(courseId, request);
+        CourseGhostLeaderboardResponse response = courseService.findCourseGhostLeaderboard(courseId, userId, request);
 
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().getFirst().leaderboardId()).isEqualTo(205L);
@@ -306,7 +381,7 @@ class CourseServiceTest {
         Course course = course(courseId);
         when(courseRepository.findNotDeletedCourse(courseId)).thenReturn(Optional.of(course));
 
-        assertThatThrownBy(() -> courseService.findCourseGhostLeaderboard(courseId, new CourseGhostLeaderboardRequest(20, "%%%")))
+        assertThatThrownBy(() -> courseService.findCourseGhostLeaderboard(courseId, 7L, new CourseGhostLeaderboardRequest(20, "%%%")))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.INVALID_CURSOR);
@@ -318,7 +393,35 @@ class CourseServiceTest {
         long courseId = 999L;
         when(courseRepository.findNotDeletedCourse(courseId)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> courseService.findCourseGhostLeaderboard(courseId, new CourseGhostLeaderboardRequest(20, null)))
+        assertThatThrownBy(() -> courseService.findCourseGhostLeaderboard(courseId, 7L, new CourseGhostLeaderboardRequest(20, null)))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
+    }
+
+    @DisplayName("private 코스 고스트 리더보드는 owner 에게만 허용한다")
+    @Test
+    void returnsPrivateCourseGhostLeaderboardOnlyForOwner() {
+        User owner = user(45L, "owner");
+        Course course = course(45L, CourseStatus.PRIVATE, owner);
+        CourseGhostLeaderboardRequest request = new CourseGhostLeaderboardRequest(20, null);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+        when(courseGhostLeaderboardRepository.findRankedRowsByCourseId(course.getId())).thenReturn(List.of());
+
+        CourseGhostLeaderboardResponse response = courseService.findCourseGhostLeaderboard(course.getId(), owner.getId(), request);
+
+        assertThat(response.routeType()).isEqualTo(RouteType.LOOP);
+        assertThat(response.items()).isEmpty();
+    }
+
+    @DisplayName("private 코스 고스트 리더보드는 non-owner 에게 COURSE_NOT_FOUND 를 던진다")
+    @Test
+    void throwsCourseNotFoundWhenPrivateCourseGhostLeaderboardRequestedByNonOwner() {
+        User owner = user(46L, "owner");
+        Course course = course(46L, CourseStatus.PRIVATE, owner);
+        when(courseRepository.findNotDeletedCourse(course.getId())).thenReturn(Optional.of(course));
+
+        assertThatThrownBy(() -> courseService.findCourseGhostLeaderboard(course.getId(), 2000L, new CourseGhostLeaderboardRequest(20, null)))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
@@ -480,9 +583,13 @@ class CourseServiceTest {
     }
 
     private Course course(Long id) {
+        return course(id, CourseStatus.OFFICIAL, null);
+    }
+
+    private Course course(Long id, CourseStatus status, User owner) {
         Course course = Course.builder()
                 .title("Course " + id)
-                .status(CourseStatus.OFFICIAL)
+                .status(status)
                 .distanceM(5000)
                 .elevationGainM(120)
                 .snapshotImageUrl("snapshot-" + id)
@@ -494,6 +601,9 @@ class CourseServiceTest {
                 .build();
         setField(course, "id", id);
         setField(course, "routeType", RouteType.LOOP);
+        if (owner != null) {
+            setField(course, "user", owner);
+        }
         return course;
     }
 

@@ -57,10 +57,10 @@ public record CourseDetailResponse(
         @Schema(description = "누적 좋아요 수", example = "128")
         Long likeCount,
 
-        @Schema(description = "현재 사용자의 좋아요 여부. 현재 구현에서는 인증 연동 전이라 항상 false 다.", example = "false")
+        @Schema(description = "현재 사용자의 좋아요 여부", example = "false")
         boolean isLiked,
 
-        @Schema(description = "현재 사용자의 북마크 여부. 현재 구현에서는 인증 연동 전이라 항상 false 다.", example = "false")
+        @Schema(description = "현재 사용자의 북마크 여부", example = "false")
         boolean isBookmarked,
 
         @Schema(description = "평균 리뷰 평점", example = "4.3", nullable = true)
