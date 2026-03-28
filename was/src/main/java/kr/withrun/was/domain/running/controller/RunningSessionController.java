@@ -202,7 +202,7 @@ public class RunningSessionController {
 
     @Operation(
             summary = "러닝 세션 상세를 조회한다",
-            description = "러닝 세션의 요약 정보와 GPS 샘플, 건강 샘플, 스플릿, 고스트 결과를 함께 조회한다. 응답의 isCompleted 는 세션 종료 여부를 나타낸다."
+            description = "러닝 세션의 요약 정보와 GPS 샘플, 건강 샘플, 스플릿, 고스트 결과를 함께 조회한다. 응답의 completeState 는 세션 종료 상태를 나타내며 시작 직후 기본값은 FAIL 이고 종료 요청으로 최종 상태가 반영된다."
     )
     @ApiResponses({
             @io.swagger.v3.oas.annotations.responses.ApiResponse(

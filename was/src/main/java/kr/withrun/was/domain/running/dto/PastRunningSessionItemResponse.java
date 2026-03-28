@@ -4,6 +4,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import kr.withrun.was.global.common.type.TimeSlot;
 
 import java.time.LocalDateTime;
@@ -24,8 +25,8 @@ public record PastRunningSessionItemResponse(
         String snapshotImageUrl,
         @Schema(description = "누적 상승 고도(m)", example = "42", nullable = true)
         Integer elevationGainM,
-        @Schema(description = "러닝 세션 종료 여부", example = "true")
-        boolean isCompleted,
+        @Schema(description = "러닝 세션 종료 상태", example = "SUCCESS")
+        RunningSessionCompleteState completeState,
         @Schema(description = "러닝 모드", example = "GHOST")
         RunningMode runningMode,
         @Schema(description = "고스트 러닝 결과 상태. 고스트 모드가 아니면 null 일 수 있다.", example = "WIN", nullable = true)
@@ -47,7 +48,7 @@ public record PastRunningSessionItemResponse(
                 row.caloriesKcal(),
                 snapshotImageUrl,
                 row.elevationGainM(),
-                Boolean.TRUE.equals(row.isCompleted()),
+                row.completeState(),
                 row.runningMode(),
                 row.ghostResultStatus(),
                 TimeSlot.from(row.startedAt().toLocalTime())

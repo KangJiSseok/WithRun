@@ -47,6 +47,7 @@ import kr.withrun.was.domain.running.repository.RunningSessionSplitRepository;
 import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import kr.withrun.was.domain.running.util.PastRunningSessionCursorCodec;
 import kr.withrun.was.domain.running.vo.RunningSessionDateRange;
 import kr.withrun.was.domain.user.entity.User;
@@ -130,6 +131,7 @@ public class RunningSessionService {
         runningSession.validateCompletable();
 
         runningSession.complete(
+                request.completeState(),
                 request.distanceM(),
                 request.caloriesKcal(),
                 request.endLatitude(),
@@ -298,7 +300,7 @@ public class RunningSessionService {
             return null;
         }
 
-        if (!Boolean.TRUE.equals(targetSession.getIsCompleted())) {
+        if (targetSession.getCompleteState() != RunningSessionCompleteState.SUCCESS) {
             throw new CustomException(ResponseCode.INVALID_GHOST_TARGET);
         }
 
@@ -535,7 +537,7 @@ public class RunningSessionService {
         return courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(user.getId(), course.getId())
                 .map(CourseGhostLeaderboard::getRunningSession)
                 .filter(runningSession -> !runningSession.isDeleted())
-                .filter(runningSession -> Boolean.TRUE.equals(runningSession.getIsCompleted()))
+                .filter(runningSession -> runningSession.getCompleteState() == RunningSessionCompleteState.SUCCESS)
                 .orElse(null);
     }
 
@@ -563,7 +565,7 @@ public class RunningSessionService {
         RunningSession ghostTargetRunningSession = runningSessionRepository.findByIdAndDeletedAtIsNull(ghostTargetRunningSessionId)
                 .orElseThrow(() -> new CustomException(ResponseCode.GHOST_TARGET_NOT_FOUND));
 
-        if (!Boolean.TRUE.equals(ghostTargetRunningSession.getIsCompleted())) {
+        if (ghostTargetRunningSession.getCompleteState() != RunningSessionCompleteState.SUCCESS) {
             throw new CustomException(ResponseCode.INVALID_GHOST_TARGET);
         }
 

@@ -3,6 +3,7 @@ package kr.withrun.was.domain.running.dto;
 import io.swagger.v3.oas.annotations.media.Schema;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import org.springframework.util.StringUtils;
 
 import java.util.List;
@@ -37,8 +38,8 @@ public record CreateRunningSessionResponse(
         @Schema(description = "현재 누적 칼로리(kcal). 시작 직후에는 0 이다.", example = "0")
         int caloriesKcal,
 
-        @Schema(description = "러닝 완료 여부. 세션 생성 직후에는 false 다.", example = "false")
-        boolean isCompleted
+        @Schema(description = "러닝 세션 종료 상태. 시작 직후 기본값은 FAIL 이다.", example = "FAIL")
+        RunningSessionCompleteState completeState
 ) {
 
     public static CreateRunningSessionResponse from(
@@ -59,7 +60,7 @@ public record CreateRunningSessionResponse(
                 ghostTargetGpsSamples,
                 runningSession.getDistanceM(),
                 runningSession.getCaloriesKcal(),
-                Boolean.TRUE.equals(runningSession.getIsCompleted())
+                runningSession.getCompleteState()
         );
     }
 

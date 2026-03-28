@@ -7,6 +7,7 @@ import kr.withrun.was.domain.running.repository.query.RunningSessionCustomReposi
 import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
 import kr.withrun.was.domain.running.type.GhostResultStatus;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.domain.user.type.Gender;
 import kr.withrun.was.global.config.JpaAuditingConfig;
@@ -117,7 +118,7 @@ class RunningSessionRepositoryTest {
             User user,
             LocalDateTime startedAt,
             RunningMode runningMode,
-            boolean isCompleted
+            boolean completedSuccessfully
     ) {
         RunningSession runningSession = instantiate(RunningSession.class);
         setField(runningSession, "user", user);
@@ -130,7 +131,11 @@ class RunningSessionRepositoryTest {
         setField(runningSession, "startLatitude", 37.5);
         setField(runningSession, "startLongitude", 127.0);
         setField(runningSession, "isPublic", runningMode == RunningMode.GHOST);
-        setField(runningSession, "isCompleted", isCompleted);
+        setField(
+                runningSession,
+                "completeState",
+                completedSuccessfully ? RunningSessionCompleteState.SUCCESS : null
+        );
         setField(runningSession, "mode", runningMode);
         entityManager.persist(runningSession);
         return runningSession;

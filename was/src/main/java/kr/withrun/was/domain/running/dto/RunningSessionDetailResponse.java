@@ -3,6 +3,7 @@ package kr.withrun.was.domain.running.dto;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import io.swagger.v3.oas.annotations.media.Schema;
 import kr.withrun.was.domain.running.entity.RunningSession;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -10,8 +11,9 @@ import java.util.List;
 @Schema(description = "러닝 세션 상세 응답")
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record RunningSessionDetailResponse(
-        @Schema(description = "러닝 세션 완료 여부", example = "true")
-        boolean isCompleted,
+        @JsonInclude(JsonInclude.Include.ALWAYS)
+        @Schema(description = "러닝 세션 종료 상태. 시작 직후 기본값은 FAIL 이고 종료 요청으로 최종 상태가 반영된다.", example = "SUCCESS")
+        RunningSessionCompleteState completeState,
 
         @Schema(description = "러닝 세션 ID", example = "91")
         Long runningSessionId,
@@ -93,7 +95,7 @@ public record RunningSessionDetailResponse(
             GhostRunningResultResponse ghostRunningResult
     ) {
         return new RunningSessionDetailResponse(
-                Boolean.TRUE.equals(runningSession.getIsCompleted()),
+                runningSession.getCompleteState(),
                 runningSession.getId(),
                 runningSession.getUser().getId(),
                 snapshotImageUrl,
