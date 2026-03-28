@@ -4,8 +4,8 @@ export const ONBOARDING_INTRO_DURATION_MS = 1400;
 
 export const ONBOARDING_LOGIN_COPY_TEXTS = [
   '오늘도 나를 위해, 가볍게 뛰어볼까요?',
-  '당신의 페이스에 맞춘 완벽한 러닝 메이트.',
-  '혼자 뛰어도 외롭지 않게, With Run과 함께.',
+  '당신의 페이스에 맞춘 완벽한 러닝 메이트',
+  '혼자 뛰어도 외롭지 않게',
 ] as const;
 
 export const ONBOARDING_STEPS = [

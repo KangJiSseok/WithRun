@@ -1,54 +1,5 @@
 import { motion } from 'motion/react';
 
-type PinkTreeProps = {
-  cx: number;
-  cy: number;
-  scale?: number;
-};
-
-function PinkTree({ cx, cy, scale = 1 }: PinkTreeProps) {
-  return (
-    <g transform={`translate(${cx}, ${cy}) scale(${scale})`}>
-      <path
-        d="M -25 0 L -25 -8 L -15 -4 L -10 -12 L -5 -4 L 0 -15 L 5 -6 L 15 -12 L 20 -4 L 25 -8 L 25 0 Z"
-        fill="#4DD0E1"
-      />
-      <path d="M -8 0 L 8 0 L 4 -120 L -4 -120 Z" fill="#3E2723" />
-      <line
-        x1="-6"
-        y1="-30"
-        x2="6"
-        y2="-30"
-        stroke="#5D4037"
-        strokeWidth="3"
-      />
-      <line
-        x1="-5"
-        y1="-60"
-        x2="5"
-        y2="-60"
-        stroke="#5D4037"
-        strokeWidth="3"
-      />
-      <circle cx="-35" cy="-100" r="45" fill="#880E4F" />
-      <circle cx="35" cy="-100" r="45" fill="#880E4F" />
-      <circle cx="0" cy="-150" r="55" fill="#880E4F" />
-      <circle cx="-30" cy="-105" r="45" fill="#D81B60" />
-      <circle cx="30" cy="-105" r="45" fill="#D81B60" />
-      <circle cx="0" cy="-145" r="55" fill="#D81B60" />
-      <circle cx="-35" cy="-110" r="35" fill="#EC407A" />
-      <circle cx="35" cy="-110" r="35" fill="#EC407A" />
-      <circle cx="0" cy="-150" r="45" fill="#EC407A" />
-      <circle cx="-45" cy="-115" r="4" fill="#FCE4EC" />
-      <circle cx="-20" cy="-95" r="3" fill="#FCE4EC" />
-      <circle cx="30" cy="-125" r="4" fill="#FCE4EC" />
-      <circle cx="45" cy="-100" r="3" fill="#FCE4EC" />
-      <circle cx="-10" cy="-165" r="4" fill="#FCE4EC" />
-      <circle cx="15" cy="-140" r="3" fill="#FCE4EC" />
-    </g>
-  );
-}
-
 type OnboardingBackgroundProps = {
   isMoving: boolean;
 };
@@ -65,81 +16,119 @@ export function OnboardingBackground({
         viewBox="-50 100 500 1000"
         className="absolute inset-0 h-full w-full"
       >
-        <ellipse cx="80" cy="150" rx="40" ry="15" fill="#9CBF6F" opacity="0.6" />
-        <ellipse cx="320" cy="350" rx="60" ry="20" fill="#9CBF6F" opacity="0.6" />
-        <ellipse cx="90" cy="600" rx="45" ry="18" fill="#9CBF6F" opacity="0.6" />
-        <ellipse cx="310" cy="720" rx="35" ry="12" fill="#9CBF6F" opacity="0.6" />
+        <defs>
+          <linearGradient id="trackGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#D95850" />
+            <stop offset="100%" stopColor="#C44840" />
+          </linearGradient>
+          <linearGradient id="grassGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#A9D179" />
+            <stop offset="100%" stopColor="#95BC68" />
+          </linearGradient>
+          <linearGradient id="shadowGradient" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor="#80A159" stopOpacity="0.8" />
+            <stop offset="100%" stopColor="#95BC68" stopOpacity="0" />
+          </linearGradient>
+        </defs>
 
-        <path d="M -100 350 L 500 350 L 500 550 L -100 550 Z" fill="#D25048" />
-        <line x1="-100" y1="350" x2="500" y2="350" stroke="#FFFFFF" strokeWidth="6" />
-        <line x1="-100" y1="550" x2="500" y2="550" stroke="#FFFFFF" strokeWidth="6" />
+        {/* Dynamic Grass Base */}
+        <rect x="-1000" y="-1000" width="3000" height="3000" fill="url(#grassGradient)" />
 
-        <motion.line
-          x1="-100"
-          y1="400"
-          x2="500"
-          y2="400"
-          stroke="#FFFFFF"
-          strokeWidth="3"
-          strokeDasharray="40 40"
-          animate={
-            isMoving ? { strokeDashoffset: [0, 80] } : { strokeDashoffset: 0 }
-          }
-          transition={{
-            repeat: isMoving ? Infinity : 0,
-            repeatType: 'loop',
-            duration: 0.6,
-            ease: 'linear',
-          }}
-        />
-        <motion.line
-          x1="-100"
-          y1="450"
-          x2="500"
-          y2="450"
-          stroke="#FFFFFF"
-          strokeWidth="3"
-          strokeDasharray="40 40"
-          animate={
-            isMoving ? { strokeDashoffset: [0, 80] } : { strokeDashoffset: 0 }
-          }
-          transition={{
-            repeat: isMoving ? Infinity : 0,
-            repeatType: 'loop',
-            duration: 0.6,
-            ease: 'linear',
-          }}
-        />
-        <motion.line
-          x1="-100"
-          y1="500"
-          x2="500"
-          y2="500"
-          stroke="#FFFFFF"
-          strokeWidth="3"
-          strokeDasharray="40 40"
-          animate={
-            isMoving ? { strokeDashoffset: [0, 80] } : { strokeDashoffset: 0 }
-          }
-          transition={{
-            repeat: isMoving ? Infinity : 0,
-            repeatType: 'loop',
-            duration: 0.6,
-            ease: 'linear',
-          }}
-        />
+        <g transform="rotate(26, 250, 500)">
+          {/* Track Drop Shadow (Adds depth) */}
+          <path
+            d="M -1000 305 L 2000 305 L 2000 730 L -1000 730 Z"
+            fill="url(#shadowGradient)"
+          />
 
-        <PinkTree cx={80} cy={300} scale={1.2} />
-        <PinkTree cx={320} cy={280} scale={1} />
-        <PinkTree cx={90} cy={720} scale={1.3} />
-        <PinkTree cx={310} cy={680} scale={1.1} />
+          {/* Main Track Surface */}
+          <path
+            d="M -1000 280 L 2000 280 L 2000 680 L -1000 680 Z"
+            fill="url(#trackGradient)"
+          />
 
-        <circle cx="90" cy="250" r="8" fill="#4A7C59" opacity="0.8" />
-        <circle cx="100" cy="260" r="5" fill="#7BB062" opacity="0.8" />
-        <circle cx="310" cy="300" r="10" fill="#386646" opacity="0.8" />
-        <circle cx="295" cy="310" r="6" fill="#4A7C59" opacity="0.8" />
-        <circle cx="85" cy="520" r="12" fill="#7BB062" opacity="0.8" />
-        <circle cx="105" cy="535" r="7" fill="#386646" opacity="0.8" />
+          {/* Top thick border */}
+          <line
+            x1="-1000"
+            y1="284"
+            x2="2000"
+            y2="284"
+            stroke="#FFFFFF"
+            strokeWidth="8"
+            opacity="0.9"
+          />
+
+          {/* Bottom thick border */}
+          <line
+            x1="-1000"
+            y1="676"
+            x2="2000"
+            y2="676"
+            stroke="#FFFFFF"
+            strokeWidth="8"
+            opacity="0.9"
+          />
+
+          {/* Lane dividers */}
+          {[380, 480, 580].map((y) => (
+            <motion.line
+              key={y}
+              x1="-1000"
+              y1={y}
+              x2="2000"
+              y2={y}
+              stroke="#FFFFFF"
+              strokeWidth="4"
+              strokeDasharray="40 40"
+              opacity="0.9"
+              animate={
+                isMoving
+                  ? { strokeDashoffset: [0, 80] }
+                  : { strokeDashoffset: 0 }
+              }
+              transition={{
+                repeat: isMoving ? Infinity : 0,
+                repeatType: 'loop',
+                duration: 0.45,
+                ease: 'linear',
+              }}
+            />
+          ))}
+
+          {/* Motion lines in grass to enhance the speed feeling */}
+          <motion.g
+            animate={isMoving ? { opacity: 1 } : { opacity: 0 }}
+            transition={{ duration: 0.3 }}
+          >
+            {[
+              { x: 1200, y: 220, w: 150, c: '#BBEA8D', sw: 6, dur: 1.4, del: 0 },
+              { x: 900, y: 130, w: 250, c: '#BBEA8D', sw: 8, dur: 1.8, del: 0.3 },
+              { x: 1400, y: 700, w: 100, c: '#80A159', sw: 8, dur: 1.5, del: 0.1 },
+              { x: 1000, y: 820, w: 200, c: '#80A159', sw: 6, dur: 1.2, del: 0.6 },
+              { x: 1600, y: 280, w: 120, c: '#BBEA8D', sw: 5, dur: 1.6, del: 0.8 },
+              { x: 1300, y: 780, w: 180, c: '#80A159', sw: 7, dur: 1.3, del: 0.4 },
+            ].map((line, i) => (
+              <motion.line
+                key={i}
+                x1={line.x}
+                y1={line.y}
+                x2={line.x + line.w}
+                y2={line.y}
+                stroke={line.c}
+                strokeWidth={line.sw}
+                strokeLinecap="round"
+                animate={isMoving ? { x: [0, -3000] } : { x: 0 }}
+                transition={{
+                  repeat: isMoving ? Infinity : 0,
+                  repeatType: 'loop',
+                  duration: line.dur,
+                  ease: 'linear',
+                  delay: line.del,
+                }}
+              />
+            ))}
+          </motion.g>
+        </g>
       </svg>
     </div>
   );
