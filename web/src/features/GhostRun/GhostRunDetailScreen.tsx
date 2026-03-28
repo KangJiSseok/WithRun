@@ -13,9 +13,6 @@ import { formatTime } from '@/shared/utils';
 import { useNormalRunSessionStore } from '@/stores/NormalRun';
 import { useGhostRunLeaderboard } from '@/hooks/GhostRun/useGhostRunLeaderboard';
 
-// 회원 시스템 구현 전 임시 mock 유저
-const MOCK_USER_ID = 1;
-
 type GhostTarget = { runningSessionId: number; isMine: boolean };
 
 type GhostRunDetailScreenProps = {
@@ -73,7 +70,6 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
     setIsStarting(true);
     try {
       const res = await createRunningSession({
-        userId: MOCK_USER_ID,
         mode: 'GHOST',
         courseId: Number(courseId),
         ghostTargetRunningSessionId: selectedTarget.runningSessionId,

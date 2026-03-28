@@ -39,7 +39,6 @@ export type GetRunningHistoryParams = {
 };
 
 export type CreateRunningSessionRequest = {
-  userId: number;
   mode: RunningMode;
   courseId?: number;
   ghostTargetRunningSessionId?: number;

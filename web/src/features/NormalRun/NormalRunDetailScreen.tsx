@@ -12,9 +12,6 @@ import { useNormalRunSessionStore } from '@/stores/NormalRun';
 import { bridge, useBridgeDataStore } from '@/bridge';
 import { BOTTOM_NAV_HEIGHT } from '@/shared/components';
 
-// 회원 시스템 구현 전 임시 mock 유저
-const MOCK_USER_ID = 1;
-
 const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
   EASY: '쉬움',
   MEDIUM: '보통',
@@ -57,7 +54,6 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
     setIsStarting(true);
     try {
       const res = await createRunningSession({
-        userId: MOCK_USER_ID,
         mode: 'COURSE',
         courseId: Number(courseId),
         startLatitude: gpsLocation.latitude,

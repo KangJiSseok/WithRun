@@ -69,14 +69,13 @@ export const getGhostLeaderboardApi = async (
 
 /**
  * 코스 고스트 상세 조회 (고스트런 진입 시)
- * GET /courses/{courseId}/ghost-detail/{userId}
+ * GET /courses/{courseId}/ghost-detail
  */
 export const getGhostCourseDetailApi = async (
-  courseId: number,
-  userId: number
+  courseId: number
 ): Promise<ApiResponse<GhostCourseDetail>> => {
   const { data } = await axiosClient.get<ApiResponse<GhostCourseDetail>>(
-    `/courses/${courseId}/ghost-detail/${userId}`
+    `/courses/${courseId}/ghost-detail`
   );
   return data;
 };

@@ -28,10 +28,6 @@ export const createRunningSession = async (
   return data;
 };
 
-// 회원 시스템 구현 전 임시 mock 유저
-// TODO : 추후 변경 시 => auth context에서 실제 유저 정보 받아오기
-const MOCK_USER_ID = 1;
-
 /**
  * 과거 러닝 세션 기록 조회
  * GET /running-sessions/history/past
@@ -42,7 +38,7 @@ export const getRunningHistoryApi = async (
   const { data } = await axiosClient.get<
     ApiResponse<GetRunningHistoryResponse>
   >('/running-sessions/history/past', {
-    params: { userId: MOCK_USER_ID, ...params },
+    params,
   });
   return data;
 };
@@ -70,7 +66,7 @@ export const getRunningSessionDetailApi = async (
   runningSessionId: number,
 ): Promise<ApiResponse<RunningSessionDetailResponse>> => {
   const { data } = await axiosClient.get<ApiResponse<RunningSessionDetailResponse>>(
-    `/running-sessions/${runningSessionId}/detail/${MOCK_USER_ID}`,
+    `/running-sessions/${runningSessionId}/detail`,
   );
   return data;
 };
