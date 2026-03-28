@@ -1,15 +1,2 @@
-import { useRef } from 'react';
-
-import type { GpsSample } from '@/apis/runningSessions';
-import { useNormalRunResultMap } from '@/hooks/NormalRun/useNormalRunResultMap';
-
-type NormalRunResultMapProps = {
-  gpsSamples: GpsSample[];
-};
-
-export function NormalRunResultMap({ gpsSamples }: NormalRunResultMapProps) {
-  const containerRef = useRef<HTMLDivElement>(null);
-  useNormalRunResultMap(containerRef, gpsSamples);
-
-  return <div ref={containerRef} className="w-full h-full" />;
-}
+// 하위 호환을 위한 re-export
+export { RunResultMap as NormalRunResultMap } from '@/shared/components/Running/RunResultMap';

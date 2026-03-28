@@ -6,9 +6,6 @@ import { useBridgeDataStore } from '@/bridge';
 import { createRunningSession } from '@/apis';
 import { useFreeRunSessionStore } from '@/stores/FreeRun';
 
-// 회원 시스템 구현 전 임시 mock 유저
-const MOCK_USER_ID = 1;
-
 export function FreeRunScreen() {
   const navigate = useNavigate();
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
@@ -22,7 +19,6 @@ export function FreeRunScreen() {
     setError(null);
     try {
       const res = await createRunningSession({
-        userId: MOCK_USER_ID,
         mode: 'FREE',
         startLatitude: latitude,
         startLongitude: longitude,

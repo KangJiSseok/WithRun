@@ -5,9 +5,6 @@ import { useEffect, useRef } from 'react';
 
 import type { SplitRecord } from '@/apis/runningSessions';
 
-// 회원 시스템 구현 전 임시 mock 유저 (SplitRecord.userId 용)
-const MOCK_USER_ID = 1;
-
 interface UseRunningSplitsParams {
   distanceKm: number;
   durationSec: number;
@@ -46,7 +43,6 @@ export function useRunningSplits({
           : 0;
 
       splitsRef.current.push({
-        userId: MOCK_USER_ID,
         splitIndex: km,
         splitDistanceM: 1000,
         splitDurationSec,
