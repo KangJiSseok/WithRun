@@ -2,6 +2,7 @@ package kr.withrun.was.domain.meta;
 
 import kr.withrun.was.domain.course.controller.CourseController;
 import kr.withrun.was.domain.course.dto.CourseFilterResponse;
+import kr.withrun.was.domain.course.dto.CourseNavigationMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.service.CourseService;
@@ -143,6 +144,54 @@ class CourseMetaControllerTest {
                 .andExpect(jsonPath("$.data.difficulties[0].label").value("쉬움"));
 
         then(courseService).should().findCourseFilters();
+    }
+
+    @DisplayName("코스 navigation 메타 응답을 성공 응답 포맷으로 감싼다")
+    @Test
+    void wrapsCourseNavigationMetaResponseInSuccessEnvelope() throws Exception {
+        CourseNavigationMetaResponse response = new CourseNavigationMetaResponse(
+                List.of(
+                        new CourseNavigationMetaResponse.NavigationOption(
+                                "STRAIGHT",
+                                "직진"
+                        ),
+                        new CourseNavigationMetaResponse.NavigationOption(
+                                "RIGHT",
+                                "우회전"
+                        ),
+                        new CourseNavigationMetaResponse.NavigationOption(
+                                "LEFT",
+                                "좌회전"
+                        ),
+                        new CourseNavigationMetaResponse.NavigationOption(
+                                "UTURN",
+                                "유턴"
+                        ),
+                        new CourseNavigationMetaResponse.NavigationOption(
+                                "ARRIVAL",
+                                "도착"
+                        )
+                )
+        );
+        given(courseService.findCourseNavigationMeta()).willReturn(response);
+
+        mockMvc.perform(get("/api/meta/course/navigation"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
+                .andExpect(jsonPath("$.message").value(ResponseCode.OK.getMessage()))
+                .andExpect(jsonPath("$.data.navigations[0].data").value("STRAIGHT"))
+                .andExpect(jsonPath("$.data.navigations[0].label").value("직진"))
+                .andExpect(jsonPath("$.data.navigations[1].data").value("RIGHT"))
+                .andExpect(jsonPath("$.data.navigations[1].label").value("우회전"))
+                .andExpect(jsonPath("$.data.navigations[2].data").value("LEFT"))
+                .andExpect(jsonPath("$.data.navigations[2].label").value("좌회전"))
+                .andExpect(jsonPath("$.data.navigations[3].data").value("UTURN"))
+                .andExpect(jsonPath("$.data.navigations[3].label").value("유턴"))
+                .andExpect(jsonPath("$.data.navigations[4].data").value("ARRIVAL"))
+                .andExpect(jsonPath("$.data.navigations[4].label").value("도착"));
+
+        then(courseService).should().findCourseNavigationMeta();
     }
 
 

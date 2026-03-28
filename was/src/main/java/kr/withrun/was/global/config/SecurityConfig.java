@@ -64,6 +64,8 @@ public class SecurityConfig {
                         .requestMatchers("/oauth2/**", "/login/oauth2/**", "/mobile/oauth2/**", "/web/oauth2/**").permitAll()
                         // 개발/운영에서 API 문서와 Swagger UI는 인증 없이 열어둡니다.
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
+                        // meta 조회 API는 앱 부트스트랩 단계에서 비인증으로 사용합니다.
+                        .requestMatchers(HttpMethod.GET, "/api/meta/**").permitAll()
                         // refresh 재발급과 모바일 code 교환은 로그인 직전 단계라 비인증 접근을 허용합니다.
                         .requestMatchers(HttpMethod.POST, "/api/auth/reissue", "/api/auth/exchange").permitAll()
                         // 현재 사용자 조회는 access token 인증이 필요합니다.

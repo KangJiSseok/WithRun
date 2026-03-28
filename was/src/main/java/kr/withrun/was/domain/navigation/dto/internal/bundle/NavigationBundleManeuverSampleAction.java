@@ -2,29 +2,33 @@ package kr.withrun.was.domain.navigation.dto.internal.bundle;
 
 import com.fasterxml.jackson.annotation.JsonCreator;
 import com.fasterxml.jackson.annotation.JsonValue;
+import lombok.Getter;
 
+@Getter
 public enum NavigationBundleManeuverSampleAction {
-    STRAIGHT("직진"),
-    RIGHT("우회전"),
-    LEFT("좌회전"),
-    UTURN("유턴"),
-    ARRIVAL("도착");
+    STRAIGHT("STRAIGHT", "직진"),
+    RIGHT("RIGHT", "우회전"),
+    LEFT("LEFT", "좌회전"),
+    UTURN("UTURN", "유턴"),
+    ARRIVAL("ARRIVAL", "도착");
 
-    private final String jsonValue;
+    private final String data;
+    private final String label;
 
-    NavigationBundleManeuverSampleAction(String jsonValue) {
-        this.jsonValue = jsonValue;
+    NavigationBundleManeuverSampleAction(String data, String label) {
+        this.data = data;
+        this.label = label;
     }
 
     @JsonValue
     public String jsonValue() {
-        return jsonValue;
+        return label;
     }
 
     @JsonCreator(mode = JsonCreator.Mode.DELEGATING)
     public static NavigationBundleManeuverSampleAction fromJsonValue(String jsonValue) {
         for (NavigationBundleManeuverSampleAction value : values()) {
-            if (value.jsonValue.equals(jsonValue)) {
+            if (value.label.equals(jsonValue)) {
                 return value;
             }
         }

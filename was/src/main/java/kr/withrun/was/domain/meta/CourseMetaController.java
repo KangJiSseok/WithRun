@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
 import kr.withrun.was.domain.course.dto.CourseFilterResponse;
+import kr.withrun.was.domain.course.dto.CourseNavigationMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.service.CourseService;
@@ -75,5 +76,21 @@ public class CourseMetaController {
     @GetMapping("/course/filter/normal-run")
     public ResponseEntity<ApiResponse<CourseFilterResponse>> findCourseFilters() {
         return ApiResponse.successEntity(courseService.findCourseFilters());
+    }
+
+    @Operation(
+            summary = "코스 navigation 메타 항목을 조회한다",
+            description = "코스 navigation 에서 사용하는 maneuver 타입, 강도, 예시 액션과 안내 문구 목록을 조회한다."
+    )
+    @ApiResponses({
+            @io.swagger.v3.oas.annotations.responses.ApiResponse(
+                    responseCode = "200",
+                    description = "코스 navigation 메타 항목 조회 성공",
+                    content = @Content(schema = @Schema(implementation = SuccessApiResponseDocs.CourseNavigationMetaApiResponse.class))
+            )
+    })
+    @GetMapping("/course/navigation")
+    public ResponseEntity<ApiResponse<CourseNavigationMetaResponse>> findCourseNavigationMeta() {
+        return ApiResponse.successEntity(courseService.findCourseNavigationMeta());
     }
 }

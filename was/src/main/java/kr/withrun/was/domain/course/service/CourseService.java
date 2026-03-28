@@ -7,6 +7,7 @@ import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardItemResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.CourseNavigationMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.dto.NearbyCourseItemResponse;
@@ -26,6 +27,7 @@ import kr.withrun.was.domain.course.repository.query.dto.CourseGhostLeaderboardR
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCoursePageRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyRecommendationCandidateRow;
 import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
+import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleManeuverSampleAction;
 import kr.withrun.was.domain.course.service.recommendation.CourseRecommendationScore;
 import kr.withrun.was.domain.course.service.recommendation.HybridRecommendationService;
 import kr.withrun.was.domain.course.service.recommendation.NearbyRecommendationInput;
@@ -204,6 +206,14 @@ public class CourseService {
                         .toList(),
                 Arrays.stream(Difficulty.values())
                         .map(CourseFilterResponse.DifficultyOption::from)
+                        .toList()
+        );
+    }
+
+    public CourseNavigationMetaResponse findCourseNavigationMeta() {
+        return new CourseNavigationMetaResponse(
+                Arrays.stream(NavigationBundleManeuverSampleAction.values())
+                        .map(CourseNavigationMetaResponse.NavigationOption::from)
                         .toList()
         );
     }
