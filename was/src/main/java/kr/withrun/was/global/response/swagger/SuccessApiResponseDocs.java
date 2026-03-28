@@ -9,6 +9,7 @@ import kr.withrun.was.domain.course.dto.CourseFilterResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
 import kr.withrun.was.domain.course.dto.CourseLikeStatusResponse;
+import kr.withrun.was.domain.course.dto.CourseNavigationMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.dto.CreateCourseReviewResponse;
@@ -68,6 +69,19 @@ public final class SuccessApiResponseDocs {
             String message,
             @Schema(description = "코스 필터 응답 데이터")
             CourseFilterResponse data
+    ) {
+    }
+
+    @Schema(name = "CourseNavigationMetaApiResponse", description = "코스 navigation 메타 조회 성공 응답")
+    public record CourseNavigationMetaApiResponse(
+            @Schema(description = "요청 성공 여부", example = "true")
+            boolean success,
+            @Schema(description = "성공 응답 코드", example = "S001")
+            String code,
+            @Schema(description = "성공 응답 메시지", example = "요청이 성공했습니다.")
+            String message,
+            @Schema(description = "코스 navigation 메타 응답 데이터")
+            CourseNavigationMetaResponse data
     ) {
     }
 
