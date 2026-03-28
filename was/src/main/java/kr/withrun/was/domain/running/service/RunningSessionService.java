@@ -85,9 +85,9 @@ public class RunningSessionService {
     private final NavigationBundleGenerationService navigationBundleGenerationService;
 
     @Transactional
-    public CreateRunningSessionResponse createRunningSession(CreateRunningSessionRequest request) {
+    public CreateRunningSessionResponse createRunningSession(Long currentUserId, CreateRunningSessionRequest request) {
         RunningMode mode = request.mode();
-        User user = getUser(request.userId());
+        User user = getUser(currentUserId);
         Course course = getCourse(user, mode, request.courseId());
         RunningSession ghostTargetRunningSession = resolveGhostTargetRunningSession(
                 user,
@@ -117,9 +117,13 @@ public class RunningSessionService {
     }
 
     @Transactional
-    public RunningSessionDetailResponse completeRunningSession(Long runningSessionId, CompleteRunningSessionRequest request) {
+    public RunningSessionDetailResponse completeRunningSession(
+            Long runningSessionId,
+            Long currentUserId,
+            CompleteRunningSessionRequest request
+    ) {
         RunningSession runningSession = getRunningSession(runningSessionId);
-        User user = getUser(request.userId());
+        User user = getUser(currentUserId);
         runningSession.validateOwner(user.getId());
         runningSession.validateCompletable();
 
@@ -138,7 +142,7 @@ public class RunningSessionService {
 
         List<RunningGpsSample> savedGpsSamples = saveGpsSamples(runningSession, user, request.gpsSamples());
         List<RunningHealthSample> savedHealthSamples = saveHealthSamples(runningSession, user, request.healthSamples());
-        List<RunningSessionSplit> savedSplits = saveSplits(runningSession, user, request.splits());
+        List<RunningSessionSplit> savedSplits = saveSplits(runningSession, request.splits());
 
         GhostRunningResult ghostRunningResult = createGhostRunningResultIfNeeded(runningSession, request.distanceGapM());
         upsertCourseGhostLeaderboardIfNeeded(runningSession);
@@ -168,9 +172,12 @@ public class RunningSessionService {
     @Transactional
     public RegisterRunningSessionCourseResponse registerRunningSessionCourse(
             Long runningSessionId,
+            Long currentUserId,
             RegisterRunningSessionCourseRequest request
     ) {
         RunningSession runningSession = getRunningSession(runningSessionId);
+        User user = getUser(currentUserId);
+        runningSession.validateOwner(user.getId());
         runningSession.validateCourseRegistrable();
         CourseStatus courseStatus = parseCourseStatus(request.mode());
         Difficulty difficulty = parseDifficulty(request.difficulty());
@@ -216,9 +223,9 @@ public class RunningSessionService {
         }
     }
 
-    public RunningSessionDetailResponse findRunningSessionDetail(Long runningSessionId, Long userId) {
+    public RunningSessionDetailResponse findRunningSessionDetail(Long runningSessionId, Long currentUserId) {
         RunningSession runningSession = getRunningSession(runningSessionId);
-        runningSession.validateOwner(userId);
+        runningSession.validateOwner(currentUserId);
 
         List<RunningGpsSampleResponse> gpsSamples = RunningGpsSampleResponse.from(
                 runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(runningSessionId)
@@ -246,17 +253,17 @@ public class RunningSessionService {
         );
     }
 
-    public PastRunningSessionsResponse findPastRunningSessions(PastRunningSessionsRequest request) {
+    public PastRunningSessionsResponse findPastRunningSessions(Long currentUserId, PastRunningSessionsRequest request) {
         PastRunningSessionCursorCodec.CursorPayload payload = request.cursor() == null
                 ? null
                 : PastRunningSessionCursorCodec.decode(request.cursor());
 
         RunningSessionDateRange dateRange = RunningSessionDateRange.of(request.year(), request.month(), request.day());
 
-        getUser(request.userId());
+        getUser(currentUserId);
 
         List<PastRunningSessionHistoryRow> rows = runningSessionRepository.findPastRunningSessionHistoryRows(
-                request.userId(),
+                currentUserId,
                 dateRange.startInclusive(),
                 dateRange.endExclusive(),
                 payload == null ? null : payload.startedAt(),
@@ -453,26 +460,17 @@ public class RunningSessionService {
         return runningHealthSampleRepository.saveAll(samples);
     }
 
-    private List<RunningSessionSplit> saveSplits(
-            RunningSession runningSession,
-            User user,
-            List<CreateRunningSessionSplitRequest> requests
-    ) {
+    private List<RunningSessionSplit> saveSplits(RunningSession runningSession, List<CreateRunningSessionSplitRequest> requests) {
         List<RunningSessionSplit> splits = requests.stream()
-                .map(request -> {
-                    if (!user.getId().equals(request.userId())) {
-                        throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
-                    }
-                    return RunningSessionSplit.create(
-                            runningSession,
-                            request.splitIndex(),
-                            request.splitDistanceM(),
-                            request.splitDurationSec(),
-                            request.splitPaceSecPerKm(),
-                            request.avgHeartRate(),
-                            request.elevationGainM()
-                    );
-                })
+                .map(request -> RunningSessionSplit.create(
+                        runningSession,
+                        request.splitIndex(),
+                        request.splitDistanceM(),
+                        request.splitDurationSec(),
+                        request.splitPaceSecPerKm(),
+                        request.avgHeartRate(),
+                        request.elevationGainM()
+                ))
                 .toList();
         return runningSessionSplitRepository.saveAll(splits);
     }
@@ -642,14 +640,6 @@ public class RunningSessionService {
 
     private String toCursor(PastRunningSessionHistoryRow row) {
         return PastRunningSessionCursorCodec.encode(row.startedAt(), row.runningSessionId());
-    }
-
-    private void recordCourseCompletionIfEligible(RunningSession runningSession, Long userId) {
-        if (runningSession.getCourse() == null || userId == null) {
-            return;
-        }
-        User user = getUser(userId);
-        recordCourseCompletionIfEligible(runningSession, user);
     }
 
     private void recordCourseCompletionIfEligible(RunningSession runningSession, User user) {

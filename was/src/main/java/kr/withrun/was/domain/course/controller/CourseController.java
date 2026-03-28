@@ -17,7 +17,9 @@ import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
 import kr.withrun.was.domain.course.service.CourseService;
+import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ApiResponse;
+import kr.withrun.was.global.response.ResponseCode;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
 import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import kr.withrun.was.global.response.swagger.ValidationErrorApiResponseDoc;
@@ -77,14 +79,14 @@ public class CourseController {
                     content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
             )
     })
-    @GetMapping("/{courseId}/ghost-detail/{userId}")
+    @GetMapping("/{courseId}/ghost-detail")
     public ResponseEntity<ApiResponse<CourseGhostDetailResponse>> findCourseGhostDetail(
             @Parameter(description = "코스 ID", example = "12")
             @PathVariable Long courseId,
-            @Parameter(description = "사용자 ID", example = "7")
-            @PathVariable Long userId
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
-        return ApiResponse.successEntity(courseService.findCourseGhostDetail(courseId, userId));
+        return ApiResponse.successEntity(courseService.findCourseGhostDetail(courseId, resolveUserId(authenticatedUser)));
     }
 
     @Operation(
@@ -183,5 +185,13 @@ public class CourseController {
             @Valid @ParameterObject @ModelAttribute CourseGhostLeaderboardRequest request
     ) {
         return ApiResponse.successEntity(courseService.findCourseGhostLeaderboard(courseId, request));
+    }
+
+    private Long resolveUserId(AuthenticatedUser authenticatedUser) {
+        if (authenticatedUser == null || authenticatedUser.userId() == null) {
+            throw new CustomException(ResponseCode.UNAUTHORIZED);
+        }
+
+        return authenticatedUser.userId();
     }
 }

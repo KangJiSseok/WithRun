@@ -11,6 +11,7 @@ import kr.withrun.was.domain.course.dto.NearbyCoursesResponse;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesRequest;
 import kr.withrun.was.domain.course.dto.NearbyGhostCoursesResponse;
 import kr.withrun.was.domain.course.dto.PreferredDistanceRange;
+import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.course.service.CourseService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
@@ -20,17 +21,23 @@ import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.course.vo.GeoPoint;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -39,6 +46,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.testSecurityContext;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -64,6 +72,11 @@ class CourseControllerTest {
     static void clearConfigOverrides() {
         System.clearProperty("spring.cloud.aws.parameterstore.enabled");
         System.clearProperty("spring.config.import");
+    }
+
+    @AfterEach
+    void clearSecurityContext() {
+        TestSecurityContextHolder.clearContext();
     }
 
     @DisplayName("필수 쿼리 파라미터가 없으면 잘못된 입력 응답을 반환한다")
@@ -483,7 +496,8 @@ class CourseControllerTest {
         );
         given(courseService.findCourseGhostDetail(courseId, userId)).willReturn(response);
 
-        mockMvc.perform(get("/api/courses/{courseId}/ghost-detail/{userId}", courseId, userId))
+        mockMvc.perform(get("/api/courses/{courseId}/ghost-detail", courseId)
+                        .with(authenticated(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
@@ -508,7 +522,8 @@ class CourseControllerTest {
         given(courseService.findCourseGhostDetail(courseId, userId))
                 .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
 
-        mockMvc.perform(get("/api/courses/{courseId}/ghost-detail/{userId}", courseId, userId))
+        mockMvc.perform(get("/api/courses/{courseId}/ghost-detail", courseId)
+                        .with(authenticated(userId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()));
@@ -1015,5 +1030,20 @@ class CourseControllerTest {
             requestBuilder.param("size", size);
         }
         return requestBuilder;
+    }
+
+    private Authentication authenticatedUser(Long userId) {
+        return UsernamePasswordAuthenticationToken.authenticated(
+                new AuthenticatedUser(userId, "google", true),
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+    }
+
+    private RequestPostProcessor authenticated(Long userId) {
+        return request -> {
+            TestSecurityContextHolder.setAuthentication(authenticatedUser(userId));
+            return testSecurityContext().postProcessRequest(request);
+        };
     }
 }

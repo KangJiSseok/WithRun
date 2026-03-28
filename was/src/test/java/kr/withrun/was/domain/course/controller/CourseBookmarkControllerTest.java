@@ -3,6 +3,8 @@ package kr.withrun.was.domain.course.controller;
 import java.time.LocalDateTime;
 import java.util.List;
 
+import kr.withrun.was.domain.auth.security.AuthenticatedUser;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.AfterAll;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -10,9 +12,14 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.WebMvcTest;
+import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.Authentication;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.test.context.TestSecurityContextHolder;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.test.web.servlet.request.RequestPostProcessor;
 
 import kr.withrun.was.domain.course.dto.BookmarkedCourseItemResponse;
 import kr.withrun.was.domain.course.dto.BookmarkedCoursesRequest;
@@ -32,6 +39,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.BDDMockito.given;
 import static org.mockito.BDDMockito.then;
 import static org.mockito.Mockito.never;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.testSecurityContext;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -60,6 +68,11 @@ class CourseBookmarkControllerTest {
         System.clearProperty("spring.config.import");
     }
 
+    @AfterEach
+    void clearSecurityContext() {
+        TestSecurityContextHolder.clearContext();
+    }
+
     @DisplayName("북마크 추가 응답을 성공 응답 포맷으로 감싼다")
     @Test
     void wrapsAddBookmarkResponseInSuccessEnvelope() throws Exception {
@@ -69,7 +82,8 @@ class CourseBookmarkControllerTest {
         CourseBookmarkAddResponse response = new CourseBookmarkAddResponse(courseId, true, createdAt);
         given(courseBookmarkService.addBookmark(courseId, userId)).willReturn(response);
 
-        mockMvc.perform(post("/api/courses/{courseId}/bookmark/{userId}", courseId, userId))
+        mockMvc.perform(post("/api/courses/{courseId}/bookmark", courseId)
+                        .with(authenticated(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
@@ -89,7 +103,8 @@ class CourseBookmarkControllerTest {
         CourseBookmarkRemoveResponse response = new CourseBookmarkRemoveResponse(courseId, false);
         given(courseBookmarkService.removeBookmark(courseId, userId)).willReturn(response);
 
-        mockMvc.perform(delete("/api/courses/{courseId}/bookmark/{userId}", courseId, userId))
+        mockMvc.perform(delete("/api/courses/{courseId}/bookmark", courseId)
+                        .with(authenticated(userId)))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()))
@@ -130,7 +145,8 @@ class CourseBookmarkControllerTest {
         );
         given(courseBookmarkService.findBookmarkedCourses(userId, request)).willReturn(response);
 
-        mockMvc.perform(get("/api/courses/bookmarks/{userId}", userId)
+        mockMvc.perform(get("/api/courses/bookmarks")
+                        .with(authenticated(userId))
                         .queryParam("size", "2")
                         .queryParam("cursor", "previous-cursor"))
                 .andExpect(status().isOk())
@@ -160,7 +176,8 @@ class CourseBookmarkControllerTest {
     @ParameterizedTest(name = "size={0}")
     @ValueSource(strings = {"0", "-1", "51", "abc", "1.5"})
     void returnsInvalidInputWhenBookmarkedCoursesSizeIsInvalid(String invalidSize) throws Exception {
-        mockMvc.perform(get("/api/courses/bookmarks/{userId}", 20L)
+        mockMvc.perform(get("/api/courses/bookmarks")
+                        .with(authenticated(20L))
                         .queryParam("size", invalidSize))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
@@ -177,7 +194,8 @@ class CourseBookmarkControllerTest {
         BookmarkedCoursesResponse response = new BookmarkedCoursesResponse(List.of(), false, null);
         given(courseBookmarkService.findBookmarkedCourses(userId, request)).willReturn(response);
 
-        mockMvc.perform(get("/api/courses/bookmarks/{userId}", userId)
+        mockMvc.perform(get("/api/courses/bookmarks")
+                        .with(authenticated(userId))
                         .queryParam("size", ""))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
@@ -189,7 +207,8 @@ class CourseBookmarkControllerTest {
     @DisplayName("북마크 목록 size 숫자 변환 오류는 size 필드로 응답한다")
     @Test
     void returnsSizeFieldForBookmarkedCoursesSizeTypeMismatch() throws Exception {
-        mockMvc.perform(get("/api/courses/bookmarks/{userId}", 20L)
+        mockMvc.perform(get("/api/courses/bookmarks")
+                        .with(authenticated(20L))
                         .queryParam("size", "abc"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
@@ -208,7 +227,8 @@ class CourseBookmarkControllerTest {
         given(courseBookmarkService.findBookmarkedCourses(userId, request))
                 .willThrow(new CustomException(ResponseCode.INVALID_CURSOR));
 
-        mockMvc.perform(get("/api/courses/bookmarks/{userId}", userId)
+        mockMvc.perform(get("/api/courses/bookmarks")
+                        .with(authenticated(userId))
                         .queryParam("cursor", "%%%"))
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.success").value(false))
@@ -225,7 +245,8 @@ class CourseBookmarkControllerTest {
         given(courseBookmarkService.addBookmark(courseId, userId))
                 .willThrow(new CustomException(ResponseCode.COURSE_NOT_FOUND));
 
-        mockMvc.perform(post("/api/courses/{courseId}/bookmark/{userId}", courseId, userId))
+        mockMvc.perform(post("/api/courses/{courseId}/bookmark", courseId)
+                        .with(authenticated(userId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.COURSE_NOT_FOUND.getCode()))
@@ -242,12 +263,28 @@ class CourseBookmarkControllerTest {
         given(courseBookmarkService.removeBookmark(courseId, userId))
                 .willThrow(new CustomException(ResponseCode.USER_NOT_FOUND));
 
-        mockMvc.perform(delete("/api/courses/{courseId}/bookmark/{userId}", courseId, userId))
+        mockMvc.perform(delete("/api/courses/{courseId}/bookmark", courseId)
+                        .with(authenticated(userId)))
                 .andExpect(status().isNotFound())
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.USER_NOT_FOUND.getCode()))
                 .andExpect(jsonPath("$.message").value(ResponseCode.USER_NOT_FOUND.getMessage()));
 
         then(courseBookmarkService).should().removeBookmark(courseId, userId);
+    }
+
+    private Authentication authenticatedUser(Long userId) {
+        return UsernamePasswordAuthenticationToken.authenticated(
+                new AuthenticatedUser(userId, "google", true),
+                null,
+                List.of(new SimpleGrantedAuthority("ROLE_USER"))
+        );
+    }
+
+    private RequestPostProcessor authenticated(Long userId) {
+        return request -> {
+            TestSecurityContextHolder.setAuthentication(authenticatedUser(userId));
+            return testSecurityContext().postProcessRequest(request);
+        };
     }
 }

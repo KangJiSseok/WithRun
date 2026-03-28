@@ -187,10 +187,10 @@ class RunningSessionServiceTest {
     void usesReadOnlyAtClassLevelAndWritableMethods() throws NoSuchMethodException {
         Transactional classTransactional = RunningSessionService.class.getAnnotation(Transactional.class);
         Transactional createTransactional = RunningSessionService.class
-                .getDeclaredMethod("createRunningSession", CreateRunningSessionRequest.class)
+                .getDeclaredMethod("createRunningSession", Long.class, CreateRunningSessionRequest.class)
                 .getAnnotation(Transactional.class);
         Transactional completeTransactional = RunningSessionService.class
-                .getDeclaredMethod("completeRunningSession", Long.class, CompleteRunningSessionRequest.class)
+                .getDeclaredMethod("completeRunningSession", Long.class, Long.class, CompleteRunningSessionRequest.class)
                 .getAnnotation(Transactional.class);
 
         assertThat(classTransactional).isNotNull();
@@ -209,7 +209,8 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 901L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(1L, FREE, null, null, 30.0, 176.0)
+                1L,
+                new CreateRunningSessionRequest(FREE, null, null, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -246,7 +247,8 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 902L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(2L, COURSE, 300L, null, 30.0, 176.0)
+                2L,
+                new CreateRunningSessionRequest(COURSE, 300L, null, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -275,7 +277,8 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 904L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(31L, COURSE, 307L, null, 30.0, 176.0)
+                31L,
+                new CreateRunningSessionRequest(COURSE, 307L, null, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -299,7 +302,8 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 905L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(32L, COURSE, 308L, null, 30.0, 176.0)
+                32L,
+                new CreateRunningSessionRequest(COURSE, 308L, null, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -324,7 +328,8 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 922L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(22L, COURSE, 320L, null, 30.0, 176.0)
+                22L,
+                new CreateRunningSessionRequest(COURSE, 320L, null, 30.0, 176.0)
         );
 
         assertThat(recordComponentNames(CreateRunningSessionResponse.class)).contains("navigationBundleUrl");
@@ -343,7 +348,8 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 923L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(23L, COURSE, 321L, null, 30.0, 176.0)
+                23L,
+                new CreateRunningSessionRequest(COURSE, 321L, null, 30.0, 176.0)
         );
 
         assertThat(response.navigationBundleUrl()).isNull();
@@ -362,7 +368,8 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 903L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(3L, GHOST, 301L, 44L, 30.0, 176.0)
+                3L,
+                new CreateRunningSessionRequest(GHOST, 301L, 44L, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -395,7 +402,8 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 906L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(33L, GHOST, 309L, 58L, 30.0, 176.0)
+                33L,
+                new CreateRunningSessionRequest(GHOST, 309L, 58L, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -423,7 +431,8 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 907L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(34L, GHOST, 310L, 59L, 30.0, 176.0)
+                34L,
+                new CreateRunningSessionRequest(GHOST, 310L, 59L, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -481,7 +490,8 @@ class RunningSessionServiceTest {
                 .thenReturn(List.of(firstGpsSample, secondGpsSample));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(30L, GHOST, 306L, 57L, 30.0, 176.0)
+                30L,
+                new CreateRunningSessionRequest(GHOST, 306L, 57L, 30.0, 176.0)
         );
 
         assertThat(recordComponentNames(CreateRunningSessionResponse.class)).contains("ghostTargetGpsSamples");
@@ -528,7 +538,8 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.save(any(RunningSession.class))).thenAnswer(invocation -> persist(invocation.getArgument(0), 905L));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(13L, GHOST, 303L, null, 30.0, 176.0)
+                13L,
+                new CreateRunningSessionRequest(GHOST, 303L, null, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -570,7 +581,8 @@ class RunningSessionServiceTest {
                 .thenReturn(List.of(gpsSample));
 
         CreateRunningSessionResponse response = runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(user.getId(), GHOST, course.getId(), null, 30.0, 176.0)
+                user.getId(),
+                new CreateRunningSessionRequest(GHOST, course.getId(), null, 30.0, 176.0)
         );
 
         ArgumentCaptor<RunningSession> sessionCaptor = ArgumentCaptor.forClass(RunningSession.class);
@@ -598,7 +610,8 @@ class RunningSessionServiceTest {
         when(userRepository.findNotDeletedUser(10L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(10L, FREE, null, null, 30.0, 176.0)
+                10L,
+                new CreateRunningSessionRequest(FREE, null, null, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -611,7 +624,8 @@ class RunningSessionServiceTest {
         stubUser(user(11L));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(11L, COURSE, null, null, 30.0, 176.0)
+                11L,
+                new CreateRunningSessionRequest(COURSE, null, null, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -629,7 +643,8 @@ class RunningSessionServiceTest {
         when(courseRepository.findNotDeletedCourse(privateCourse.getId())).thenReturn(Optional.of(privateCourse));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(12L, COURSE, 302L, null, 30.0, 176.0)
+                12L,
+                new CreateRunningSessionRequest(COURSE, 302L, null, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -648,7 +663,8 @@ class RunningSessionServiceTest {
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(55L)).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(14L, GHOST, 304L, 55L, 30.0, 176.0)
+                14L,
+                new CreateRunningSessionRequest(GHOST, 304L, 55L, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -666,7 +682,8 @@ class RunningSessionServiceTest {
         when(courseRepository.findNotDeletedCourse(privateCourse.getId())).thenReturn(Optional.of(privateCourse));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(35L, GHOST, 311L, 60L, 30.0, 176.0)
+                35L,
+                new CreateRunningSessionRequest(GHOST, 311L, 60L, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -687,7 +704,8 @@ class RunningSessionServiceTest {
                 .thenReturn(Optional.of(incompleteGhostTarget));
 
         assertThatThrownBy(() -> runningSessionService.createRunningSession(
-                new CreateRunningSessionRequest(15L, GHOST, 305L, 56L, 30.0, 176.0)
+                15L,
+                new CreateRunningSessionRequest(GHOST, 305L, 56L, 30.0, 176.0)
         ))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -714,11 +732,11 @@ class RunningSessionServiceTest {
     @Test
     void treatsDifferentUserAsRunningSessionNotFound() {
         RunningSession runningSession = runningSession(1L, 2L, false, STARTED_AT);
-        CompleteRunningSessionRequest request = validCompleteRequest(1L);
+        CompleteRunningSessionRequest request = validCompleteRequest();
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
         when(userRepository.findNotDeletedUser(1L)).thenReturn(Optional.of(user(1L)));
 
-        assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
+        assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, 1L, request))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.RUNNING_SESSION_NOT_FOUND);
@@ -728,11 +746,11 @@ class RunningSessionServiceTest {
     @Test
     void rejectsAlreadyCompletedRunningSession() {
         RunningSession runningSession = runningSession(1L, 1L, true, STARTED_AT);
-        CompleteRunningSessionRequest request = validCompleteRequest(1L);
+        CompleteRunningSessionRequest request = validCompleteRequest();
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
         when(userRepository.findNotDeletedUser(1L)).thenReturn(Optional.of(user(1L)));
 
-        assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
+        assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, 1L, request))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED);
@@ -741,10 +759,10 @@ class RunningSessionServiceTest {
     @DisplayName("존재하지 않는 세션은 종료할 수 없다")
     @Test
     void throwsRunningSessionNotFoundWhenSessionDoesNotExist() {
-        CompleteRunningSessionRequest request = validCompleteRequest(1L);
+        CompleteRunningSessionRequest request = validCompleteRequest();
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.empty());
 
-        assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, request))
+        assertThatThrownBy(() -> runningSessionService.completeRunningSession(1L, 1L, request))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.RUNNING_SESSION_NOT_FOUND);
@@ -754,7 +772,7 @@ class RunningSessionServiceTest {
     @Test
     void appliesCurrentTimeForEndedAt() {
         RunningSession runningSession = runningSession(1L, 1L, false, STARTED_AT);
-        CompleteRunningSessionRequest request = validCompleteRequest(1L);
+        CompleteRunningSessionRequest request = validCompleteRequest();
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(runningSession));
         when(userRepository.findNotDeletedUser(1L)).thenReturn(Optional.of(user(1L)));
         when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -762,7 +780,7 @@ class RunningSessionServiceTest {
         when(runningSessionSplitRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
         LocalDateTime beforeComplete = LocalDateTime.now();
-        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(1L, request);
+        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(1L, 1L, request);
         LocalDateTime afterComplete = LocalDateTime.now();
 
         assertThat(response.endedAt()).isBetween(beforeComplete, afterComplete);
@@ -863,14 +881,14 @@ class RunningSessionServiceTest {
     @Test
     void mapsRunningMetricsOntoGpsSamplesWhenCompletingRunningSession() {
         RunningSession runningSession = runningSession(92L, 1L, false, STARTED_AT);
-        CompleteRunningSessionRequest request = validCompleteRequest(1L);
+        CompleteRunningSessionRequest request = validCompleteRequest();
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(92L)).thenReturn(Optional.of(runningSession));
         when(userRepository.findNotDeletedUser(1L)).thenReturn(Optional.of(user(1L)));
         when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(runningHealthSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(runningSessionSplitRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(92L, request);
+        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(92L, 1L, request);
 
         assertThat(response.gpsSamples()).containsExactly(new RunningGpsSampleResponse(
                 LocalDateTime.of(2026, 3, 18, 6, 31, 30),
@@ -900,7 +918,7 @@ class RunningSessionServiceTest {
         RunningSession runningSession = runningSession(94L, user.getId(), false, STARTED_AT);
         setField(runningSession, "mode", GHOST);
         setField(runningSession, "course", course);
-        CompleteRunningSessionRequest request = validCompleteRequest(user.getId());
+        CompleteRunningSessionRequest request = validCompleteRequest();
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(runningSession.getId())).thenReturn(Optional.of(runningSession));
         when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
         when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -912,7 +930,7 @@ class RunningSessionServiceTest {
                 .thenReturn(Optional.empty());
         when(courseGhostLeaderboardRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(runningSession.getId(), request);
+        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(runningSession.getId(), user.getId(), request);
 
         assertThat(response.isCompleted()).isTrue();
         assertThat(response.ghostRunningResult()).isNull();
@@ -941,7 +959,7 @@ class RunningSessionServiceTest {
         setField(runningSession, "course", course);
         setField(runningSession, "ghostTargetRunningSession", ghostTarget);
         CourseGhostLeaderboard existingLeaderboard = leaderboard(701L, user, course, completedRunningSession(97L), 900);
-        CompleteRunningSessionRequest request = validCompleteRequest(user.getId());
+        CompleteRunningSessionRequest request = validCompleteRequest();
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(runningSession.getId())).thenReturn(Optional.of(runningSession));
         when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
         when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
@@ -954,7 +972,7 @@ class RunningSessionServiceTest {
                 .thenReturn(Optional.of(existingLeaderboard));
         when(ghostRunningResultRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(runningSession.getId(), request);
+        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(runningSession.getId(), user.getId(), request);
 
         assertThat(response.ghostRunningResult()).isNotNull();
         assertThat(existingLeaderboard.getPoint()).isEqualTo(1200);
@@ -966,14 +984,14 @@ class RunningSessionServiceTest {
     void recordsRunInUserCalendarWhenCompletingDetailedRunningSession() {
         User user = user(21L);
         RunningSession runningSession = runningSession(91L, 21L, false, STARTED_AT);
-        CompleteRunningSessionRequest request = validCompleteRequest(21L);
+        CompleteRunningSessionRequest request = validCompleteRequest();
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(91L)).thenReturn(Optional.of(runningSession));
         when(userRepository.findNotDeletedUser(21L)).thenReturn(Optional.of(user));
         when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(runningHealthSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(runningSessionSplitRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
 
-        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(91L, request);
+        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(91L, 21L, request);
 
         ArgumentCaptor<UserCalendar> calendarCaptor = ArgumentCaptor.forClass(UserCalendar.class);
         verify(userCalendarRepository).save(calendarCaptor.capture());
@@ -1005,7 +1023,7 @@ class RunningSessionServiceTest {
         RunningSession previousBestSession = runningSession(333L, 31L, true, STARTED_AT.minusDays(2));
         CourseGhostLeaderboard existingLeaderboard = CourseGhostLeaderboard.create(user, course, previousBestSession, 950);
 
-        CompleteRunningSessionRequest request = validCompleteRequest(31L);
+        CompleteRunningSessionRequest request = validCompleteRequest();
 
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(111L)).thenReturn(Optional.of(runningSession));
         when(userRepository.findNotDeletedUser(31L)).thenReturn(Optional.of(user));
@@ -1018,7 +1036,7 @@ class RunningSessionServiceTest {
         when(ghostRunningResultRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
         when(courseGhostLeaderboardRepository.findTopByUserIdAndCourseId(31L, 701L)).thenReturn(Optional.of(existingLeaderboard));
 
-        runningSessionService.completeRunningSession(111L, request);
+        runningSessionService.completeRunningSession(111L, 31L, request);
 
         assertThat(existingLeaderboard.getPoint()).isEqualTo(1000);
         assertThat(existingLeaderboard.getRunningSession()).isEqualTo(runningSession);
@@ -1079,13 +1097,14 @@ class RunningSessionServiceTest {
                 RouteType.LOOP,
                 "https://cdn.withrun.app/course/snapshot.png?Expires=100&Signature=test&Key-Pair-Id=K123"
         );
+        stubUser(user(7L));
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(81L)).thenReturn(Optional.of(runningSession));
         when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(81L))
                 .thenReturn(List.of(firstGpsSample, secondGpsSample));
         when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 501L));
 
         RegisterRunningSessionCourseResponse response =
-                runningSessionService.registerRunningSessionCourse(81L, request);
+                runningSessionService.registerRunningSessionCourse(81L, 7L, request);
 
         assertThat(response.courseId()).isEqualTo(501L);
         assertThat(response.title()).isEqualTo("한강 야간 러닝 10K");
@@ -1188,13 +1207,14 @@ class RunningSessionServiceTest {
                 RouteType.LOOP,
                 null
         );
+        stubUser(user(7L));
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(84L)).thenReturn(Optional.of(runningSession));
         when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(84L))
                 .thenReturn(List.of(firstGpsSample, secondGpsSample));
         when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 503L));
 
         RegisterRunningSessionCourseResponse response =
-                runningSessionService.registerRunningSessionCourse(84L, request);
+                runningSessionService.registerRunningSessionCourse(84L, 7L, request);
 
         assertThat(response.status()).isEqualTo(CourseStatus.PRIVATE);
         assertThat(response.coordinates()).isEqualTo(expectedCoordinates);
@@ -1238,6 +1258,7 @@ class RunningSessionServiceTest {
                 RouteType.LOOP,
                 null
         );
+        stubUser(user(7L));
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(86L)).thenReturn(Optional.of(runningSession));
         when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(86L)).thenReturn(List.of(gpsSample));
         when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 504L));
@@ -1245,7 +1266,7 @@ class RunningSessionServiceTest {
                 new NavigationBundleGenerationException(NavigationBundleFailureCode.COURSE_NOT_FOUND, "missing course")
         );
 
-        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(86L, request))
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(86L, 7L, request))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.COURSE_NOT_FOUND);
@@ -1286,6 +1307,7 @@ class RunningSessionServiceTest {
                 RouteType.LOOP,
                 null
         );
+        stubUser(user(7L));
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(87L)).thenReturn(Optional.of(runningSession));
         when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(87L)).thenReturn(List.of(gpsSample));
         when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 505L));
@@ -1293,7 +1315,7 @@ class RunningSessionServiceTest {
                 new NavigationBundleGenerationException(NavigationBundleFailureCode.BUNDLE_STORAGE_FAILED, "storage failed")
         );
 
-        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(87L, request))
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(87L, 7L, request))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.NAVIGATION_BUNDLE_FAILED);
@@ -1315,9 +1337,10 @@ class RunningSessionServiceTest {
                 RouteType.LOOP,
                 null
         );
+        stubUser(user(7L));
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(85L)).thenReturn(Optional.of(runningSession));
 
-        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(85L, request))
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(85L, 7L, request))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
@@ -1375,13 +1398,14 @@ class RunningSessionServiceTest {
                 RouteType.LOOP,
                 null
         );
+        stubUser(user(7L));
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(82L)).thenReturn(Optional.of(runningSession));
         when(runningGpsSampleRepository.findByRunningSessionIdOrderBySampledAtAsc(82L))
                 .thenReturn(List.of(firstGpsSample, secondGpsSample));
         when(courseRepository.save(any(Course.class))).thenAnswer(invocation -> persistCourse(invocation.getArgument(0), 502L));
 
         RegisterRunningSessionCourseResponse response =
-                runningSessionService.registerRunningSessionCourse(82L, request);
+                runningSessionService.registerRunningSessionCourse(82L, 7L, request);
 
         assertThat(response.snapshotImageUrl()).isEqualTo("signed::snapshots/82.png");
         assertThat(response.coordinates()).isEqualTo(expectedCoordinates);
@@ -1400,9 +1424,10 @@ class RunningSessionServiceTest {
                 RouteType.LOOP,
                 null
         );
+        stubUser(user(7L));
         when(runningSessionRepository.findByIdAndDeletedAtIsNull(83L)).thenReturn(Optional.of(runningSession));
 
-        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(83L, request))
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(83L, 7L, request))
                 .isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.RUNNING_SESSION_NOT_COMPLETED);
@@ -1410,6 +1435,29 @@ class RunningSessionServiceTest {
         verify(courseRepository, never()).save(any(Course.class));
         verify(courseDifficultyRepository, never()).save(any(CourseDifficulty.class));
         verify(courseTypeMapRepository, never()).saveAll(any());
+    }
+
+    @DisplayName("다른 사용자의 세션은 코스로 등록할 수 없다")
+    @Test
+    void rejectsRegisterCourseWhenRunningSessionBelongsToAnotherUser() {
+        RunningSession runningSession = runningSession(88L, 99L, true, STARTED_AT);
+        RegisterRunningSessionCourseRequest request = new RegisterRunningSessionCourseRequest(
+                "권한 없는 코스 등록",
+                "COMMUNITY",
+                "MEDIUM",
+                List.of("RIVERSIDE"),
+                RouteType.LOOP,
+                null
+        );
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(88L)).thenReturn(Optional.of(runningSession));
+        when(userRepository.findNotDeletedUser(7L)).thenReturn(Optional.of(user(7L)));
+
+        assertThatThrownBy(() -> runningSessionService.registerRunningSessionCourse(88L, 7L, request))
+                .isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.RUNNING_SESSION_NOT_FOUND);
+
+        verify(courseRepository, never()).save(any(Course.class));
     }
 
     @DisplayName("과거 러닝 세션 페이지를 커서와 시간대로 조립한다")
@@ -1452,7 +1500,8 @@ class RunningSessionServiceTest {
         ));
 
         PastRunningSessionsResponse response = runningSessionService.findPastRunningSessions(
-                new PastRunningSessionsRequest(user.getId(), null, null, null, 1, null)
+                user.getId(),
+                new PastRunningSessionsRequest(null, null, null, 1, null)
         );
 
         assertThat(response.items()).containsExactly(
@@ -1478,7 +1527,7 @@ class RunningSessionServiceTest {
     @Test
     void passesExtractedDateRangeToRepository() {
         User user = user(7L);
-        PastRunningSessionsRequest request = new PastRunningSessionsRequest(user.getId(), 2026, 3, 16, 10, null);
+        PastRunningSessionsRequest request = new PastRunningSessionsRequest(2026, 3, 16, 10, null);
         RunningSessionDateRange range = RunningSessionDateRange.of(request.year(), request.month(), request.day());
         when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
         when(runningSessionRepository.findPastRunningSessionHistoryRows(
@@ -1490,7 +1539,7 @@ class RunningSessionServiceTest {
                 10
         )).thenReturn(List.of());
 
-        PastRunningSessionsResponse response = runningSessionService.findPastRunningSessions(request);
+        PastRunningSessionsResponse response = runningSessionService.findPastRunningSessions(user.getId(), request);
 
         assertThat(response.items()).isEmpty();
         assertThat(response.hasMore()).isFalse();
@@ -1577,9 +1626,8 @@ class RunningSessionServiceTest {
         return runningSession;
     }
 
-    private CompleteRunningSessionRequest validCompleteRequest(Long userId) {
+    private CompleteRunningSessionRequest validCompleteRequest() {
         return new CompleteRunningSessionRequest(
-                userId,
                 5320,
                 328,
                 37.5701,
@@ -1607,7 +1655,6 @@ class RunningSessionServiceTest {
                         84.5
                 )),
                 List.of(new CreateRunningSessionSplitRequest(
-                        userId,
                         1,
                         1000,
                         320,

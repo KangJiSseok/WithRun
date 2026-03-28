@@ -6,13 +6,17 @@ import io.swagger.v3.oas.annotations.media.Content;
 import io.swagger.v3.oas.annotations.media.Schema;
 import io.swagger.v3.oas.annotations.responses.ApiResponses;
 import io.swagger.v3.oas.annotations.tags.Tag;
+import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.course.dto.CourseLikeStatusResponse;
 import kr.withrun.was.domain.course.service.CourseLikeService;
+import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ApiResponse;
+import kr.withrun.was.global.response.ResponseCode;
 import kr.withrun.was.global.response.swagger.ErrorApiResponseDoc;
 import kr.withrun.was.global.response.swagger.SuccessApiResponseDocs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.validation.annotation.Validated;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.PathVariable;
@@ -45,14 +49,14 @@ public class CourseLikeController {
                     content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
             )
     })
-    @PostMapping("/{courseId}/like/{userId}")
+    @PostMapping("/{courseId}/like")
     public ResponseEntity<ApiResponse<CourseLikeStatusResponse>> likeCourse(
             @Parameter(description = "좋아요를 누를 코스 ID", example = "12")
             @PathVariable Long courseId,
-            @Parameter(description = "좋아요를 누를 사용자 ID", example = "7")
-            @PathVariable Long userId
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
-        return ApiResponse.successEntity(courseLikeService.likeCourse(courseId, userId));
+        return ApiResponse.successEntity(courseLikeService.likeCourse(courseId, resolveUserId(authenticatedUser)));
     }
 
     @Operation(
@@ -71,13 +75,21 @@ public class CourseLikeController {
                     content = @Content(schema = @Schema(implementation = ErrorApiResponseDoc.class))
             )
     })
-    @DeleteMapping("/{courseId}/like/{userId}")
+    @DeleteMapping("/{courseId}/like")
     public ResponseEntity<ApiResponse<CourseLikeStatusResponse>> unlikeCourse(
             @Parameter(description = "좋아요를 취소할 코스 ID", example = "12")
             @PathVariable Long courseId,
-            @Parameter(description = "좋아요를 취소할 사용자 ID", example = "7")
-            @PathVariable Long userId
+            @Parameter(hidden = true)
+            @AuthenticationPrincipal AuthenticatedUser authenticatedUser
     ) {
-        return ApiResponse.successEntity(courseLikeService.unlikeCourse(courseId, userId));
+        return ApiResponse.successEntity(courseLikeService.unlikeCourse(courseId, resolveUserId(authenticatedUser)));
+    }
+
+    private Long resolveUserId(AuthenticatedUser authenticatedUser) {
+        if (authenticatedUser == null || authenticatedUser.userId() == null) {
+            throw new CustomException(ResponseCode.UNAUTHORIZED);
+        }
+
+        return authenticatedUser.userId();
     }
 }

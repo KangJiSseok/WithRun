@@ -4,7 +4,6 @@ import io.swagger.v3.oas.annotations.media.Schema;
 import jakarta.validation.constraints.AssertTrue;
 import jakarta.validation.constraints.Max;
 import jakarta.validation.constraints.Min;
-import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 
 import java.time.DateTimeException;
@@ -12,12 +11,6 @@ import java.time.LocalDate;
 
 @Schema(description = "과거 러닝 세션 목록 조회 조건")
 public record PastRunningSessionsRequest(
-
-        @NotNull
-        @Positive
-        @Schema(description = "조회 대상 사용자 ID", example = "7", minimum = "1", requiredMode = Schema.RequiredMode.REQUIRED)
-        Long userId,
-
         @Positive
         @Max(999999999)
         @Schema(description = "조회 기준 연도. month 또는 day 를 함께 사용할 때 필요하다.", example = "2026", minimum = "1")

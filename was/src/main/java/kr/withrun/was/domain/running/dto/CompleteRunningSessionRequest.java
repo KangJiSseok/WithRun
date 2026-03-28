@@ -5,18 +5,12 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.DecimalMax;
 import jakarta.validation.constraints.DecimalMin;
 import jakarta.validation.constraints.NotNull;
-import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
 
 import java.util.List;
 
 @Schema(description = "러닝 세션 종료 및 상세 기록 저장 요청")
 public record CompleteRunningSessionRequest(
-        @Schema(description = "세션 소유 사용자 ID", example = "7", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull
-        @Positive
-        Long userId,
-
         @Schema(description = "최종 러닝 거리(m)", example = "5320", minimum = "0", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull
         @PositiveOrZero

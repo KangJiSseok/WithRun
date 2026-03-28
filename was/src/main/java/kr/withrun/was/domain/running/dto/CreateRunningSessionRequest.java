@@ -9,11 +9,6 @@ import kr.withrun.was.domain.running.type.RunningMode;
 
 @Schema(description = "러닝 세션 시작 요청")
 public record CreateRunningSessionRequest(
-        @Schema(description = "러닝을 시작하는 사용자 ID", example = "7", requiredMode = Schema.RequiredMode.REQUIRED)
-        @NotNull
-        @Positive
-        Long userId,
-
         @Schema(description = "러닝 모드. FREE 는 자유 러닝, COURSE 는 공식 코스 러닝, GHOST 는 완료된 세션을 목표로 하는 고스트 러닝이다.", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull
         RunningMode mode,

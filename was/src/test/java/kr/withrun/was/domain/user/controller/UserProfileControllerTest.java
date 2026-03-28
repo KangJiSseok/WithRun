@@ -79,19 +79,32 @@ class UserProfileControllerTest {
     }
 
     @Test
-    @DisplayName("닉네임만 전달하면 공개 닉네임 사용 가능 여부를 반환한다")
-    void returnsNicknameAvailabilityWithoutAuthentication() throws Exception {
+    @DisplayName("유효한 access token이면 닉네임 사용 가능 여부를 반환한다")
+    void returnsNicknameAvailabilityWhenTokenIsValid() throws Exception {
         given(userProfileService.getNicknameAvailability("runner-next")).willReturn(
                 new NicknameAvailabilityResponse(true)
         );
 
         mockMvc.perform(get("/api/users/nickname-availability")
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(10L))
                         .queryParam("nickname", "runner-next"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.available").value(true));
 
         then(userProfileService).should().getNicknameAvailability("runner-next");
+    }
+
+    @Test
+    @DisplayName("Authorization 헤더가 없으면 닉네임 사용 가능 여부 조회는 인증 필요 응답을 반환한다")
+    void returnsUnauthorizedWhenNicknameAvailabilityAuthorizationHeaderIsMissing() throws Exception {
+        mockMvc.perform(get("/api/users/nickname-availability")
+                        .queryParam("nickname", "runner-next"))
+                .andExpect(status().isUnauthorized())
+                .andExpect(jsonPath("$.success").value(false))
+                .andExpect(jsonPath("$.code").value(ResponseCode.UNAUTHORIZED.getCode()));
+
+        then(userProfileService).should(never()).getNicknameAvailability(any());
     }
 
     @Test
