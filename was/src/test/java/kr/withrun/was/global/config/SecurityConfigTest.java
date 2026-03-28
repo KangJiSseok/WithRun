@@ -110,15 +110,18 @@ class SecurityConfigTest {
                 .andExpect(jsonPath("$.success").value(true));
     }
 
+    @Test
+    @DisplayName("meta API 는 access token 없이도 허용한다")
+    void keepsMetaEndpointsPublic() throws Exception {
+        mockMvc.perform(get("/api/meta/course/register"))
+                .andExpect(status().isOk());
+    }
+
     private static Stream<org.junit.jupiter.params.provider.Arguments> authenticatedRoutes() {
         return Stream.of(
                 org.junit.jupiter.params.provider.Arguments.of(
                         "course detail",
                         get("/api/courses/12")
-                ),
-                org.junit.jupiter.params.provider.Arguments.of(
-                        "meta survey",
-                        get("/api/meta/survey")
                 ),
                 org.junit.jupiter.params.provider.Arguments.of(
                         "nickname availability",

@@ -4,6 +4,7 @@ import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardResponse;
+import kr.withrun.was.domain.course.dto.CourseNavigationMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseRegisterMetaResponse;
 import kr.withrun.was.domain.course.dto.CourseSurveyMetaResponse;
 import kr.withrun.was.domain.course.dto.NearbyCoursesRequest;
@@ -31,6 +32,7 @@ import kr.withrun.was.domain.course.type.NearbyGhostCourseSortBy;
 import kr.withrun.was.domain.course.type.RouteType;
 import kr.withrun.was.domain.course.util.CourseGhostLeaderboardCursorCodec;
 import kr.withrun.was.domain.course.vo.Coordinates;
+import kr.withrun.was.domain.navigation.dto.internal.bundle.NavigationBundleManeuverSampleAction;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.domain.user.entity.User;
@@ -190,6 +192,52 @@ class CourseServiceTest {
                 new CourseSurveyMetaResponse.DifficultyOption("EASY", "쉬움"),
                 new CourseSurveyMetaResponse.DifficultyOption("MEDIUM", "보통"),
                 new CourseSurveyMetaResponse.DifficultyOption("HARD", "어려움")
+        );
+    }
+
+    @DisplayName("코스 navigation 메타 조회는 maneuver 정보를 label 과 함께 반환한다")
+    @Test
+    void returnsCourseNavigationMeta() {
+        CourseNavigationMetaResponse response = courseService.findCourseNavigationMeta();
+
+        assertThat(response.navigations()).hasSize(NavigationBundleManeuverSampleAction.values().length);
+        assertThat(response.navigations()).extracting(CourseNavigationMetaResponse.NavigationOption::data)
+                .containsExactly(
+                        "STRAIGHT",
+                        "RIGHT",
+                        "LEFT",
+                        "UTURN",
+                        "ARRIVAL"
+                );
+        assertThat(response.navigations().get(0)).isEqualTo(
+                new CourseNavigationMetaResponse.NavigationOption(
+                        "STRAIGHT",
+                        "직진"
+                )
+        );
+        assertThat(response.navigations().get(1)).isEqualTo(
+                new CourseNavigationMetaResponse.NavigationOption(
+                        "RIGHT",
+                        "우회전"
+                )
+        );
+        assertThat(response.navigations().get(2)).isEqualTo(
+                new CourseNavigationMetaResponse.NavigationOption(
+                        "LEFT",
+                        "좌회전"
+                )
+        );
+        assertThat(response.navigations().get(3)).isEqualTo(
+                new CourseNavigationMetaResponse.NavigationOption(
+                        "UTURN",
+                        "유턴"
+                )
+        );
+        assertThat(response.navigations().get(4)).isEqualTo(
+                new CourseNavigationMetaResponse.NavigationOption(
+                        "ARRIVAL",
+                        "도착"
+                )
         );
     }
 
