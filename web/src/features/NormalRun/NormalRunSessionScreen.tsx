@@ -10,8 +10,6 @@ import { completeRunningSession } from '@/apis/runningSessions';
 import { useNormalRunSessionStore } from '@/stores/NormalRun';
 import { useBridgeDataStore } from '@/bridge';
 
-// 회원 시스템 구현 전 임시 mock 유저
-const MOCK_USER_ID = 1;
 
 interface StatItemProps {
   label: string;
@@ -87,7 +85,6 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
       const data = latestGetCollectedDataRef.current();
       const gps = latestGpsLocationRef.current;
       completeRunningSession(s.runningSessionId, {
-        userId: MOCK_USER_ID,
         isCompleted: false,
         endLatitude: gps?.latitude ?? 0,
         endLongitude: gps?.longitude ?? 0,
@@ -104,7 +101,6 @@ export function NormalRunSessionScreen({ courseDetail }: NormalRunSessionScreenP
     const data = getCollectedData();
     try {
       const res = await completeRunningSession(session.runningSessionId, {
-        userId: MOCK_USER_ID,
         isCompleted: true,
         endLatitude: gpsLocation?.latitude ?? 0,
         endLongitude: gpsLocation?.longitude ?? 0,

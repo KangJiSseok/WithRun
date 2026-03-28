@@ -10,8 +10,6 @@ import { NormalRunMap } from '@/features/NormalRun/NormalRunMap';
 import { cn } from '@/shared/utils';
 import { useGhostRunSessionStore } from '@/stores/GhostRun';
 
-// 회원 시스템 구현 전 임시 mock 유저
-const MOCK_USER_ID = 1;
 
 interface StatItemProps {
   label: string;
@@ -84,7 +82,6 @@ export function GhostRunSessionScreen({ courseDetail }: GhostRunSessionScreenPro
       const data = latestGetCollectedDataRef.current();
       const gps = latestGpsLocationRef.current;
       completeRunningSession(s.runningSessionId, {
-        userId: MOCK_USER_ID,
         isCompleted: false,
         endLatitude: gps?.latitude ?? 0,
         endLongitude: gps?.longitude ?? 0,
@@ -101,7 +98,6 @@ export function GhostRunSessionScreen({ courseDetail }: GhostRunSessionScreenPro
     const data = getCollectedData();
     try {
       const res = await completeRunningSession(session.runningSessionId, {
-        userId: MOCK_USER_ID,
         isCompleted: true,
         endLatitude: gpsLocation?.latitude ?? 0,
         endLongitude: gpsLocation?.longitude ?? 0,

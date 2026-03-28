@@ -63,21 +63,6 @@ export const completeRunningSession = async (
 };
 
 /**
- * 러닝 세션 종료 API
- * PATCH /running-sessions/{runningSessionId}
- */
-export const patchCompleteRunningSessionApi = async (
-  runningSessionId: number,
-  body: CompleteRunningSessionRequest,
-): Promise<ApiResponse<CompleteRunningSessionResponse>> => {
-  const { data } = await axiosClient.patch<ApiResponse<CompleteRunningSessionResponse>>(
-    `/running-sessions/${runningSessionId}`,
-    body,
-  );
-  return data;
-};
-
-/**
  * 러닝 세션 상세 조회 API
  * GET /running-sessions/{runningSessionId}/detail
  */

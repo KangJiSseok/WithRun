@@ -46,7 +46,6 @@ export function useRunningSplits({
           : 0;
 
       splitsRef.current.push({
-        userId: MOCK_USER_ID,
         splitIndex: km,
         splitDistanceM: 1000,
         splitDurationSec,

@@ -7,11 +7,24 @@ import { cn } from '@/shared/utils';
 import { useFreeRunning } from '@/hooks/FreeRun/useFreeRunning';
 import { useBridgeDataStore } from '@/bridge';
 import { completeRunningSession } from '@/apis';
-import { useFreeRunSessionStore } from '@/stores/FreeRun';
+import type { GpsSample, HealthSample, SplitResult } from '@/apis';
 import { FreeRunningMap } from './FreeRunningMap';
+import { useFreeRunSessionStore } from '@/stores/FreeRun';
 
-// 회원 시스템 구현 전 임시 mock 유저
-const MOCK_USER_ID = 1;
+export interface RunningResult {
+  durationSec: number;
+  distanceM: number;
+  caloriesKcal: number;
+  avgPaceSecPerKm: number;
+  gpsSamples: GpsSample[];
+  splits: SplitResult[];
+  healthSamples: HealthSample[];
+}
+
+interface FreeRunningScreenProps {
+  runningSessionId: number | null;
+  onFinish: (result: RunningResult) => void;
+}
 
 interface StatItemProps {
   label: string;
@@ -37,7 +50,10 @@ function StatItem({ label, value, sub }: StatItemProps) {
   );
 }
 
-export function FreeRunningScreen() {
+export function FreeRunningScreen({
+  runningSessionId,
+  onFinish,
+}: FreeRunningScreenProps) {
   const navigate = useNavigate();
   const {
     time,
@@ -49,11 +65,10 @@ export function FreeRunningScreen() {
     getCollectedData,
   } = useFreeRunning();
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
-  const session = useFreeRunSessionStore((s) => s.session);
-  const setResult = useFreeRunSessionStore((s) => s.setResult);
   const clearAll = useFreeRunSessionStore((s) => s.clearAll);
 
   const [isEnding, setIsEnding] = useState(false);
+  const completedRef = useRef(false);
 
   // "latest ref" 패턴: cleanup 클로저에서 최신값 접근
   const latestGetCollectedDataRef = useRef(getCollectedData);
@@ -62,47 +77,52 @@ export function FreeRunningScreen() {
   const latestGpsLocationRef = useRef(gpsLocation);
   latestGpsLocationRef.current = gpsLocation;
 
+  const latestRunningSessionIdRef = useRef(runningSessionId);
+  latestRunningSessionIdRef.current = runningSessionId;
+
   // 비정상 종료 처리 (앱 이탈 시 세션 종료 API fire-and-forget)
   // DEV: StrictMode 이중 마운트로 인한 오발을 완전히 차단하기 위해 skip
   //      (비정상 종료 처리는 프로덕션 모바일에서만 필요)
-  // handleStopRunning 에러 시 clearAll() → session=null → !s 체크에서 자동 방지
   useEffect(() => {
     if (import.meta.env.DEV) return;
     return () => {
-      const {
-        session: s,
-        result: r,
-        clearAll: ca,
-      } = useFreeRunSessionStore.getState();
-      if (!s || r) return;
+      if (completedRef.current) return;
+      const sessionId = latestRunningSessionIdRef.current;
+      if (!sessionId) return;
       const data = latestGetCollectedDataRef.current();
       const gps = latestGpsLocationRef.current;
-      completeRunningSession(s.runningSessionId, {
-        userId: MOCK_USER_ID,
+      completeRunningSession(sessionId, {
         isCompleted: false,
         ...data,
         endLatitude: gps?.latitude ?? 0,
         endLongitude: gps?.longitude ?? 0,
         distanceGapM: 0,
       }).catch(() => {}); // fire-and-forget
-      ca();
     };
   }, []);
 
   const handleStopRunning = useCallback(async () => {
-    if (isEnding || !session) return;
+    if (isEnding || !runningSessionId) return;
     setIsEnding(true);
     try {
       const data = getCollectedData();
-      const res = await completeRunningSession(session.runningSessionId, {
-        userId: MOCK_USER_ID,
+      const res = await completeRunningSession(runningSessionId, {
         isCompleted: true,
         ...data,
         endLatitude: gpsLocation?.latitude ?? 0,
         endLongitude: gpsLocation?.longitude ?? 0,
         distanceGapM: 0,
       });
-      setResult(res.data);
+      completedRef.current = true;
+      onFinish({
+        durationSec: res.data.durationSec,
+        distanceM: res.data.distanceM,
+        caloriesKcal: res.data.caloriesKcal,
+        avgPaceSecPerKm: res.data.avgPaceSecPerKm,
+        gpsSamples: res.data.gpsSamples,
+        splits: res.data.splits,
+        healthSamples: res.data.healthSamples,
+      });
     } catch {
       clearAll();
       navigate('/free-run');
@@ -111,10 +131,10 @@ export function FreeRunningScreen() {
     }
   }, [
     isEnding,
-    session,
+    runningSessionId,
     getCollectedData,
     gpsLocation,
-    setResult,
+    onFinish,
     clearAll,
     navigate,
   ]);

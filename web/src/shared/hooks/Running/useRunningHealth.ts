@@ -8,8 +8,6 @@ import type { HealthSample } from '@/apis/runningSessions';
 
 // 워치 메시지가 이 시간(ms) 이상 오지 않으면 연결 끊김으로 판단
 const WATCH_TIMEOUT_MS = 3000;
-// GPS 데이터가 이 시간(ms) 이상 오지 않으면 stale로 판단
-const GPS_TIMEOUT_MS = 3000;
 
 export function useRunningHealth({ isPaused }: { isPaused: boolean }) {
   const [isWatchConnected, setIsWatchConnected] = useState(false);
@@ -67,21 +65,10 @@ export function useRunningHealth({ isPaused }: { isPaused: boolean }) {
   useEffect(() => {
     if (latestIsPausedRef.current || !watchHealthData) return;
 
-    const isGpsStale =
-      lastGpsReceivedAtRef.current === null ||
-      Date.now() - lastGpsReceivedAtRef.current > GPS_TIMEOUT_MS;
-    const speedMps = isGpsStale ? 0 : (latestGpsLocationRef.current?.speedMps ?? 0);
-
     healthSamplesRef.current.push({
       sampledAt: new Date(watchHealthData.timestamp).toISOString(),
       heartRate: watchHealthData.heartRate,
-      speedMps,
-      paceSecPerKm: speedMps > 0 ? Math.round(1000 / speedMps) : 0,
-      distanceM: watchHealthData.distanceM,
       caloriesKcal: watchHealthData.caloriesKcal,
-      cadenceSpm: latestIsWatchConnectedRef.current
-        ? (watchHealthData.cadenceSpm ?? latestGpsLocationRef.current?.cadenceSpm ?? 0)
-        : (latestGpsLocationRef.current?.cadenceSpm ?? 0),
     });
 
     if (watchHealthData.heartRate > 0) {
