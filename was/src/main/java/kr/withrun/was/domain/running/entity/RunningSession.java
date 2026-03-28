@@ -13,9 +13,9 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import kr.withrun.was.domain.course.entity.Course;
-import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import kr.withrun.was.domain.user.entity.User;
 import kr.withrun.was.global.common.entity.BaseEntity;
 import kr.withrun.was.global.exception.CustomException;
@@ -134,13 +134,14 @@ public class RunningSession extends BaseEntity {
         runningSession.caloriesKcal = 0;
         runningSession.elevationGainM = 0;
         runningSession.isPublic = mode == RunningMode.GHOST;
-        runningSession.completeState = null;
+        runningSession.completeState = RunningSessionCompleteState.FAIL;
         runningSession.startLatitude = startLatitude;
         runningSession.startLongitude = startLongitude;
         return runningSession;
     }
 
     public void complete(
+            RunningSessionCompleteState completeState,
             Integer distanceM,
             Integer caloriesKcal,
             Double endLatitude,
@@ -159,7 +160,7 @@ public class RunningSession extends BaseEntity {
         this.durationSec = durationSec;
         this.avgPaceSecPerKm = avgPaceSecPerKm;
         this.elevationGainM = elevationGainM;
-        this.completeState = RunningSessionCompleteState.SUCCESS;
+        this.completeState = completeState;
     }
 
     public void validateOwner(Long userId) {
@@ -169,7 +170,7 @@ public class RunningSession extends BaseEntity {
     }
 
     public void validateCompletable() {
-        if (this.completeState != null) {
+        if (this.endedAt != null) {
             throw new CustomException(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED);
         }
     }

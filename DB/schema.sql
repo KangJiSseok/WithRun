@@ -189,7 +189,7 @@ CREATE TABLE running_sessions (
   end_longitude NUMERIC(9, 6),
   coordinates JSONB,
   is_public BOOLEAN NOT NULL DEFAULT FALSE,
-  complete_state VARCHAR(16),
+  complete_state VARCHAR(16) NOT NULL DEFAULT 'FAIL',
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
@@ -236,9 +236,9 @@ CREATE TABLE running_sessions (
   CONSTRAINT chk_running_sessions_visibility_for_ghost
     CHECK ((mode = 'GHOST' AND is_public) OR mode <> 'GHOST'),
   CONSTRAINT chk_running_sessions_complete_state_enum
-    CHECK (complete_state IS NULL OR complete_state IN ('FAIL', 'SUCCESS', 'GIVEUP')),
+    CHECK (complete_state IN ('FAIL', 'SUCCESS', 'GIVEUP')),
   CONSTRAINT chk_running_sessions_complete_state
-    CHECK ((complete_state IS NOT NULL AND ended_at IS NOT NULL) OR complete_state IS NULL)
+    CHECK ((ended_at IS NULL AND complete_state = 'FAIL') OR (ended_at IS NOT NULL AND complete_state IN ('FAIL', 'SUCCESS', 'GIVEUP')))
 );
 
 -- Per-kilometer split read-model details captured during a running session.

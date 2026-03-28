@@ -12,7 +12,7 @@ import java.util.List;
 @JsonInclude(JsonInclude.Include.NON_NULL)
 public record RunningSessionDetailResponse(
         @JsonInclude(JsonInclude.Include.ALWAYS)
-        @Schema(description = "러닝 세션 종료 상태. 진행 중 세션이면 null 이다.", example = "SUCCESS", nullable = true)
+        @Schema(description = "러닝 세션 종료 상태. 시작 직후 기본값은 FAIL 이고 종료 요청으로 최종 상태가 반영된다.", example = "SUCCESS")
         RunningSessionCompleteState completeState,
 
         @Schema(description = "러닝 세션 ID", example = "91")

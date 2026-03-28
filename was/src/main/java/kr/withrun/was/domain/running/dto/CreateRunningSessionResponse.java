@@ -38,7 +38,7 @@ public record CreateRunningSessionResponse(
         @Schema(description = "현재 누적 칼로리(kcal). 시작 직후에는 0 이다.", example = "0")
         int caloriesKcal,
 
-        @Schema(description = "러닝 세션 종료 상태. 진행 중 세션이면 null 이다.", example = "SUCCESS", nullable = true)
+        @Schema(description = "러닝 세션 종료 상태. 시작 직후 기본값은 FAIL 이다.", example = "FAIL")
         RunningSessionCompleteState completeState
 ) {
 

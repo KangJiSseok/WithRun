@@ -131,6 +131,7 @@ public class RunningSessionService {
         runningSession.validateCompletable();
 
         runningSession.complete(
+                request.completeState(),
                 request.distanceM(),
                 request.caloriesKcal(),
                 request.endLatitude(),
