@@ -22,6 +22,7 @@ import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
 import kr.withrun.was.domain.course.type.NearbyGhostCourseSortBy;
 import kr.withrun.was.domain.running.entity.QRunningSession;
 import kr.withrun.was.domain.running.type.RunningMode;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -370,7 +371,7 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
                         .where(
                                 runningSession.course.id.eq(course.id),
                                 runningSession.mode.eq(RunningMode.GHOST),
-                                runningSession.isCompleted.isTrue(),
+                                runningSession.completeState.eq(RunningSessionCompleteState.SUCCESS),
                                 runningSession.deletedAt.isNull()
                         )
         );

@@ -13,6 +13,7 @@ import jakarta.persistence.JoinColumn;
 import jakarta.persistence.ManyToOne;
 import jakarta.persistence.Table;
 import kr.withrun.was.domain.course.entity.Course;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import kr.withrun.was.domain.course.vo.Coordinates;
 import kr.withrun.was.domain.running.type.RunningMode;
 import kr.withrun.was.domain.user.entity.User;
@@ -85,8 +86,9 @@ public class RunningSession extends BaseEntity {
     @Column(name = "is_public", nullable = false)
     private Boolean isPublic;
 
-    @Column(name = "is_completed", nullable = false)
-    private Boolean isCompleted;
+    @Enumerated(EnumType.STRING)
+    @Column(name = "complete_state", length = 16)
+    private RunningSessionCompleteState completeState;
 
     @ManyToOne(fetch = FetchType.LAZY, optional = false)
     @JoinColumn(
@@ -132,7 +134,7 @@ public class RunningSession extends BaseEntity {
         runningSession.caloriesKcal = 0;
         runningSession.elevationGainM = 0;
         runningSession.isPublic = mode == RunningMode.GHOST;
-        runningSession.isCompleted = false;
+        runningSession.completeState = null;
         runningSession.startLatitude = startLatitude;
         runningSession.startLongitude = startLongitude;
         return runningSession;
@@ -157,7 +159,7 @@ public class RunningSession extends BaseEntity {
         this.durationSec = durationSec;
         this.avgPaceSecPerKm = avgPaceSecPerKm;
         this.elevationGainM = elevationGainM;
-        this.isCompleted = true;
+        this.completeState = RunningSessionCompleteState.SUCCESS;
     }
 
     public void validateOwner(Long userId) {
@@ -167,13 +169,13 @@ public class RunningSession extends BaseEntity {
     }
 
     public void validateCompletable() {
-        if (Boolean.TRUE.equals(this.isCompleted)) {
+        if (this.completeState != null) {
             throw new CustomException(ResponseCode.RUNNING_SESSION_ALREADY_COMPLETED);
         }
     }
 
     public void validateCourseRegistrable() {
-        if (!Boolean.TRUE.equals(this.isCompleted)) {
+        if (this.completeState != RunningSessionCompleteState.SUCCESS) {
             throw new CustomException(ResponseCode.RUNNING_SESSION_NOT_COMPLETED);
         }
     }

@@ -7,6 +7,7 @@ import kr.withrun.was.domain.running.entity.QGhostRunningResult;
 import kr.withrun.was.domain.running.entity.QRunningSession;
 import kr.withrun.was.domain.running.entity.RunningSession;
 import kr.withrun.was.domain.running.repository.query.dto.PastRunningSessionHistoryRow;
+import kr.withrun.was.domain.running.type.RunningSessionCompleteState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Repository;
 
@@ -53,7 +54,7 @@ public class RunningSessionCustomRepositoryImpl implements RunningSessionCustomR
                 .where(
                         runningSession.user.id.eq(userId),
                         runningSession.deletedAt.isNull(),
-                        runningSession.isCompleted.eq(Boolean.TRUE),
+                        runningSession.completeState.eq(RunningSessionCompleteState.SUCCESS),
                         withinRange(runningSession, rangeStartInclusive, rangeEndExclusive),
                         isAfterCursor(runningSession, cursorStartedAt, cursorRunningSessionId)
                 )
@@ -78,7 +79,7 @@ public class RunningSessionCustomRepositoryImpl implements RunningSessionCustomR
                         runningSession.caloriesKcal,
                         runningSession.snapshotImageUrl,
                         runningSession.elevationGainM,
-                        runningSession.isCompleted,
+                        runningSession.completeState,
                         runningSession.mode,
                         ghostRunningResult.resultStatus
                 ))
