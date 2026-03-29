@@ -9,7 +9,6 @@ import { useNormalRunning } from '@/hooks/NormalRun/useNormalRunning';
 import { GhostRunMap } from '@/features/GhostRun/GhostRunMap';
 import { cn } from '@/shared/utils';
 import { useGhostRunSessionStore } from '@/stores/GhostRun';
-import { useAuthStore } from '@/stores/Auth';
 
 interface StatItemProps {
   label: string;
@@ -73,7 +72,6 @@ export function GhostRunSessionScreen({
   const courseAnchor = deviationAnchor ?? pauseAnchor;
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
 
-  const userId = useAuthStore((s) => s.user!.userId);
   const session = useGhostRunSessionStore((s) => s.session);
 
   const gpsSamples = session?.ghostTargetGpsSamples ?? null;
@@ -145,7 +143,6 @@ export function GhostRunSessionScreen({
     session,
     getCollectedData,
     gpsLocation,
-    userId,
     setResult,
     clearAll,
     navigate,

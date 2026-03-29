@@ -4,11 +4,12 @@ import { useNavigate, useParams } from 'react-router-dom';
 
 import type { GhostCourseDetail } from '@/apis';
 import { createRunningSession } from '@/apis/runningSessions';
-import { bridge, useBridgeDataStore } from '@/bridge';
+import { bridge } from '@/bridge';
 import { BOTTOM_NAV_HEIGHT } from '@/shared/components';
 import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
 import { useRunDetailMap } from '@/shared/hooks/useRunDetailMap';
+import { useRunLocation } from '@/shared/hooks/useRunLocation';
 import { formatTime } from '@/shared/utils';
 import { useGhostRunSessionStore } from '@/stores/GhostRun';
 import { useGhostRunLeaderboard } from '@/hooks/GhostRun/useGhostRunLeaderboard';
@@ -29,7 +30,7 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
     null
   );
 
-  const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
+  const { location: gpsLocation } = useRunLocation();
   const setSession = useGhostRunSessionStore((s) => s.setSession);
 
   const { isNearStart } = useRunDetailMap(containerRef, {
@@ -102,7 +103,10 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
 
   const hasNoRecords = !course.myRecord && items.length === 0;
   const isDisabled =
-    !isNearStart || (!selectedTarget && !hasNoRecords) || isStarting;
+    (!isNearStart && bridge.isWebViewBridgeAvailable) ||
+    !gpsLocation ||
+    (!selectedTarget && !hasNoRecords) ||
+    isStarting;
 
   return (
     <div className="relative h-screen w-full">
@@ -251,8 +255,17 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
           </div>
         </div>
 
+        <Button
+          type="button"
+          disabled={isDisabled}
+          onClick={handleStartRunning}
+          className="h-14 w-full rounded-xl body-l-b"
+        >
+          {isStarting ? '시작 중...' : '대결 시작'}
+        </Button>
+
         {/* 대결 시작 버튼 */}
-        {bridge.isWebViewBridgeAvailable ? (
+        {/* {bridge.isWebViewBridgeAvailable ? (
           <Button
             type="button"
             disabled={isDisabled}
@@ -265,7 +278,7 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
           <p className="body-m py-(--space-3) text-center text-[hsl(var(--text-secondary))]">
             모바일 앱에서 이용할 수 있는 서비스입니다.
           </p>
-        )}
+        )} */}
       </div>
     </div>
   );

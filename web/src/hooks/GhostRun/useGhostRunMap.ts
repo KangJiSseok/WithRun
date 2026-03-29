@@ -18,7 +18,10 @@ function lerpAngle(current: number, target: number, t: number): number {
   return (current + diff * t + 360) % 360;
 }
 
-function createUserMarkerContent(): { element: HTMLElement; coneEl: HTMLElement } {
+function createUserMarkerContent(): {
+  element: HTMLElement;
+  coneEl: HTMLElement;
+} {
   const wrapper = document.createElement('div');
   wrapper.style.cssText = `
     position: relative;
@@ -63,6 +66,7 @@ function createUserMarkerContent(): { element: HTMLElement; coneEl: HTMLElement 
   return { element: wrapper, coneEl: cone };
 }
 
+// 고스트 러너 도트
 function createGhostMarkerContent(): HTMLElement {
   const wrapper = document.createElement('div');
   wrapper.style.cssText = `
@@ -96,7 +100,7 @@ function buildCumDist(coords: CoordinatePoint[]): number[] {
       coords[i - 1].latitude,
       coords[i - 1].longitude,
       coords[i].latitude,
-      coords[i].longitude,
+      coords[i].longitude
     );
     cumDist.push(cumDist[i - 1] + d);
   }
@@ -108,7 +112,7 @@ function interpolateAlongRoute(
   coords: CoordinatePoint[],
   cumDist: number[],
   totalDist: number,
-  targetDist: number,
+  targetDist: number
 ): { lat: number; lng: number } {
   if (targetDist >= totalDist) {
     const last = coords[coords.length - 1];
@@ -129,7 +133,8 @@ function interpolateAlongRoute(
 
   return {
     lat: coords[lo].latitude + t * (coords[hi].latitude - coords[lo].latitude),
-    lng: coords[lo].longitude + t * (coords[hi].longitude - coords[lo].longitude),
+    lng:
+      coords[lo].longitude + t * (coords[hi].longitude - coords[lo].longitude),
   };
 }
 
@@ -182,106 +187,144 @@ export function useGhostRunMap(
 
     let cancelled = false;
 
-    loadKakaoMapSdk().then(() => {
-      if (cancelled) return;
+    loadKakaoMapSdk()
+      .then(() => {
+        if (cancelled) return;
+        console.log(
+          '[GhostRunMap] SDK loaded. ghostDurationSec:',
+          ghostDurationSec,
+          'hasGhost:',
+          hasGhost,
+          'coords:',
+          coordinates.length
+        );
 
-      const center = new kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
-      mapRef.current = new kakao.maps.Map(container, { center, level: 5 });
+        const center = new kakao.maps.LatLng(
+          DEFAULT_CENTER.lat,
+          DEFAULT_CENTER.lng
+        );
+        mapRef.current = new kakao.maps.Map(container, { center, level: 5 });
 
-      // 폴리라인
-      if (coordinates.length > 0) {
-        const path = coordinates.map((c) => new kakao.maps.LatLng(c.latitude, c.longitude));
-        const polyline = new kakao.maps.Polyline({
-          path,
-          strokeWeight: POLYLINE_STROKE_WEIGHT,
-          strokeColor: POLYLINE_STROKE_COLOR,
-          strokeOpacity: POLYLINE_STROKE_OPACITY,
-          strokeStyle: 'solid',
-        });
-        polyline.setMap(mapRef.current);
+        // 폴리라인
+        if (coordinates.length > 0) {
+          const path = coordinates.map(
+            (c) => new kakao.maps.LatLng(c.latitude, c.longitude)
+          );
+          const polyline = new kakao.maps.Polyline({
+            path,
+            strokeWeight: POLYLINE_STROKE_WEIGHT,
+            strokeColor: POLYLINE_STROKE_COLOR,
+            strokeOpacity: POLYLINE_STROKE_OPACITY,
+            strokeStyle: 'solid',
+          });
+          polyline.setMap(mapRef.current);
 
-        const bounds = new kakao.maps.LatLngBounds();
-        path.forEach((latLng) => bounds.extend(latLng));
-        mapRef.current.setBounds(bounds);
-      }
+          const bounds = new kakao.maps.LatLngBounds();
+          path.forEach((latLng) => bounds.extend(latLng));
+          mapRef.current.setBounds(bounds);
+        }
 
-      // 사용자 마커
-      const { element, coneEl } = createUserMarkerContent();
-      animStateRef.current.coneEl = coneEl;
-      userDotRef.current = new kakao.maps.CustomOverlay({
-        map: mapRef.current,
-        position: center,
-        content: element,
-        xAnchor: 0.5,
-        yAnchor: 0.5,
-        zIndex: 10,
-      });
-
-      // 고스트 마커 + 누적거리 사전 계산
-      if (hasGhost) {
-        const ghostEl = createGhostMarkerContent();
-        ghostDotRef.current = new kakao.maps.CustomOverlay({
+        // 사용자 마커
+        const { element, coneEl } = createUserMarkerContent();
+        animStateRef.current.coneEl = coneEl;
+        userDotRef.current = new kakao.maps.CustomOverlay({
           map: mapRef.current,
-          position: new kakao.maps.LatLng(coordinates[0].latitude, coordinates[0].longitude),
-          content: ghostEl,
+          position: center,
+          content: element,
           xAnchor: 0.5,
           yAnchor: 0.5,
-          zIndex: 9,
+          zIndex: 10,
         });
 
-        const cumDist = buildCumDist(coordinates);
-        ghostStateRef.current.cumDist = cumDist;
-        ghostStateRef.current.totalDist = cumDist[cumDist.length - 1];
-        ghostStateRef.current.coords = coordinates;
-        ghostStateRef.current.startMs = Date.now();
-        ghostStateRef.current.totalPausedMs = 0;
-        ghostStateRef.current.pauseStartMs = 0;
-        ghostStateRef.current.isPaused = params.isPaused;
-        if (params.isPaused) {
-          ghostStateRef.current.pauseStartMs = Date.now();
-        }
-      }
-
-      // RAF 루프
-      const s = animStateRef.current;
-      const g = ghostStateRef.current;
-
-      function tick() {
-        // 사용자 도트 위치 lerp
-        s.currentLat += (s.targetLat - s.currentLat) * LERP;
-        s.currentLng += (s.targetLng - s.currentLng) * LERP;
-        userDotRef.current?.setPosition(new kakao.maps.LatLng(s.currentLat, s.currentLng));
-
-        // 방향 cone
-        const isMoving = (s.targetSpeed ?? 0) > 0.5;
-        if (s.coneEl && s.targetHeading !== null && isMoving) {
-          s.currentHeading = lerpAngle(s.currentHeading, s.targetHeading, LERP);
-          s.coneEl.style.transform = `rotate(${s.currentHeading}deg)`;
-          s.coneEl.style.opacity = '0.75';
-        } else if (s.coneEl) {
-          s.coneEl.style.opacity = '0';
-        }
-
-        // 고스트 도트 위치 갱신
+        // 고스트 마커 + 누적거리 사전 계산
         if (hasGhost) {
-          const nowMs = Date.now();
-          const elapsedSec = (nowMs - g.startMs - g.totalPausedMs) / 1000;
-          const progress = Math.min(elapsedSec / ghostDurationSec, 1);
-          const targetDist = progress * g.totalDist;
-          if (params.ghostDistanceMRef) {
-            params.ghostDistanceMRef.current = targetDist;
+          const ghostEl = createGhostMarkerContent();
+          ghostDotRef.current = new kakao.maps.CustomOverlay({
+            map: mapRef.current,
+            position: new kakao.maps.LatLng(
+              coordinates[0].latitude,
+              coordinates[0].longitude
+            ),
+            content: ghostEl,
+            xAnchor: 0.5,
+            yAnchor: 0.5,
+            zIndex: 9,
+          });
+
+          const cumDist = buildCumDist(coordinates);
+          ghostStateRef.current.cumDist = cumDist;
+          ghostStateRef.current.totalDist = cumDist[cumDist.length - 1];
+          ghostStateRef.current.coords = coordinates;
+          ghostStateRef.current.startMs = Date.now();
+          ghostStateRef.current.totalPausedMs = 0;
+          ghostStateRef.current.pauseStartMs = 0;
+          ghostStateRef.current.isPaused = params.isPaused;
+          if (params.isPaused) {
+            ghostStateRef.current.pauseStartMs = Date.now();
           }
-          if (ghostDotRef.current && !g.isPaused) {
-            const pos = interpolateAlongRoute(g.coords, g.cumDist, g.totalDist, targetDist);
-            ghostDotRef.current.setPosition(new kakao.maps.LatLng(pos.lat, pos.lng));
+          console.log(
+            '[GhostRunMap] 고스트 마커 생성 완료. totalDist:',
+            ghostStateRef.current.totalDist,
+            'm'
+          );
+        }
+
+        // RAF 루프
+        const s = animStateRef.current;
+        const g = ghostStateRef.current;
+
+        function tick() {
+          // 사용자 도트 위치 lerp
+          s.currentLat += (s.targetLat - s.currentLat) * LERP;
+          s.currentLng += (s.targetLng - s.currentLng) * LERP;
+          userDotRef.current?.setPosition(
+            new kakao.maps.LatLng(s.currentLat, s.currentLng)
+          );
+
+          // 방향 cone
+          const isMoving = (s.targetSpeed ?? 0) > 0.5;
+          if (s.coneEl && s.targetHeading !== null && isMoving) {
+            s.currentHeading = lerpAngle(
+              s.currentHeading,
+              s.targetHeading,
+              LERP
+            );
+            s.coneEl.style.transform = `rotate(${s.currentHeading}deg)`;
+            s.coneEl.style.opacity = '0.75';
+          } else if (s.coneEl) {
+            s.coneEl.style.opacity = '0';
           }
+
+          // 고스트 도트 위치 갱신
+          if (hasGhost) {
+            const nowMs = Date.now();
+            const elapsedSec = (nowMs - g.startMs - g.totalPausedMs) / 1000;
+            const progress = Math.min(elapsedSec / ghostDurationSec, 1);
+            const targetDist = progress * g.totalDist;
+            if (params.ghostDistanceMRef) {
+              params.ghostDistanceMRef.current = targetDist;
+            }
+            if (ghostDotRef.current && !g.isPaused) {
+              const pos = interpolateAlongRoute(
+                g.coords,
+                g.cumDist,
+                g.totalDist,
+                targetDist
+              );
+              ghostDotRef.current.setPosition(
+                new kakao.maps.LatLng(pos.lat, pos.lng)
+              );
+            }
+          }
+
+          s.rafId = requestAnimationFrame(tick);
         }
 
         s.rafId = requestAnimationFrame(tick);
-      }
-
-      s.rafId = requestAnimationFrame(tick);
-    });
+      })
+      .catch((err) => {
+        console.error('[GhostRunMap] SDK 초기화 에러:', err);
+      });
 
     return () => {
       cancelled = true;
@@ -291,7 +334,7 @@ export function useGhostRunMap(
         s.rafId = null;
       }
     };
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [containerRef]);
 
   // GPS 업데이트: 애니메이션 target 갱신 + 지도 중심 이동
@@ -311,7 +354,9 @@ export function useGhostRunMap(
       s.initialized = true;
     }
 
-    mapRef.current?.panTo(new kakao.maps.LatLng(location.latitude, location.longitude));
+    mapRef.current?.panTo(
+      new kakao.maps.LatLng(location.latitude, location.longitude)
+    );
   }, [location]);
 
   // isPaused 변화 → 고스트 시계 pause/resume
@@ -328,7 +373,6 @@ export function useGhostRunMap(
       // 재개: 일시정지 시간 누산
       g.totalPausedMs += Date.now() - g.pauseStartMs;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.isPaused]);
 
   // courseAnchor 변화 시 안정권 원 표시/제거
@@ -336,7 +380,10 @@ export function useGhostRunMap(
     const { courseAnchor } = params;
 
     if (courseAnchor && mapRef.current) {
-      const center = new kakao.maps.LatLng(courseAnchor.latitude, courseAnchor.longitude);
+      const center = new kakao.maps.LatLng(
+        courseAnchor.latitude,
+        courseAnchor.longitude
+      );
 
       if (!safeZoneCircleRef.current) {
         safeZoneCircleRef.current = new kakao.maps.Circle({
@@ -356,6 +403,6 @@ export function useGhostRunMap(
       safeZoneCircleRef.current?.setMap(null);
       safeZoneCircleRef.current = null;
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.courseAnchor]);
 }
