@@ -9,3 +9,4 @@ export * from './RunningCourseSearchBar';
 export * from './RunningGuideModal';
 export * from './TabTitle';
 export * from './TopNavigation';
+export * from './WatchRunStatusNotice';
