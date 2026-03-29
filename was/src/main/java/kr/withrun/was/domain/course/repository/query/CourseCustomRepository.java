@@ -4,6 +4,7 @@ import kr.withrun.was.domain.course.dto.PreferredDistanceRange;
 import kr.withrun.was.domain.course.entity.Course;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCoursePageRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyRecommendationCandidateRow;
+import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
 import kr.withrun.was.domain.course.type.NearbyGhostCourseSortBy;
 
@@ -29,6 +30,7 @@ public interface CourseCustomRepository {
             double targetLongitude,
             double userLatitude,
             double userLongitude,
+            CourseStatus status,
             NearbyCourseSortBy sortBy,
             int radiusM,
             int page,
@@ -51,6 +53,7 @@ public interface CourseCustomRepository {
             List<PreferredDistanceRange> preferredDistanceMs,
             double targetLatitude,
             double targetLongitude,
+            CourseStatus status,
             int radiusM
     );
 
