@@ -1,5 +1,4 @@
 import { useInfiniteQuery } from '@tanstack/react-query';
-import { useCallback } from 'react';
 
 import { getBookmarkedCoursesApi } from '@/apis/courseBookmark';
 
