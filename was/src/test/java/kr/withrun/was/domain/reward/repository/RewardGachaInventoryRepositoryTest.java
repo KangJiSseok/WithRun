@@ -68,7 +68,7 @@ class RewardGachaInventoryRepositoryTest {
                 RewardGachaDrawCard.create(olderDraw, 1, RewardGachaCardType.REWARD, rewardItemA)
         );
         rewardGachaDrawCardRepository.saveAndFlush(
-                RewardGachaDrawCard.create(newerDraw, 1, RewardGachaCardType.MISS, null)
+                RewardGachaDrawCard.create(newerDraw, 1, RewardGachaCardType.MISS, rewardItemA)
         );
         RewardGachaDrawCard newerReward = rewardGachaDrawCardRepository.saveAndFlush(
                 RewardGachaDrawCard.create(newerDraw, 2, RewardGachaCardType.REWARD, rewardItemB)

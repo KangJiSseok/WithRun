@@ -92,7 +92,8 @@ class RewardGachaDrawServiceTest {
     @Test
     void drawsCardsAndDeductsOnePoint() {
         User user = user(1L);
-        RewardDrawPool rewardDrawPool = rewardDrawPool(10L, "Launch Pool", 3, 40, true);
+        RewardItem missRewardItem = rewardItem(200L, "Miss Reward", "reward-item/miss.png");
+        RewardDrawPool rewardDrawPool = rewardDrawPool(10L, "Launch Pool", 3, 40, true, missRewardItem);
         RewardItem rewardItem = rewardItem(100L, "Reward A", "reward-item/1.png");
         RewardDrawPoolItem rewardDrawPoolItem = rewardDrawPoolItem(1000L, rewardDrawPool, rewardItem, 60);
 
@@ -104,6 +105,7 @@ class RewardGachaDrawServiceTest {
                 .thenReturn(Optional.of(rewardPointBalance(1L, 6)));
         when(userRepository.getReferenceById(1L)).thenReturn(user);
         when(cloudFrontSignedUrlService.generateSignedUrl("reward-item/1.png")).thenReturn("signed::reward-item/1.png");
+        when(cloudFrontSignedUrlService.generateSignedUrl("reward-item/miss.png")).thenReturn("signed::reward-item/miss.png");
         when(rewardDrawRandomGenerator.nextInt(100)).thenReturn(40, 0, 40);
         when(rewardGachaDrawRepository.save(any(RewardGachaDraw.class))).thenAnswer(invocation -> {
             RewardGachaDraw rewardGachaDraw = invocation.getArgument(0);
@@ -136,15 +138,16 @@ class RewardGachaDrawServiceTest {
         assertThat(response.cards()).extracting(card -> card.cardType().name())
                 .containsExactly("REWARD", "MISS", "REWARD");
         assertThat(response.cards().get(0).imageUrl()).isEqualTo("signed::reward-item/1.png");
-        assertThat(response.cards().get(1).rewardItemId()).isNull();
-        assertThat(response.cards().get(1).imageUrl()).isNull();
+        assertThat(response.cards().get(1).rewardItemId()).isEqualTo(200L);
+        assertThat(response.cards().get(1).title()).isEqualTo("Miss Reward");
+        assertThat(response.cards().get(1).imageUrl()).isEqualTo("signed::reward-item/miss.png");
         verify(rewardPointBalanceRepository).decreaseBalanceIfEnough(1L, 1);
     }
 
     @DisplayName("현재 포인트가 부족하면 draw 를 실행하지 않는다")
     @Test
     void throwsWhenRewardPointIsInsufficient() {
-        RewardDrawPool rewardDrawPool = rewardDrawPool(10L, "Launch Pool", 3, 40, true);
+        RewardDrawPool rewardDrawPool = rewardDrawPool(10L, "Launch Pool", 3, 40, true, null);
         RewardItem rewardItem = rewardItem(100L, "Reward A", "reward-item/1.png");
         RewardDrawPoolItem rewardDrawPoolItem = rewardDrawPoolItem(1000L, rewardDrawPool, rewardItem, 60);
 
@@ -169,8 +172,8 @@ class RewardGachaDrawServiceTest {
         return user;
     }
 
-    private RewardDrawPool rewardDrawPool(Long id, String name, int cardsPerDraw, int missWeight, boolean isActive) {
-        RewardDrawPool rewardDrawPool = RewardDrawPool.create(name, cardsPerDraw, missWeight);
+    private RewardDrawPool rewardDrawPool(Long id, String name, int cardsPerDraw, int missWeight, boolean isActive, RewardItem missRewardItem) {
+        RewardDrawPool rewardDrawPool = RewardDrawPool.create(name, cardsPerDraw, missWeight, missRewardItem);
         if (isActive) {
             rewardDrawPool.activate();
         }

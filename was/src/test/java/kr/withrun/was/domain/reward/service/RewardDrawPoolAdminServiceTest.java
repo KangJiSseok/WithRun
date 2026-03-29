@@ -72,8 +72,10 @@ class RewardDrawPoolAdminServiceTest {
     @DisplayName("pool 생성 시 item weight 매핑이 함께 저장된다")
     @Test
     void createsRewardDrawPoolWithItems() {
+        RewardItem missRewardItem = rewardItem(9L, "Miss Reward", "reward-item/miss.png", true);
         RewardItem firstRewardItem = rewardItem(1L, "First Reward", "reward-item/1.png", true);
         RewardItem secondRewardItem = rewardItem(2L, "Second Reward", "reward-item/2.png", true);
+        when(rewardItemRepository.findByIdAndDeletedAtIsNull(9L)).thenReturn(Optional.of(missRewardItem));
         when(rewardItemRepository.findByIdAndDeletedAtIsNull(1L)).thenReturn(Optional.of(firstRewardItem));
         when(rewardItemRepository.findByIdAndDeletedAtIsNull(2L)).thenReturn(Optional.of(secondRewardItem));
         when(rewardDrawPoolRepository.save(any(RewardDrawPool.class))).thenAnswer(invocation -> {
@@ -96,6 +98,7 @@ class RewardDrawPoolAdminServiceTest {
                         "Launch Pool",
                         3,
                         40,
+                        9L,
                         List.of(
                                 new RewardDrawPoolItemRequest(1L, 70),
                                 new RewardDrawPoolItemRequest(2L, 30)
@@ -108,6 +111,7 @@ class RewardDrawPoolAdminServiceTest {
         assertThat(response.isActive()).isFalse();
         assertThat(response.cardsPerDraw()).isEqualTo(3);
         assertThat(response.missWeight()).isEqualTo(40);
+        assertThat(readMissRewardItemId(response)).isEqualTo(9L);
         assertThat(response.items()).hasSize(2);
         assertThat(response.items().get(0).imageUrl()).isEqualTo("signed::reward-item/1.png");
         assertThat(response.items().get(0).weight()).isEqualTo(70);
@@ -117,7 +121,7 @@ class RewardDrawPoolAdminServiceTest {
     @Test
     void throwsWhenCreateRequestHasNoItems() {
         assertThatThrownBy(() -> rewardDrawPoolAdminService.createRewardDrawPool(
-                new CreateRewardDrawPoolRequest("Launch Pool", 3, 40, List.of())
+                new CreateRewardDrawPoolRequest("Launch Pool", 3, 40, null, List.of())
         )).isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
@@ -133,6 +137,7 @@ class RewardDrawPoolAdminServiceTest {
                         "Launch Pool",
                         3,
                         40,
+                        null,
                         List.of(
                                 new RewardDrawPoolItemRequest(1L, 50),
                                 new RewardDrawPoolItemRequest(1L, 50)
@@ -151,6 +156,7 @@ class RewardDrawPoolAdminServiceTest {
                         "Launch Pool",
                         3,
                         40,
+                        null,
                         List.of(new RewardDrawPoolItemRequest(1L, 0))
                 )
         )).isInstanceOf(CustomException.class)
@@ -166,6 +172,7 @@ class RewardDrawPoolAdminServiceTest {
                         "Launch Pool",
                         0,
                         40,
+                        null,
                         List.of(new RewardDrawPoolItemRequest(1L, 100))
                 )
         )).isInstanceOf(CustomException.class)
@@ -181,6 +188,7 @@ class RewardDrawPoolAdminServiceTest {
                         "Launch Pool",
                         3,
                         -1,
+                        null,
                         List.of(new RewardDrawPoolItemRequest(1L, 100))
                 )
         )).isInstanceOf(CustomException.class)
@@ -258,6 +266,7 @@ class RewardDrawPoolAdminServiceTest {
                         "Updated Pool",
                         5,
                         25,
+                        5L,
                         List.of(new RewardDrawPoolItemRequest(5L, 100))
                 )
         );
@@ -265,9 +274,18 @@ class RewardDrawPoolAdminServiceTest {
         assertThat(response.name()).isEqualTo("Updated Pool");
         assertThat(response.cardsPerDraw()).isEqualTo(5);
         assertThat(response.missWeight()).isEqualTo(25);
+        assertThat(readMissRewardItemId(response)).isEqualTo(5L);
         assertThat(oldItem.isDeleted()).isTrue();
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().get(0).weight()).isEqualTo(100);
+    }
+
+    private Long readMissRewardItemId(RewardDrawPoolResponse response) {
+        try {
+            return (Long) response.getClass().getMethod("missRewardItemId").invoke(response);
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("RewardDrawPoolResponse must expose missRewardItemId", exception);
+        }
     }
 
     private RewardDrawPool rewardDrawPool(Long id, String name, boolean isActive) {

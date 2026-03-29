@@ -22,6 +22,9 @@ public record RewardDrawPoolResponse(
         @Schema(description = "꽝 weight 값", example = "40")
         Integer missWeight,
 
+        @Schema(description = "MISS 카드가 참조할 리워드 아이템 ID", example = "10", nullable = true)
+        Long missRewardItemId,
+
         @Schema(description = "pool item 목록")
         List<RewardDrawPoolItemResponse> items,
 

@@ -175,9 +175,10 @@
 ### 6.2 리워드 가챠 운영
 
 - 관리자는 기존 `reward_items` 생성 API로 보상 아이템 카탈로그를 먼저 등록한다.
-- 관리자는 draw pool 생성/수정 시 `cardsPerDraw`, `missWeight`, 그리고 각 아이템의 `weight`를 입력한다.
+- 관리자는 draw pool 생성/수정 시 `cardsPerDraw`, `missWeight`, 선택적 `missRewardItemId`, 그리고 각 아이템의 `weight`를 입력한다.
 - 아이템 확률은 `reward_items`가 아니라 `reward_draw_pool_items.weight`에 저장된다.
 - 꽝 비중은 pool 단위 설정인 `reward_draw_pools.miss_weight`로 관리한다.
+- MISS 카드는 계속 `card_type = MISS`를 유지하고, `missRewardItemId`가 설정된 경우 draw 응답 메타데이터만 함께 내려준다.
 - 운영 반영 순서는 **보상 아이템 생성 -> pool 생성/수정 -> pool 활성화**다.
 
 ---

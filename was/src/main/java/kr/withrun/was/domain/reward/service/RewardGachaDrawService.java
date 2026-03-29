@@ -133,7 +133,12 @@ public class RewardGachaDrawService {
             int drawValue
     ) {
         if (drawValue < rewardDrawPool.getMissWeight()) {
-            return RewardGachaDrawCard.create(rewardGachaDraw, cardIndex, RewardGachaCardType.MISS, null);
+            return RewardGachaDrawCard.create(
+                    rewardGachaDraw,
+                    cardIndex,
+                    RewardGachaCardType.MISS,
+                    rewardDrawPool.getMissRewardItem()
+            );
         }
 
         int cursor = rewardDrawPool.getMissWeight();

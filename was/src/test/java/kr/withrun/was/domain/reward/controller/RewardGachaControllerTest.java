@@ -58,7 +58,7 @@ class RewardGachaControllerTest {
                         6,
                         List.of(
                                 new RewardGachaDrawCardResponse(700L, 1, RewardGachaCardType.REWARD, 100L, "Reward A", "signed::reward-item/1.png"),
-                                new RewardGachaDrawCardResponse(701L, 2, RewardGachaCardType.MISS, null, null, null)
+                                new RewardGachaDrawCardResponse(701L, 2, RewardGachaCardType.MISS, 200L, "Miss Reward", "signed::reward-item/miss.png")
                         ),
                         LocalDateTime.of(2026, 3, 29, 21, 0)
                 ));
@@ -73,7 +73,10 @@ class RewardGachaControllerTest {
                     .andExpect(jsonPath("$.data.spentPoint").value(1))
                     .andExpect(jsonPath("$.data.remainingBalance").value(6))
                     .andExpect(jsonPath("$.data.cards[0].cardType").value("REWARD"))
-                    .andExpect(jsonPath("$.data.cards[1].cardType").value("MISS"));
+                    .andExpect(jsonPath("$.data.cards[1].cardType").value("MISS"))
+                    .andExpect(jsonPath("$.data.cards[1].rewardItemId").value(200L))
+                    .andExpect(jsonPath("$.data.cards[1].title").value("Miss Reward"))
+                    .andExpect(jsonPath("$.data.cards[1].imageUrl").value("signed::reward-item/miss.png"));
         } finally {
             SecurityContextHolder.clearContext();
         }

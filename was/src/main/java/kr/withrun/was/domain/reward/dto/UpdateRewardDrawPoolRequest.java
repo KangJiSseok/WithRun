@@ -12,6 +12,7 @@ public record UpdateRewardDrawPoolRequest(
         @NotBlank String name,
         @Positive int cardsPerDraw,
         @PositiveOrZero int missWeight,
+        Long missRewardItemId,
         @NotEmpty List<@Valid RewardDrawPoolItemRequest> items
 ) {
 }

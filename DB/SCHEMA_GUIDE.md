@@ -178,9 +178,11 @@
   - `name`: 관리자 입력 pool 이름
   - `cards_per_draw`: 1회 draw 에서 서버가 미리 결정해 반환할 카드 수
   - `miss_weight`: 꽝 결과의 raw weight 값
+  - `miss_reward_item_id`: MISS 카드가 메타데이터로 참조할 수 있는 선택적 `reward_items` FK
   - `is_active`: 현재 운영 중인 pool 여부
   - `created_at`, `updated_at`, `deleted_at`: `BaseEntity` 감사 컬럼
 - 주요 제약:
+  - `fk_reward_draw_pools_miss_reward_item` (`ON DELETE SET NULL`)
   - `name` 길이 100자 제한
   - `cards_per_draw > 0`
   - `miss_weight >= 0`
@@ -188,7 +190,8 @@
 - 비고:
   - 초기 단계에서는 동시에 하나의 pool만 active 로 운영하는 것을 애플리케이션 규칙으로 둡니다.
   - 운영 입력 플로우는 `reward_items` 생성/수정 -> pool 생성/수정 -> 활성화 순서입니다.
-  - `cards_per_draw`와 `miss_weight`는 item 메타데이터가 아니라 pool 운영 설정입니다.
+  - `cards_per_draw`, `miss_weight`, `miss_reward_item_id`는 item 카탈로그 자체가 아니라 pool 운영 설정입니다.
+  - `miss_reward_item_id`는 MISS 결과의 카드 타입을 바꾸지 않고, draw 응답용 메타데이터 소스를 지정할 때만 사용합니다.
   - 기본 운영 조회 인덱스로 `(is_active, created_at desc, reward_draw_pool_id desc)`를 사용합니다.
 
 ### reward_draw_pool_items
@@ -236,7 +239,7 @@
   - `reward_gacha_draw_id`: `reward_gacha_draws` FK
   - `card_index`: 카드 순서(1-base)
   - `card_type`: `MISS`, `REWARD`
-  - `reward_item_id`: 당첨 카드일 때만 연결되는 `reward_items` FK, 꽝이면 `NULL`
+  - `reward_item_id`: `REWARD` 카드의 보상 아이템 FK 또는 MISS 카드 응답 메타데이터용 선택적 `reward_items` FK
   - `created_at`, `updated_at`, `deleted_at`: `BaseEntity` 감사 컬럼
 - 주요 제약:
   - `fk_reward_gacha_draw_cards_draw` (`ON DELETE CASCADE`)
@@ -245,7 +248,8 @@
   - `chk_reward_gacha_draw_cards_index`
   - `chk_reward_gacha_draw_cards_type`
 - 비고:
-  - 꽝 카드는 `card_type = MISS`, `reward_item_id = NULL`로 저장합니다.
+  - 꽝 카드는 계속 `card_type = MISS`로 저장합니다.
+  - pool 에 `miss_reward_item_id`가 설정된 경우에는 MISS 카드도 `reward_item_id`를 가질 수 있지만, 인벤토리 조회 대상에는 포함하지 않습니다.
   - 기본 조회 인덱스로 `(reward_gacha_draw_id, card_index asc)`를 사용합니다.
 
 ### reward_point_balances

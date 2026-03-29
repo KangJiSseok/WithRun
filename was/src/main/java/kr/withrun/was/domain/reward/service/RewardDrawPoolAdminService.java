@@ -58,8 +58,10 @@ public class RewardDrawPoolAdminService {
                 request == null ? null : request.items()
         );
 
+        RewardItem missRewardItem = findOptionalRewardItem(request.missRewardItemId());
+
         RewardDrawPool rewardDrawPool = rewardDrawPoolRepository.save(
-                RewardDrawPool.create(normalizeName(request.name()), request.cardsPerDraw(), request.missWeight())
+                RewardDrawPool.create(normalizeName(request.name()), request.cardsPerDraw(), request.missWeight(), missRewardItem)
         );
         List<RewardDrawPoolItem> rewardDrawPoolItems = savePoolItems(rewardDrawPool, request.items());
 
@@ -99,7 +101,8 @@ public class RewardDrawPoolAdminService {
         );
 
         RewardDrawPool rewardDrawPool = findRewardDrawPool(rewardDrawPoolId);
-        rewardDrawPool.updateConfiguration(normalizeName(request.name()), request.cardsPerDraw(), request.missWeight());
+        RewardItem missRewardItem = findOptionalRewardItem(request.missRewardItemId());
+        rewardDrawPool.updateConfiguration(normalizeName(request.name()), request.cardsPerDraw(), request.missWeight(), missRewardItem);
 
         List<RewardDrawPoolItem> existingItems = loadPoolItems(rewardDrawPoolId);
         existingItems.forEach(RewardDrawPoolItem::delete);
@@ -148,6 +151,10 @@ public class RewardDrawPoolAdminService {
                 .orElseThrow(() -> new CustomException(ResponseCode.REWARD_ITEM_NOT_FOUND));
     }
 
+    private RewardItem findOptionalRewardItem(Long rewardItemId) {
+        return rewardItemId == null ? null : findRewardItem(rewardItemId);
+    }
+
     private List<RewardDrawPoolItem> loadPoolItems(Long rewardDrawPoolId) {
         return rewardDrawPoolItemRepository.findAllByRewardDrawPoolIdAndDeletedAtIsNullOrderByIdAsc(rewardDrawPoolId);
     }
@@ -159,6 +166,7 @@ public class RewardDrawPoolAdminService {
                 rewardDrawPool.isActive(),
                 rewardDrawPool.getCardsPerDraw(),
                 rewardDrawPool.getMissWeight(),
+                rewardDrawPool.getMissRewardItem() == null ? null : rewardDrawPool.getMissRewardItem().getId(),
                 rewardDrawPoolItems.stream().map(this::toItemResponse).toList(),
                 rewardDrawPool.getCreatedAt(),
                 rewardDrawPool.getUpdatedAt()

@@ -153,10 +153,15 @@ CREATE TABLE reward_draw_pools (
   name VARCHAR(100) NOT NULL,
   cards_per_draw INTEGER NOT NULL,
   miss_weight INTEGER NOT NULL DEFAULT 0,
+  miss_reward_item_id BIGINT,
   is_active BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
+  CONSTRAINT fk_reward_draw_pools_miss_reward_item
+    FOREIGN KEY (miss_reward_item_id)
+    REFERENCES reward_items (reward_item_id)
+    ON DELETE SET NULL,
   CONSTRAINT chk_reward_draw_pools_cards_per_draw CHECK (cards_per_draw > 0),
   CONSTRAINT chk_reward_draw_pools_miss_weight CHECK (miss_weight >= 0)
 );
