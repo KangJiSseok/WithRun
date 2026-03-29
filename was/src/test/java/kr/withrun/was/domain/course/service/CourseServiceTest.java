@@ -575,6 +575,7 @@ class CourseServiceTest {
                 126.9820,
                 3000,
                 List.of(new PreferredDistanceRange(1, 5000)),
+                null,
                 NearbyCourseSortBy.DISTANCE,
                 0,
                 3
