@@ -188,11 +188,11 @@ function SingleSelectChipGroup<TValue extends string>({
 function SummaryCard({ title, value, unit }: SummaryCardProps) {
   return (
     <article className="rounded-[1.75rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-5 shadow-[var(--shadow-md)] flex flex-col items-center text-center">
-      <div className="flex items-end gap-2">
-        <span className="text-3xl font-black leading-none tracking-tight text-[hsl(var(--text-primary))]">
+      <div className="flex items-baseline gap-1">
+        <span className="text-xl font-black leading-none tracking-tight text-[hsl(var(--text-primary))]">
           {value}
         </span>
-        <span className="pb-1 text-base font-medium text-[hsl(var(--text-secondary))]">
+        <span className="text-xs font-medium text-[hsl(var(--text-secondary))]">
           {unit}
         </span>
       </div>
@@ -363,10 +363,9 @@ export function HomeScreen() {
             </div>
 
             <div className="space-y-2">
-              <h1 className="text-4xl font-black leading-tight tracking-tight text-[hsl(var(--text-primary))]">
-                달려볼까요,
-                <br />
-                {user?.nickname ?? 'Runner'}님
+              <h1 className="leading-tight tracking-tight text-[hsl(var(--text-primary))]">
+                <span className="block text-base font-black">달려볼까요,</span>
+                <span className="block text-2xl font-black">{user?.nickname ?? 'Runner'}님</span>
               </h1>
               <p className="max-w-[14rem] text-base leading-7 text-[hsl(var(--text-secondary))]">
                 오늘도 목표를 향해 달려보세요!
