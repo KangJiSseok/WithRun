@@ -365,6 +365,46 @@ class RunningSessionControllerTest {
         assertThat(capturedRequest.healthSamples().getFirst().caloriesKcal()).isEqualTo(84.5);
     }
 
+    @DisplayName("종료 요청의 distanceGapM 이 음수여도 서비스로 전달한다")
+    @Test
+    void passesNegativeDistanceGapMToService() throws Exception {
+        long currentUserId = 1L;
+        long runningSessionId = 901L;
+        RunningSessionDetailResponse response = new RunningSessionDetailResponse(
+                RunningSessionCompleteState.SUCCESS,
+                runningSessionId,
+                currentUserId,
+                null,
+                LocalDateTime.parse("2026-03-12T06:30:00"),
+                LocalDateTime.parse("2026-03-12T07:12:00"),
+                10023,
+                2520,
+                11.0,
+                2,
+                642,
+                3,
+                java.util.List.of(),
+                java.util.List.of(),
+                java.util.List.of(),
+                null
+        );
+        given(runningSessionService.completeRunningSession(eq(runningSessionId), eq(currentUserId), any(CompleteRunningSessionRequest.class)))
+                .willReturn(response);
+
+        mockMvc.perform(patch("/api/running-sessions/{runningSessionId}", runningSessionId)
+                        .header(HttpHeaders.AUTHORIZATION, bearerToken(currentUserId))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(validUpdateRequestJson(-12)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.code").value(ResponseCode.OK.getCode()));
+
+        ArgumentCaptor<CompleteRunningSessionRequest> requestCaptor = ArgumentCaptor.forClass(CompleteRunningSessionRequest.class);
+        then(runningSessionService).should().completeRunningSession(eq(runningSessionId), eq(currentUserId), requestCaptor.capture());
+
+        assertThat(requestCaptor.getValue().distanceGapM()).isEqualTo(-12);
+    }
+
     @DisplayName("이미 종료된 세션은 충돌 응답을 반환한다")
     @Test
     void returnsConflictWhenRunningSessionIsAlreadyCompleted() throws Exception {
@@ -859,6 +899,10 @@ class RunningSessionControllerTest {
     }
 
     private static String validUpdateRequestJson() {
+        return validUpdateRequestJson(12);
+    }
+
+    private static String validUpdateRequestJson(int distanceGapM) {
         return """
                 {
                   "completeState": "SUCCESS",
@@ -870,7 +914,7 @@ class RunningSessionControllerTest {
                   "durationSec": 2520,
                   "avgPaceSecPerKm": 2,
                   "elevationGainM": 3,
-                  "distanceGapM": 12,
+                  "distanceGapM": %d,
                   "gpsSamples": [
                     {
                       "latitude": 37.5665,
@@ -894,7 +938,7 @@ class RunningSessionControllerTest {
                   ],
                   "splits": []
                 }
-                """;
+                """.formatted(distanceGapM);
     }
 
     private String bearerToken(Long userId) {
