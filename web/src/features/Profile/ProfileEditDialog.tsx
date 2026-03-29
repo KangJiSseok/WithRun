@@ -1,4 +1,4 @@
-import { LoaderCircle } from 'lucide-react';
+import { LoaderCircle, X } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { toast } from 'sonner';
 
@@ -12,6 +12,7 @@ import { Button } from '@/shared/components/shadcn/button';
 import {
   Dialog,
   DialogContent,
+  DialogClose,
   DialogHeader,
   DialogTitle,
 } from '@/shared/components/shadcn/dialog';
@@ -88,6 +89,12 @@ export function ProfileEditDialog({
     formValues.gender !== null &&
     parsedHeight !== null &&
     parsedWeight !== null;
+  const hasChanges =
+    formValues.nickname.trim() !== (profile.nickname ?? '') ||
+    formValues.birthDate !== (profile.birthDate ?? '') ||
+    formValues.gender !== profile.gender ||
+    parsedHeight !== profile.height ||
+    parsedWeight !== profile.weight;
 
   function updateField<K extends keyof ProfileFormValues>(
     field: K,
@@ -100,7 +107,7 @@ export function ProfileEditDialog({
   }
 
   async function handleSubmit() {
-    if (!isFormValid || isSubmitting || !formValues.gender) {
+    if (!isFormValid || !hasChanges || isSubmitting || !formValues.gender) {
       return;
     }
 
@@ -130,13 +137,26 @@ export function ProfileEditDialog({
   return (
     <Dialog open={isOpen} onOpenChange={onOpenChange}>
       <DialogContent
-        showCloseButton
+        showCloseButton={false}
+        onInteractOutside={(e) => e.preventDefault()}
+        onEscapeKeyDown={(e) => e.preventDefault()}
         className="w-[calc(100%-2rem)] max-w-[360px] gap-6 rounded-[2rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-6 text-[hsl(var(--text-primary))] shadow-[var(--shadow-xl)]"
       >
         <DialogHeader className="gap-1 text-left">
-          <DialogTitle className="text-xl font-black text-[hsl(var(--text-primary))]">
-            프로필 수정
-          </DialogTitle>
+          <div className="flex items-center justify-between">
+            <DialogTitle className="text-xl font-black text-[hsl(var(--text-primary))]">
+              프로필 수정
+            </DialogTitle>
+            <DialogClose asChild>
+              <button
+                type="button"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--surface-subtle))] active:opacity-70"
+                aria-label="닫기"
+              >
+                <X size={22} />
+              </button>
+            </DialogClose>
+          </div>
         </DialogHeader>
 
         <div className="space-y-5">
@@ -228,7 +248,7 @@ export function ProfileEditDialog({
           <Button
             type="button"
             onClick={() => void handleSubmit()}
-            disabled={!isFormValid || isSubmitting}
+            disabled={!isFormValid || !hasChanges || isSubmitting}
             className="h-14 w-full rounded-2xl text-base font-black"
           >
             {isSubmitting ? (
