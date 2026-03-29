@@ -173,7 +173,7 @@ function SingleSelectChipGroup<TValue extends string>({
 
 function SummaryCard({ title, value, unit }: SummaryCardProps) {
   return (
-    <article className="rounded-[1.75rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-5 shadow-[var(--shadow-md)]">
+    <article className="rounded-[1.75rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-5 shadow-[var(--shadow-md)] flex flex-col items-center text-center">
       <div className="flex items-end gap-2">
         <span className="text-3xl font-black leading-none tracking-tight text-[hsl(var(--text-primary))]">
           {value}
