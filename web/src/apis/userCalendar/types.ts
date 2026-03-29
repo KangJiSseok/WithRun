@@ -1,4 +1,12 @@
-// GET /calendars/{userId}/summary - 전체 기간 누적 요약 + 스트릭
+// GET /calendars/me/weekly - 이번 주 요약
+export type WeeklyCalendarData = {
+  weeklyRunCount: number;
+  weeklyDistanceM: number;
+  weeklyCaloriesKcal: number;
+  weeklyDurationSec: number;
+};
+
+// GET /calendars/me/summary - 전체 기간 누적 요약 + 스트릭
 export type CalendarSummaryData = {
   lifetimeRunCount: number;
   lifetimeDistanceM: number;

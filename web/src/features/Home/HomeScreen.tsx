@@ -22,7 +22,7 @@ import {
 import { useAuthStore } from '@/stores/Auth';
 import type { CourseType } from '@/shared/types/api.type';
 import { cn } from '@/shared/utils';
-import { getHomeSummaryStats } from './HomeSummaryStats';
+import { getWeeklyCalendarApi } from '@/apis/userCalendar';
 import { useHealthConnectionStatus } from './useHealthConnectionStatus';
 
 type RunningPreferenceFormState = {
@@ -91,11 +91,11 @@ function toggleSelection<TValue extends string>(
     : [...selectedValues, value];
 }
 
-function formatDuration(durationMinutes: number): string {
-  const hours = Math.floor(durationMinutes / 60);
-  const minutes = durationMinutes % 60;
-
-  return `${hours}:${String(minutes).padStart(2, '0')}`;
+function formatDuration(durationSec: number): string {
+  const hours = Math.floor(durationSec / 3600);
+  const minutes = Math.floor((durationSec % 3600) / 60);
+  const seconds = durationSec % 60;
+  return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function PreferenceChipGroup<TValue extends string>({
@@ -175,10 +175,10 @@ function SummaryCard({ title, value, unit }: SummaryCardProps) {
   return (
     <article className="rounded-[1.75rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-5 shadow-[var(--shadow-md)]">
       <div className="flex items-end gap-2">
-        <span className="text-5xl font-black leading-none tracking-tight text-[hsl(var(--text-primary))]">
+        <span className="text-3xl font-black leading-none tracking-tight text-[hsl(var(--text-primary))]">
           {value}
         </span>
-        <span className="pb-1 text-xl font-medium text-[hsl(var(--text-secondary))]">
+        <span className="pb-1 text-base font-medium text-[hsl(var(--text-secondary))]">
           {unit}
         </span>
       </div>
@@ -193,7 +193,12 @@ export function HomeScreen() {
   const user = useAuthStore((state) => state.user);
   const { label: healthConnectionLabel, isConnected } =
     useHealthConnectionStatus();
-  const summaryStats = useMemo(() => getHomeSummaryStats(), []);
+  const [weeklySummary, setWeeklySummary] = useState<{
+    runCount: number;
+    distanceKm: number;
+    caloriesKcal: number;
+    durationSec: number;
+  } | null>(null);
   const [preferences, setPreferences] = useState<RunningPreferenceFormState>(
     createDefaultPreferenceState()
   );
@@ -202,29 +207,28 @@ export function HomeScreen() {
 
   const summaryCards = useMemo(
     () => [
-      // 카드 UI 는 고정하고 데이터만 나중에 API 응답으로 갈아끼울 수 있게 미리 포맷팅한다.
       {
         title: '이번 주 러닝',
-        value: String(summaryStats.runCount),
+        value: weeklySummary ? String(weeklySummary.runCount) : '--',
         unit: '회',
       },
       {
         title: '총 거리',
-        value: summaryStats.distanceKm.toFixed(1),
+        value: weeklySummary ? weeklySummary.distanceKm.toFixed(1) : '--',
         unit: 'km',
       },
       {
         title: '소모 칼로리',
-        value: summaryStats.caloriesKcal.toLocaleString('ko-KR'),
+        value: weeklySummary ? weeklySummary.caloriesKcal.toLocaleString('ko-KR') : '--',
         unit: 'kcal',
       },
       {
         title: '총 운동 시간',
-        value: formatDuration(summaryStats.durationMinutes),
-        unit: '시간',
+        value: weeklySummary ? formatDuration(weeklySummary.durationSec) : '--',
+        unit: '',
       },
     ],
-    [summaryStats]
+    [weeklySummary]
   );
 
   const canSavePreferences =
@@ -232,6 +236,28 @@ export function HomeScreen() {
     preferences.timeSlots.length > 0 &&
     preferences.preferredDifficulty !== null &&
     preferences.courseTypes.length > 0;
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    void (async () => {
+      try {
+        const response = await getWeeklyCalendarApi();
+        if (isCancelled) return;
+        const { weeklyRunCount, weeklyDistanceM, weeklyCaloriesKcal, weeklyDurationSec } = response.data;
+        setWeeklySummary({
+          runCount: weeklyRunCount,
+          distanceKm: weeklyDistanceM / 1000,
+          caloriesKcal: weeklyCaloriesKcal,
+          durationSec: weeklyDurationSec,
+        });
+      } catch {
+        // 실패 시 카드는 '--' 유지
+      }
+    })();
+
+    return () => { isCancelled = true; };
+  }, []);
 
   useEffect(() => {
     let isCancelled = false;
