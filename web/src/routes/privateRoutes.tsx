@@ -14,6 +14,7 @@ import { MainLayout } from '@/shared/layouts/MainLayout';
 import { GhostRunPage } from '@/pages/private/GhostRun';
 import { GhostRunDetailPage } from '@/pages/private/GhostRunDetail';
 import { GhostRunSessionPage } from '@/pages/private/GhostRunSession';
+import { BookmarkedCoursesPage } from '@/pages/private/BookmarkedCoursesPage';
 
 export const privateRoutes: RouteObject[] = [
   {
@@ -26,6 +27,7 @@ export const privateRoutes: RouteObject[] = [
           { path: '/home', element: <HomePage /> },
           { path: '/profile', element: <ProfilePage /> },
           { path: '/calendar', element: <CalendarPage /> },
+          { path: '/bookmark', element: <BookmarkedCoursesPage /> },
         ],
       },
       {
