@@ -308,17 +308,32 @@ public class RunningSessionService {
             throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
         }
 
+        if (requestedDistanceGapM == null) {
+            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+        }
+
+        int timeGapSec = Math.abs(runningSession.getDurationSec() - targetSession.getDurationSec());
+        int distanceGapM = requestedDistanceGapM;
+
+        if (runningSession.getCompleteState() != RunningSessionCompleteState.SUCCESS) {
+            GhostRunningResult ghostRunningResult = GhostRunningResult.create(
+                    GhostResultStatus.LOSE,
+                    0,
+                    timeGapSec,
+                    distanceGapM,
+                    runningSession,
+                    targetSession,
+                    targetSession.getUser()
+            );
+
+            return ghostRunningResultRepository.save(ghostRunningResult);
+        }
+
         Difficulty difficulty = resolveGhostDifficulty(runningSession, targetSession);
         int point = ghostRunningResultService.calculateGhostRunningPoint(runningSession.getDurationSec(), difficulty);
         int targetPoint = ghostRunningResultService.calculateGhostRunningPoint(targetSession.getDurationSec(), difficulty);
 
         GhostResultStatus resultStatus = resolveGhostResultStatus(point, targetPoint);
-        int timeGapSec = Math.abs(runningSession.getDurationSec() - targetSession.getDurationSec());
-
-        if (requestedDistanceGapM == null) {
-            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
-        }
-        int distanceGapM = requestedDistanceGapM;
 
         GhostRunningResult ghostRunningResult = GhostRunningResult.create(
                 resultStatus,
