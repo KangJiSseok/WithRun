@@ -5,16 +5,32 @@ import type { CompleteRunningSessionResponse } from '@/apis/runningSessions';
 import { RunResultMap } from '@/shared/components/Running/RunResultMap';
 import { HeartRateSection } from '@/shared/components/Running/HeartRateSection';
 import { SplitTable } from '@/shared/components/Running/SplitTable';
+import { useBookmarkToggle } from '@/shared/hooks';
 import { formatDuration, formatPace } from '@/shared/utils';
 import { useNormalRunSessionStore } from '@/stores/NormalRun';
 
 type NormalRunResultScreenProps = {
+  /** completeRunningSession API 응답 */
   result: CompleteRunningSessionResponse;
 };
 
 export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
   const navigate = useNavigate();
   const clearAll = useNormalRunSessionStore((s) => s.clearAll);
+  // 세션 시작 시 저장된 courseId를 가져온다.
+  // 자유러닝 등 코스 없이 시작한 경우 null.
+  const courseId = useNormalRunSessionStore((s) => s.session?.courseId ?? null);
+  const { isBookmarked, toggle: toggleBookmark } = useBookmarkToggle();
+
+  const hasCourse = courseId !== null;
+  // 결과 화면은 서버에서 isBookmarked를 따로 받지 않으므로 기본값 false.
+  // 사용자가 nearby 화면 등에서 이미 토글했으면 오버라이드가 반영됨.
+  const saved = hasCourse && isBookmarked(courseId, false);
+
+  const handleToggleBookmark = () => {
+    if (!hasCourse) return;
+    toggleBookmark(courseId, false);
+  };
 
   const handleHome = () => {
     clearAll();
@@ -26,13 +42,22 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
       <div className="flex flex-col gap-4 px-6 pb-10">
         {/* 헤더 */}
         <div className="relative flex flex-col items-center pt-10 pb-2">
-          <button
-            className="absolute top-10 right-0 p-2"
-            aria-label="즐겨찾기 추가 (준비 중)"
-            disabled
-          >
-            <Bookmark size={26} className="text-[hsl(var(--secondary-5))]" />
-          </button>
+          {hasCourse && (
+            <button
+              className="absolute top-10 right-0 p-2"
+              aria-label={saved ? '즐겨찾기 해제' : '즐겨찾기 추가'}
+              onClick={handleToggleBookmark}
+            >
+              <Bookmark
+                size={26}
+                className={
+                  saved
+                    ? 'fill-[hsl(var(--primary-1))] text-[hsl(var(--primary-1))]'
+                    : 'text-[hsl(var(--secondary-5))]'
+                }
+              />
+            </button>
+          )}
           <div className="p-4 rounded-full bg-primary/20 border border-primary/30 mb-4">
             <Award size={40} className="text-primary" />
           </div>
@@ -89,13 +114,22 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
 
         {/* 버튼 영역 */}
         <div className="flex flex-col gap-3 pt-2">
-          <button
-            disabled
-            className="w-full py-4 rounded-2xl body-b flex items-center justify-center gap-2 bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] cursor-not-allowed"
-          >
-            <Bookmark size={18} />
-            즐겨찾기 추가
-          </button>
+          {hasCourse && (
+            <button
+              onClick={handleToggleBookmark}
+              className={`w-full py-4 rounded-2xl body-b flex items-center justify-center gap-2 transition-colors ${
+                saved
+                  ? 'bg-primary text-[hsl(var(--text-inverse))]'
+                  : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))]'
+              }`}
+            >
+              <Bookmark
+                size={18}
+                className={saved ? 'fill-current' : ''}
+              />
+              {saved ? '즐겨찾기 추가됨' : '즐겨찾기 추가'}
+            </button>
+          )}
           <button
             onClick={handleHome}
             className="w-full py-4 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] body-b flex items-center justify-center gap-2"
