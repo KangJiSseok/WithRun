@@ -173,6 +173,7 @@ class CourseRepositoryRowTest {
                         126.9780,
                         37.5665,
                         126.9780,
+                        null,
                         NearbyCourseSortBy.DISTANCE,
                         3000,
                         0,
@@ -185,6 +186,7 @@ class CourseRepositoryRowTest {
                 List.of(new PreferredDistanceRange(4800, 5200)),
                 37.5665,
                 126.9780,
+                null,
                 3000
         );
 
@@ -192,12 +194,82 @@ class CourseRepositoryRowTest {
         assertThat(totalCount).isEqualTo(2L);
     }
 
+    @DisplayName("주변 코스 row 조회에서 status=COMMUNITY면 COMMUNITY만 조회한다")
+    @Test
+    void filtersNearbyCourseRowsByCommunityStatus() {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 3, 11, 5, 30);
+        persistCourse("Official Nearby Filtered", 5000, CourseStatus.OFFICIAL, createdAt);
+        Course communityCourse = persistCourse("Community Nearby Filtered", 5000, CourseStatus.COMMUNITY, createdAt);
+        persistCourse("Private Nearby Filtered", 5000, CourseStatus.PRIVATE, createdAt);
+
+        List<Long> rowCourseIds = courseRepository.findNearbyCoursePageRows(
+                        List.of(new PreferredDistanceRange(4800, 5200)),
+                        37.5665,
+                        126.9780,
+                        37.5665,
+                        126.9780,
+                        CourseStatus.COMMUNITY,
+                        NearbyCourseSortBy.DISTANCE,
+                        3000,
+                        0,
+                        10
+                ).stream()
+                .map(row -> row.courseId())
+                .toList();
+
+        long totalCount = courseRepository.countNearbyCourses(
+                List.of(new PreferredDistanceRange(4800, 5200)),
+                37.5665,
+                126.9780,
+                CourseStatus.COMMUNITY,
+                3000
+        );
+
+        assertThat(rowCourseIds).containsExactly(communityCourse.getId());
+        assertThat(totalCount).isEqualTo(1L);
+    }
+
+    @DisplayName("주변 코스 row 조회에서 status=PRIVATE여도 PRIVATE는 조회하지 않는다")
+    @Test
+    void excludesPrivateCoursesEvenWhenPrivateStatusIsRequested() {
+        LocalDateTime createdAt = LocalDateTime.of(2026, 3, 11, 5, 45);
+        persistCourse("Official Nearby Visible", 5000, CourseStatus.OFFICIAL, createdAt);
+        persistCourse("Community Nearby Visible", 5000, CourseStatus.COMMUNITY, createdAt);
+        persistCourse("Private Nearby Hidden", 5000, CourseStatus.PRIVATE, createdAt);
+
+        List<Long> rowCourseIds = courseRepository.findNearbyCoursePageRows(
+                        List.of(new PreferredDistanceRange(4800, 5200)),
+                        37.5665,
+                        126.9780,
+                        37.5665,
+                        126.9780,
+                        CourseStatus.PRIVATE,
+                        NearbyCourseSortBy.DISTANCE,
+                        3000,
+                        0,
+                        10
+                ).stream()
+                .map(row -> row.courseId())
+                .toList();
+
+        long totalCount = courseRepository.countNearbyCourses(
+                List.of(new PreferredDistanceRange(4800, 5200)),
+                37.5665,
+                126.9780,
+                CourseStatus.PRIVATE,
+                3000
+        );
+
+        assertThat(rowCourseIds).isEmpty();
+        assertThat(totalCount).isEqualTo(0L);
+    }
+
     @DisplayName("주변 고스트 코스 row 조회와 count 는 private 코스를 제외한다")
     @Test
-    void excludesPrivateCoursesFromNearbyGhostCourseRowsAndCount() {
+    void includesOnlyOfficialCoursesForNearbyGhostCourseRowsAndCount() {
         LocalDateTime createdAt = LocalDateTime.of(2026, 3, 11, 6, 0);
         Course officialCourse = persistCourse("Official Ghost", 5000, CourseStatus.OFFICIAL, createdAt);
-        Course communityCourse = persistCourse("Community Ghost", 5000, CourseStatus.COMMUNITY, createdAt);
+        persistCourse("Community Ghost", 5000, CourseStatus.COMMUNITY, createdAt);
         persistCourse("Private Ghost", 5000, CourseStatus.PRIVATE, createdAt);
 
         List<Long> rowCourseIds = courseRepository.findNearbyGhostCoursePageRows(
@@ -221,8 +293,8 @@ class CourseRepositoryRowTest {
                 3000
         );
 
-        assertThat(rowCourseIds).containsExactlyInAnyOrder(officialCourse.getId(), communityCourse.getId());
-        assertThat(totalCount).isEqualTo(2L);
+        assertThat(rowCourseIds).containsExactly(officialCourse.getId());
+        assertThat(totalCount).isEqualTo(1L);
     }
 
     @DisplayName("복수 선호 거리 중 하나에 맞으면 공식 코스 후보로 조회한다")

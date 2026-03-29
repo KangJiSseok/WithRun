@@ -10,6 +10,7 @@ import jakarta.validation.constraints.NotEmpty;
 import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Positive;
 import jakarta.validation.constraints.PositiveOrZero;
+import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
 
 import java.util.List;
@@ -50,7 +51,14 @@ public record NearbyCoursesRequest(
         @NotEmpty
         List<@Valid PreferredDistanceRange> preferredDistanceMs,
 
-        @Schema(description = "주변 코스 정렬 기준입니다. DISTANCE는 가까운 순, POPULAR는 좋아요 수와 북마크 수 합계가 많은 순으로 정렬합니다.", example = "DISTANCE", nullable = true)
+        @Schema(description = "조회에 사용할 코스 상태", example = "COMMUNITY", nullable = true)
+        CourseStatus status,
+
+        @Schema(
+                description = "주변 코스 정렬 기준입니다. DISTANCE는 가까운 순, POPULAR는 좋아요 수와 북마크 수 합계가 많은 순으로 정렬합니다.",
+                example = "DISTANCE",
+                nullable = true
+        )
         NearbyCourseSortBy sortBy,
 
         @Schema(description = "0부터 시작하는 페이지 번호입니다. 생략하면 0을 사용합니다.", example = "0", minimum = "0", nullable = true)

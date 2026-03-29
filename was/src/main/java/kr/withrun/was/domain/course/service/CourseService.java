@@ -80,6 +80,7 @@ public class CourseService {
                 request.targetLongitude(),
                 request.latitude(),
                 request.longitude(),
+                request.status(),
                 request.sortBy(),
                 request.radiusM(),
                 request.page(),
@@ -89,6 +90,7 @@ public class CourseService {
                 request.preferredDistanceMs(),
                 request.targetLatitude(),
                 request.targetLongitude(),
+                request.status(),
                 request.radiusM()
         );
         boolean hasNext = (long) (request.page() + 1) * request.size() < totalElements;

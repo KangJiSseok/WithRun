@@ -249,6 +249,7 @@ class NearbyCourseQueryServiceTest {
                 126.9820,
                 radiusM,
                 List.of(new PreferredDistanceRange(1, 5000)),
+                null,
                 sortBy,
                 page,
                 size

@@ -117,6 +117,7 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
             double targetLongitude,
             double userLatitude,
             double userLongitude,
+            CourseStatus status,
             NearbyCourseSortBy sortBy,
             int radiusM,
             int page,
@@ -154,7 +155,7 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
                                 .and(difficulty.deletedAt.isNull())
                 )
                 .where(
-                        nearbyCourseWhereClause(course, preferredDistanceMs),
+                        nearbyCourseWhereClause(course, preferredDistanceMs, status),
                         distanceFromTargetM.loe(radiusM)
                 )
                 .orderBy(orderSpecifiers)
@@ -207,7 +208,7 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
                                 .and(difficulty.deletedAt.isNull())
                 )
                 .where(
-                        nearbyCourseWhereClause(course, preferredDistanceMs),
+                        nearbyGhostCourseWhereClause(course, preferredDistanceMs),
                         distanceFromTargetM.loe(radiusM)
                 )
                 .orderBy(orderSpecifiers)
@@ -221,6 +222,7 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
             List<PreferredDistanceRange> preferredDistanceMs,
             double targetLatitude,
             double targetLongitude,
+            CourseStatus status,
             int radiusM
     ) {
         QCourse course = QCourse.course;
@@ -231,7 +233,7 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
                 .select(course.id.count())
                 .from(course)
                 .where(
-                        nearbyCourseWhereClause(course, preferredDistanceMs),
+                        nearbyCourseWhereClause(course, preferredDistanceMs, status),
                         distanceFromTargetM.loe(radiusM)
                 )
                 .fetchOne();
@@ -254,7 +256,7 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
                 .select(course.id.count())
                 .from(course)
                 .where(
-                        nearbyCourseWhereClause(course, preferredDistanceMs),
+                        nearbyGhostCourseWhereClause(course, preferredDistanceMs),
                         distanceFromTargetM.loe(radiusM)
                 )
                 .fetchOne();
@@ -278,6 +280,27 @@ public class CourseCustomRepositoryImpl implements CourseCustomRepository {
         }
 
         return whereClause.and(preferredDistancePredicate);
+    }
+
+    private BooleanBuilder nearbyCourseWhereClause(
+            QCourse course,
+            List<PreferredDistanceRange> preferredDistanceMs,
+            CourseStatus status
+    ) {
+        BooleanBuilder whereClause = nearbyCourseWhereClause(course, preferredDistanceMs);
+        if (status == null) {
+            return whereClause;
+        }
+
+        return whereClause.and(course.status.eq(status));
+    }
+
+    private BooleanBuilder nearbyGhostCourseWhereClause(
+            QCourse course,
+            List<PreferredDistanceRange> preferredDistanceMs
+    ) {
+        BooleanBuilder whereClause = nearbyCourseWhereClause(course, preferredDistanceMs);
+        return whereClause.and(course.status.eq(CourseStatus.OFFICIAL));
     }
 
     private BooleanBuilder isVisibleOnPublicFeeds(QCourse course) {
