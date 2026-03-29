@@ -3,8 +3,9 @@ import {
   bridge,
   postMessageSchema,
 } from '@webview-bridge/react-native'
-import { Linking, Vibration } from 'react-native'
-import type { GpsLocation, WatchHealthData } from './types'
+import { Linking, NativeModules, Platform, Vibration } from 'react-native'
+import { voicePlayer } from '@/audio/voicePlayer'
+import type { GpsLocation, VoiceCueKey, WatchHealthData, WatchRunStartPayload } from './types'
 
 // android <-> RN 간 브릿지 통신 함수
 export const appPostMessageSchema = postMessageSchema({
@@ -46,6 +47,35 @@ export const appBridge = bridge({
   async notifyCourseDeviationForceStop() {
     // 강제 종료 알림: 1000ms 단일 진동
     Vibration.vibrate(1000)
+  },
+  async playVoiceCue(key: VoiceCueKey) {
+    await voicePlayer.play(key)
+  },
+  async stopVoiceCue() {
+    await voicePlayer.stop()
+  },
+  async setVoiceEnabled(enabled: boolean) {
+    voicePlayer.setEnabled(enabled)
+  },
+  async startWatchRunSync(payload: WatchRunStartPayload) {
+    if (Platform.OS !== 'android') return
+
+    const watchBridge = NativeModules.WatchBridge as
+      | { startRunSync?: (payloadJson: string) => void }
+      | undefined
+    if (!watchBridge?.startRunSync) return
+
+    watchBridge.startRunSync(JSON.stringify(payload))
+  },
+  async stopWatchRunSync() {
+    if (Platform.OS !== 'android') return
+
+    const watchBridge = NativeModules.WatchBridge as
+      | { stopRunSync?: () => void }
+      | undefined
+    if (!watchBridge?.stopRunSync) return
+
+    watchBridge.stopRunSync()
   },
 })
 
