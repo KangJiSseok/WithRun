@@ -147,6 +147,43 @@ CREATE TABLE reward_items (
 
 CREATE INDEX idx_reward_items_active_created_at ON reward_items (is_active, created_at DESC);
 
+-- Draw pool header for weight-based reward probability management.
+CREATE TABLE reward_draw_pools (
+  reward_draw_pool_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_reward_draw_pools_active_created_at
+  ON reward_draw_pools (is_active, created_at DESC, reward_draw_pool_id DESC);
+
+-- Item membership + weight inside a draw pool.
+CREATE TABLE reward_draw_pool_items (
+  reward_draw_pool_item_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  reward_draw_pool_id BIGINT NOT NULL,
+  reward_item_id BIGINT NOT NULL,
+  weight INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_reward_draw_pool_items_pool
+    FOREIGN KEY (reward_draw_pool_id)
+    REFERENCES reward_draw_pools (reward_draw_pool_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_reward_draw_pool_items_reward_item
+    FOREIGN KEY (reward_item_id)
+    REFERENCES reward_items (reward_item_id)
+    ON DELETE CASCADE,
+  CONSTRAINT uq_reward_draw_pool_items_pool_reward_item UNIQUE (reward_draw_pool_id, reward_item_id),
+  CONSTRAINT chk_reward_draw_pool_items_weight CHECK (weight > 0)
+);
+
+CREATE INDEX idx_reward_draw_pool_items_pool_created_at
+  ON reward_draw_pool_items (reward_draw_pool_id, created_at DESC, reward_draw_pool_item_id DESC);
+
 -- One-row-per-user current reward point balance.
 CREATE TABLE reward_point_balances (
   user_id BIGINT PRIMARY KEY,

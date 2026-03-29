@@ -3,6 +3,8 @@ package kr.withrun.was.global.config;
 import kr.withrun.was.domain.auth.dto.AuthExchangeResult;
 import kr.withrun.was.domain.auth.dto.ReissueAccessTokenResponse;
 import kr.withrun.was.domain.auth.service.AuthService;
+import kr.withrun.was.domain.reward.dto.RewardItemShowcaseListResponse;
+import kr.withrun.was.domain.reward.service.RewardItemQueryService;
 import kr.withrun.was.global.response.ResponseCode;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -17,6 +19,7 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 
+import java.util.List;
 import java.util.stream.Stream;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -43,6 +46,9 @@ class SecurityConfigTest {
 
     @MockitoBean
     private AuthService authService;
+
+    @MockitoBean
+    private RewardItemQueryService rewardItemQueryService;
 
     @ParameterizedTest(name = "비인증 요청 차단: {0}")
     @MethodSource("authenticatedRoutes")
@@ -115,6 +121,17 @@ class SecurityConfigTest {
     void keepsMetaEndpointsPublic() throws Exception {
         mockMvc.perform(get("/api/meta/course/register"))
                 .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("reward showcase API 는 access token 없이도 허용한다")
+    void keepsRewardShowcaseEndpointPublic() throws Exception {
+        given(rewardItemQueryService.getRewardItemShowcase())
+                .willReturn(new RewardItemShowcaseListResponse(List.of()));
+
+        mockMvc.perform(get("/api/reward-items/showcase"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
     }
 
     private static Stream<org.junit.jupiter.params.provider.Arguments> authenticatedRoutes() {

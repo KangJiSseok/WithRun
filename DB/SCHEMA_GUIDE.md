@@ -170,6 +170,40 @@
   - 기본 목록 조회 인덱스로 `(is_active, created_at desc)`를 사용합니다.
   - soft delete 된 항목은 애플리케이션 조회에서 제외합니다.
 
+### reward_draw_pools
+
+- 목적: 운영 가능한 리워드 draw pool 헤더 저장
+- 핵심 컬럼:
+  - `reward_draw_pool_id`: PK
+  - `name`: 관리자 입력 pool 이름
+  - `is_active`: 현재 운영 중인 pool 여부
+  - `created_at`, `updated_at`, `deleted_at`: `BaseEntity` 감사 컬럼
+- 주요 제약:
+  - `name` 길이 100자 제한
+  - `is_active` 기본값 `FALSE`
+- 비고:
+  - 초기 단계에서는 동시에 하나의 pool만 active 로 운영하는 것을 애플리케이션 규칙으로 둡니다.
+  - 기본 운영 조회 인덱스로 `(is_active, created_at desc, reward_draw_pool_id desc)`를 사용합니다.
+
+### reward_draw_pool_items
+
+- 목적: draw pool 안에서 각 reward item 의 weight 기반 확률 구성을 저장
+- 핵심 컬럼:
+  - `reward_draw_pool_item_id`: PK
+  - `reward_draw_pool_id`: `reward_draw_pools` FK
+  - `reward_item_id`: `reward_items` FK
+  - `weight`: raw weight 값
+  - `created_at`, `updated_at`, `deleted_at`: `BaseEntity` 감사 컬럼
+- 주요 제약:
+  - `fk_reward_draw_pool_items_pool` (`ON DELETE CASCADE`)
+  - `fk_reward_draw_pool_items_reward_item` (`ON DELETE CASCADE`)
+  - `uq_reward_draw_pool_items_pool_reward_item`
+  - `chk_reward_draw_pool_items_weight`
+- 비고:
+  - 확률은 percentage 고정값이 아니라 raw weight 로 저장합니다.
+  - `reward_items`는 카탈로그 책임만 가지고, 실제 draw 비중은 이 테이블이 가집니다.
+  - 기본 조회 인덱스로 `(reward_draw_pool_id, created_at desc, reward_draw_pool_item_id desc)`를 사용합니다.
+
 ### reward_point_balances
 
 - 목적: 사용자별 현재 리워드 포인트 잔액의 빠른 조회용 집계 테이블

@@ -12,6 +12,10 @@ import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
 
+import java.lang.reflect.Field;
+import java.time.LocalDateTime;
+import java.util.List;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 @DataJpaTest(properties = {
@@ -78,6 +82,27 @@ class RewardItemRepositoryTest {
         assertThat(rewardItem.isActive()).isTrue();
     }
 
+    @DisplayName("showcase 조회는 활성 + 미삭제 아이템만 createdAt/id 내림차순으로 반환한다")
+    @Test
+    void findsShowcaseRewardItemsInStableOrder() {
+        RewardItem older = persistRewardItem("Older Reward", "reward-item/11.png", true, false);
+        RewardItem newest = persistRewardItem("Newest Reward", "reward-item/10.png", true, false);
+        persistRewardItem("Inactive Reward", "reward-item/12.png", false, false);
+        persistRewardItem("Deleted Reward", "reward-item/13.png", true, true);
+
+        setField(older, "createdAt", LocalDateTime.of(2026, 3, 29, 12, 0));
+        setField(newest, "createdAt", LocalDateTime.of(2026, 3, 29, 12, 0));
+
+        entityManager.flush();
+        entityManager.clear();
+
+        List<RewardItem> rewardItems = rewardItemRepository.findAllByDeletedAtIsNullAndActiveTrueOrderByCreatedAtDescIdDesc();
+
+        assertThat(rewardItems)
+                .extracting(RewardItem::getTitle)
+                .containsExactly("Newest Reward", "Older Reward");
+    }
+
     private RewardItem persistRewardItem(String title, String imageUrl, boolean isActive, boolean deleted) {
         RewardItem rewardItem = RewardItem.builder()
                 .title(title)
@@ -91,5 +116,23 @@ class RewardItemRepositoryTest {
         }
 
         return rewardItem;
+    }
+
+    private void setField(Object target, String fieldName, Object value) {
+        Class<?> currentClass = target.getClass();
+        while (currentClass != null) {
+            try {
+                Field field = currentClass.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(target, value);
+                return;
+            } catch (NoSuchFieldException exception) {
+                currentClass = currentClass.getSuperclass();
+            } catch (IllegalAccessException exception) {
+                throw new IllegalStateException("Failed to set field " + fieldName, exception);
+            }
+        }
+
+        throw new IllegalArgumentException("Field not found: " + fieldName);
     }
 }
