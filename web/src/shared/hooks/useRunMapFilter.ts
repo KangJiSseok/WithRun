@@ -1,18 +1,37 @@
-import { useMemo, useState } from 'react';
+import { useMemo } from 'react';
 
 import {
   type CourseFilterCategory,
   type RunningCourseFilterState,
 } from '@/shared/components';
-import { INITIAL_FILTERS } from '@/constants/NormalRun';
 import { useRunCourseFilter } from './useRunCourseFilter';
 
-export const useRunMapFilter = () => {
-  const [showFilterDrawer, setShowFilterDrawer] = useState(false);
-  const [filters, setFilters] =
-    useState<RunningCourseFilterState>(INITIAL_FILTERS);
-  const [appliedFilters, setAppliedFilters] =
-    useState<RunningCourseFilterState>(INITIAL_FILTERS);
+export interface RunMapFilterStoreShape {
+  showFilterDrawer: boolean;
+  setShowFilterDrawer: (open: boolean) => void;
+  filters: RunningCourseFilterState;
+  appliedFilters: RunningCourseFilterState;
+  filterRequestNonce: number;
+  handleFilterChange: (key: 'courseType' | 'difficulty', value: string) => void;
+  handleDistanceRangeChange: (range: { min: number; max: number }) => void;
+  handleSortByChange: (sortBy: string) => void;
+  handleResetFilters: () => void;
+  applyFilters: () => void;
+}
+
+export const useRunMapFilter = (useFilterStore: () => RunMapFilterStoreShape) => {
+  const {
+    showFilterDrawer,
+    setShowFilterDrawer,
+    filters,
+    appliedFilters,
+    filterRequestNonce,
+    handleFilterChange,
+    handleDistanceRangeChange,
+    handleSortByChange,
+    handleResetFilters,
+    applyFilters,
+  } = useFilterStore();
 
   const { courseFilters } = useRunCourseFilter();
 
@@ -49,44 +68,17 @@ export const useRunMapFilter = () => {
     ];
   }, [courseFilters]);
 
-  function handleFilterChange(key: 'courseType' | 'difficulty', value: string) {
-    setFilters((prev) => {
-      if (value === '전체') {
-        return { ...prev, [key]: [] };
-      }
-      const nextValues = new Set(prev[key]);
-      if (nextValues.has(value)) {
-        nextValues.delete(value);
-      } else {
-        nextValues.add(value);
-      }
-      return { ...prev, [key]: Array.from(nextValues) };
-    });
-  }
-
-  function handleDistanceRangeChange(range: { min: number; max: number }) {
-    setFilters((prev) => ({ ...prev, distanceRange: range }));
-  }
-
-  function handleResetFilters() {
-    setFilters(INITIAL_FILTERS);
-    setAppliedFilters(INITIAL_FILTERS);
-  }
-
-  function applyFilters() {
-    setAppliedFilters(filters);
-    setShowFilterDrawer(false);
-  }
-
   return {
     showFilterDrawer,
     setShowFilterDrawer,
     filters,
     appliedFilters,
+    filterRequestNonce,
     preferredDistanceMs,
     categories,
     handleFilterChange,
     handleDistanceRangeChange,
+    handleSortByChange,
     handleResetFilters,
     applyFilters,
   };
