@@ -1,6 +1,7 @@
 import { useParams } from 'react-router-dom';
+
 import { useCalendarDetail } from '@/hooks/Calendar';
-import { CalendarDetailScreen } from '@/features/Calendar';
+import { CalendarDetailScreen, CalendarDetailHeader } from '@/features/Calendar';
 
 export function CalendarDetailPage() {
   const { runningSessionId } = useParams();
@@ -8,16 +9,22 @@ export function CalendarDetailPage() {
 
   if (isLoading) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="body-r text-[hsl(var(--text-secondary))]">불러오는 중...</p>
+      <div className="absolute inset-0 flex flex-col bg-[hsl(var(--surface-subtle))]">
+        <CalendarDetailHeader />
+        <div className="flex flex-1 items-center justify-center">
+          <p className="body-r text-[hsl(var(--text-secondary))]">불러오는 중...</p>
+        </div>
       </div>
     );
   }
 
   if (isError || !detail) {
     return (
-      <div className="flex h-screen items-center justify-center">
-        <p className="body-r text-[hsl(var(--text-secondary))]">기록을 불러올 수 없습니다.</p>
+      <div className="absolute inset-0 flex flex-col bg-[hsl(var(--surface-subtle))]">
+        <CalendarDetailHeader />
+        <div className="flex flex-1 items-center justify-center">
+          <p className="body-r text-[hsl(var(--text-secondary))]">기록을 불러올 수 없습니다.</p>
+        </div>
       </div>
     );
   }

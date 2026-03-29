@@ -1,6 +1,7 @@
-import { ArrowLeft, Activity, Timer, MapPin } from 'lucide-react';
+import { Activity, Timer, MapPin } from 'lucide-react';
 import { useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+
+import { CalendarDetailHeader } from './CalendarDetailHeader';
 
 import { cn } from '@/shared/utils';
 import { formatDuration, formatPace, formatStartTime } from '@/shared/utils';
@@ -193,12 +194,12 @@ function SplitsSection({ splits, avgPaceSecPerKm }: { splits: SplitResult[]; avg
   );
 }
 
+
 type CalendarDetailScreenProps = {
   detail: RunningSessionDetailResponse;
 };
 
 export function CalendarDetailScreen({ detail }: CalendarDetailScreenProps) {
-  const navigate = useNavigate();
 
   // "2026-03-12T06:30:00" → "2026년 3월 12일"
   const dateLabel = (() => {
@@ -221,16 +222,7 @@ export function CalendarDetailScreen({ detail }: CalendarDetailScreenProps) {
   return (
     <div className="absolute inset-0 flex flex-col bg-[hsl(var(--surface-subtle))]">
       {/* 상단 헤더 */}
-      <header className="shrink-0 border-b border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] px-5 py-3">
-          <button
-            type="button"
-            onClick={() => navigate(-1)}
-            className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-[var(--shadow-sm)]"
-            aria-label="뒤로가기"
-          >
-            <ArrowLeft size={20} />
-          </button>
-      </header>
+      <CalendarDetailHeader />
 
       {/* 스크롤 콘텐츠 */}
       <div className="flex-1 overflow-y-auto">

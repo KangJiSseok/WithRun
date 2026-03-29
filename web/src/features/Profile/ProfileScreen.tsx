@@ -2,7 +2,6 @@ import {
   LogOut,
   PencilLine,
   ShieldAlert,
-  Settings2,
 } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -16,8 +15,9 @@ import {
 } from '@/apis/UserProfile';
 import { Button } from '@/shared/components/shadcn/button';
 import { useAuthStore } from '@/stores/Auth';
-import { cn } from '@/shared/utils';
+import { ProfileDeleteDialog } from './ProfileDeleteDialog';
 import { ProfileEditDialog } from './ProfileEditDialog';
+import { ProfileLogoutDialog } from './ProfileLogoutDialog';
 
 type ProfileMetricChipProps = {
   label: string;
@@ -89,7 +89,7 @@ function syncProfileIntoAuthStore(profile: UserProfileResponse): void {
 
 function ProfileMetricChip({ label, value }: ProfileMetricChipProps) {
   return (
-    <div className="rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--primary-5))] px-4 py-2 text-sm font-semibold text-[hsl(var(--text-primary))]">
+    <div className="rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--primary-5))] px-[var(--space-4)] py-[var(--space-2)] body-m text-[hsl(var(--text-primary))]">
       <span className="text-[hsl(var(--text-secondary))]">{label}</span> {value}
     </div>
   );
@@ -104,6 +104,8 @@ export function ProfileScreen() {
     useState<UserProfileResponse>(createProfileState());
   const [isLoadingProfile, setIsLoadingProfile] = useState(true);
   const [isEditOpen, setIsEditOpen] = useState(false);
+  const [isLogoutOpen, setIsLogoutOpen] = useState(false);
+  const [isDeleteOpen, setIsDeleteOpen] = useState(false);
   const [isDeletingAccount, setIsDeletingAccount] = useState(false);
 
   const providerLabel = useMemo(
@@ -161,14 +163,11 @@ export function ProfileScreen() {
       return;
     }
 
-    const shouldDelete = window.confirm(
-      '회원탈퇴를 진행할까요?\n탈퇴하면 계정과 현재 로그인 상태가 정리됩니다.'
-    );
+    setIsDeleteOpen(true);
+  }
 
-    if (!shouldDelete) {
-      return;
-    }
-
+  async function handleDeleteAccountConfirm() {
+    setIsDeleteOpen(false);
     setIsDeletingAccount(true);
 
     try {
@@ -186,43 +185,25 @@ export function ProfileScreen() {
 
   return (
     <>
-      <div className="min-h-[calc(100dvh-5rem)] overflow-y-auto bg-[hsl(var(--surface-subtle))] px-5 pb-10 pt-6">
-        <div className="mx-auto flex max-w-[430px] flex-col gap-5">
-          <header className="flex items-center gap-3">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--primary-2))] shadow-sm">
-              <Settings2 size={20} />
-            </div>
-            <h1 className="text-2xl font-black text-[hsl(var(--text-primary))]">
-              설정
-            </h1>
-          </header>
-
-          <section className="overflow-hidden rounded-[2rem] border border-[hsl(var(--border-default))] bg-[linear-gradient(180deg,hsl(var(--primary-5))_0%,hsl(var(--surface-default))_62%,hsl(var(--surface-subtle))_100%)] p-6 text-[hsl(var(--text-primary))] shadow-[var(--shadow-lg)]">
-            <div className="flex items-center justify-between">
-              <div className="text-sm font-semibold tracking-[0.08em] text-[hsl(var(--text-secondary))]">
-                계정
-              </div>
-              <div className="text-xs font-semibold text-[hsl(var(--text-secondary))]">
-                {providerLabel}
-              </div>
-            </div>
-
-            <div className="mt-8 flex flex-col items-center text-center">
-              <div className="mt-0 space-y-1">
+      <div className="min-h-[calc(100dvh-5rem)] overflow-y-auto bg-[hsl(var(--surface-subtle))] px-[var(--space-5)] pb-[var(--space-10)] pt-[var(--space-3)]">
+        <div className="mx-auto flex max-w-[430px] flex-col gap-[var(--space-5)]">
+          <section className="overflow-hidden rounded-[var(--radius-3xl)] border border-[hsl(var(--border-default))] bg-[linear-gradient(180deg,hsl(var(--primary-5))_0%,hsl(var(--surface-default))_62%,hsl(var(--surface-subtle))_100%)] p-[var(--space-6)] text-[hsl(var(--text-primary))] shadow-[var(--shadow-lg)]">
+            <div className="mt-[var(--space-2)] flex flex-col items-center text-center">
+              <div className="space-y-[var(--space-1)]">
                 <h2 className="text-3xl font-black">
                   {profile.nickname ?? 'Runner'}
                 </h2>
-                <p className="text-xs font-semibold text-[hsl(var(--text-secondary))]">
+                <p className="caption-b text-[hsl(var(--text-secondary))]">
                   {providerLabel}
                 </p>
-                <p className="text-sm text-[hsl(var(--text-secondary))]">
+                <p className="body-r text-[hsl(var(--text-secondary))]">
                   {birthDateLabel ?? '생년월일 미등록'}
                   {birthDateLabel && genderLabel ? ' · ' : ''}
                   {genderLabel ?? '성별 미등록'}
                 </p>
               </div>
 
-              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
+              <div className="mt-[var(--space-4)] flex flex-wrap items-center justify-center gap-[var(--space-2)]">
                 {profile.height ? (
                   <ProfileMetricChip
                     label="키"
@@ -241,17 +222,17 @@ export function ProfileScreen() {
           </section>
 
           {isLoadingProfile ? (
-            <div className="rounded-[1.5rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-4 py-6 text-center text-sm text-[hsl(var(--text-secondary))]">
+            <div className="rounded-[var(--radius-2xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-[var(--space-4)] py-[var(--space-6)] text-center body-r text-[hsl(var(--text-secondary))]">
               프로필 정보를 불러오는 중이에요.
             </div>
           ) : null}
 
-          <section className="space-y-3">
+          <section className="flex flex-col gap-[var(--space-3)]">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsEditOpen(true)}
-              className="h-14 w-full rounded-[1.5rem] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-primary))] shadow-sm hover:bg-[hsl(var(--surface-subtle))]"
+              className="h-14 w-full rounded-[var(--radius-2xl)] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-primary))] shadow-[var(--shadow-sm)] hover:bg-[hsl(var(--surface-subtle))]"
             >
               <PencilLine size={18} />
               프로필 수정
@@ -260,35 +241,20 @@ export function ProfileScreen() {
             <Button
               type="button"
               variant="outline"
-              onClick={() => void handleLogout()}
+              onClick={() => setIsLogoutOpen(true)}
               disabled={isLoggingOut}
-              className="h-14 w-full rounded-[1.5rem] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-primary))] shadow-sm hover:bg-[hsl(var(--surface-subtle))]"
+              className="h-14 w-full rounded-[var(--radius-2xl)] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-primary))] shadow-[var(--shadow-sm)] hover:bg-[hsl(var(--surface-subtle))]"
             >
               <LogOut size={18} />
-              {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
+              로그아웃
             </Button>
-          </section>
-
-          <section className="space-y-3 rounded-[1.5rem] border border-[hsl(var(--error)/0.16)] bg-[hsl(var(--error)/0.04)] p-4">
-            <div className="space-y-1">
-              <p className="text-xs font-semibold tracking-[0.08em] text-[hsl(var(--text-error))]">
-                위험 구역
-              </p>
-              <p className="text-sm text-[hsl(var(--text-secondary))]">
-                회원탈퇴를 진행하면 현재 로그인 상태와 연결된 소셜 계정 매핑도
-                함께 정리됩니다.
-              </p>
-            </div>
 
             <Button
               type="button"
               variant="outline"
               onClick={() => void handleDeleteAccount()}
               disabled={isDeletingAccount}
-              className={cn(
-                'h-14 w-full rounded-[1.5rem] border-[hsl(var(--error)/0.22)] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-error))] shadow-sm hover:bg-[hsl(var(--error)/0.05)]',
-                isDeletingAccount ? 'opacity-70' : undefined
-              )}
+              className="h-14 w-full rounded-[var(--radius-2xl)] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-error))] shadow-[var(--shadow-sm)] hover:bg-[hsl(var(--error)/0.05)] disabled:opacity-70"
             >
               <ShieldAlert size={18} />
               {isDeletingAccount ? '회원탈퇴 처리 중...' : '회원탈퇴'}
@@ -302,6 +268,23 @@ export function ProfileScreen() {
         profile={profile}
         onOpenChange={setIsEditOpen}
         onSaved={handleSavedProfile}
+      />
+
+      <ProfileLogoutDialog
+        isOpen={isLogoutOpen}
+        isLoggingOut={isLoggingOut}
+        onOpenChange={setIsLogoutOpen}
+        onConfirm={() => {
+          setIsLogoutOpen(false);
+          void handleLogout();
+        }}
+      />
+
+      <ProfileDeleteDialog
+        isOpen={isDeleteOpen}
+        isDeletingAccount={isDeletingAccount}
+        onOpenChange={setIsDeleteOpen}
+        onConfirm={() => void handleDeleteAccountConfirm()}
       />
     </>
   );
