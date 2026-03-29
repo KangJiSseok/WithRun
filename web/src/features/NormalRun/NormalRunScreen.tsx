@@ -16,6 +16,7 @@ import {
   useRunCircleMap,
   type CircleMode,
 } from '@/shared/hooks/useRunCircleMap';
+import { useBookmarkToggle, useLikeToggle } from '@/shared/hooks';
 import { useNormalRunMapCourses } from '@/hooks/NormalRun/useNormalRunMapCourses';
 import { useRunMapFilter } from '@/shared/hooks/useRunMapFilter';
 import { useRunBottomSheet } from '@/shared/hooks/useRunBottomSheet';
@@ -25,6 +26,8 @@ type CourseTab = 'official' | 'community';
 
 export function NormalRunScreen() {
   const navigate = useNavigate();
+  const { isBookmarked, toggle: toggleBookmark } = useBookmarkToggle();
+  const { isLiked, getLikeCount, toggle: toggleLike } = useLikeToggle();
   const [searchKeyword, setSearchKeyword] = useState('');
   const [circleMode, setCircleMode] = useState<CircleMode>('USER_LOCATION');
   const [mapCourses, setMapCourses] = useState<CourseItem[]>([]);
@@ -226,10 +229,15 @@ export function NormalRunScreen() {
               {filteredCourses.map((course) => (
                 <RunningCourseCard
                   key={course.courseId}
-                  course={course}
-                  isSaved={false}
+                  course={{
+                    ...course,
+                    isLiked: isLiked(course.courseId, course.isLiked),
+                    likeCount: getLikeCount(course.courseId, course.likeCount),
+                  }}
+                  isSaved={isBookmarked(course.courseId, course.isBookmarked)}
                   onClick={() => navigate(`/normal-run/${course.courseId}`)}
-                  onToggleSave={() => {}}
+                  onToggleSave={() => toggleBookmark(course.courseId, course.isBookmarked)}
+                  onToggleLike={() => toggleLike(course.courseId, course.isLiked, course.likeCount)}
                 />
               ))}
             </div>

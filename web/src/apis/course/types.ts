@@ -69,6 +69,8 @@ export type CourseItem = {
   snapshotImageUrl: string | null;
   likeCount: number;
   bookmarkCount: number;
+  isLiked: boolean;
+  isBookmarked: boolean;
 };
 
 export type PreferredDistanceM = { min: number; max: number };
