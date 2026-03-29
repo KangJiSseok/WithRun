@@ -362,7 +362,7 @@ export function HomeScreen() {
               {healthConnectionLabel}
             </div>
 
-            <div className="space-y-2">
+            <div className="space-y-2 pl-2">
               <h1 className="leading-tight tracking-tight text-[hsl(var(--text-primary))]">
                 <span className="block text-base font-black">달려볼까요,</span>
                 <span className="block text-2xl font-black">{user?.nickname ?? 'Runner'}님</span>
