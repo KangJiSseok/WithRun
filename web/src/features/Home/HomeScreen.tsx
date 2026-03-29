@@ -40,6 +40,7 @@ type PreferenceChipGroupProps<TValue extends string> = {
     value: TValue;
   }>;
   selectedValues: TValue[];
+  serverValues?: TValue[];
   onToggle: (value: TValue) => void;
   className?: string;
 };
@@ -51,6 +52,7 @@ type SingleSelectChipGroupProps<TValue extends string> = {
     value: TValue;
   }>;
   selectedValue: TValue | null;
+  serverSelectedValue?: TValue | null;
   onSelect: (value: TValue) => void;
 };
 
@@ -102,6 +104,7 @@ function PreferenceChipGroup<TValue extends string>({
   label,
   options,
   selectedValues,
+  serverValues,
   onToggle,
   className,
 }: PreferenceChipGroupProps<TValue>) {
@@ -113,6 +116,7 @@ function PreferenceChipGroup<TValue extends string>({
       <div className={cn('flex flex-wrap gap-2', className)}>
         {options.map((option) => {
           const isSelected = selectedValues.includes(option.value);
+          const wasSelected = serverValues?.includes(option.value);
 
           return (
             <button
@@ -121,9 +125,13 @@ function PreferenceChipGroup<TValue extends string>({
               onClick={() => onToggle(option.value)}
               className={cn(
                 'rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
-                isSelected
-                  ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
-                  : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]'
+                isSelected && serverValues && !wasSelected
+                  ? 'border-[hsl(var(--success))] bg-[hsl(var(--success))] text-[hsl(var(--text-inverse))]'
+                  : !isSelected && serverValues && wasSelected
+                    ? 'border-[hsl(var(--error))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--error))]'
+                    : isSelected
+                      ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
+                      : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]'
               )}
             >
               {option.label}
@@ -139,6 +147,7 @@ function SingleSelectChipGroup<TValue extends string>({
   label,
   options,
   selectedValue,
+  serverSelectedValue,
   onSelect,
 }: SingleSelectChipGroupProps<TValue>) {
   return (
@@ -149,6 +158,7 @@ function SingleSelectChipGroup<TValue extends string>({
       <div className="grid grid-cols-3 gap-2">
         {options.map((option) => {
           const isSelected = selectedValue === option.value;
+          const wasSelected = serverSelectedValue !== undefined && serverSelectedValue === option.value;
 
           return (
             <button
@@ -157,9 +167,13 @@ function SingleSelectChipGroup<TValue extends string>({
               onClick={() => onSelect(option.value)}
               className={cn(
                 'rounded-3xl border px-4 py-4 text-base font-semibold transition-colors',
-                isSelected
-                  ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
-                  : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]'
+                isSelected && serverSelectedValue !== undefined && !wasSelected
+                  ? 'border-[hsl(var(--success))] bg-[hsl(var(--success))] text-[hsl(var(--text-inverse))]'
+                  : !isSelected && serverSelectedValue !== undefined && wasSelected
+                    ? 'border-[hsl(var(--error))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--error))]'
+                    : isSelected
+                      ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
+                      : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]'
               )}
             >
               {option.label}
@@ -383,6 +397,7 @@ export function HomeScreen() {
                   label="러닝 목적"
                   options={ONBOARDING_PURPOSE_OPTIONS}
                   selectedValues={preferences.purposes}
+                  serverValues={serverPreferences?.purposes}
                   onToggle={(value) =>
                     setPreferences((currentState) => ({
                       ...currentState,
@@ -395,6 +410,7 @@ export function HomeScreen() {
                   label="선호 시간대"
                   options={ONBOARDING_TIME_SLOT_OPTIONS}
                   selectedValues={preferences.timeSlots}
+                  serverValues={serverPreferences?.timeSlots}
                   onToggle={(value) =>
                     setPreferences((currentState) => ({
                       ...currentState,
@@ -439,6 +455,7 @@ export function HomeScreen() {
                   label="코스 타입"
                   options={ONBOARDING_COURSE_TYPE_OPTIONS}
                   selectedValues={preferences.courseTypes}
+                  serverValues={serverPreferences?.courseTypes}
                   onToggle={(value) =>
                     setPreferences((currentState) => ({
                       ...currentState,
@@ -455,6 +472,7 @@ export function HomeScreen() {
                   label="코스 난이도"
                   options={ONBOARDING_DIFFICULTY_OPTIONS}
                   selectedValue={preferences.preferredDifficulty}
+                  serverSelectedValue={serverPreferences?.preferredDifficulty}
                   onSelect={(value) =>
                     setPreferences((currentState) => ({
                       ...currentState,
