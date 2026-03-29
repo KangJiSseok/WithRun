@@ -22,7 +22,7 @@ import {
 import { useAuthStore } from '@/stores/Auth';
 import type { CourseType } from '@/shared/types/api.type';
 import { cn } from '@/shared/utils';
-import { getHomeSummaryStats } from './HomeSummaryStats';
+import { getWeeklyCalendarApi } from '@/apis/userCalendar';
 import { useHealthConnectionStatus } from './useHealthConnectionStatus';
 
 type RunningPreferenceFormState = {
@@ -40,6 +40,7 @@ type PreferenceChipGroupProps<TValue extends string> = {
     value: TValue;
   }>;
   selectedValues: TValue[];
+  serverValues?: TValue[];
   onToggle: (value: TValue) => void;
   className?: string;
 };
@@ -51,6 +52,7 @@ type SingleSelectChipGroupProps<TValue extends string> = {
     value: TValue;
   }>;
   selectedValue: TValue | null;
+  serverSelectedValue?: TValue | null;
   onSelect: (value: TValue) => void;
 };
 
@@ -91,17 +93,18 @@ function toggleSelection<TValue extends string>(
     : [...selectedValues, value];
 }
 
-function formatDuration(durationMinutes: number): string {
-  const hours = Math.floor(durationMinutes / 60);
-  const minutes = durationMinutes % 60;
-
-  return `${hours}:${String(minutes).padStart(2, '0')}`;
+function formatDuration(durationSec: number): string {
+  const hours = Math.floor(durationSec / 3600);
+  const minutes = Math.floor((durationSec % 3600) / 60);
+  const seconds = durationSec % 60;
+  return `${hours}:${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`;
 }
 
 function PreferenceChipGroup<TValue extends string>({
   label,
   options,
   selectedValues,
+  serverValues,
   onToggle,
   className,
 }: PreferenceChipGroupProps<TValue>) {
@@ -113,6 +116,7 @@ function PreferenceChipGroup<TValue extends string>({
       <div className={cn('flex flex-wrap gap-2', className)}>
         {options.map((option) => {
           const isSelected = selectedValues.includes(option.value);
+          const wasSelected = serverValues?.includes(option.value);
 
           return (
             <button
@@ -121,9 +125,13 @@ function PreferenceChipGroup<TValue extends string>({
               onClick={() => onToggle(option.value)}
               className={cn(
                 'rounded-full border px-4 py-2 text-sm font-semibold transition-colors',
-                isSelected
-                  ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
-                  : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]'
+                isSelected && serverValues && !wasSelected
+                  ? 'border-[hsl(var(--success))] bg-[hsl(var(--success))] text-[hsl(var(--text-inverse))]'
+                  : !isSelected && serverValues && wasSelected
+                    ? 'border-[hsl(var(--error))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--error))]'
+                    : isSelected
+                      ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
+                      : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]'
               )}
             >
               {option.label}
@@ -139,6 +147,7 @@ function SingleSelectChipGroup<TValue extends string>({
   label,
   options,
   selectedValue,
+  serverSelectedValue,
   onSelect,
 }: SingleSelectChipGroupProps<TValue>) {
   return (
@@ -149,6 +158,7 @@ function SingleSelectChipGroup<TValue extends string>({
       <div className="grid grid-cols-3 gap-2">
         {options.map((option) => {
           const isSelected = selectedValue === option.value;
+          const wasSelected = serverSelectedValue !== undefined && serverSelectedValue === option.value;
 
           return (
             <button
@@ -157,9 +167,13 @@ function SingleSelectChipGroup<TValue extends string>({
               onClick={() => onSelect(option.value)}
               className={cn(
                 'rounded-3xl border px-4 py-4 text-base font-semibold transition-colors',
-                isSelected
-                  ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
-                  : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]'
+                isSelected && serverSelectedValue !== undefined && !wasSelected
+                  ? 'border-[hsl(var(--success))] bg-[hsl(var(--success))] text-[hsl(var(--text-inverse))]'
+                  : !isSelected && serverSelectedValue !== undefined && wasSelected
+                    ? 'border-[hsl(var(--error))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--error))]'
+                    : isSelected
+                      ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
+                      : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]'
               )}
             >
               {option.label}
@@ -173,12 +187,12 @@ function SingleSelectChipGroup<TValue extends string>({
 
 function SummaryCard({ title, value, unit }: SummaryCardProps) {
   return (
-    <article className="rounded-[1.75rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-5 shadow-[var(--shadow-md)]">
+    <article className="rounded-[1.75rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-5 shadow-[var(--shadow-md)] flex flex-col items-center text-center">
       <div className="flex items-end gap-2">
-        <span className="text-5xl font-black leading-none tracking-tight text-[hsl(var(--text-primary))]">
+        <span className="text-3xl font-black leading-none tracking-tight text-[hsl(var(--text-primary))]">
           {value}
         </span>
-        <span className="pb-1 text-xl font-medium text-[hsl(var(--text-secondary))]">
+        <span className="pb-1 text-base font-medium text-[hsl(var(--text-secondary))]">
           {unit}
         </span>
       </div>
@@ -193,45 +207,81 @@ export function HomeScreen() {
   const user = useAuthStore((state) => state.user);
   const { label: healthConnectionLabel, isConnected } =
     useHealthConnectionStatus();
-  const summaryStats = useMemo(() => getHomeSummaryStats(), []);
+  const [weeklySummary, setWeeklySummary] = useState<{
+    runCount: number;
+    distanceKm: number;
+    caloriesKcal: number;
+    durationSec: number;
+  } | null>(null);
   const [preferences, setPreferences] = useState<RunningPreferenceFormState>(
     createDefaultPreferenceState()
   );
+  const [serverPreferences, setServerPreferences] = useState<RunningPreferenceFormState | null>(null);
   const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
   const summaryCards = useMemo(
     () => [
-      // 카드 UI 는 고정하고 데이터만 나중에 API 응답으로 갈아끼울 수 있게 미리 포맷팅한다.
       {
         title: '이번 주 러닝',
-        value: String(summaryStats.runCount),
+        value: weeklySummary ? String(weeklySummary.runCount) : '--',
         unit: '회',
       },
       {
         title: '총 거리',
-        value: summaryStats.distanceKm.toFixed(1),
+        value: weeklySummary ? weeklySummary.distanceKm.toFixed(1) : '--',
         unit: 'km',
       },
       {
         title: '소모 칼로리',
-        value: summaryStats.caloriesKcal.toLocaleString('ko-KR'),
+        value: weeklySummary ? weeklySummary.caloriesKcal.toLocaleString('ko-KR') : '--',
         unit: 'kcal',
       },
       {
         title: '총 운동 시간',
-        value: formatDuration(summaryStats.durationMinutes),
-        unit: '시간',
+        value: weeklySummary ? formatDuration(weeklySummary.durationSec) : '--',
+        unit: '',
       },
     ],
-    [summaryStats]
+    [weeklySummary]
+  );
+
+  const isPreferencesChanged = serverPreferences === null || (
+    [...preferences.purposes].sort().join() !== [...serverPreferences.purposes].sort().join() ||
+    [...preferences.timeSlots].sort().join() !== [...serverPreferences.timeSlots].sort().join() ||
+    [...preferences.courseTypes].sort().join() !== [...serverPreferences.courseTypes].sort().join() ||
+    preferences.preferredDistanceKm !== serverPreferences.preferredDistanceKm ||
+    preferences.preferredDifficulty !== serverPreferences.preferredDifficulty
   );
 
   const canSavePreferences =
     preferences.purposes.length > 0 &&
     preferences.timeSlots.length > 0 &&
     preferences.preferredDifficulty !== null &&
-    preferences.courseTypes.length > 0;
+    preferences.courseTypes.length > 0 &&
+    isPreferencesChanged;
+
+  useEffect(() => {
+    let isCancelled = false;
+
+    void (async () => {
+      try {
+        const response = await getWeeklyCalendarApi();
+        if (isCancelled) return;
+        const { weeklyRunCount, weeklyDistanceM, weeklyCaloriesKcal, weeklyDurationSec } = response.data;
+        setWeeklySummary({
+          runCount: weeklyRunCount,
+          distanceKm: weeklyDistanceM / 1000,
+          caloriesKcal: weeklyCaloriesKcal,
+          durationSec: weeklyDurationSec,
+        });
+      } catch {
+        // 실패 시 카드는 '--' 유지
+      }
+    })();
+
+    return () => { isCancelled = true; };
+  }, []);
 
   useEffect(() => {
     let isCancelled = false;
@@ -245,7 +295,9 @@ export function HomeScreen() {
           return;
         }
 
-        setPreferences(createPreferenceState(response));
+        const preferenceState = createPreferenceState(response);
+        setPreferences(preferenceState);
+        setServerPreferences(preferenceState);
       } catch {
         if (isCancelled) {
           return;
@@ -282,7 +334,9 @@ export function HomeScreen() {
 
       // 저장 직후 서버 값을 다시 읽어 화면 상태와 실제 저장값이 어긋나지 않게 맞춘다.
       const response = await getUserRunningPreferences();
-      setPreferences(createPreferenceState(response));
+      const preferenceState = createPreferenceState(response);
+      setPreferences(preferenceState);
+      setServerPreferences(preferenceState);
       toast.success('러닝 선호도가 저장되었어요.');
     } catch {
       toast.error('러닝 선호도를 저장하지 못했어요. 다시 시도해주세요.');
@@ -343,6 +397,7 @@ export function HomeScreen() {
                   label="러닝 목적"
                   options={ONBOARDING_PURPOSE_OPTIONS}
                   selectedValues={preferences.purposes}
+                  serverValues={serverPreferences?.purposes}
                   onToggle={(value) =>
                     setPreferences((currentState) => ({
                       ...currentState,
@@ -355,6 +410,7 @@ export function HomeScreen() {
                   label="선호 시간대"
                   options={ONBOARDING_TIME_SLOT_OPTIONS}
                   selectedValues={preferences.timeSlots}
+                  serverValues={serverPreferences?.timeSlots}
                   onToggle={(value) =>
                     setPreferences((currentState) => ({
                       ...currentState,
@@ -399,6 +455,7 @@ export function HomeScreen() {
                   label="코스 타입"
                   options={ONBOARDING_COURSE_TYPE_OPTIONS}
                   selectedValues={preferences.courseTypes}
+                  serverValues={serverPreferences?.courseTypes}
                   onToggle={(value) =>
                     setPreferences((currentState) => ({
                       ...currentState,
@@ -415,6 +472,7 @@ export function HomeScreen() {
                   label="코스 난이도"
                   options={ONBOARDING_DIFFICULTY_OPTIONS}
                   selectedValue={preferences.preferredDifficulty}
+                  serverSelectedValue={serverPreferences?.preferredDifficulty}
                   onSelect={(value) =>
                     setPreferences((currentState) => ({
                       ...currentState,
