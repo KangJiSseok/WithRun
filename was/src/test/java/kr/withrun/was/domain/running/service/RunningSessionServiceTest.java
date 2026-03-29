@@ -987,6 +987,39 @@ class RunningSessionServiceTest {
         verifyNoInteractions(ghostRunningResultService);
     }
 
+    @DisplayName("SUCCESS 가 아닌 GHOST 세션은 상대가 SUCCESS 여도 패배 결과로 저장한다")
+    @Test
+    void storesLoseGhostResultWhenGhostRunEndsWithoutSuccess() {
+        User user = user(44L);
+        Course course = course(404L, CourseStatus.OFFICIAL);
+        RunningSession ghostTarget = completedRunningSession(99L);
+        setField(ghostTarget, "course", course);
+        setField(ghostTarget, "durationSec", 1900);
+        setField(ghostTarget, "user", user(440L));
+        RunningSession runningSession = runningSession(100L, user.getId(), false, STARTED_AT);
+        setField(runningSession, "mode", GHOST);
+        setField(runningSession, "course", course);
+        setField(runningSession, "ghostTargetRunningSession", ghostTarget);
+        CompleteRunningSessionRequest request = completeRequestWithState(RunningSessionCompleteState.GIVEUP);
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(runningSession.getId())).thenReturn(Optional.of(runningSession));
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningHealthSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningSessionSplitRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(ghostRunningResultRepository.save(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(runningSession.getId(), user.getId(), request);
+
+        assertThat(response.completeState()).isEqualTo(RunningSessionCompleteState.GIVEUP);
+        assertThat(response.ghostRunningResult()).isNotNull();
+        assertThat(response.ghostRunningResult().resultStatus()).isEqualTo(GhostResultStatus.LOSE);
+        assertThat(response.ghostRunningResult().point()).isZero();
+        assertThat(response.ghostRunningResult().timeGapSec()).isEqualTo(25);
+        assertThat(response.ghostRunningResult().distanceGapM()).isZero();
+        verify(ghostRunningResultRepository).save(any());
+        verifyNoInteractions(courseGhostLeaderboardRepository);
+    }
+
     @DisplayName("더 높은 고스트 점수로 갱신되면 리더보드 최고 행의 세션도 함께 갱신한다")
     @Test
     void updatesLeaderboardRunningSessionWhenGhostPointImproves() {
