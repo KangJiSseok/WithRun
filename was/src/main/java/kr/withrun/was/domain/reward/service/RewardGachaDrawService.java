@@ -66,14 +66,18 @@ public class RewardGachaDrawService {
 
     @Transactional
     public RewardGachaDrawResponse draw(Long userId) {
-        RewardDrawPool rewardDrawPool = rewardDrawPoolRepository.findByActiveTrueAndDeletedAtIsNull()
+        Long rewardDrawPoolId = rewardDrawPoolRepository.findByActiveTrueAndDeletedAtIsNull()
+                .map(RewardDrawPool::getId)
                 .orElseThrow(() -> new CustomException(ResponseCode.REWARD_DRAW_POOL_NOT_FOUND));
-        List<RewardDrawPoolItem> rewardDrawPoolItems = rewardDrawPoolItemRepository
-                .findAllByRewardDrawPoolIdAndDeletedAtIsNullOrderByIdAsc(rewardDrawPool.getId());
 
         if (rewardPointBalanceRepository.decreaseBalanceIfEnough(userId, DRAW_COST) == 0) {
             throw new CustomException(ResponseCode.REWARD_POINT_INSUFFICIENT);
         }
+
+        RewardDrawPool rewardDrawPool = rewardDrawPoolRepository.findWithMissRewardItemByIdAndDeletedAtIsNull(rewardDrawPoolId)
+                .orElseThrow(() -> new CustomException(ResponseCode.REWARD_DRAW_POOL_NOT_FOUND));
+        List<RewardDrawPoolItem> rewardDrawPoolItems = rewardDrawPoolItemRepository
+                .findWithRewardItemByRewardDrawPoolIdAndDeletedAtIsNullOrderByIdAsc(rewardDrawPoolId);
 
         User user = userRepository.getReferenceById(userId);
         RewardGachaDraw rewardGachaDraw = rewardGachaDrawRepository.save(

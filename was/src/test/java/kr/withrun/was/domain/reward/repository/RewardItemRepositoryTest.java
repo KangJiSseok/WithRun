@@ -1,8 +1,6 @@
 package kr.withrun.was.domain.reward.repository;
 
 import jakarta.persistence.EntityManager;
-import kr.withrun.was.domain.reward.entity.RewardDrawPool;
-import kr.withrun.was.domain.reward.entity.RewardDrawPoolItem;
 import kr.withrun.was.domain.reward.entity.RewardItem;
 import kr.withrun.was.global.config.JpaAuditingConfig;
 import kr.withrun.was.global.config.QuerydslConfig;
@@ -83,33 +81,27 @@ class RewardItemRepositoryTest {
         assertThat(rewardItem.isActive()).isTrue();
     }
 
-    @DisplayName("showcase 조회는 활성 pool 의 일반 item 으로 연결된 활성 + 미삭제 아이템만 createdAt/id 내림차순으로 반환한다")
+    @DisplayName("showcase 조회는 활성 + 미삭제 reward item 을 createdAt/id 내림차순으로 반환한다")
     @Test
     void findsShowcaseRewardItemsInStableOrder() {
-        RewardDrawPool activeRewardDrawPool = persistRewardDrawPool("Launch Pool", 3, 40, true);
-        RewardDrawPool inactiveRewardDrawPool = persistRewardDrawPool("Inactive Pool", 3, 40, false);
         RewardItem older = persistRewardItem("Older Reward", "reward-item/11.png", true, false);
         RewardItem newest = persistRewardItem("Newest Reward", "reward-item/10.png", true, false);
-        RewardItem missOnly = persistRewardItem("Miss Only Reward", "reward-item/14.png", true, false);
-        RewardItem inactivePoolOnly = persistRewardItem("Inactive Pool Reward", "reward-item/15.png", true, false);
+        RewardItem activeStandalone = persistRewardItem("Active Standalone Reward", "reward-item/14.png", true, false);
         persistRewardItem("Inactive Reward", "reward-item/12.png", false, false);
         persistRewardItem("Deleted Reward", "reward-item/13.png", true, true);
-        persistRewardDrawPoolItem(activeRewardDrawPool, older, 40, false);
-        persistRewardDrawPoolItem(activeRewardDrawPool, newest, 60, false);
-        persistRewardDrawPoolItem(inactiveRewardDrawPool, inactivePoolOnly, 80, false);
 
         setField(older, "createdAt", LocalDateTime.of(2026, 3, 29, 12, 0));
         setField(newest, "createdAt", LocalDateTime.of(2026, 3, 29, 12, 0));
-        setField(missOnly, "createdAt", LocalDateTime.of(2026, 3, 29, 12, 1));
+        setField(activeStandalone, "createdAt", LocalDateTime.of(2026, 3, 29, 12, 1));
 
         entityManager.flush();
         entityManager.clear();
 
-        List<RewardItem> rewardItems = rewardItemRepository.findAllShowcaseItemsOrderByCreatedAtDescIdDesc();
+        List<RewardItem> rewardItems = rewardItemRepository.findAllByDeletedAtIsNullAndActiveTrueOrderByCreatedAtDescIdDesc();
 
         assertThat(rewardItems)
                 .extracting(RewardItem::getTitle)
-                .containsExactly("Newest Reward", "Older Reward");
+                .containsExactly("Active Standalone Reward", "Newest Reward", "Older Reward");
     }
 
     private RewardItem persistRewardItem(String title, String imageUrl, boolean isActive, boolean deleted) {
@@ -124,23 +116,6 @@ class RewardItemRepositoryTest {
         }
 
         return rewardItem;
-    }
-
-    private RewardDrawPool persistRewardDrawPool(String name, int cardsPerDraw, int missWeight, boolean active) {
-        RewardDrawPool rewardDrawPool = RewardDrawPool.create(name, cardsPerDraw, missWeight, null);
-        if (active) {
-            rewardDrawPool.activate();
-        }
-        entityManager.persist(rewardDrawPool);
-        return rewardDrawPool;
-    }
-
-    private void persistRewardDrawPoolItem(RewardDrawPool rewardDrawPool, RewardItem rewardItem, int weight, boolean deleted) {
-        RewardDrawPoolItem rewardDrawPoolItem = RewardDrawPoolItem.create(rewardDrawPool, rewardItem, weight);
-        entityManager.persist(rewardDrawPoolItem);
-        if (deleted) {
-            rewardDrawPoolItem.delete();
-        }
     }
 
     private <T> T instantiate(Class<T> type) {

@@ -113,9 +113,11 @@ public class RewardDrawPoolAdminService {
 
     @Transactional
     public RewardDrawPoolResponse activateRewardDrawPool(Long rewardDrawPoolId) {
-        RewardDrawPool rewardDrawPool = findRewardDrawPool(rewardDrawPoolId);
+        findRewardDrawPool(rewardDrawPoolId);
 
         rewardDrawPoolRepository.deactivateAllActivePools();
+
+        RewardDrawPool rewardDrawPool = findRewardDrawPool(rewardDrawPoolId);
         rewardDrawPool.activate();
 
         return toResponse(rewardDrawPool, loadPoolItems(rewardDrawPoolId));

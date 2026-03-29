@@ -45,7 +45,7 @@ class RewardItemQueryServiceTest {
     void returnsShowcaseItemsWithNormalizedImageUrls() {
         RewardItem newest = rewardItem(2L, "Newest Reward", "reward-item/2.png", true);
         RewardItem older = rewardItem(1L, "Older Reward", "reward-item/1.png", true);
-        when(rewardItemRepository.findAllShowcaseItemsOrderByCreatedAtDescIdDesc())
+        when(rewardItemRepository.findAllByDeletedAtIsNullAndActiveTrueOrderByCreatedAtDescIdDesc())
                 .thenReturn(List.of(newest, older));
 
         RewardItemShowcaseListResponse response = rewardItemQueryService.getRewardItemShowcase();

@@ -25,7 +25,7 @@ public class RewardItemQueryService {
 
     public RewardItemShowcaseListResponse getRewardItemShowcase() {
         return new RewardItemShowcaseListResponse(
-                rewardItemRepository.findAllShowcaseItemsOrderByCreatedAtDescIdDesc()
+                rewardItemRepository.findAllByDeletedAtIsNullAndActiveTrueOrderByCreatedAtDescIdDesc()
                         .stream()
                         .map(this::toShowcaseResponse)
                         .toList()

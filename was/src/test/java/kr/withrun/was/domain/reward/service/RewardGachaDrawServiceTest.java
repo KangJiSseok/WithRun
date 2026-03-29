@@ -98,7 +98,9 @@ class RewardGachaDrawServiceTest {
         RewardDrawPoolItem rewardDrawPoolItem = rewardDrawPoolItem(1000L, rewardDrawPool, rewardItem, 60);
 
         when(rewardDrawPoolRepository.findByActiveTrueAndDeletedAtIsNull()).thenReturn(Optional.of(rewardDrawPool));
-        when(rewardDrawPoolItemRepository.findAllByRewardDrawPoolIdAndDeletedAtIsNullOrderByIdAsc(10L))
+        when(rewardDrawPoolRepository.findWithMissRewardItemByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(rewardDrawPool));
+        when(rewardDrawPoolItemRepository.findWithRewardItemByRewardDrawPoolIdAndDeletedAtIsNullOrderByIdAsc(10L))
                 .thenReturn(List.of(rewardDrawPoolItem));
         when(rewardPointBalanceRepository.decreaseBalanceIfEnough(1L, 1)).thenReturn(1);
         when(rewardPointBalanceRepository.findByIdAndDeletedAtIsNull(1L))
@@ -148,12 +150,8 @@ class RewardGachaDrawServiceTest {
     @Test
     void throwsWhenRewardPointIsInsufficient() {
         RewardDrawPool rewardDrawPool = rewardDrawPool(10L, "Launch Pool", 3, 40, true, null);
-        RewardItem rewardItem = rewardItem(100L, "Reward A", "reward-item/1.png");
-        RewardDrawPoolItem rewardDrawPoolItem = rewardDrawPoolItem(1000L, rewardDrawPool, rewardItem, 60);
 
         when(rewardDrawPoolRepository.findByActiveTrueAndDeletedAtIsNull()).thenReturn(Optional.of(rewardDrawPool));
-        when(rewardDrawPoolItemRepository.findAllByRewardDrawPoolIdAndDeletedAtIsNullOrderByIdAsc(10L))
-                .thenReturn(List.of(rewardDrawPoolItem));
         when(rewardPointBalanceRepository.decreaseBalanceIfEnough(1L, 1)).thenReturn(0);
 
         assertThatThrownBy(() -> rewardGachaDrawService.draw(1L))
