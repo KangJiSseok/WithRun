@@ -10,6 +10,7 @@ import { completeRunningSession } from '@/apis';
 import type { GpsSample, HealthSample, SplitResult } from '@/apis';
 import { FreeRunningMap } from './FreeRunningMap';
 import { useFreeRunSessionStore } from '@/stores/FreeRun';
+import { stopWatchRunSync } from '@/shared/utils/watchRunBridge';
 
 export interface RunningResult {
   durationSec: number;
@@ -91,6 +92,7 @@ export function FreeRunningScreen({
       if (!sessionId) return;
       const data = latestGetCollectedDataRef.current();
       const gps = latestGpsLocationRef.current;
+      void stopWatchRunSync();
       completeRunningSession(sessionId, {
         completeState: 'FAIL',
         ...data,
@@ -104,6 +106,7 @@ export function FreeRunningScreen({
   const handleStopRunning = useCallback(async () => {
     if (isEnding || !runningSessionId) return;
     setIsEnding(true);
+    void stopWatchRunSync();
     try {
       const data = getCollectedData();
       const res = await completeRunningSession(runningSessionId, {

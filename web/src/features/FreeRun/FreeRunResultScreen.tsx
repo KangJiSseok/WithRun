@@ -149,6 +149,7 @@ export function FreeRunResultScreen({
         onClose={() => setShowShareModal(false)}
         runningSessionId={runningSessionId}
         onRegistered={onCourseRegistered}
+        gpsSamples={gpsSamples}
       />
     </div>
   );

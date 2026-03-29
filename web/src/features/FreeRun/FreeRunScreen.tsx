@@ -1,10 +1,11 @@
 import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { FreeRunMap } from './FreeRunMap';
-import { RunCharacter } from '@/shared/components';
+import { RunCharacter, WatchRunStatusNotice } from '@/shared/components';
 import { useBridgeDataStore } from '@/bridge';
 import { createRunningSession } from '@/apis';
 import { useFreeRunSessionStore } from '@/stores/FreeRun';
+import { startWatchRunSync } from '@/shared/utils/watchRunBridge';
 
 export function FreeRunScreen() {
   const navigate = useNavigate();
@@ -22,6 +23,11 @@ export function FreeRunScreen() {
         mode: 'FREE',
         startLatitude: latitude,
         startLongitude: longitude,
+      });
+      await startWatchRunSync({
+        runningSessionId: res.data.runningSessionId,
+        mode: 'FREE',
+        courseCoordinates: [{ latitude, longitude }],
       });
       setSession(res.data);
       navigate('/free-run-session');
@@ -72,6 +78,7 @@ export function FreeRunScreen() {
           <p className="mb-4 body-r text-center text-red-400 px-6">{error}</p>
         )}
         <RunCharacter disabled={isStarting} onClick={handleClick} />
+        <WatchRunStatusNotice className="mt-5 w-[min(92vw,360px)]" />
       </div>
     </div>
   );
