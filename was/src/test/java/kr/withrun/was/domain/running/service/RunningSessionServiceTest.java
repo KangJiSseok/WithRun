@@ -965,6 +965,28 @@ class RunningSessionServiceTest {
         assertThat(savedLeaderboard.getPoint()).isEqualTo(1200);
     }
 
+    @DisplayName("GIVEUP 으로 종료한 GHOST 세션은 리더보드에 업서트하지 않는다")
+    @Test
+    void doesNotUpsertLeaderboardWhenGhostRunEndsWithGiveup() {
+        User user = user(43L);
+        Course course = course(403L, CourseStatus.OFFICIAL);
+        RunningSession runningSession = runningSession(98L, user.getId(), false, STARTED_AT);
+        setField(runningSession, "mode", GHOST);
+        setField(runningSession, "course", course);
+        CompleteRunningSessionRequest request = completeRequestWithState(RunningSessionCompleteState.GIVEUP);
+        when(runningSessionRepository.findByIdAndDeletedAtIsNull(runningSession.getId())).thenReturn(Optional.of(runningSession));
+        when(userRepository.findNotDeletedUser(user.getId())).thenReturn(Optional.of(user));
+        when(runningGpsSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningHealthSampleRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+        when(runningSessionSplitRepository.saveAll(any())).thenAnswer(invocation -> invocation.getArgument(0));
+
+        RunningSessionDetailResponse response = runningSessionService.completeRunningSession(runningSession.getId(), user.getId(), request);
+
+        assertThat(response.completeState()).isEqualTo(RunningSessionCompleteState.GIVEUP);
+        verifyNoInteractions(courseGhostLeaderboardRepository);
+        verifyNoInteractions(ghostRunningResultService);
+    }
+
     @DisplayName("더 높은 고스트 점수로 갱신되면 리더보드 최고 행의 세션도 함께 갱신한다")
     @Test
     void updatesLeaderboardRunningSessionWhenGhostPointImproves() {
