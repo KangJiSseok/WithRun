@@ -1,5 +1,5 @@
 import { useNavigate } from 'react-router-dom';
-import { Bookmark, Settings2 } from 'lucide-react';
+import { Bookmark, User } from 'lucide-react';
 
 export default function TopNavigation() {
   const navigate = useNavigate();
@@ -11,9 +11,9 @@ export default function TopNavigation() {
           type="button"
           onClick={() => navigate('/profile')}
           className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-[var(--shadow-sm)]"
-          aria-label="설정으로 이동"
+          aria-label="프로필로 이동"
         >
-          <Settings2 size={20} />
+          <User size={20} />
         </button>
 
         <button
