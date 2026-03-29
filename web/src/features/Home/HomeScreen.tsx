@@ -202,6 +202,7 @@ export function HomeScreen() {
   const [preferences, setPreferences] = useState<RunningPreferenceFormState>(
     createDefaultPreferenceState()
   );
+  const [serverPreferences, setServerPreferences] = useState<RunningPreferenceFormState | null>(null);
   const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
@@ -231,11 +232,20 @@ export function HomeScreen() {
     [weeklySummary]
   );
 
+  const isPreferencesChanged = serverPreferences === null || (
+    [...preferences.purposes].sort().join() !== [...serverPreferences.purposes].sort().join() ||
+    [...preferences.timeSlots].sort().join() !== [...serverPreferences.timeSlots].sort().join() ||
+    [...preferences.courseTypes].sort().join() !== [...serverPreferences.courseTypes].sort().join() ||
+    preferences.preferredDistanceKm !== serverPreferences.preferredDistanceKm ||
+    preferences.preferredDifficulty !== serverPreferences.preferredDifficulty
+  );
+
   const canSavePreferences =
     preferences.purposes.length > 0 &&
     preferences.timeSlots.length > 0 &&
     preferences.preferredDifficulty !== null &&
-    preferences.courseTypes.length > 0;
+    preferences.courseTypes.length > 0 &&
+    isPreferencesChanged;
 
   useEffect(() => {
     let isCancelled = false;
@@ -271,7 +281,9 @@ export function HomeScreen() {
           return;
         }
 
-        setPreferences(createPreferenceState(response));
+        const preferenceState = createPreferenceState(response);
+        setPreferences(preferenceState);
+        setServerPreferences(preferenceState);
       } catch {
         if (isCancelled) {
           return;
@@ -308,7 +320,9 @@ export function HomeScreen() {
 
       // 저장 직후 서버 값을 다시 읽어 화면 상태와 실제 저장값이 어긋나지 않게 맞춘다.
       const response = await getUserRunningPreferences();
-      setPreferences(createPreferenceState(response));
+      const preferenceState = createPreferenceState(response);
+      setPreferences(preferenceState);
+      setServerPreferences(preferenceState);
       toast.success('러닝 선호도가 저장되었어요.');
     } catch {
       toast.error('러닝 선호도를 저장하지 못했어요. 다시 시도해주세요.');
