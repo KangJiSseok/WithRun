@@ -19,6 +19,7 @@ export type RunningCourseFilterState = {
   distanceRange: { min: number; max: number };
   courseType: string[];
   difficulty: string[];
+  sortBy: string;
 };
 
 export type CourseFilterCategory = {
@@ -31,10 +32,12 @@ type RunningCourseFilterDrawerProps = {
   isOpen: boolean;
   categories: CourseFilterCategory[];
   values: RunningCourseFilterState;
+  sortOptions: FilterOption[];
   onClose: () => void;
   onApply: () => void;
   onReset: () => void;
   onChange: (key: 'courseType' | 'difficulty', value: string) => void;
+  onSortByChange: (sortBy: string) => void;
   onDistanceRangeChange: (range: { min: number; max: number }) => void;
 };
 
@@ -42,10 +45,12 @@ export function RunningCourseFilterDrawer({
   isOpen,
   categories,
   values,
+  sortOptions,
   onClose,
   onApply,
   onReset,
   onChange,
+  onSortByChange,
   onDistanceRangeChange,
 }: RunningCourseFilterDrawerProps) {
   return (
@@ -79,6 +84,31 @@ export function RunningCourseFilterDrawer({
         </DrawerHeader>
 
         <div className="flex max-h-[55vh] flex-col gap-6 overflow-y-auto">
+          {/* 정렬 */}
+          {sortOptions.length > 0 && (
+            <section className="flex flex-col gap-3">
+              <h3 className="body-l-b">정렬</h3>
+              <div className="flex flex-wrap gap-2">
+                {sortOptions.map((option) => (
+                  <Button
+                    key={option.value}
+                    type="button"
+                    variant="outline"
+                    size="sm"
+                    onClick={() => onSortByChange(option.value)}
+                    className={
+                      values.sortBy === option.value
+                        ? 'rounded-full border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
+                        : 'rounded-full'
+                    }
+                  >
+                    {option.label}
+                  </Button>
+                ))}
+              </div>
+            </section>
+          )}
+
           {/* 거리 범위 슬라이더 */}
           <section className="flex flex-col gap-3">
             <h3 className="body-l-b">거리</h3>

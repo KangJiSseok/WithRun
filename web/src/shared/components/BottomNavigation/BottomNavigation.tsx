@@ -18,10 +18,10 @@ export const BOTTOM_NAV_HEIGHT = 80;
 
 export function BottomNavigation() {
   return (
-    <div className="fixed bottom-0 left-0 z-overlay flex w-full">
+    <div className="fixed bottom-0 left-0 z-modal flex w-full pointer-events-none">
       <div
         style={{ height: BOTTOM_NAV_HEIGHT }}
-        className="mx-auto flex w-full min-w-[375px] max-w-[430px] border-t border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-6 py-2 shadow-[var(--shadow-soft-lg)]"
+        className="pointer-events-auto mx-auto flex w-full min-w-[375px] max-w-[430px] border-t border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-6 py-2 shadow-[var(--shadow-soft-lg)]"
       >
         <nav className="flex-1 flex items-center justify-between">
           {ITEMS.map((item) => {
