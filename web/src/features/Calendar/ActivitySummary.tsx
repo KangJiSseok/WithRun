@@ -16,7 +16,7 @@ interface StatCardProps {
 
 function StatCard({ value, unit, description }: StatCardProps) {
   return (
-    <div className="flex-1 flex flex-col items-center gap-[var(--space-1)] bg-[hsl(var(--surface-subtle))] rounded-[var(--radius-lg)] py-[var(--space-3)] px-[var(--space-2)]">
+    <div className="flex-1 flex flex-col items-center gap-[var(--space-1)] bg-[hsl(var(--surface-default))] border border-[hsl(var(--border-default))] rounded-[var(--radius-lg)] py-[var(--space-3)] px-[var(--space-2)]">
       <div className="flex items-baseline gap-1">
         <span className="h4-b text-[hsl(var(--text-primary))]">{value}</span>
         <span className="caption-r text-[hsl(var(--text-secondary))]">{unit}</span>
