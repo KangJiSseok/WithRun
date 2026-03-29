@@ -4,13 +4,25 @@ import type { MouseEvent } from 'react';
 import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
 import { Card, CardContent } from '@/shared/components/shadcn/card';
-import type { CourseItem } from '@/apis/course';
+
+type CourseCardData = {
+  courseId: number;
+  title: string;
+  distanceM: number;
+  elevationGainM: number;
+  difficulty: { data: string; label: string } | null;
+  courseTypes: { data: string; label: string }[];
+  snapshotImageUrl: string | null;
+  likeCount: number;
+  isLiked?: boolean;
+};
 
 type RunningCourseCardProps = {
-  course: CourseItem;
+  course: CourseCardData;
   isSaved: boolean;
   onClick?: () => void;
   onToggleSave: (courseId: number) => void;
+  onToggleLike?: () => void;
 };
 
 export function RunningCourseCard({
@@ -18,10 +30,16 @@ export function RunningCourseCard({
   isSaved,
   onClick,
   onToggleSave,
+  onToggleLike,
 }: RunningCourseCardProps) {
   function handleToggleSave(event: MouseEvent<HTMLButtonElement>) {
     event.stopPropagation();
     onToggleSave(course.courseId);
+  }
+
+  function handleToggleLike(event: MouseEvent<HTMLButtonElement>) {
+    event.stopPropagation();
+    onToggleLike?.();
   }
 
   return (
@@ -74,12 +92,20 @@ export function RunningCourseCard({
             {course.title}
           </h3>
 
-          <div className="flex items-center gap-[var(--space-1)] text-[hsl(var(--primary-1))]">
-            <Heart size={18} fill="currentColor" />
+          <button
+            type="button"
+            onClick={handleToggleLike}
+            className="flex items-center gap-[var(--space-1)] text-[hsl(var(--primary-1))]"
+          >
+            <Heart
+              size={18}
+              fill={course.isLiked ? 'currentColor' : 'none'}
+              strokeWidth={course.isLiked ? 0 : 1.5}
+            />
             <span className="body-l-b">
               {course.likeCount.toLocaleString()}
             </span>
-          </div>
+          </button>
         </div>
 
         <div className="flex flex-wrap gap-[var(--space-2)]">

@@ -18,9 +18,9 @@ export default function TopNavigation() {
 
         <button
           type="button"
+          onClick={() => navigate('/bookmark')}
           className="flex h-12 w-12 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-[var(--shadow-sm)]"
-          disabled
-          aria-label="북마크"
+          aria-label="저장된 코스"
         >
           <Bookmark size={20} />
         </button>
