@@ -151,6 +151,23 @@
   - `chk_courses_status`
   - 거리/고도/좌표 범위 체크
 
+### reward_items
+
+- 목적: 리워드 가챠와 인벤토리에서 사용하는 보상 아이템 카탈로그 메타데이터 저장
+- 핵심 컬럼:
+  - `reward_item_id`: PK
+  - `title`: 관리자 입력 제목
+  - `image_url`: 저장된 S3 object key 또는 URL 문자열
+  - `is_active`: 관리자 사용 가능 여부
+  - `created_at`, `updated_at`, `deleted_at`: `BaseEntity` 감사 컬럼
+- 주요 제약:
+  - `title` 길이 100자 제한
+  - `image_url` not null
+  - `is_active` 기본값 `TRUE`
+- 비고:
+  - 기본 목록 조회 인덱스로 `(is_active, created_at desc)`를 사용합니다.
+  - soft delete 된 항목은 애플리케이션 조회에서 제외합니다.
+
 ### course_difficulties
 
 - 목적: 코스 난이도 1:1 저장

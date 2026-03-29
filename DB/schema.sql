@@ -134,6 +134,19 @@ CREATE TABLE courses (
   CONSTRAINT chk_courses_end_lng CHECK (end_longitude IS NULL OR end_longitude BETWEEN -180 AND 180)
 );
 
+-- Reward item catalog for gacha/inventory metadata.
+CREATE TABLE reward_items (
+  reward_item_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  title VARCHAR(100) NOT NULL,
+  image_url VARCHAR(500) NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_reward_items_active_created_at ON reward_items (is_active, created_at DESC);
+
 -- 1:1 course difficulty mapping (shared PK with courses).
 CREATE TABLE course_difficulties (
   course_id BIGINT PRIMARY KEY,

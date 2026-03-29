@@ -68,6 +68,9 @@ public enum ResponseCode {
     S3_BUCKET_NOT_CONFIGURED("E500", HttpStatus.INTERNAL_SERVER_ERROR, "S3 버킷 설정이 필요합니다.", false),
     S3_UPLOAD_FAILED("E501", HttpStatus.INTERNAL_SERVER_ERROR, "파일 업로드에 실패했습니다.", false),
 
+    // Reward Error
+    REWARD_ITEM_NOT_FOUND("E700", HttpStatus.NOT_FOUND, "리워드 아이템을 찾을 수 없습니다.", false),
+
     // Navigation Error
     NAVIGATION_BUNDLE_PENDING("E600", HttpStatus.ACCEPTED, "최신 네비게이션 번들이 아직 준비되지 않았습니다.", false),
     NAVIGATION_BUNDLE_FAILED("E601", HttpStatus.SERVICE_UNAVAILABLE, "최신 네비게이션 번들 생성에 실패했습니다.", false);

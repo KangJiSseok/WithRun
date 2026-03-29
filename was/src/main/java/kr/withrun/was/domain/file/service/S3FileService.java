@@ -19,6 +19,8 @@ public class S3FileService {
 
     private static final String COURSE_SNAPSHOT_DIRECTORY = "course-snapshot";
     private static final String COURSE_SNAPSHOT_EXTENSION = ".png";
+    private static final String REWARD_ITEM_DIRECTORY = "reward-item";
+    private static final String REWARD_ITEM_EXTENSION = ".png";
 
     private final S3Client s3Client;
 
@@ -55,6 +57,36 @@ public class S3FileService {
         return objectKey;
     }
 
+    public String uploadRewardItemImage(byte[] imageBytes, Long rewardItemId) {
+        validateBucketConfigured();
+        validateRewardItemId(rewardItemId);
+
+        if (imageBytes == null || imageBytes.length == 0) {
+            throw new CustomException(ResponseCode.EMPTY_FILE);
+        }
+
+        String objectKey = buildRewardItemObjectKey(rewardItemId);
+
+        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
+                .bucket(bucket)
+                .key(objectKey)
+                .contentType("image/png")
+                .contentLength((long) imageBytes.length)
+                .build();
+
+        try {
+            s3Client.putObject(putObjectRequest, RequestBody.fromBytes(imageBytes));
+        } catch (S3Exception exception) {
+            log.error("S3 리워드 아이템 이미지 업로드 실패. bucket={}, key={}", bucket, objectKey, exception);
+            throw new CustomException(ResponseCode.S3_UPLOAD_FAILED);
+        } catch (RuntimeException exception) {
+            log.error("리워드 아이템 이미지 바이트 업로드 중 예외 발생. bucket={}, key={}", bucket, objectKey, exception);
+            throw new CustomException(ResponseCode.S3_UPLOAD_FAILED);
+        }
+
+        return objectKey;
+    }
+
     private void validateBucketConfigured() {
         if (!StringUtils.hasText(bucket)) {
             throw new CustomException(ResponseCode.S3_BUCKET_NOT_CONFIGURED);
@@ -67,7 +99,17 @@ public class S3FileService {
         }
     }
 
+    private void validateRewardItemId(Long rewardItemId) {
+        if (rewardItemId == null || rewardItemId <= 0) {
+            throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
+        }
+    }
+
     private String buildObjectKey(Long courseId) {
         return COURSE_SNAPSHOT_DIRECTORY + "/" + courseId + COURSE_SNAPSHOT_EXTENSION;
+    }
+
+    private String buildRewardItemObjectKey(Long rewardItemId) {
+        return REWARD_ITEM_DIRECTORY + "/" + rewardItemId + REWARD_ITEM_EXTENSION;
     }
 }
