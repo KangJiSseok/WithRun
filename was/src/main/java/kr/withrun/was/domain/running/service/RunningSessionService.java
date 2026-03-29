@@ -18,6 +18,7 @@ import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
 import kr.withrun.was.domain.navigation.exception.NavigationBundleGenerationException;
 import kr.withrun.was.domain.navigation.service.bundle.NavigationBundleGenerationService;
 import kr.withrun.was.domain.navigation.type.NavigationBundleFailureCode;
+import kr.withrun.was.domain.reward.service.RewardPointGrantService;
 import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningGpsSampleRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningHealthSampleRequest;
@@ -82,6 +83,7 @@ public class RunningSessionService {
     private final RunningSessionSplitRepository runningSessionSplitRepository;
     private final GhostRunningResultRepository ghostRunningResultRepository;
     private final GhostRunningResultService ghostRunningResultService;
+    private final RewardPointGrantService rewardPointGrantService;
     private final CourseSignalService courseSignalService;
     private final CloudFrontSignedUrlService cloudFrontSignedUrlService;
     private final NavigationBundleGenerationService navigationBundleGenerationService;
@@ -142,7 +144,7 @@ public class RunningSessionService {
                 request.elevationGainM()
         );
         recordCourseCompletionIfEligible(runningSession, user);
-        upsertUserCalendar(runningSession);
+        UserCalendar userCalendar = upsertUserCalendar(runningSession);
 
         List<RunningGpsSample> savedGpsSamples = saveGpsSamples(runningSession, user, request.gpsSamples());
         List<RunningHealthSample> savedHealthSamples = saveHealthSamples(runningSession, user, request.healthSamples());
@@ -150,6 +152,7 @@ public class RunningSessionService {
 
         GhostRunningResult ghostRunningResult = createGhostRunningResultIfNeeded(runningSession, request.distanceGapM());
         upsertCourseGhostLeaderboardIfNeeded(runningSession);
+        rewardPointGrantService.grantCompletedRunningRewards(runningSession, userCalendar, ghostRunningResult);
 
         List<RunningGpsSampleResponse> gpsResponses = RunningGpsSampleResponse.from(savedGpsSamples);
         List<RunningHealthSampleResponse> healthResponses = savedHealthSamples.stream()
@@ -363,7 +366,7 @@ public class RunningSessionService {
         upsertCourseGhostLeaderboard(runningSession, point);
     }
 
-    private void upsertUserCalendar(RunningSession runningSession) {
+    private UserCalendar upsertUserCalendar(RunningSession runningSession) {
         LocalDate calendarDate = runningSession.getStartedAt().toLocalDate();
         UserCalendar userCalendar = userCalendarRepository.findByUserIdAndCalendarDateAndDeletedAtIsNull(
                         runningSession.getUser().getId(),
@@ -379,6 +382,7 @@ public class RunningSessionService {
                 runningSession.getSnapshotImageUrl()
         );
         userCalendarRepository.save(userCalendar);
+        return userCalendar;
     }
 
     private Difficulty resolveGhostDifficulty(RunningSession runningSession, RunningSession targetSession) {

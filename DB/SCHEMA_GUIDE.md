@@ -29,6 +29,7 @@
 - `status` (`courses.status`): `OFFICIAL`, `COMMUNITY`, `PRIVATE`
 - `mode`: `FREE`, `COURSE`, `GHOST`
 - `result_status`: `WIN`, `LOSE`, `DRAW`, `INCOMPLETE`
+- `reason` (`reward_point_histories.reason`): `DAILY_RUNNING`, `WEEKLY_STREAK_3_DAYS`, `WEEKLY_STREAK_5_DAYS`, `WEEKLY_STREAK_7_DAYS`, `GHOST_WIN`, `GACHA_DRAW`
 
 ## 관계 모델 요약
 
@@ -36,6 +37,7 @@
 
 - `user_auth_accounts.user_id` -> `users.user_id`
 - `user_running_preferences.user_id` -> `users.user_id`
+- `reward_point_balances.user_id` -> `users.user_id`
 - `course_difficulties.course_id` -> `courses.course_id`
 
 ### 일반 FK / 매핑 테이블
@@ -167,6 +169,39 @@
 - 비고:
   - 기본 목록 조회 인덱스로 `(is_active, created_at desc)`를 사용합니다.
   - soft delete 된 항목은 애플리케이션 조회에서 제외합니다.
+
+### reward_point_balances
+
+- 목적: 사용자별 현재 리워드 포인트 잔액의 빠른 조회용 집계 테이블
+- 관계: `users`와 공유 PK 1:1
+- 핵심 컬럼:
+  - `user_id`: PK이자 FK
+  - `current_balance`: 현재 보유 포인트 잔액
+  - `created_at`, `updated_at`, `deleted_at`: `BaseEntity` 감사 컬럼
+- 주요 제약:
+  - `fk_reward_point_balances_user` (`ON DELETE CASCADE`)
+  - `chk_reward_point_balances_current_balance`
+- 비고:
+  - 포인트의 source of truth 는 지급/차감 이력(`reward_point_histories`)이며, 이 테이블은 현재 잔액의 빠른 조회를 위한 집계 상태입니다.
+
+### reward_point_histories
+
+- 목적: 사용자 리워드 포인트의 지급/향후 차감 이력을 append-only 로 저장
+- 핵심 컬럼:
+  - `reward_point_history_id`: PK
+  - `user_id`: 사용자 FK
+  - `delta_point`: 포인트 변화량(현재 단계는 적립만 사용)
+  - `reason`: 지급/차감 사유 enum
+  - `idempotency_key`: 사용자 단위 중복 지급 방지 키
+  - `created_at`, `updated_at`, `deleted_at`: `BaseEntity` 감사 컬럼
+- 주요 제약:
+  - `fk_reward_point_histories_user` (`ON DELETE CASCADE`)
+  - `uq_reward_point_histories_user_key`
+  - `chk_reward_point_histories_delta_point`
+  - `chk_reward_point_histories_reason`
+- 비고:
+  - 동일 사용자에게 같은 business event 를 두 번 지급하지 않기 위해 `(user_id, idempotency_key)` 유니크 제약을 둡니다.
+  - 기본 조회 인덱스로 `(user_id, created_at desc, reward_point_history_id desc)`를 사용합니다.
 
 ### course_difficulties
 

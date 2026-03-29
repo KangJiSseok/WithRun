@@ -147,6 +147,51 @@ CREATE TABLE reward_items (
 
 CREATE INDEX idx_reward_items_active_created_at ON reward_items (is_active, created_at DESC);
 
+-- One-row-per-user current reward point balance.
+CREATE TABLE reward_point_balances (
+  user_id BIGINT PRIMARY KEY,
+  current_balance INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_reward_point_balances_user
+    FOREIGN KEY (user_id)
+    REFERENCES users (user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT chk_reward_point_balances_current_balance CHECK (current_balance >= 0)
+);
+
+-- Append-only reward point accrual and future deduction history.
+CREATE TABLE reward_point_histories (
+  reward_point_history_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  delta_point INTEGER NOT NULL,
+  reason VARCHAR(32) NOT NULL,
+  idempotency_key VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_reward_point_histories_user
+    FOREIGN KEY (user_id)
+    REFERENCES users (user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT uq_reward_point_histories_user_key UNIQUE (user_id, idempotency_key),
+  CONSTRAINT chk_reward_point_histories_delta_point CHECK (delta_point <> 0),
+  CONSTRAINT chk_reward_point_histories_reason CHECK (
+    reason IN (
+      'DAILY_RUNNING',
+      'WEEKLY_STREAK_3_DAYS',
+      'WEEKLY_STREAK_5_DAYS',
+      'WEEKLY_STREAK_7_DAYS',
+      'GHOST_WIN',
+      'GACHA_DRAW'
+    )
+  )
+);
+
+CREATE INDEX idx_reward_point_histories_user_created_at
+  ON reward_point_histories (user_id, created_at DESC, reward_point_history_id DESC);
+
 -- 1:1 course difficulty mapping (shared PK with courses).
 CREATE TABLE course_difficulties (
   course_id BIGINT PRIMARY KEY,
