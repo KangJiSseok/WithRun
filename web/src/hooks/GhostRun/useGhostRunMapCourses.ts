@@ -13,8 +13,12 @@ type Center = { latitude: number; longitude: number };
 export function useGhostRunMapCourses(
   center: Center | null,
   radiusM: number,
-  preferredDistanceMs: PreferredDistanceM[] = []
+  preferredDistanceMs: PreferredDistanceM[] = [],
+  sortBy: 'DISTANCE' | 'GHOST_RUN_COUNT' = 'DISTANCE',
+  refreshKey = 0
 ) {
+  const safeSortBy =
+    sortBy === 'GHOST_RUN_COUNT' ? 'GHOST_RUN_COUNT' : 'DISTANCE';
   const [currentPage, setCurrentPage] = useState(0);
 
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
@@ -26,30 +30,42 @@ export function useGhostRunMapCourses(
     gpsLocationRef.current = gpsLocation;
   }, [gpsLocation]);
 
-  // center/radiusM/preferredDistanceMs 변경 시 첫 페이지로 리셋
+  // 필터 적용/초기화(refreshKey) 포함 조건 변경 시 첫 페이지로 리셋
   useEffect(() => {
     setCurrentPage(0);
-  }, [center, radiusM, preferredDistanceMs]);
+  }, [center, radiusM, preferredDistanceMs, safeSortBy, refreshKey]);
 
-  const { data, isLoading, isFetching } = useQuery<GetNearbyCoursesData | null>({
-    queryKey: ['nearbyGhostCourses', center, radiusM, preferredDistanceMs, currentPage],
-    queryFn: async () => {
-      if (!center) return null;
-      const gps = gpsLocationRef.current;
-      const { data } = await getNearbyGhostCoursesApi({
-        latitude: gps?.latitude ?? center.latitude,
-        longitude: gps?.longitude ?? center.longitude,
-        targetLatitude: center.latitude,
-        targetLongitude: center.longitude,
-        radiusM: Math.max(1000, Math.min(5000, radiusM)),
+  const { data, isLoading, isFetching } = useQuery<GetNearbyCoursesData | null>(
+    {
+      queryKey: [
+        'nearbyGhostCourses',
+        center,
+        radiusM,
         preferredDistanceMs,
-        page: currentPage,
-      });
-      return data;
-    },
-    enabled: !!center,
-    placeholderData: keepPreviousData,
-  });
+        safeSortBy,
+        refreshKey,
+        currentPage,
+      ],
+      queryFn: async () => {
+        if (!center) return null;
+        const gps = gpsLocationRef.current;
+        const { data } = await getNearbyGhostCoursesApi({
+          latitude: gps?.latitude ?? center.latitude,
+          longitude: gps?.longitude ?? center.longitude,
+          targetLatitude: center.latitude,
+          targetLongitude: center.longitude,
+          radiusM: Math.max(1000, Math.min(5000, radiusM)),
+          preferredDistanceMs,
+          sortBy: safeSortBy,
+          page: currentPage,
+          size: 3,
+        });
+        return data;
+      },
+      enabled: !!center,
+      placeholderData: keepPreviousData,
+    }
+  );
 
   return {
     courses: data?.items ?? [],
