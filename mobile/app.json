@@ -1,15 +1,23 @@
 {
   "expo": {
-    "name": "mobile",
+    "name": "with-run",
     "slug": "with-run",
     "scheme": "withrun",
     "version": "1.0.0",
+    "icon": "./assets/with_run_icon.png",
     "android": {
       "package": "com.mobile",
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/with_run_icon.png",
+        "backgroundColor": "#FFFFFF"
+      },
       "intentFilters": [
         {
           "action": "VIEW",
-          "category": ["BROWSABLE", "DEFAULT"],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ],
           "data": [
             {
               "scheme": "withrun",
@@ -25,9 +33,9 @@
     },
     "extra": {
       "eas": {
-        "projectId": "39f724e8-03c2-4001-bb42-abc0f39092c9"
+        "projectId": "7c9f5557-1227-4960-b029-3bd1aa4caae7"
       }
     },
-    "owner": "jiwon2"
+    "owner": "jiwon-rd"
   }
 }
