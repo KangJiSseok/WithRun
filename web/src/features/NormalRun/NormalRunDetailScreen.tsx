@@ -1,7 +1,9 @@
-import { ArrowLeft, MapPin } from 'lucide-react';
+import { ArrowLeft } from 'lucide-react';
+import { motion } from 'motion/react';
 import { useRef, useState } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 
+import { WatchRunStatusNotice } from '@/shared/components';
 import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
 import { useRunDetailMap } from '@/shared/hooks/useRunDetailMap';
@@ -11,6 +13,8 @@ import { createRunningSession } from '@/apis/runningSessions';
 import { useNormalRunSessionStore } from '@/stores/NormalRun';
 import { bridge, useBridgeDataStore } from '@/bridge';
 import { BOTTOM_NAV_HEIGHT } from '@/shared/components';
+import { useRunBottomSheet } from '@/shared/hooks/useRunBottomSheet';
+import { startWatchRunSync } from '@/shared/utils/watchRunBridge';
 
 const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
   EASY: '쉬움',
@@ -39,13 +43,35 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
 
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
   const setSession = useNormalRunSessionStore((s) => s.setSession);
+  const {
+    sheetRef,
+    headerRef,
+    sheetHeight,
+    headerHeight,
+    sheetOffsetY,
+    isDragging,
+    dragControls,
+    collapse,
+    startDrag,
+    handleDragStart,
+    handleDragEnd,
+    handleContentTouchStart,
+    handleContentTouchMove,
+    handleContentTouchEnd,
+  } = useRunBottomSheet({
+    initialSnap: 'middle',
+    bottomInset: BOTTOM_NAV_HEIGHT,
+  });
 
   const { isNearStart } = useRunDetailMap(containerRef, {
     coordinates: course.coordinates,
+    routeType: course.routeType,
     startLatitude: course.startLatitude,
     startLongitude: course.startLongitude,
     endLatitude: course.endLatitude,
     endLongitude: course.endLongitude,
+  }, {
+    onMapTouched: collapse,
   });
 
   const handleStartRunning = async () => {
@@ -59,6 +85,14 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
         startLatitude: gpsLocation.latitude,
         startLongitude: gpsLocation.longitude,
       });
+      await startWatchRunSync({
+        runningSessionId: res.data.runningSessionId,
+        mode: 'COURSE',
+        courseCoordinates: course.coordinates.map((point) => ({
+          latitude: point.latitude,
+          longitude: point.longitude,
+        })),
+      });
       setSession(res.data);
       navigate(`/normal-run-session/${courseId}`);
     } finally {
@@ -66,8 +100,17 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
     }
   };
 
+  const canStart = isNearStart && !!gpsLocation && !isStarting;
+  const normalStartButtonLabel = isStarting
+    ? '시작 중...'
+    : !gpsLocation
+      ? '위치 정보를 확인중입니다...'
+    : isNearStart
+      ? '러닝 시작'
+      : '출발 지점에 서주세요!';
+
   return (
-    <div className="relative h-screen w-full">
+    <div className="relative h-screen w-full overflow-hidden">
       {/* 지도 */}
       <div ref={containerRef} className="h-full w-full" />
 
@@ -85,77 +128,112 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
       </div>
 
       {/* 하단 코스 정보 패널 */}
-      <div
-        style={{ paddingBottom: BOTTOM_NAV_HEIGHT + 20 }}
-        className="absolute bottom-0 left-0 right-0 z-raised flex flex-col gap-[var(--space-4)] rounded-t-[var(--radius-2xl)] bg-[hsl(var(--surface-default))] p-[var(--space-5)] shadow-[var(--shadow-lg)]"
+      <motion.div
+        ref={sheetRef}
+        drag="y"
+        dragControls={dragControls}
+        dragListener={false}
+        dragConstraints={{
+          top: 0,
+          bottom: sheetHeight - headerHeight - BOTTOM_NAV_HEIGHT,
+        }}
+        dragElastic={0}
+        dragMomentum={false}
+        animate={{ y: sheetOffsetY }}
+        transition={{ type: 'spring', damping: 30, stiffness: 300 }}
+        onDragStart={handleDragStart}
+        onDragEnd={handleDragEnd}
+        className="absolute bottom-0 left-0 right-0 z-raised flex h-dvh flex-col overflow-hidden rounded-t-[var(--radius-2xl)] bg-[hsl(var(--surface-default))] shadow-[var(--shadow-lg)]"
       >
-        <h2 className="h2-b text-[hsl(var(--text-primary))]">{course.title}</h2>
-
-        {/* 코스 정보 배지 */}
-        <div className="flex flex-wrap gap-[var(--space-2)]">
-          <Badge
-            variant="outline"
-            className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+        <div
+          className="flex h-full flex-col"
+          style={{ height: `calc(100dvh - ${sheetOffsetY}px)` }}
+        >
+          <div
+            ref={headerRef}
+            className="shrink-0 cursor-grab active:cursor-grabbing"
+            style={{ touchAction: 'none' }}
+            onPointerDown={startDrag}
           >
-            {(course.distanceM / 1000).toFixed(1)}km
-          </Badge>
-          <Badge
-            variant="outline"
-            className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
-          >
-            고도 {course.elevationGainM}m
-          </Badge>
-          {course.difficulty != null && (
-            <Badge
-              variant="outline"
-              className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
-            >
-              {DIFFICULTY_LABEL[course.difficulty.data]}
-            </Badge>
-          )}
-          {course.courseTypes.map((type) => (
-            <Badge
-              key={type.data}
-              variant="outline"
-              className="rounded-full border-[hsl(var(--primary-1)/0.25)] bg-[hsl(var(--primary-1)/0.1)] px-[var(--space-3)] py-[var(--space-1)] text-[hsl(var(--primary-1))]"
-            >
-              {COURSE_TYPE_LABEL[type.data]}
-            </Badge>
-          ))}
-        </div>
+            <div className="flex justify-center py-4">
+              <div className="h-1 w-10 rounded-full bg-[hsl(var(--border-default))]" />
+            </div>
+            <div className="px-[var(--space-5)] pb-[var(--space-4)]">
+              <h2 className="h2-b text-[hsl(var(--text-primary))]">{course.title}</h2>
+              <div className="mt-[var(--space-4)] flex flex-wrap gap-[var(--space-2)]">
+                <Badge
+                  variant="outline"
+                  className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+                >
+                  {(course.distanceM / 1000).toFixed(1)}km
+                </Badge>
+                <Badge
+                  variant="outline"
+                  className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+                >
+                  고도 {course.elevationGainM}m
+                </Badge>
+                {course.difficulty != null && (
+                  <Badge
+                    variant="outline"
+                    className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+                  >
+                    {DIFFICULTY_LABEL[course.difficulty.data]}
+                  </Badge>
+                )}
+                {course.courseTypes.map((type) => (
+                  <Badge
+                    key={type.data}
+                    variant="outline"
+                    className="rounded-full border-[hsl(var(--primary-1)/0.25)] bg-[hsl(var(--primary-1)/0.1)] px-[var(--space-3)] py-[var(--space-1)] text-[hsl(var(--primary-1))]"
+                  >
+                    {COURSE_TYPE_LABEL[type.data]}
+                  </Badge>
+                ))}
+              </div>
+            </div>
+          </div>
 
-        {/* 출발 지점 도착 안내 박스 */}
-        <div className="flex items-start gap-[var(--space-3)] rounded-[var(--radius-lg)] border border-[hsl(var(--border-default))] bg-[hsl(var(--primary-1)/0.05)] p-[var(--space-4)]">
-          <MapPin
-            size={20}
-            className="mt-0.5 shrink-0 text-[hsl(var(--primary-1))]"
-          />
-          <div className="flex flex-col gap-[var(--space-1)]">
-            <p className="body-l-b text-[hsl(var(--text-primary))]">
-              출발 지점 도착
-            </p>
-            <p className="body-r text-[hsl(var(--text-secondary))]">
-              출발 지점에 도착하면 러닝이 시작됩니다.
-            </p>
+          <div className="min-h-0 flex-1 overflow-hidden">
+            <div
+              className={`h-full overflow-y-auto overscroll-contain px-[var(--space-5)] ${
+                isDragging ? 'pointer-events-none' : ''
+              }`}
+              onTouchStart={handleContentTouchStart}
+              onTouchMove={handleContentTouchMove}
+              onTouchEnd={handleContentTouchEnd}
+              onPointerDown={(e) => e.stopPropagation()}
+              style={{
+                touchAction: 'pan-y',
+                WebkitOverflowScrolling: 'touch',
+              }}
+            >
+              <div className="flex min-h-full flex-col pb-[var(--space-4)]" />
+            </div>
+          </div>
+
+          <div
+            className="shrink-0 border-t border-[hsl(var(--border-default))] px-[var(--space-5)] pt-[var(--space-4)]"
+            style={{ paddingBottom: BOTTOM_NAV_HEIGHT + 20 }}
+          >
+            <WatchRunStatusNotice className="mb-[var(--space-3)]" />
+            {bridge.isWebViewBridgeAvailable ? (
+              <Button
+                type="button"
+                disabled={!canStart}
+                onClick={handleStartRunning}
+                className="h-14 w-full rounded-xl body-l-b"
+              >
+                {normalStartButtonLabel}
+              </Button>
+            ) : (
+              <p className="body-m py-(--space-3) text-center text-[hsl(var(--text-secondary))]">
+                모바일 앱에서 이용할 수 있는 서비스입니다.
+              </p>
+            )}
           </div>
         </div>
-
-        {/* 러닝 시작 — 모바일(웹뷰): 버튼, 데스크탑: 안내 텍스트 */}
-        {bridge.isWebViewBridgeAvailable ? (
-          <Button
-            type="button"
-            disabled={!isNearStart || isStarting}
-            onClick={handleStartRunning}
-            className="h-14 w-full rounded-xl body-l-b"
-          >
-            {isStarting ? '시작 중...' : '러닝 시작'}
-          </Button>
-        ) : (
-          <p className="body-m py-(--space-3) text-center text-[hsl(var(--text-secondary))]">
-            모바일 앱에서 이용할 수 있는 서비스입니다.
-          </p>
-        )}
-      </div>
+      </motion.div>
     </div>
   );
 }

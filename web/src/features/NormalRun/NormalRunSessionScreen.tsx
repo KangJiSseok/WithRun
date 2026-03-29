@@ -4,11 +4,14 @@ import { useNavigate } from 'react-router-dom';
 
 import { NormalRunMap } from './NormalRunMap';
 import { useNormalRunning } from '@/hooks/NormalRun/useNormalRunning';
+import { useVoiceGuidance } from '@/shared/hooks/Running/useVoiceGuidance';
 import { cn } from '@/shared/utils';
 import type { CourseDetail } from '@/apis/course';
 import { completeRunningSession } from '@/apis/runningSessions';
 import { useNormalRunSessionStore } from '@/stores/NormalRun';
 import { useBridgeDataStore } from '@/bridge';
+import { pickRandomVoiceCue, playVoiceCueOnBridge } from '@/shared/utils/voiceCue';
+import { stopWatchRunSync } from '@/shared/utils/watchRunBridge';
 
 interface StatItemProps {
   label: string;
@@ -51,13 +54,17 @@ export function NormalRunSessionScreen({
 
   // forceStopRef: handleStopRunning ↔ useNormalRunning 순환 의존 해소
   const forceStopRef = useRef<() => void>(() => {});
+  const autoCompleteRef = useRef<() => void>(() => {});
 
   const {
     time,
     distance,
     pace,
     calories,
+    heartRate,
+    routeProgressM,
     isPaused,
+    isEffectivelyPaused,
     togglePause,
     getCollectedData,
     isDeviating,
@@ -65,9 +72,16 @@ export function NormalRunSessionScreen({
     deviationAnchor,
     pauseAnchor,
     isWithinPauseAnchor,
+    checkpoints,
+    allCheckpointsVisited,
+    visitedCount,
+    nextCheckpointIdx,
+    isStartupCountdown,
+    startupCountdownSec,
   } = useNormalRunning({
     courseCoordinates: courseDetail.coordinates,
     onForceStop: useCallback(() => forceStopRef.current(), []),
+    onDestinationReached: useCallback(() => autoCompleteRef.current(), []),
   });
 
   // 이탈 앵커 우선, 없으면 일시정지 앵커
@@ -79,6 +93,17 @@ export function NormalRunSessionScreen({
   const clearAll = useNormalRunSessionStore((s) => s.clearAll);
 
   const [isEnding, setIsEnding] = useState(false);
+
+  useVoiceGuidance({
+    sessionId: session?.runningSessionId ?? null,
+    navigationBundleUrl: session?.navigationBundleUrl ?? null,
+    routeProgressM,
+    currentLatitude: gpsLocation?.latitude ?? null,
+    currentLongitude: gpsLocation?.longitude ?? null,
+    isDeviating,
+    isPaused: isEffectivelyPaused,
+    heartRate,
+  });
 
   // "latest ref" 패턴: cleanup 클로저에서 최신값 접근
   const latestGetCollectedDataRef = useRef(getCollectedData);
@@ -98,6 +123,7 @@ export function NormalRunSessionScreen({
       if (!s || r) return; // 이미 완료됐거나 세션 없으면 skip
       const data = latestGetCollectedDataRef.current();
       const gps = latestGpsLocationRef.current;
+      void stopWatchRunSync();
       completeRunningSession(s.runningSessionId, {
         completeState: 'FAIL',
         endLatitude: gps?.latitude ?? 0,
@@ -112,6 +138,8 @@ export function NormalRunSessionScreen({
   const handleStopRunning = useCallback(async () => {
     if (isEnding || !session) return;
     setIsEnding(true);
+    void playVoiceCueOnBridge(pickRandomVoiceCue(['end_01', 'end_02']));
+    void stopWatchRunSync();
     const data = getCollectedData();
     try {
       const res = await completeRunningSession(session.runningSessionId, {
@@ -128,25 +156,45 @@ export function NormalRunSessionScreen({
     } finally {
       setIsEnding(false);
     }
-  }, [
-    isEnding,
-    session,
-    getCollectedData,
-    gpsLocation,
-    setResult,
-    clearAll,
-    navigate,
-  ]);
+  }, [isEnding, session, getCollectedData, gpsLocation, setResult, clearAll, navigate]);
+
+  const handleAutoComplete = useCallback(async () => {
+    if (isEnding || !session) return;
+    setIsEnding(true);
+    void playVoiceCueOnBridge(pickRandomVoiceCue(['end_01', 'end_02']));
+    void stopWatchRunSync();
+    const data = getCollectedData();
+    try {
+      const res = await completeRunningSession(session.runningSessionId, {
+        completeState: 'SUCCESS',
+        endLatitude: gpsLocation?.latitude ?? 0,
+        endLongitude: gpsLocation?.longitude ?? 0,
+        distanceGapM: 0,
+        ...data,
+      });
+      setResult(res.data);
+    } catch {
+      clearAll();
+      navigate('/normal-run');
+    } finally {
+      setIsEnding(false);
+    }
+  }, [isEnding, session, getCollectedData, gpsLocation, setResult, clearAll, navigate]);
 
   // forceStopRef를 항상 최신 handleStopRunning으로 유지
   forceStopRef.current = handleStopRunning;
+  autoCompleteRef.current = handleAutoComplete;
 
   return (
     <div className="absolute inset-0 overflow-hidden">
       {/* 지도 */}
       <NormalRunMap
         coordinates={courseDetail.coordinates}
+        routeType={courseDetail.routeType}
         courseAnchor={courseAnchor}
+        checkpoints={checkpoints}
+        visitedCount={visitedCount}
+        nextCheckpointIdx={nextCheckpointIdx}
       />
 
       {/* 상단 통계 오버레이 */}
@@ -160,6 +208,25 @@ export function NormalRunSessionScreen({
           sub={<span className="text-[hsl(var(--primary-1))]">🔥</span>}
         />
       </div>
+
+      {isStartupCountdown && (
+        <div className="absolute inset-0 z-modal flex items-center justify-center bg-[hsl(var(--black)/0.35)]">
+          <div className="flex h-36 w-36 items-center justify-center rounded-full bg-[hsl(var(--surface-inverse)/0.9)] shadow-[var(--shadow-soft-xl)]">
+            <span className="font-bold tabular-nums text-8xl text-[hsl(var(--text-inverse))]">
+              {startupCountdownSec}
+            </span>
+          </div>
+        </div>
+      )}
+
+      {/* 체크포인트 진행 배지 */}
+      {checkpoints.length > 0 && !allCheckpointsVisited && (
+        <div className="absolute top-28 left-0 right-0 z-sticky flex justify-center">
+          <div className="rounded-full bg-[hsl(var(--surface-default)/0.85)] px-4 py-1.5 text-[hsl(var(--text-primary))] caption-b shadow-sm">
+            체크포인트 {visitedCount} / {checkpoints.length}
+          </div>
+        </div>
+      )}
 
       {/* 코스 이탈 경고 배너 */}
       {isDeviating && !isPaused && (
