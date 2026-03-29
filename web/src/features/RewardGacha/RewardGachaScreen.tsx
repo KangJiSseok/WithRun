@@ -2,13 +2,14 @@ import { useMemo, useState } from 'react';
 import { Coins, Gift, History, PackageOpen, Sparkles } from 'lucide-react';
 import { toast } from 'sonner';
 
-import {
-  drawRewardGacha,
-  RewardGachaContractUnavailableError,
-} from '@/apis/rewardGacha';
+import type { RewardGachaDrawResponse } from '@/apis/rewardGacha';
 import type { RewardPointHistoryItem, RewardPointReason } from '@/apis/rewardPoints';
-import { useRewardPoints } from '@/hooks/RewardGacha';
+import { useDrawRewardGacha, useRewardPoints } from '@/hooks/RewardGacha';
 import { cn } from '@/shared/utils';
+
+import { RewardDrawReveal } from './components/RewardDrawReveal';
+import { RewardInventory } from './components/RewardInventory';
+import { RewardShowcase } from './components/RewardShowcase';
 
 const REWARD_POINT_REASON_LABELS: Record<RewardPointReason, string> = {
   DAILY_RUNNING: '일반 러닝 보상',
@@ -25,36 +26,44 @@ function formatHistoryReason(reason: RewardPointHistoryItem['reason']): string {
 
 export function RewardGachaScreen() {
   const { balanceQuery, historyQuery } = useRewardPoints();
+  const drawMutation = useDrawRewardGacha();
+
   const [showHistory, setShowHistory] = useState(false);
+  const [isInventoryOpen, setIsInventoryOpen] = useState(false);
+  const [activeDrawResult, setActiveDrawResult] = useState<RewardGachaDrawResponse | null>(
+    null
+  );
 
   const balance = balanceQuery.data?.currentBalance ?? null;
+  const displayedBalance = activeDrawResult?.remainingBalance ?? balance;
   const histories = historyQuery.data?.items ?? [];
   const isLoadingBalance = balanceQuery.isLoading;
+  const isBalanceError = balanceQuery.isError;
   const isLoadingHistories = historyQuery.isLoading;
 
   const drawButtonLabel = useMemo(() => {
     if (isLoadingBalance) {
       return '포인트 확인 중...';
     }
-
+    if (drawMutation.isPending) {
+      return '뽑는 중...';
+    }
     return '뽑기 시작';
-  }, [isLoadingBalance]);
+  }, [isLoadingBalance, drawMutation.isPending]);
 
   async function handleDrawGacha() {
-    try {
-      await drawRewardGacha();
-    } catch (error) {
-      if (error instanceof RewardGachaContractUnavailableError) {
-        toast.info(error.message);
-        return;
-      }
-
-      toast.error('가챠 연결 상태를 확인하지 못했어요.');
+    if (displayedBalance === null || displayedBalance < 1) {
+      toast.error('포인트가 부족합니다.');
+      return;
     }
-  }
 
-  function handleOpenInventory() {
-    toast.info('인벤토리 조회 API 계약이 아직 준비되지 않았어요.');
+    try {
+      const result = await drawMutation.mutateAsync();
+      setActiveDrawResult(result);
+      void drawMutation.refreshRewardGachaState();
+    } catch {
+      toast.error('가챠 뽑기에 실패했어요. 다시 시도해주세요.');
+    }
   }
 
   return (
@@ -66,8 +75,15 @@ export function RewardGachaScreen() {
               리워드 뽑기
             </h1>
             <p className="text-base leading-7 text-[hsl(var(--text-secondary))]">
-              달리기로 모은 포인트 흐름을 먼저 연결하고, 가챠 본체는 별도 API 계약으로 분리했어요.
+              달리기로 모은 포인트로 리워드를 뽑아보세요!
             </p>
+          </section>
+
+          <section>
+            <h2 className="mb-3 text-lg font-black text-[hsl(var(--text-primary))]">
+              현재 전시 중인 리워드
+            </h2>
+            <RewardShowcase />
           </section>
 
           <section className="grid grid-cols-[1fr_auto] items-center gap-4 rounded-[2rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-6 shadow-[var(--shadow-md)]">
@@ -86,7 +102,7 @@ export function RewardGachaScreen() {
                   </span>
                 ) : (
                   <span className="text-4xl font-black tracking-[0.08em] text-[hsl(var(--text-inverse))]">
-                    {balance?.toLocaleString('ko-KR') ?? 0}
+                    {displayedBalance?.toLocaleString('ko-KR') ?? 0}
                   </span>
                 )}
                 <span className="pb-1 text-lg font-bold text-[hsl(var(--secondary-6))]">
@@ -94,20 +110,23 @@ export function RewardGachaScreen() {
                 </span>
               </div>
               <p className="mt-2 text-xs leading-5 text-[hsl(var(--secondary-6))]">
-                현재는 잔액과 지급 이력만 서버와 실연결되어 있어요.
+                {isLoadingBalance
+                  ? '포인트를 확인하는 중이에요.'
+                  : isBalanceError
+                    ? '포인트를 불러오지 못했어요.'
+                    : '현재 보유 중인 리워드 포인트입니다.'}
               </p>
             </div>
 
             <button
               type="button"
-              onClick={handleOpenInventory}
+              onClick={() => setIsInventoryOpen(true)}
               className="flex min-h-28 min-w-24 flex-col items-center justify-center gap-2 rounded-[1.5rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] px-4 py-3 text-center transition-colors hover:bg-[hsl(var(--surface-muted))]"
             >
               <PackageOpen size={24} className="text-[hsl(var(--text-secondary))]" />
               <span className="text-sm font-bold text-[hsl(var(--text-primary))]">
                 인벤토리
               </span>
-              <span className="text-xs text-[hsl(var(--text-secondary))]">준비 중</span>
             </button>
           </section>
 
@@ -133,21 +152,17 @@ export function RewardGachaScreen() {
             <h2 className="mb-2 text-2xl font-black text-[hsl(var(--text-primary))]">
               오늘의 리워드 가챠
             </h2>
-            <p className="mb-3 max-w-[18rem] text-sm leading-6 text-[hsl(var(--text-secondary))]">
-              제품 규칙은 1포인트 1회 가챠 기준이지만, 실제 뽑기와 인벤토리 API는 아직 WAS
-              계약이 닫히지 않았어요.
-            </p>
-            <p className="mb-8 rounded-full bg-[hsl(var(--primary-5))] px-4 py-2 text-xs font-bold text-[hsl(var(--primary-2))]">
-              지금은 포인트 조회와 이력 확인부터 연결했습니다.
+            <p className="mb-8 max-w-[18rem] text-sm leading-6 text-[hsl(var(--text-secondary))]">
+              1포인트를 사용하여 리워드를 뽑아보세요!
             </p>
 
             <button
               type="button"
               onClick={() => void handleDrawGacha()}
-              disabled={isLoadingBalance}
+              disabled={isLoadingBalance || isBalanceError || drawMutation.isPending}
               className={cn(
                 'flex w-full items-center justify-center gap-2 rounded-[1.5rem] bg-[hsl(var(--primary-1))] px-4 py-4 text-xl font-black text-[hsl(var(--text-inverse))] transition-all active:scale-95',
-                isLoadingBalance
+                isLoadingBalance || isBalanceError || drawMutation.isPending
                   ? 'pointer-events-none opacity-50'
                   : 'hover:bg-[hsl(var(--primary-1-hover))]'
               )}
@@ -241,6 +256,19 @@ export function RewardGachaScreen() {
           <div className="h-8" />
         </div>
       </div>
+
+      <RewardInventory
+        isOpen={isInventoryOpen}
+        onClose={() => setIsInventoryOpen(false)}
+      />
+
+      {activeDrawResult && (
+        <RewardDrawReveal
+          cards={activeDrawResult.cards}
+          onClose={() => setActiveDrawResult(null)}
+        />
+      )}
     </div>
   );
 }
+

@@ -1,18 +1,38 @@
-export class RewardGachaContractUnavailableError extends Error {
-  constructor(action: 'draw' | 'inventory') {
-    super(
-      action === 'draw'
-        ? '가챠 뽑기 API 계약이 아직 준비되지 않았어요.'
-        : '인벤토리 조회 API 계약이 아직 준비되지 않았어요.'
-    );
-    this.name = 'RewardGachaContractUnavailableError';
-  }
+import axiosClient from '@/shared/libs/axiosClient';
+import type { ApiResponse } from '@/shared/types/api.type';
+
+import type {
+  RewardGachaDrawResponse,
+  RewardInventoryPageResponse,
+  RewardItemShowcaseListResponse,
+} from './types';
+
+export async function getRewardShowcase(): Promise<
+  ApiResponse<RewardItemShowcaseListResponse>
+> {
+  const { data } = await axiosClient.get<ApiResponse<RewardItemShowcaseListResponse>>(
+    '/reward-items/showcase'
+  );
+  return data;
 }
 
-export async function drawRewardGacha(): Promise<never> {
-  throw new RewardGachaContractUnavailableError('draw');
+export async function drawRewardGacha(): Promise<ApiResponse<RewardGachaDrawResponse>> {
+  const { data } = await axiosClient.post<ApiResponse<RewardGachaDrawResponse>>(
+    '/reward-gacha/draw'
+  );
+  return data;
 }
 
-export async function getRewardInventory(): Promise<never> {
-  throw new RewardGachaContractUnavailableError('inventory');
+export async function getRewardInventory(
+  page: number = 0,
+  size: number = 20
+): Promise<ApiResponse<RewardInventoryPageResponse>> {
+  const { data } = await axiosClient.get<ApiResponse<RewardInventoryPageResponse>>(
+    '/reward-gacha/me/inventory',
+    {
+      params: { page, size },
+    }
+  );
+  return data;
 }
+
