@@ -17,7 +17,7 @@ export function useGpsLocation(onLocation: (location: GpsLocation) => void) {
       }
 
       // 구독 시작 시 새 필터 인스턴스 생성 (재구독 시 상태 초기화)
-      const filterGps = createGpsKalmanFilter(3) // 러닝 Q=3
+      const filterGps = createGpsKalmanFilter()
 
       subscription = await Location.watchPositionAsync(
         {
@@ -34,6 +34,7 @@ export function useGpsLocation(onLocation: (location: GpsLocation) => void) {
             accuracy: accuracy ?? 10,
             speed: speed ?? 0,
             heading: heading ?? 0,
+            timestamp: location.timestamp ?? Date.now(),
           })
           onLocation({
             latitude: filtered.latitude,
