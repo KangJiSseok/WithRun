@@ -16,16 +16,25 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.compose.setContent
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.Canvas
+import androidx.compose.foundation.background
 import androidx.compose.runtime.*
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.LocalContext
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.core.content.ContextCompat
 import androidx.wear.ambient.AmbientLifecycleObserver
 import androidx.wear.compose.material.Button
+import androidx.wear.compose.material.ButtonDefaults
 import androidx.wear.compose.material.MaterialTheme
 import androidx.wear.compose.material.Text
 
@@ -124,12 +133,18 @@ class MainActivity : ComponentActivity(), AmbientLifecycleObserver.AmbientLifecy
             Log.w("WR_Battery", "설정 화면 열기 실패: $pkg", e)
         }
     }
+
 }
 
 @Composable
-fun WatchApp(isAmbient: Boolean, onStart: () -> Unit, onStop: () -> Unit) {
+fun WatchApp(
+    isAmbient: Boolean,
+    onStart: () -> Unit,
+    onStop: () -> Unit,
+) {
     val context = LocalContext.current
     val data by ExerciseService.exerciseData.collectAsState()
+    val sync by WatchRunSyncState.state.collectAsState()
     val isRunning = data.isActive
 
     // 운동 중엔 화면이 꺼지지 않도록 유지 → 워치 페이스로 자동 이동 방지
@@ -167,6 +182,23 @@ fun WatchApp(isAmbient: Boolean, onStart: () -> Unit, onStop: () -> Unit) {
                     Text(text = "대기 중")
                 }
             } else {
+                if (sync.isActive) {
+                    WatchRunMiniMap(sync = sync)
+                    val progressPct = (sync.routeProgressRatio * 100).toInt()
+                    Text(
+                        text = "진행 ${progressPct}%",
+                        fontSize = 12.sp,
+                        color = Color(0xFFD6FFE0),
+                    )
+                    if (sync.isOffCourse) {
+                        Text(
+                            text = "코스 이탈",
+                            fontSize = 11.sp,
+                            color = Color(0xFFFF6B6B),
+                        )
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
+                }
                 if (isRunning) {
                     // 워치 전담 데이터: HR / 칼로리 (케이던스는 모바일 가속도계로 대체)
                     Text(text = "${data.heartRate} BPM", fontWeight = FontWeight.Bold, fontSize = 20.sp)
@@ -176,25 +208,175 @@ fun WatchApp(isAmbient: Boolean, onStart: () -> Unit, onStop: () -> Unit) {
                     Text(text = "대기 중")
                     Spacer(modifier = Modifier.height(10.dp))
                 }
-                Button(onClick = {
-                    if (isRunning) {
-                        onStop()
-                    } else {
-                        val required = arrayOf(
-                            Manifest.permission.BODY_SENSORS,
-                            Manifest.permission.ACTIVITY_RECOGNITION,
-                            Manifest.permission.ACCESS_FINE_LOCATION,
+
+                val runningColor = Color(0xFFFF5A5A)
+                val idleColor = Color(0xFF2EC47F)
+
+                Box(
+                    modifier = Modifier
+                        .background(
+                            color = Color(0x1FFFFFFF),
+                            shape = RoundedCornerShape(999.dp),
                         )
-                        if (required.all { ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED }) {
-                            onStart()
-                        } else {
-                            permissionLauncher.launch(required)
-                        }
+                        .padding(horizontal = 8.dp, vertical = 6.dp),
+                    contentAlignment = Alignment.Center,
+                ) {
+                    Button(
+                        onClick = {
+                            if (isRunning) {
+                                onStop()
+                            } else {
+                                val required = arrayOf(
+                                    Manifest.permission.BODY_SENSORS,
+                                    Manifest.permission.ACTIVITY_RECOGNITION,
+                                    Manifest.permission.ACCESS_FINE_LOCATION,
+                                )
+                                if (required.all {
+                                        ContextCompat.checkSelfPermission(context, it) == PackageManager.PERMISSION_GRANTED
+                                    }) {
+                                    onStart()
+                                } else {
+                                    permissionLauncher.launch(required)
+                                }
+                            }
+                        },
+                        colors = ButtonDefaults.buttonColors(
+                            backgroundColor = if (isRunning) runningColor else idleColor
+                        ),
+                        modifier = Modifier.size(width = 94.dp, height = 44.dp),
+                    ) {
+                        Text(
+                            text = if (isRunning) "중지" else "시작",
+                            fontWeight = FontWeight.Bold,
+                            fontSize = 14.sp,
+                            color = Color.White,
+                        )
                     }
-                }) {
-                    Text(text = if (isRunning) "중지" else "시작")
                 }
             }
         }
     }
+}
+
+@Composable
+private fun WatchRunMiniMap(sync: WatchRunSyncData, size: Dp = 120.dp) {
+    val points = remember(sync.courseCoordinates, sync.ghostCoordinates, sync.userTrail) {
+        sync.courseCoordinates + sync.ghostCoordinates + sync.userTrail
+    }
+    if (points.isEmpty()) return
+
+    val minLat = points.minOf { it.latitude }
+    val maxLat = points.maxOf { it.latitude }
+    val minLon = points.minOf { it.longitude }
+    val maxLon = points.maxOf { it.longitude }
+
+    Canvas(modifier = Modifier.size(size)) {
+        val pad = 8f
+        val width = this.size.width
+        val height = this.size.height
+        val lonRange = (maxLon - minLon).takeIf { it > 1e-9 } ?: 1e-9
+        val latRange = (maxLat - minLat).takeIf { it > 1e-9 } ?: 1e-9
+
+        fun toOffset(point: WatchPoint): Offset {
+            val x = ((point.longitude - minLon) / lonRange).toFloat() * (width - 2 * pad) + pad
+            val y = ((maxLat - point.latitude) / latRange).toFloat() * (height - 2 * pad) + pad
+            return Offset(x, y)
+        }
+
+        fun drawPath(points: List<WatchPoint>, color: Color, stroke: Float) {
+            if (points.size < 2) return
+            var prev = toOffset(points.first())
+            for (i in 1 until points.size) {
+                val next = toOffset(points[i])
+                drawLine(
+                    color = color,
+                    start = prev,
+                    end = next,
+                    strokeWidth = stroke,
+                    cap = StrokeCap.Round,
+                )
+                prev = next
+            }
+        }
+
+        // course polyline
+        drawPath(sync.courseCoordinates, Color(0xFFFF6464), 4f)
+        // ghost polyline
+        drawPath(sync.ghostCoordinates, Color(0xFF66D9FF), 2.5f)
+        // user trail
+        drawPath(sync.userTrail, Color(0xFF8DFF8D), 3f)
+
+        val ghostPoint = pointAtProgress(sync.ghostCoordinates, sync.ghostProgressRatio)
+        ghostPoint?.let {
+            drawCircle(color = Color(0xFF66D9FF), radius = 4.5f, center = toOffset(it))
+            drawCircle(
+                color = Color.White,
+                radius = 6f,
+                center = toOffset(it),
+                style = Stroke(width = 1.5f),
+            )
+        }
+
+        sync.currentUserPoint?.let {
+            val center = toOffset(it)
+            drawCircle(color = Color(0xFF1E88E5), radius = 6f, center = center)
+            drawCircle(
+                color = Color.White,
+                radius = 8f,
+                center = center,
+                style = Stroke(width = 2f),
+            )
+
+            if ((sync.speedMps > 0.5) && sync.headingDeg != null) {
+                val rad = Math.toRadians(sync.headingDeg.toDouble())
+                val dx = kotlin.math.sin(rad).toFloat() * 14f
+                val dy = -kotlin.math.cos(rad).toFloat() * 14f
+                drawLine(
+                    color = Color(0xFF1E88E5),
+                    start = center,
+                    end = Offset(center.x + dx, center.y + dy),
+                    strokeWidth = 3f,
+                    cap = StrokeCap.Round,
+                )
+            }
+        }
+    }
+}
+
+private fun pointAtProgress(points: List<WatchPoint>, ratio: Float): WatchPoint? {
+    if (points.isEmpty()) return null
+    if (points.size == 1) return points.first()
+
+    val clamped = ratio.coerceIn(0f, 1f).toDouble()
+    val cumulative = DoubleArray(points.size)
+    for (i in 1 until points.size) {
+        cumulative[i] = cumulative[i - 1] + haversineM(points[i - 1], points[i])
+    }
+    val total = cumulative.last().takeIf { it > 1e-6 } ?: return points.last()
+    val target = total * clamped
+
+    for (i in 0 until points.lastIndex) {
+        val startDist = cumulative[i]
+        val endDist = cumulative[i + 1]
+        if (target < startDist || target > endDist) continue
+        val segmentLen = endDist - startDist
+        val t = if (segmentLen > 1e-6) (target - startDist) / segmentLen else 0.0
+        return WatchPoint(
+            latitude = points[i].latitude + (points[i + 1].latitude - points[i].latitude) * t,
+            longitude = points[i].longitude + (points[i + 1].longitude - points[i].longitude) * t,
+        )
+    }
+
+    return points.last()
+}
+
+private fun haversineM(a: WatchPoint, b: WatchPoint): Double {
+    val r = 6_371_000.0
+    val dLat = Math.toRadians(b.latitude - a.latitude)
+    val dLon = Math.toRadians(b.longitude - a.longitude)
+    val x = kotlin.math.sin(dLat / 2).let { it * it } +
+        kotlin.math.cos(Math.toRadians(a.latitude)) *
+        kotlin.math.cos(Math.toRadians(b.latitude)) *
+        kotlin.math.sin(dLon / 2).let { it * it }
+    return r * 2 * kotlin.math.atan2(kotlin.math.sqrt(x), kotlin.math.sqrt(1 - x))
 }
