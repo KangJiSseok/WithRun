@@ -74,6 +74,7 @@ public class CourseService {
     private final CourseAccessPolicy courseAccessPolicy;
 
     public NearbyCoursesResponse findNearbyCourses(NearbyCoursesRequest request, AuthenticatedUser user) {
+        Long currentUserId = user == null ? null : user.userId();
         List<NearbyCoursePageRow> pageRows = courseRepository.findNearbyCoursePageRows(
                 request.preferredDistanceMs(),
                 request.targetLatitude(),
@@ -93,10 +94,11 @@ public class CourseService {
         );
         boolean hasNext = (long) (request.page() + 1) * request.size() < totalElements;
         int totalPages = totalElements == 0 ? 0 : (int) ((totalElements + request.size() - 1) / request.size());
-        List<NearbyCourseItemResponse> items = enrichNearbyCourseItemsWithCounts(
+        List<NearbyCourseItemResponse> items = enrichNearbyCourseItemsWithInteraction(
                 pageRows.stream()
                         .map(this::toNearbyCourseItemResponse)
-                        .toList()
+                        .toList(),
+                currentUserId
         );
 
         return new NearbyCoursesResponse(
@@ -112,10 +114,11 @@ public class CourseService {
     public NearbyCoursesResponse findRecommendedNearbyCourses(NearbyCoursesRequest request, AuthenticatedUser user) {
         Long userId = user == null ? null : user.userId();
         List<NearbyCourseItemResponse> scoredItems = findScoredNearbyCourseItems(request, userId, RECOMMENDED_NEARBY_LIMIT);
-        List<NearbyCourseItemResponse> items = enrichNearbyCourseItemsWithCounts(
+        List<NearbyCourseItemResponse> items = enrichNearbyCourseItemsWithInteraction(
                 scoredItems.stream()
                         .limit(RECOMMENDED_NEARBY_LIMIT)
-                        .toList()
+                        .toList(),
+                userId
         );
         long totalElements = items.size();
         int totalPages = totalElements == 0 ? 0 : 1;
@@ -132,7 +135,8 @@ public class CourseService {
         );
     }
 
-    public NearbyGhostCoursesResponse findNearbyGhostCourses(NearbyGhostCoursesRequest request) {
+    public NearbyGhostCoursesResponse findNearbyGhostCourses(NearbyGhostCoursesRequest request, AuthenticatedUser user) {
+        Long currentUserId = user == null ? null : user.userId();
         List<NearbyCoursePageRow> pageRows = courseRepository.findNearbyGhostCoursePageRows(
                 request.preferredDistanceMs(),
                 request.targetLatitude(),
@@ -152,10 +156,11 @@ public class CourseService {
         );
         boolean hasNext = (long) (request.page() + 1) * request.size() < totalElements;
         int totalPages = totalElements == 0 ? 0 : (int) ((totalElements + request.size() - 1) / request.size());
-        List<NearbyCourseItemResponse> items = enrichNearbyCourseItemsWithCounts(
+        List<NearbyCourseItemResponse> items = enrichNearbyCourseItemsWithInteraction(
                 pageRows.stream()
                         .map(this::toNearbyCourseItemResponse)
-                        .toList()
+                        .toList(),
+                currentUserId
         );
 
         return new NearbyGhostCoursesResponse(
@@ -548,6 +553,8 @@ public class CourseService {
                 false,
                 0L,
                 0L,
+                false,
+                false,
                 toSnapshotImageUrl(row.snapshotImageUrl())
         );
     }
@@ -576,11 +583,16 @@ public class CourseService {
                 isRecommended,
                 0L,
                 0L,
+                false,
+                false,
                 toSnapshotImageUrl(candidate.snapshotImageUrl())
         );
     }
 
-    private List<NearbyCourseItemResponse> enrichNearbyCourseItemsWithCounts(List<NearbyCourseItemResponse> items) {
+    private List<NearbyCourseItemResponse> enrichNearbyCourseItemsWithInteraction(
+            List<NearbyCourseItemResponse> items,
+            Long currentUserId
+    ) {
         if (items.isEmpty()) return items;
 
         List<Long> courseIds = items.stream()
@@ -609,6 +621,8 @@ public class CourseService {
                         item.isRecommended(),
                         likeCountsByCourseIds.getOrDefault(item.courseId(), 0L),
                         bookmarkCountsByCourseIds.getOrDefault(item.courseId(), 0L),
+                        isLiked(item.courseId(), currentUserId),
+                        isBookmarked(item.courseId(), currentUserId),
                         item.snapshotImageUrl()
                 ))
                 .toList();

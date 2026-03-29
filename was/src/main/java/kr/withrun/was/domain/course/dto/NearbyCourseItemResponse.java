@@ -65,6 +65,12 @@ public record NearbyCourseItemResponse(
         @Schema(description = "코스 북마크 수", example = "42")
         Long bookmarkCount,
 
+        @Schema(description = "현재 사용자의 좋아요 여부", example = "false")
+        boolean isLiked,
+
+        @Schema(description = "현재 사용자의 북마크 여부", example = "false")
+        boolean isBookmarked,
+
         @Schema(description = "코스 대표 이미지 URL", example = "https://cdn.withrun.kr/courses/12.png", nullable = true)
         String snapshotImageUrl
 ) {
@@ -86,7 +92,7 @@ public record NearbyCourseItemResponse(
             String snapshotImageUrl
     ) {
         this(courseId, title, status, routeType, distanceM, elevationGainM, startLatitude, startLongitude, endLatitude, endLongitude,
-                distanceFromTargetM, distanceFromUserM, difficulty, courseTypes, false, 0L, 0L, snapshotImageUrl);
+                distanceFromTargetM, distanceFromUserM, difficulty, courseTypes, false, 0L, 0L, false, false, snapshotImageUrl);
     }
 
     @Schema(name = "NearbyCourseDifficultyOption", description = "주변 코스 응답의 난이도 항목")
