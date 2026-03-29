@@ -64,6 +64,8 @@ class RewardDrawPoolAdminControllerTest {
                         .content("""
                                 {
                                   "name": "Launch Pool",
+                                  "cardsPerDraw": 3,
+                                  "missWeight": 40,
                                   "items": [
                                     {"rewardItemId": 1, "weight": 70},
                                     {"rewardItemId": 2, "weight": 30}
@@ -73,7 +75,9 @@ class RewardDrawPoolAdminControllerTest {
                 .andExpect(status().isCreated())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.code").value(ResponseCode.CREATED.getCode()))
-                .andExpect(jsonPath("$.data.rewardDrawPoolId").value(1L));
+                .andExpect(jsonPath("$.data.rewardDrawPoolId").value(1L))
+                .andExpect(jsonPath("$.data.cardsPerDraw").value(3))
+                .andExpect(jsonPath("$.data.missWeight").value(40));
 
         then(rewardDrawPoolAdminService).should().createRewardDrawPool(any(CreateRewardDrawPoolRequest.class));
     }
@@ -105,6 +109,7 @@ class RewardDrawPoolAdminControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
                 .andExpect(jsonPath("$.data.rewardDrawPoolId").value(1L))
+                .andExpect(jsonPath("$.data.cardsPerDraw").value(3))
                 .andExpect(jsonPath("$.data.items[0].weight").value(70));
 
         then(rewardDrawPoolAdminService).should().getRewardDrawPool(1L);
@@ -121,6 +126,8 @@ class RewardDrawPoolAdminControllerTest {
                         .content("""
                                 {
                                   "name": "Updated Pool",
+                                  "cardsPerDraw": 5,
+                                  "missWeight": 25,
                                   "items": [
                                     {"rewardItemId": 1, "weight": 100}
                                   ]
@@ -128,7 +135,9 @@ class RewardDrawPoolAdminControllerTest {
                                 """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true))
-                .andExpect(jsonPath("$.data.name").value("Updated Pool"));
+                .andExpect(jsonPath("$.data.name").value("Updated Pool"))
+                .andExpect(jsonPath("$.data.cardsPerDraw").value(3))
+                .andExpect(jsonPath("$.data.missWeight").value(40));
 
         then(rewardDrawPoolAdminService).should().updateRewardDrawPool(eq(1L), any(UpdateRewardDrawPoolRequest.class));
     }
@@ -166,6 +175,8 @@ class RewardDrawPoolAdminControllerTest {
                 id,
                 name,
                 isActive,
+                3,
+                40,
                 List.of(new RewardDrawPoolItemResponse(101L, 1L, "Reward Item", "https://cdn.example.com/reward-item/1.png", 70)),
                 LocalDateTime.of(2026, 3, 29, 10, 0),
                 LocalDateTime.of(2026, 3, 29, 10, 30)

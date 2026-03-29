@@ -20,4 +20,14 @@ public interface RewardPointBalanceRepository extends JpaRepository<RewardPointB
               and rewardPointBalance.deletedAt is null
             """)
     int increaseBalance(@Param("userId") Long userId, @Param("deltaPoint") int deltaPoint);
+
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("""
+            update RewardPointBalance rewardPointBalance
+            set rewardPointBalance.currentBalance = rewardPointBalance.currentBalance - :deltaPoint
+            where rewardPointBalance.id = :userId
+              and rewardPointBalance.deletedAt is null
+              and rewardPointBalance.currentBalance >= :deltaPoint
+            """)
+    int decreaseBalanceIfEnough(@Param("userId") Long userId, @Param("deltaPoint") int deltaPoint);
 }

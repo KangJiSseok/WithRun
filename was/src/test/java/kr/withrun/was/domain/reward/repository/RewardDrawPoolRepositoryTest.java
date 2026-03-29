@@ -36,11 +36,11 @@ class RewardDrawPoolRepositoryTest {
     @DisplayName("현재 활성 pool 조회는 active=true 이고 미삭제인 pool만 반환한다")
     @Test
     void findsActiveRewardDrawPoolOnlyWhenNotDeleted() {
-        RewardDrawPool inactivePool = rewardDrawPoolRepository.saveAndFlush(RewardDrawPool.create("Inactive Pool"));
-        RewardDrawPool deletedActivePool = rewardDrawPoolRepository.saveAndFlush(RewardDrawPool.create("Deleted Active Pool"));
+        RewardDrawPool inactivePool = rewardDrawPoolRepository.saveAndFlush(RewardDrawPool.create("Inactive Pool", 3, 40));
+        RewardDrawPool deletedActivePool = rewardDrawPoolRepository.saveAndFlush(RewardDrawPool.create("Deleted Active Pool", 3, 40));
         deletedActivePool.activate();
         deletedActivePool.delete();
-        RewardDrawPool activePool = rewardDrawPoolRepository.saveAndFlush(RewardDrawPool.create("Active Pool"));
+        RewardDrawPool activePool = rewardDrawPoolRepository.saveAndFlush(RewardDrawPool.create("Active Pool", 3, 40));
         activePool.activate();
 
         entityManager.flush();

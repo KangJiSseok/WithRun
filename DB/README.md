@@ -172,6 +172,14 @@
 - 관리자는 코스를 직접 생성하여 등록한다.
 - 관리자는 부적절한 코스를 삭제하거나 비공개 처리한다.
 
+### 6.2 리워드 가챠 운영
+
+- 관리자는 기존 `reward_items` 생성 API로 보상 아이템 카탈로그를 먼저 등록한다.
+- 관리자는 draw pool 생성/수정 시 `cardsPerDraw`, `missWeight`, 그리고 각 아이템의 `weight`를 입력한다.
+- 아이템 확률은 `reward_items`가 아니라 `reward_draw_pool_items.weight`에 저장된다.
+- 꽝 비중은 pool 단위 설정인 `reward_draw_pools.miss_weight`로 관리한다.
+- 운영 반영 순서는 **보상 아이템 생성 -> pool 생성/수정 -> pool 활성화**다.
+
 ---
 
 ## 7. 데이터 동기화 (Watch ↔ Phone ↔ Web)
@@ -217,5 +225,12 @@
 - `course_ghost_leaderboard`: 코스별 고스트 리더보드 점수
 - `ghost_running_results`: 고스트 러닝 결과
 - `user_calendars`: 일일 러닝 통계
+- `reward_items`: 리워드 보상 카탈로그 메타데이터
+- `reward_draw_pools`: cardsPerDraw / missWeight 를 포함한 운영 pool 헤더
+- `reward_draw_pool_items`: pool 안 item별 weight 확률 구성
+- `reward_gacha_draws`: 사용자 1회 draw 헤더
+- `reward_gacha_draw_cards`: draw 별 카드 결과 행
+- `reward_point_balances`: 현재 포인트 잔액
+- `reward_point_histories`: 포인트 적립/차감 이력
 
 현재 schema source에는 서버 측 동기화 체크포인트 전용 테이블을 두지 않는다.

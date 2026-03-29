@@ -68,6 +68,11 @@
 즉, 확률은 “아이템 자체의 속성”이 아니라
 “특정 pool 안에서 그 아이템이 어떤 비중으로 등장하는가”로 모델링한다.
 
+추가로 pool 헤더는 draw 실행에 필요한 두 운영값도 가진다.
+
+- `cardsPerDraw`: 1회 draw 에서 서버가 미리 결정해 반환할 카드 수
+- `missWeight`: 꽝 결과가 차지하는 raw weight
+
 ### 2. percentage 대신 raw weight 사용
 
 확률값은 소수점 percentage가 아니라 `weight` 정수로 저장한다.
@@ -102,7 +107,21 @@
 - 대상 pool을 active=true 로 변경
 - 기존 active pool들은 active=false 로 일괄 전환
 
-### 4. pool item 최소 필드
+### 4. 관리자 입력 플로우
+
+운영자가 확률표를 만드는 실제 순서는 아래와 같다.
+
+1. 기존 reward item 관리자 API로 보상 아이템 카탈로그를 만든다.
+2. draw pool 생성/수정 API에서 아래를 함께 입력한다.
+   - `cardsPerDraw`
+   - `missWeight`
+   - 각 item의 `weight`
+3. 검수 후 pool 을 활성화한다.
+
+여기서 핵심은 `reward_items`에 확률 필드를 추가하지 않는다는 점이다.
+보상 메타데이터는 카탈로그에 남고, 실제 당첨/꽝 비중은 pool 설정에서만 관리한다.
+
+### 5. pool item 최소 필드
 
 `reward_draw_pool_items`는 아래 필드만 가진다.
 
@@ -141,11 +160,15 @@
 ### 생성/수정 요청
 
 - `name`: pool 이름
+- `cardsPerDraw`: 한 번의 draw 에 포함할 카드 수
+- `missWeight`: 꽝 결과의 raw weight
 - `items`: `{ rewardItemId, weight }[]`
 
 검증 규칙:
 
 - 이름은 공백 불가
+- `cardsPerDraw`는 양수여야 한다
+- `missWeight`는 0 이상이어야 한다
 - item 목록은 비어 있으면 안 된다
 - 동일 rewardItemId 중복 불가
 - weight는 양수여야 한다
@@ -158,6 +181,8 @@ pool 응답은 아래를 포함한다.
 - `rewardDrawPoolId`
 - `name`
 - `isActive`
+- `cardsPerDraw`
+- `missWeight`
 - `items`
   - `rewardDrawPoolItemId`
   - `rewardItemId`

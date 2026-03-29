@@ -71,6 +71,7 @@ public enum ResponseCode {
     // Reward Error
     REWARD_ITEM_NOT_FOUND("E700", HttpStatus.NOT_FOUND, "리워드 아이템을 찾을 수 없습니다.", false),
     REWARD_DRAW_POOL_NOT_FOUND("E701", HttpStatus.NOT_FOUND, "리워드 draw pool 을 찾을 수 없습니다.", false),
+    REWARD_POINT_INSUFFICIENT("E702", HttpStatus.CONFLICT, "리워드 포인트가 부족합니다.", false),
 
     // Navigation Error
     NAVIGATION_BUNDLE_PENDING("E600", HttpStatus.ACCEPTED, "최신 네비게이션 번들이 아직 준비되지 않았습니다.", false),

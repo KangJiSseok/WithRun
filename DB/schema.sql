@@ -151,10 +151,14 @@ CREATE INDEX idx_reward_items_active_created_at ON reward_items (is_active, crea
 CREATE TABLE reward_draw_pools (
   reward_draw_pool_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
   name VARCHAR(100) NOT NULL,
+  cards_per_draw INTEGER NOT NULL,
+  miss_weight INTEGER NOT NULL DEFAULT 0,
   is_active BOOLEAN NOT NULL DEFAULT FALSE,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
-  deleted_at TIMESTAMP
+  deleted_at TIMESTAMP,
+  CONSTRAINT chk_reward_draw_pools_cards_per_draw CHECK (cards_per_draw > 0),
+  CONSTRAINT chk_reward_draw_pools_miss_weight CHECK (miss_weight >= 0)
 );
 
 CREATE INDEX idx_reward_draw_pools_active_created_at
@@ -183,6 +187,55 @@ CREATE TABLE reward_draw_pool_items (
 
 CREATE INDEX idx_reward_draw_pool_items_pool_created_at
   ON reward_draw_pool_items (reward_draw_pool_id, created_at DESC, reward_draw_pool_item_id DESC);
+
+-- One header row per user draw execution.
+CREATE TABLE reward_gacha_draws (
+  reward_gacha_draw_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  reward_draw_pool_id BIGINT NOT NULL,
+  cards_per_draw INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_reward_gacha_draws_user
+    FOREIGN KEY (user_id)
+    REFERENCES users (user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_reward_gacha_draws_pool
+    FOREIGN KEY (reward_draw_pool_id)
+    REFERENCES reward_draw_pools (reward_draw_pool_id)
+    ON DELETE RESTRICT,
+  CONSTRAINT chk_reward_gacha_draws_cards_per_draw CHECK (cards_per_draw > 0)
+);
+
+CREATE INDEX idx_reward_gacha_draws_user_created_at
+  ON reward_gacha_draws (user_id, created_at DESC, reward_gacha_draw_id DESC);
+
+-- Fully decided per-card results for one draw.
+CREATE TABLE reward_gacha_draw_cards (
+  reward_gacha_draw_card_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  reward_gacha_draw_id BIGINT NOT NULL,
+  card_index INTEGER NOT NULL,
+  card_type VARCHAR(16) NOT NULL,
+  reward_item_id BIGINT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_reward_gacha_draw_cards_draw
+    FOREIGN KEY (reward_gacha_draw_id)
+    REFERENCES reward_gacha_draws (reward_gacha_draw_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_reward_gacha_draw_cards_reward_item
+    FOREIGN KEY (reward_item_id)
+    REFERENCES reward_items (reward_item_id)
+    ON DELETE SET NULL,
+  CONSTRAINT uq_reward_gacha_draw_cards_draw_index UNIQUE (reward_gacha_draw_id, card_index),
+  CONSTRAINT chk_reward_gacha_draw_cards_index CHECK (card_index > 0),
+  CONSTRAINT chk_reward_gacha_draw_cards_type CHECK (card_type IN ('MISS', 'REWARD'))
+);
+
+CREATE INDEX idx_reward_gacha_draw_cards_draw_index
+  ON reward_gacha_draw_cards (reward_gacha_draw_id, card_index ASC);
 
 -- One-row-per-user current reward point balance.
 CREATE TABLE reward_point_balances (

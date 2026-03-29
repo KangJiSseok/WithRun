@@ -176,13 +176,19 @@
 - 핵심 컬럼:
   - `reward_draw_pool_id`: PK
   - `name`: 관리자 입력 pool 이름
+  - `cards_per_draw`: 1회 draw 에서 서버가 미리 결정해 반환할 카드 수
+  - `miss_weight`: 꽝 결과의 raw weight 값
   - `is_active`: 현재 운영 중인 pool 여부
   - `created_at`, `updated_at`, `deleted_at`: `BaseEntity` 감사 컬럼
 - 주요 제약:
   - `name` 길이 100자 제한
+  - `cards_per_draw > 0`
+  - `miss_weight >= 0`
   - `is_active` 기본값 `FALSE`
 - 비고:
   - 초기 단계에서는 동시에 하나의 pool만 active 로 운영하는 것을 애플리케이션 규칙으로 둡니다.
+  - 운영 입력 플로우는 `reward_items` 생성/수정 -> pool 생성/수정 -> 활성화 순서입니다.
+  - `cards_per_draw`와 `miss_weight`는 item 메타데이터가 아니라 pool 운영 설정입니다.
   - 기본 운영 조회 인덱스로 `(is_active, created_at desc, reward_draw_pool_id desc)`를 사용합니다.
 
 ### reward_draw_pool_items
@@ -202,7 +208,45 @@
 - 비고:
   - 확률은 percentage 고정값이 아니라 raw weight 로 저장합니다.
   - `reward_items`는 카탈로그 책임만 가지고, 실제 draw 비중은 이 테이블이 가집니다.
+  - 관리자는 각 보상 아이템마다 `weight`를 입력하고, 꽝 비중은 같은 요청의 `missWeight`로 따로 입력합니다.
   - 기본 조회 인덱스로 `(reward_draw_pool_id, created_at desc, reward_draw_pool_item_id desc)`를 사용합니다.
+
+### reward_gacha_draws
+
+- 목적: 사용자 1회 가챠 실행의 헤더를 저장
+- 핵심 컬럼:
+  - `reward_gacha_draw_id`: PK
+  - `user_id`: 가챠 실행 사용자 FK
+  - `reward_draw_pool_id`: 실행 시점에 사용한 active pool FK
+  - `cards_per_draw`: 해당 draw 에서 생성된 카드 수 스냅샷
+  - `created_at`, `updated_at`, `deleted_at`: `BaseEntity` 감사 컬럼
+- 주요 제약:
+  - `fk_reward_gacha_draws_user` (`ON DELETE CASCADE`)
+  - `fk_reward_gacha_draws_pool` (`ON DELETE RESTRICT`)
+  - `chk_reward_gacha_draws_cards_per_draw`
+- 비고:
+  - draw 결과는 클라이언트가 재계산하지 않고, 서버가 먼저 전체 카드 세트를 결정한 뒤 이 헤더와 카드 행에 저장합니다.
+  - 기본 조회 인덱스로 `(user_id, created_at desc, reward_gacha_draw_id desc)`를 사용합니다.
+
+### reward_gacha_draw_cards
+
+- 목적: 한 번의 가챠 draw 에 포함된 카드별 최종 결과 저장
+- 핵심 컬럼:
+  - `reward_gacha_draw_card_id`: PK
+  - `reward_gacha_draw_id`: `reward_gacha_draws` FK
+  - `card_index`: 카드 순서(1-base)
+  - `card_type`: `MISS`, `REWARD`
+  - `reward_item_id`: 당첨 카드일 때만 연결되는 `reward_items` FK, 꽝이면 `NULL`
+  - `created_at`, `updated_at`, `deleted_at`: `BaseEntity` 감사 컬럼
+- 주요 제약:
+  - `fk_reward_gacha_draw_cards_draw` (`ON DELETE CASCADE`)
+  - `fk_reward_gacha_draw_cards_reward_item` (`ON DELETE SET NULL`)
+  - `uq_reward_gacha_draw_cards_draw_index`
+  - `chk_reward_gacha_draw_cards_index`
+  - `chk_reward_gacha_draw_cards_type`
+- 비고:
+  - 꽝 카드는 `card_type = MISS`, `reward_item_id = NULL`로 저장합니다.
+  - 기본 조회 인덱스로 `(reward_gacha_draw_id, card_index asc)`를 사용합니다.
 
 ### reward_point_balances
 
@@ -224,7 +268,7 @@
 - 핵심 컬럼:
   - `reward_point_history_id`: PK
   - `user_id`: 사용자 FK
-  - `delta_point`: 포인트 변화량(현재 단계는 적립만 사용)
+  - `delta_point`: 포인트 변화량(적립은 양수, 가챠 차감은 음수)
   - `reason`: 지급/차감 사유 enum
   - `idempotency_key`: 사용자 단위 중복 지급 방지 키
   - `created_at`, `updated_at`, `deleted_at`: `BaseEntity` 감사 컬럼
@@ -235,6 +279,7 @@
   - `chk_reward_point_histories_reason`
 - 비고:
   - 동일 사용자에게 같은 business event 를 두 번 지급하지 않기 위해 `(user_id, idempotency_key)` 유니크 제약을 둡니다.
+  - `GACHA_DRAW`는 1포인트 차감 이력을 기록할 때 사용합니다.
   - 기본 조회 인덱스로 `(user_id, created_at desc, reward_point_history_id desc)`를 사용합니다.
 
 ### course_difficulties

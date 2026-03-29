@@ -51,6 +51,17 @@
 - 이미지 저장은 기존 `snapshotImageUrl` 패턴을 따라 엔터티에는 문자열 하나만 저장한다.
 - DB 에 저장된 값은 최종 public URL일 수도 있고 object key 일 수도 있지만, 응답에서는 항상 client-facing `imageUrl`로 정규화한다.
 
+## 관리자 운영 플로우에서의 위치
+
+- `reward_items` 생성/수정 API 는 **보상 카탈로그 등록 단계**다.
+- draw 확률, 꽝 비중, 카드 수는 이 API 범위가 아니다.
+- 실제 운영 순서는 아래 3단계다.
+  1. `POST /api/admin/reward-items`로 보상 아이템을 만든다.
+  2. `POST/PATCH /api/admin/reward-draw-pools`에서 `cardsPerDraw`, `missWeight`, item별 `weight`를 입력한다.
+  3. `POST /api/admin/reward-draw-pools/{rewardDrawPoolId}/activate`로 pool 을 활성화한다.
+
+즉, `reward_items`는 “무슨 보상을 노출할지”만 관리하고, 확률과 꽝은 pool 설정에서 관리한다.
+
 ## Domain / Package Layout
 
 신규 백엔드 도메인은 아래처럼 둔다.

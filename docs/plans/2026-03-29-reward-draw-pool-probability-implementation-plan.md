@@ -2,9 +2,9 @@
 
 > **For Claude:** REQUIRED SUB-SKILL: Use superpowers:executing-plans to implement this plan task-by-task.
 
-**Goal:** `was`에 reward item 카탈로그와 분리된 draw pool/weight 관리 기능을 추가해 관리자 기준으로 확률 운영 기반을 닫는다.
+**Goal:** `was`에 reward item 카탈로그와 분리된 draw pool/weight 관리 기능을 유지하면서, 관리자 운영 플로우가 `reward item 생성 -> pool 생성/수정 -> 활성화` 순서로 닫히도록 문서와 계약을 명확히 한다.
 
-**Architecture:** `reward_items`는 그대로 카탈로그로 유지하고, 새 `reward_draw_pools` / `reward_draw_pool_items` 구조로 pool별 item weight를 관리한다. 이번 단계에서는 draw 실행 없이 관리자 CRUD/활성화/활성 pool 조회까지만 구현하고, 후속 draw/inventory/result가 이 pool을 소비하도록 남긴다.
+**Architecture:** `reward_items`는 그대로 카탈로그로 유지하고, `reward_draw_pools` / `reward_draw_pool_items` 구조로 pool별 item weight를 관리한다. pool 헤더는 `cardsPerDraw`와 `missWeight`를 함께 가지며, draw 실행은 active pool을 읽어 전체 카드 결과를 미리 결정한다.
 
 **Tech Stack:** Spring Boot 3.5, Spring Data JPA, Java 21, H2/JPA repository tests, MockMvc controller tests
 
@@ -23,6 +23,8 @@
 - pool/pool item 분리 책임
 - raw weight 사용 이유
 - active pool 단일 정책
+- 운영 플로우(`reward item 생성 -> pool 생성/수정 -> 활성화`)
+- `cardsPerDraw`, `missWeight` 입력 책임
 - 이번 범위 포함/제외
 
 **Step 2: DB schema contract 반영**

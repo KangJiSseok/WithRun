@@ -49,10 +49,10 @@ class RewardPointRepositoryTest {
         RewardPointBalance savedBalance = rewardPointBalanceRepository.saveAndFlush(RewardPointBalance.create(user));
         entityManager.clear();
 
-        RewardPointBalance foundBalance = rewardPointBalanceRepository.findByIdAndDeletedAtIsNull(user.getId()).orElseThrow();
+        RewardPointBalance foundBalance = rewardPointBalanceRepository.findByIdAndDeletedAtIsNull(userId(user)).orElseThrow();
 
-        assertThat(savedBalance.getId()).isEqualTo(user.getId());
-        assertThat(foundBalance.getId()).isEqualTo(user.getId());
+        assertThat(savedBalance.getId()).isEqualTo(userId(user));
+        assertThat(foundBalance.getId()).isEqualTo(userId(user));
         assertThat(foundBalance.getCurrentBalance()).isZero();
     }
 
@@ -68,6 +68,43 @@ class RewardPointRepositoryTest {
         assertThatThrownBy(() -> rewardPointHistoryRepository.saveAndFlush(
                 RewardPointHistory.create(user, 1, RewardPointReason.DAILY_RUNNING, "reward:daily-running:1:2026-03-29")
         )).isInstanceOf(DataIntegrityViolationException.class);
+    }
+
+    @DisplayName("현재 잔액이 충분하면 포인트를 1 차감한다")
+    @Test
+    void decreasesRewardPointBalanceWhenEnough() {
+        User user = persistUser("runner-ok-1");
+        RewardPointBalance rewardPointBalance = rewardPointBalanceRepository.saveAndFlush(RewardPointBalance.create(user));
+        entityManager.clear();
+
+        rewardPointBalanceRepository.increaseBalance(userId(user), 3);
+
+        int updatedRowCount = rewardPointBalanceRepository.decreaseBalanceIfEnough(userId(user), 1);
+        entityManager.clear();
+
+        RewardPointBalance foundBalance = rewardPointBalanceRepository.findByIdAndDeletedAtIsNull(userId(user)).orElseThrow();
+        assertThat(rewardPointBalance.getId()).isEqualTo(userId(user));
+        assertThat(updatedRowCount).isEqualTo(1);
+        assertThat(foundBalance.getCurrentBalance()).isEqualTo(2);
+    }
+
+    @DisplayName("현재 잔액이 부족하면 포인트 차감이 수행되지 않는다")
+    @Test
+    void doesNotDecreaseRewardPointBalanceWhenInsufficient() {
+        User user = persistUser("runner-no-1");
+        rewardPointBalanceRepository.saveAndFlush(RewardPointBalance.create(user));
+        entityManager.clear();
+
+        int updatedRowCount = rewardPointBalanceRepository.decreaseBalanceIfEnough(userId(user), 1);
+        entityManager.clear();
+
+        RewardPointBalance foundBalance = rewardPointBalanceRepository.findByIdAndDeletedAtIsNull(userId(user)).orElseThrow();
+        assertThat(updatedRowCount).isZero();
+        assertThat(foundBalance.getCurrentBalance()).isZero();
+    }
+
+    private Long userId(User user) {
+        return (Long) entityManager.getEntityManagerFactory().getPersistenceUnitUtil().getIdentifier(user);
     }
 
     private User persistUser(String nickname) {

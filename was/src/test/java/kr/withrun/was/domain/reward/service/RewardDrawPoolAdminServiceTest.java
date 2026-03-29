@@ -94,6 +94,8 @@ class RewardDrawPoolAdminServiceTest {
         RewardDrawPoolResponse response = rewardDrawPoolAdminService.createRewardDrawPool(
                 new CreateRewardDrawPoolRequest(
                         "Launch Pool",
+                        3,
+                        40,
                         List.of(
                                 new RewardDrawPoolItemRequest(1L, 70),
                                 new RewardDrawPoolItemRequest(2L, 30)
@@ -104,6 +106,8 @@ class RewardDrawPoolAdminServiceTest {
         assertThat(response.rewardDrawPoolId()).isEqualTo(10L);
         assertThat(response.name()).isEqualTo("Launch Pool");
         assertThat(response.isActive()).isFalse();
+        assertThat(response.cardsPerDraw()).isEqualTo(3);
+        assertThat(response.missWeight()).isEqualTo(40);
         assertThat(response.items()).hasSize(2);
         assertThat(response.items().get(0).imageUrl()).isEqualTo("signed::reward-item/1.png");
         assertThat(response.items().get(0).weight()).isEqualTo(70);
@@ -113,7 +117,7 @@ class RewardDrawPoolAdminServiceTest {
     @Test
     void throwsWhenCreateRequestHasNoItems() {
         assertThatThrownBy(() -> rewardDrawPoolAdminService.createRewardDrawPool(
-                new CreateRewardDrawPoolRequest("Launch Pool", List.of())
+                new CreateRewardDrawPoolRequest("Launch Pool", 3, 40, List.of())
         )).isInstanceOf(CustomException.class)
                 .extracting("responseCode")
                 .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
@@ -127,6 +131,8 @@ class RewardDrawPoolAdminServiceTest {
         assertThatThrownBy(() -> rewardDrawPoolAdminService.createRewardDrawPool(
                 new CreateRewardDrawPoolRequest(
                         "Launch Pool",
+                        3,
+                        40,
                         List.of(
                                 new RewardDrawPoolItemRequest(1L, 50),
                                 new RewardDrawPoolItemRequest(1L, 50)
@@ -143,7 +149,39 @@ class RewardDrawPoolAdminServiceTest {
         assertThatThrownBy(() -> rewardDrawPoolAdminService.createRewardDrawPool(
                 new CreateRewardDrawPoolRequest(
                         "Launch Pool",
+                        3,
+                        40,
                         List.of(new RewardDrawPoolItemRequest(1L, 0))
+                )
+        )).isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
+    }
+
+    @DisplayName("cardsPerDraw 가 0 이하이면 pool 생성 시 예외가 발생한다")
+    @Test
+    void throwsWhenCreateRequestContainsNonPositiveCardsPerDraw() {
+        assertThatThrownBy(() -> rewardDrawPoolAdminService.createRewardDrawPool(
+                new CreateRewardDrawPoolRequest(
+                        "Launch Pool",
+                        0,
+                        40,
+                        List.of(new RewardDrawPoolItemRequest(1L, 100))
+                )
+        )).isInstanceOf(CustomException.class)
+                .extracting("responseCode")
+                .isEqualTo(ResponseCode.INVALID_INPUT_VALUE);
+    }
+
+    @DisplayName("missWeight 가 음수이면 pool 생성 시 예외가 발생한다")
+    @Test
+    void throwsWhenCreateRequestContainsNegativeMissWeight() {
+        assertThatThrownBy(() -> rewardDrawPoolAdminService.createRewardDrawPool(
+                new CreateRewardDrawPoolRequest(
+                        "Launch Pool",
+                        3,
+                        -1,
+                        List.of(new RewardDrawPoolItemRequest(1L, 100))
                 )
         )).isInstanceOf(CustomException.class)
                 .extracting("responseCode")
@@ -163,6 +201,8 @@ class RewardDrawPoolAdminServiceTest {
         RewardDrawPoolResponse response = rewardDrawPoolAdminService.getRewardDrawPool(20L);
 
         assertThat(response.rewardDrawPoolId()).isEqualTo(20L);
+        assertThat(response.cardsPerDraw()).isEqualTo(3);
+        assertThat(response.missWeight()).isEqualTo(40);
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().get(0).imageUrl()).isEqualTo("signed::reward-item/3.png");
         assertThat(response.items().get(0).weight()).isEqualTo(100);
@@ -216,18 +256,22 @@ class RewardDrawPoolAdminServiceTest {
                 23L,
                 new UpdateRewardDrawPoolRequest(
                         "Updated Pool",
+                        5,
+                        25,
                         List.of(new RewardDrawPoolItemRequest(5L, 100))
                 )
         );
 
         assertThat(response.name()).isEqualTo("Updated Pool");
+        assertThat(response.cardsPerDraw()).isEqualTo(5);
+        assertThat(response.missWeight()).isEqualTo(25);
         assertThat(oldItem.isDeleted()).isTrue();
         assertThat(response.items()).hasSize(1);
         assertThat(response.items().get(0).weight()).isEqualTo(100);
     }
 
     private RewardDrawPool rewardDrawPool(Long id, String name, boolean isActive) {
-        RewardDrawPool rewardDrawPool = RewardDrawPool.create(name);
+        RewardDrawPool rewardDrawPool = RewardDrawPool.create(name, 3, 40);
         if (isActive) {
             rewardDrawPool.activate();
         }
@@ -238,11 +282,10 @@ class RewardDrawPoolAdminServiceTest {
     }
 
     private RewardItem rewardItem(Long id, String title, String imageUrl, boolean isActive) {
-        RewardItem rewardItem = RewardItem.builder()
-                .title(title)
-                .imageUrl(imageUrl)
-                .active(isActive)
-                .build();
+        RewardItem rewardItem = instantiate(RewardItem.class);
+        setField(rewardItem, "title", title);
+        setField(rewardItem, "imageUrl", imageUrl);
+        setField(rewardItem, "active", isActive);
         setField(rewardItem, "id", id);
         return rewardItem;
     }
@@ -251,6 +294,16 @@ class RewardDrawPoolAdminServiceTest {
         RewardDrawPoolItem rewardDrawPoolItem = RewardDrawPoolItem.create(rewardDrawPool, rewardItem, weight);
         setField(rewardDrawPoolItem, "id", id);
         return rewardDrawPoolItem;
+    }
+
+    private <T> T instantiate(Class<T> type) {
+        try {
+            var constructor = type.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Failed to instantiate " + type.getSimpleName(), exception);
+        }
     }
 
     private void setField(Object target, String fieldName, Object value) {

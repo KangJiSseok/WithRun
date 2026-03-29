@@ -43,6 +43,18 @@ public class RewardItem extends BaseEntity {
         return active;
     }
 
+    public Long getId() {
+        return id;
+    }
+
+    public String getTitle() {
+        return title;
+    }
+
+    public String getImageUrl() {
+        return imageUrl;
+    }
+
     public void updateTitle(String title) {
         this.title = title;
     }

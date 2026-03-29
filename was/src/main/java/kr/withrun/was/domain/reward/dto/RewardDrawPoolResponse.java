@@ -16,6 +16,12 @@ public record RewardDrawPoolResponse(
         @Schema(description = "현재 활성 여부", example = "true")
         Boolean isActive,
 
+        @Schema(description = "1회 draw 당 생성할 카드 수", example = "3")
+        Integer cardsPerDraw,
+
+        @Schema(description = "꽝 weight 값", example = "40")
+        Integer missWeight,
+
         @Schema(description = "pool item 목록")
         List<RewardDrawPoolItemResponse> items,
 

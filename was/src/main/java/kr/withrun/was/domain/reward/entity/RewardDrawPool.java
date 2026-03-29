@@ -23,18 +23,28 @@ public class RewardDrawPool extends BaseEntity {
     @Column(name = "is_active", nullable = false)
     private boolean active;
 
+    @Column(name = "cards_per_draw", nullable = false)
+    private Integer cardsPerDraw;
+
+    @Column(name = "miss_weight", nullable = false)
+    private Integer missWeight;
+
     protected RewardDrawPool() {
     }
 
-    public static RewardDrawPool create(String name) {
+    public static RewardDrawPool create(String name, int cardsPerDraw, int missWeight) {
         RewardDrawPool rewardDrawPool = new RewardDrawPool();
         rewardDrawPool.name = name;
         rewardDrawPool.active = false;
+        rewardDrawPool.cardsPerDraw = cardsPerDraw;
+        rewardDrawPool.missWeight = missWeight;
         return rewardDrawPool;
     }
 
-    public void updateName(String name) {
+    public void updateConfiguration(String name, int cardsPerDraw, int missWeight) {
         this.name = name;
+        this.cardsPerDraw = cardsPerDraw;
+        this.missWeight = missWeight;
     }
 
     public void activate() {
@@ -55,5 +65,13 @@ public class RewardDrawPool extends BaseEntity {
 
     public boolean isActive() {
         return active;
+    }
+
+    public Integer getCardsPerDraw() {
+        return cardsPerDraw;
+    }
+
+    public Integer getMissWeight() {
+        return missWeight;
     }
 }

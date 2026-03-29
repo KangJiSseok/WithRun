@@ -15,7 +15,6 @@ import kr.withrun.was.domain.reward.repository.RewardDrawPoolRepository;
 import kr.withrun.was.domain.reward.repository.RewardItemRepository;
 import kr.withrun.was.global.exception.CustomException;
 import kr.withrun.was.global.response.ResponseCode;
-import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -29,7 +28,6 @@ import java.util.List;
 import java.util.Set;
 
 @Service
-@RequiredArgsConstructor
 public class RewardDrawPoolAdminService {
 
     private static final int MAX_NAME_LENGTH = 100;
@@ -39,11 +37,30 @@ public class RewardDrawPoolAdminService {
     private final RewardItemRepository rewardItemRepository;
     private final CloudFrontSignedUrlService cloudFrontSignedUrlService;
 
+    public RewardDrawPoolAdminService(
+            RewardDrawPoolRepository rewardDrawPoolRepository,
+            RewardDrawPoolItemRepository rewardDrawPoolItemRepository,
+            RewardItemRepository rewardItemRepository,
+            CloudFrontSignedUrlService cloudFrontSignedUrlService
+    ) {
+        this.rewardDrawPoolRepository = rewardDrawPoolRepository;
+        this.rewardDrawPoolItemRepository = rewardDrawPoolItemRepository;
+        this.rewardItemRepository = rewardItemRepository;
+        this.cloudFrontSignedUrlService = cloudFrontSignedUrlService;
+    }
+
     @Transactional
     public RewardDrawPoolResponse createRewardDrawPool(CreateRewardDrawPoolRequest request) {
-        validateRequest(request == null ? null : request.name(), request == null ? null : request.items());
+        validateRequest(
+                request == null ? null : request.name(),
+                request == null ? null : request.cardsPerDraw(),
+                request == null ? null : request.missWeight(),
+                request == null ? null : request.items()
+        );
 
-        RewardDrawPool rewardDrawPool = rewardDrawPoolRepository.save(RewardDrawPool.create(normalizeName(request.name())));
+        RewardDrawPool rewardDrawPool = rewardDrawPoolRepository.save(
+                RewardDrawPool.create(normalizeName(request.name()), request.cardsPerDraw(), request.missWeight())
+        );
         List<RewardDrawPoolItem> rewardDrawPoolItems = savePoolItems(rewardDrawPool, request.items());
 
         return toResponse(rewardDrawPool, rewardDrawPoolItems);
@@ -74,10 +91,15 @@ public class RewardDrawPoolAdminService {
 
     @Transactional
     public RewardDrawPoolResponse updateRewardDrawPool(Long rewardDrawPoolId, UpdateRewardDrawPoolRequest request) {
-        validateRequest(request == null ? null : request.name(), request == null ? null : request.items());
+        validateRequest(
+                request == null ? null : request.name(),
+                request == null ? null : request.cardsPerDraw(),
+                request == null ? null : request.missWeight(),
+                request == null ? null : request.items()
+        );
 
         RewardDrawPool rewardDrawPool = findRewardDrawPool(rewardDrawPoolId);
-        rewardDrawPool.updateName(normalizeName(request.name()));
+        rewardDrawPool.updateConfiguration(normalizeName(request.name()), request.cardsPerDraw(), request.missWeight());
 
         List<RewardDrawPoolItem> existingItems = loadPoolItems(rewardDrawPoolId);
         existingItems.forEach(RewardDrawPoolItem::delete);
@@ -135,6 +157,8 @@ public class RewardDrawPoolAdminService {
                 rewardDrawPool.getId(),
                 rewardDrawPool.getName(),
                 rewardDrawPool.isActive(),
+                rewardDrawPool.getCardsPerDraw(),
+                rewardDrawPool.getMissWeight(),
                 rewardDrawPoolItems.stream().map(this::toItemResponse).toList(),
                 rewardDrawPool.getCreatedAt(),
                 rewardDrawPool.getUpdatedAt()
@@ -152,8 +176,15 @@ public class RewardDrawPoolAdminService {
         );
     }
 
-    private void validateRequest(String name, List<RewardDrawPoolItemRequest> items) {
-        if (!StringUtils.hasText(name) || normalizeName(name).length() > MAX_NAME_LENGTH || items == null || items.isEmpty()) {
+    private void validateRequest(String name, Integer cardsPerDraw, Integer missWeight, List<RewardDrawPoolItemRequest> items) {
+        if (!StringUtils.hasText(name)
+                || normalizeName(name).length() > MAX_NAME_LENGTH
+                || cardsPerDraw == null
+                || cardsPerDraw <= 0
+                || missWeight == null
+                || missWeight < 0
+                || items == null
+                || items.isEmpty()) {
             throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
         }
 

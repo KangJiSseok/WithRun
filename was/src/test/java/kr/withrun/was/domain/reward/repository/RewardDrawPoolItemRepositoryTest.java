@@ -13,6 +13,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 import org.springframework.context.annotation.Import;
 
+import java.lang.reflect.Field;
 import java.util.List;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -46,8 +47,8 @@ class RewardDrawPoolItemRepositoryTest {
     @DisplayName("pool item 목록 조회는 특정 pool의 미삭제 item만 반환한다")
     @Test
     void findsPoolItemsByPoolIdExcludingDeletedRows() {
-        RewardDrawPool targetPool = rewardDrawPoolRepository.saveAndFlush(RewardDrawPool.create("Target Pool"));
-        RewardDrawPool otherPool = rewardDrawPoolRepository.saveAndFlush(RewardDrawPool.create("Other Pool"));
+        RewardDrawPool targetPool = rewardDrawPoolRepository.saveAndFlush(RewardDrawPool.create("Target Pool", 3, 40));
+        RewardDrawPool otherPool = rewardDrawPoolRepository.saveAndFlush(RewardDrawPool.create("Other Pool", 3, 40));
         RewardItem firstRewardItem = rewardItemRepository.saveAndFlush(rewardItem("First Reward", "reward-item/1.png", true));
         RewardItem secondRewardItem = rewardItemRepository.saveAndFlush(rewardItem("Second Reward", "reward-item/2.png", true));
         RewardItem thirdRewardItem = rewardItemRepository.saveAndFlush(rewardItem("Third Reward", "reward-item/3.png", true));
@@ -74,10 +75,38 @@ class RewardDrawPoolItemRepositoryTest {
     }
 
     private RewardItem rewardItem(String title, String imageUrl, boolean isActive) {
-        return RewardItem.builder()
-                .title(title)
-                .imageUrl(imageUrl)
-                .active(isActive)
-                .build();
+        RewardItem rewardItem = instantiate(RewardItem.class);
+        setField(rewardItem, "title", title);
+        setField(rewardItem, "imageUrl", imageUrl);
+        setField(rewardItem, "active", isActive);
+        return rewardItem;
+    }
+
+    private <T> T instantiate(Class<T> type) {
+        try {
+            var constructor = type.getDeclaredConstructor();
+            constructor.setAccessible(true);
+            return constructor.newInstance();
+        } catch (ReflectiveOperationException exception) {
+            throw new IllegalStateException("Failed to instantiate " + type.getSimpleName(), exception);
+        }
+    }
+
+    private void setField(Object target, String fieldName, Object value) {
+        Class<?> currentClass = target.getClass();
+        while (currentClass != null) {
+            try {
+                Field field = currentClass.getDeclaredField(fieldName);
+                field.setAccessible(true);
+                field.set(target, value);
+                return;
+            } catch (NoSuchFieldException exception) {
+                currentClass = currentClass.getSuperclass();
+            } catch (IllegalAccessException exception) {
+                throw new IllegalStateException("Failed to set field " + fieldName, exception);
+            }
+        }
+
+        throw new IllegalArgumentException("Field not found: " + fieldName);
     }
 }
