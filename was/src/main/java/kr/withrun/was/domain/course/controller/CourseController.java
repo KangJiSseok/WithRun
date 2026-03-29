@@ -156,9 +156,10 @@ public class CourseController {
     })
     @GetMapping("/nearby/ghost")
     public ResponseEntity<ApiResponse<NearbyGhostCoursesResponse>> findNearbyGhostCourses(
-            @Valid @ParameterObject @ModelAttribute NearbyGhostCoursesRequest request
+            @Valid @ParameterObject @ModelAttribute NearbyGhostCoursesRequest request,
+            @AuthenticationPrincipal AuthenticatedUser user
     ) {
-        return ApiResponse.successEntity(courseService.findNearbyGhostCourses(request));
+        return ApiResponse.successEntity(courseService.findNearbyGhostCourses(request, user));
     }
 
 

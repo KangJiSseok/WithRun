@@ -310,6 +310,8 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.items[0].difficulty.label").value("보통"))
                 .andExpect(jsonPath("$.data.items[0].courseTypes[0].data").value("RIVERSIDE"))
                 .andExpect(jsonPath("$.data.items[0].courseTypes[0].label").value("강변"))
+                .andExpect(jsonPath("$.data.items[0].isLiked").value(false))
+                .andExpect(jsonPath("$.data.items[0].isBookmarked").value(false))
                 .andExpect(jsonPath("$.data.page").value(0))
                 .andExpect(jsonPath("$.data.size").value(3))
                 .andExpect(jsonPath("$.data.totalElements").value(4))
@@ -356,6 +358,8 @@ class CourseControllerTest {
                         true,
                         12L,
                         3L,
+                        false,
+                        false,
                         "https://example.com/recommended.jpg"
                 )),
                 0,
@@ -384,6 +388,8 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.items[0].courseId").value(99L))
                 .andExpect(jsonPath("$.data.items[0].routeType").value(RouteType.OUT_AND_BACK.name()))
                 .andExpect(jsonPath("$.data.items[0].isRecommended").value(true))
+                .andExpect(jsonPath("$.data.items[0].isLiked").value(false))
+                .andExpect(jsonPath("$.data.items[0].isBookmarked").value(false))
                 .andExpect(jsonPath("$.data.totalElements").value(1))
                 .andExpect(jsonPath("$.data.hasNext").value(false));
 
@@ -797,7 +803,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()))
                 .andExpect(jsonPath("$.data[0].field").value(missingParameter));
 
-        then(courseService).should(never()).findNearbyGhostCourses(any());
+        then(courseService).should(never()).findNearbyGhostCourses(any(), any());
     }
 
     @DisplayName("주변 고스트 코스 조회에서 위도 또는 경도가 범위를 벗어나면 잘못된 입력 응답을 반환한다")
@@ -819,7 +825,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()))
                 .andExpect(jsonPath("$.data[0].field").value(parameterName));
 
-        then(courseService).should(never()).findNearbyGhostCourses(any());
+        then(courseService).should(never()).findNearbyGhostCourses(any(), any());
     }
 
     @DisplayName("주변 고스트 코스 조회에서 pageSize가 유효하지 않으면 잘못된 입력 응답을 반환한다")
@@ -841,7 +847,7 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.success").value(false))
                 .andExpect(jsonPath("$.code").value(ResponseCode.INVALID_INPUT_VALUE.getCode()));
 
-        then(courseService).should(never()).findNearbyGhostCourses(any());
+        then(courseService).should(never()).findNearbyGhostCourses(any(), any());
     }
 
     @DisplayName("주변 고스트 코스 응답을 성공 응답 형식으로 감싼다")
@@ -883,6 +889,8 @@ class CourseControllerTest {
                         false,
                         14L,
                         8L,
+                        false,
+                        false,
                         "https://example.com/course.jpg"
                 )),
                 0,
@@ -891,7 +899,7 @@ class CourseControllerTest {
                 2,
                 true
         );
-        given(courseService.findNearbyGhostCourses(request)).willReturn(response);
+        given(courseService.findNearbyGhostCourses(request, null)).willReturn(response);
 
         mockMvc.perform(nearbyGhostCoursesRequest(
                         "37.5665",
@@ -918,13 +926,15 @@ class CourseControllerTest {
                 .andExpect(jsonPath("$.data.items[0].courseTypes[0].label").value("강변"))
                 .andExpect(jsonPath("$.data.items[0].likeCount").value(14L))
                 .andExpect(jsonPath("$.data.items[0].bookmarkCount").value(8L))
+                .andExpect(jsonPath("$.data.items[0].isLiked").value(false))
+                .andExpect(jsonPath("$.data.items[0].isBookmarked").value(false))
                 .andExpect(jsonPath("$.data.page").value(0))
                 .andExpect(jsonPath("$.data.size").value(3))
                 .andExpect(jsonPath("$.data.totalElements").value(4))
                 .andExpect(jsonPath("$.data.totalPages").value(2))
                 .andExpect(jsonPath("$.data.hasNext").value(true));
 
-        then(courseService).should().findNearbyGhostCourses(request);
+        then(courseService).should().findNearbyGhostCourses(request, null);
     }
 
     @DisplayName("주변 고스트 코스 조회에서 선호 거리 목록과 pageSize를 요청 DTO에 바인딩한다")
@@ -946,7 +956,7 @@ class CourseControllerTest {
                 2
         );
         NearbyGhostCoursesResponse response = new NearbyGhostCoursesResponse(List.of(), 1, 2, 0L, 0, false);
-        given(courseService.findNearbyGhostCourses(request)).willReturn(response);
+        given(courseService.findNearbyGhostCourses(request, null)).willReturn(response);
 
         mockMvc.perform(nearbyGhostCoursesRequest(
                         "37.5665",
@@ -962,7 +972,46 @@ class CourseControllerTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.success").value(true));
 
-        then(courseService).should().findNearbyGhostCourses(request);
+        then(courseService).should().findNearbyGhostCourses(request, null);
+    }
+
+    @DisplayName("주변 고스트 코스 조회는 principal user id 를 service 로 전달한다")
+    @Test
+    void forwardsPrincipalToNearbyGhostCoursesService() throws Exception {
+        long userId = 77L;
+        AuthenticatedUser user = new AuthenticatedUser(userId, "google", true);
+        NearbyGhostCoursesRequest request = new NearbyGhostCoursesRequest(
+                37.5665,
+                126.9780,
+                37.5700,
+                126.9820,
+                3000,
+                List.of(
+                        new PreferredDistanceRange(1, 3000),
+                        new PreferredDistanceRange(3001, 5000)
+                ),
+                NearbyGhostCourseSortBy.DISTANCE,
+                1,
+                2
+        );
+        NearbyGhostCoursesResponse response = new NearbyGhostCoursesResponse(List.of(), 1, 2, 0L, 0, false);
+        given(courseService.findNearbyGhostCourses(request, user)).willReturn(response);
+
+        mockMvc.perform(nearbyGhostCoursesRequest(
+                        "37.5665",
+                        "126.9780",
+                        "37.5700",
+                        "126.9820",
+                        "3000",
+                        new String[][]{{"1", "3000"}, {"3001", "5000"}},
+                        "DISTANCE",
+                        "1",
+                        "2"
+                ).with(authenticated(userId)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true));
+
+        then(courseService).should().findNearbyGhostCourses(request, user);
     }
 
     private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder getNearbyCoursesWithout(

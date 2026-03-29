@@ -1,5 +1,8 @@
 package kr.withrun.was.domain.course.service;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import kr.withrun.was.domain.auth.security.AuthenticatedUser;
 import kr.withrun.was.domain.course.dto.CourseDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostDetailResponse;
 import kr.withrun.was.domain.course.dto.CourseGhostLeaderboardRequest;
@@ -23,7 +26,9 @@ import kr.withrun.was.domain.course.repository.CourseReviewRepository;
 import kr.withrun.was.domain.course.repository.CourseTypeMapRepository;
 import kr.withrun.was.domain.course.repository.query.dto.CourseGhostLeaderboardRankRow;
 import kr.withrun.was.domain.course.repository.query.dto.NearbyCoursePageRow;
+import kr.withrun.was.domain.course.repository.query.dto.NearbyRecommendationCandidateRow;
 import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
+import kr.withrun.was.domain.course.service.recommendation.CourseRecommendationScore;
 import kr.withrun.was.domain.course.service.recommendation.HybridRecommendationService;
 import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.CourseType;
@@ -60,6 +65,8 @@ import static org.mockito.Mockito.when;
 @ExtendWith(MockitoExtension.class)
 @DisplayName("코스 서비스")
 class CourseServiceTest {
+
+    private static final ObjectMapper OBJECT_MAPPER = new ObjectMapper();
 
     @Mock
     private CourseRepository courseRepository;
@@ -478,6 +485,7 @@ class CourseServiceTest {
 
     @Test
     void returnsNearbyCoursesWithOffsetPagination() {
+        AuthenticatedUser user = new AuthenticatedUser(77L, "google", true);
         NearbyCoursesRequest request = new NearbyCoursesRequest(
                 37.5665,
                 126.9780,
@@ -531,8 +539,13 @@ class CourseServiceTest {
         when(courseTypeMapRepository.findCourseTypesByCourseId(13L)).thenReturn(List.of(CourseType.TRACK));
         when(courseLikeRepository.countByCourseIds(List.of(13L))).thenReturn(java.util.Map.of(13L, 6L));
         when(courseBookmarkRepository.countByCourseIds(List.of(13L))).thenReturn(java.util.Map.of(13L, 1L));
+        when(courseLikeRepository.findByCourseIdAndUserId(13L, user.userId()))
+                .thenReturn(Optional.of(org.mockito.Mockito.mock(kr.withrun.was.domain.course.entity.CourseLike.class)));
+        when(courseBookmarkRepository.findByCourseIdAndUserId(13L, user.userId()))
+                .thenReturn(Optional.empty());
 
-        NearbyCoursesResponse response = courseService.findNearbyCourses(request, null);
+        NearbyCoursesResponse response = courseService.findNearbyCourses(request, user);
+        JsonNode itemJson = OBJECT_MAPPER.valueToTree(response.items().getFirst());
 
         assertThat(response.page()).isEqualTo(1);
         assertThat(response.size()).isEqualTo(2);
@@ -546,10 +559,93 @@ class CourseServiceTest {
         assertThat(response.items().getFirst().likeCount()).isEqualTo(6L);
         assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(1L);
         assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("signed::snapshot-13");
+        assertThat(itemJson.has("isLiked")).isTrue();
+        assertThat(itemJson.get("isLiked").booleanValue()).isTrue();
+        assertThat(itemJson.has("isBookmarked")).isTrue();
+        assertThat(itemJson.get("isBookmarked").booleanValue()).isFalse();
+    }
+
+    @Test
+    void returnsRecommendedNearbyCoursesIncludingUserInteractionFlags() {
+        AuthenticatedUser user = new AuthenticatedUser(88L, "google", true);
+        NearbyCoursesRequest request = new NearbyCoursesRequest(
+                37.5665,
+                126.9780,
+                37.5700,
+                126.9820,
+                3000,
+                List.of(new PreferredDistanceRange(1, 5000)),
+                NearbyCourseSortBy.DISTANCE,
+                0,
+                3
+        );
+        List<NearbyRecommendationCandidateRow> rows = List.of(
+                new NearbyRecommendationCandidateRow(
+                        31L,
+                        "Recommended Course 31",
+                        CourseStatus.OFFICIAL,
+                        RouteType.LOOP,
+                        4500,
+                        110,
+                        37.5668,
+                        126.9782,
+                        37.5712,
+                        126.9832,
+                        "snapshot-31",
+                        new Coordinates(List.of(37.5668, 37.5712), List.of(126.9782, 126.9832), List.of(12.0, 14.0)),
+                        Difficulty.MEDIUM,
+                        CourseType.RIVERSIDE,
+                        200,
+                        150
+                )
+        );
+
+        when(courseRepository.findNearbyRecommendationCandidates(
+                request.preferredDistanceMs(),
+                request.targetLatitude(),
+                request.targetLongitude(),
+                request.latitude(),
+                request.longitude(),
+                request.radiusM()
+        )).thenReturn(rows);
+        when(hybridRecommendationService.scoreNearbyCourses(
+                user.userId(),
+                request.radiusM(),
+                List.of(new kr.withrun.was.domain.course.service.recommendation.NearbyRecommendationInput(
+                        31L,
+                        4500,
+                        150,
+                        Difficulty.MEDIUM,
+                        List.of(CourseType.RIVERSIDE)
+                ))
+        )).thenReturn(java.util.Map.of(
+                31L,
+                new CourseRecommendationScore(31L, 0.3, 0.4, 0.5, 0.6, 0.7, 0.9)
+        ));
+        when(courseLikeRepository.countByCourseIds(List.of(31L))).thenReturn(java.util.Map.of(31L, 9L));
+        when(courseBookmarkRepository.countByCourseIds(List.of(31L))).thenReturn(java.util.Map.of(31L, 2L));
+        when(courseLikeRepository.findByCourseIdAndUserId(31L, user.userId()))
+                .thenReturn(Optional.empty());
+        when(courseBookmarkRepository.findByCourseIdAndUserId(31L, user.userId()))
+                .thenReturn(Optional.of(org.mockito.Mockito.mock(kr.withrun.was.domain.course.entity.CourseBookmark.class)));
+
+        NearbyCoursesResponse response = courseService.findRecommendedNearbyCourses(request, user);
+        JsonNode itemJson = OBJECT_MAPPER.valueToTree(response.items().getFirst());
+
+        assertThat(response.items()).hasSize(1);
+        assertThat(response.items().getFirst().courseId()).isEqualTo(31L);
+        assertThat(response.items().getFirst().isRecommended()).isTrue();
+        assertThat(response.items().getFirst().likeCount()).isEqualTo(9L);
+        assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(2L);
+        assertThat(itemJson.has("isLiked")).isTrue();
+        assertThat(itemJson.get("isLiked").booleanValue()).isFalse();
+        assertThat(itemJson.has("isBookmarked")).isTrue();
+        assertThat(itemJson.get("isBookmarked").booleanValue()).isTrue();
     }
 
     @Test
     void returnsNearbyGhostCoursesWithOffsetPagination() {
+        AuthenticatedUser user = new AuthenticatedUser(55L, "google", true);
         NearbyGhostCoursesRequest request = new NearbyGhostCoursesRequest(
                 37.5665,
                 126.9780,
@@ -617,8 +713,17 @@ class CourseServiceTest {
         when(courseTypeMapRepository.findCourseTypesByCourseId(22L)).thenReturn(List.of(CourseType.PARK));
         when(courseLikeRepository.countByCourseIds(List.of(21L, 22L))).thenReturn(java.util.Map.of(21L, 5L, 22L, 7L));
         when(courseBookmarkRepository.countByCourseIds(List.of(21L, 22L))).thenReturn(java.util.Map.of(21L, 1L, 22L, 3L));
+        when(courseLikeRepository.findByCourseIdAndUserId(21L, user.userId()))
+                .thenReturn(Optional.of(org.mockito.Mockito.mock(kr.withrun.was.domain.course.entity.CourseLike.class)));
+        when(courseLikeRepository.findByCourseIdAndUserId(22L, user.userId()))
+                .thenReturn(Optional.empty());
+        when(courseBookmarkRepository.findByCourseIdAndUserId(21L, user.userId()))
+                .thenReturn(Optional.empty());
+        when(courseBookmarkRepository.findByCourseIdAndUserId(22L, user.userId()))
+                .thenReturn(Optional.empty());
 
-        NearbyGhostCoursesResponse response = courseService.findNearbyGhostCourses(request);
+        NearbyGhostCoursesResponse response = courseService.findNearbyGhostCourses(request, user);
+        JsonNode itemJson = OBJECT_MAPPER.valueToTree(response.items().getFirst());
 
         assertThat(response.page()).isEqualTo(0);
         assertThat(response.size()).isEqualTo(2);
@@ -631,6 +736,10 @@ class CourseServiceTest {
         assertThat(response.items().getFirst().likeCount()).isEqualTo(5L);
         assertThat(response.items().getFirst().bookmarkCount()).isEqualTo(1L);
         assertThat(response.items().getFirst().snapshotImageUrl()).isEqualTo("signed::snapshot-21");
+        assertThat(itemJson.has("isLiked")).isTrue();
+        assertThat(itemJson.get("isLiked").booleanValue()).isTrue();
+        assertThat(itemJson.has("isBookmarked")).isTrue();
+        assertThat(itemJson.get("isBookmarked").booleanValue()).isFalse();
     }
 
     private Course course(Long id) {
