@@ -1,0 +1,95 @@
+package kr.withrun.was.domain.reward.repository;
+
+import jakarta.persistence.EntityManager;
+import kr.withrun.was.domain.reward.entity.RewardItem;
+import kr.withrun.was.global.config.JpaAuditingConfig;
+import kr.withrun.was.global.config.QuerydslConfig;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
+
+import static org.assertj.core.api.Assertions.assertThat;
+
+@DataJpaTest(properties = {
+        "spring.config.import=",
+        "spring.cloud.aws.parameterstore.enabled=false",
+        "spring.datasource.url=jdbc:h2:mem:reward-item-repository;MODE=PostgreSQL;DB_CLOSE_DELAY=-1;DATABASE_TO_LOWER=TRUE",
+        "spring.datasource.driver-class-name=org.h2.Driver",
+        "spring.datasource.username=sa",
+        "spring.datasource.password=",
+        "spring.jpa.hibernate.ddl-auto=create-drop"
+})
+@Import({JpaAuditingConfig.class, QuerydslConfig.class})
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@DisplayName("리워드 아이템 리포지토리")
+class RewardItemRepositoryTest {
+
+    @Autowired
+    private RewardItemRepository rewardItemRepository;
+
+    @Autowired
+    private EntityManager entityManager;
+
+    @DisplayName("활성 아이템만 필터링해 조회할 수 있다")
+    @Test
+    void findsActiveRewardItemsOnly() {
+        persistRewardItem("Active Reward", "reward-item/1.png", true, false);
+        persistRewardItem("Inactive Reward", "reward-item/2.png", false, false);
+        entityManager.flush();
+        entityManager.clear();
+
+        var page = rewardItemRepository.findAllByDeletedAtIsNullAndActive(
+                true,
+                PageRequest.of(0, 20)
+        );
+
+        assertThat(page.getContent())
+                .extracting(RewardItem::getTitle)
+                .containsExactly("Active Reward");
+    }
+
+    @DisplayName("soft delete 된 아이템은 기본 조회에서 제외된다")
+    @Test
+    void excludesSoftDeletedRewardItemFromDefaultQueries() {
+        RewardItem rewardItem = persistRewardItem("Deleted Reward", "reward-item/3.png", true, true);
+        entityManager.flush();
+        entityManager.clear();
+
+        var page = rewardItemRepository.findAllByDeletedAtIsNull(PageRequest.of(0, 20));
+
+        assertThat(page.getContent()).isEmpty();
+        assertThat(rewardItemRepository.findByIdAndDeletedAtIsNull(rewardItem.getId())).isEmpty();
+    }
+
+    @DisplayName("생성 시 isActive=true 기본값이 적용된다")
+    @Test
+    void appliesActiveDefaultWhenRewardItemIsCreated() {
+        RewardItem rewardItem = rewardItemRepository.save(
+                RewardItem.builder()
+                        .title("Default Active Reward")
+                        .imageUrl("reward-item/4.png")
+                        .build()
+        );
+
+        assertThat(rewardItem.isActive()).isTrue();
+    }
+
+    private RewardItem persistRewardItem(String title, String imageUrl, boolean isActive, boolean deleted) {
+        RewardItem rewardItem = RewardItem.builder()
+                .title(title)
+                .imageUrl(imageUrl)
+                .active(isActive)
+                .build();
+        entityManager.persist(rewardItem);
+
+        if (deleted) {
+            rewardItem.delete();
+        }
+
+        return rewardItem;
+    }
+}
