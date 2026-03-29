@@ -1,5 +1,6 @@
 import type { RefObject } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { MapPin } from 'lucide-react';
 import { useInfiniteScroll } from '@/shared/hooks';
 import { formatDateLabel, formatStartTime } from '@/shared/utils';
 import type { RunningHistoryItem } from '@/apis/runningSessions';
@@ -11,6 +12,18 @@ const TIME_SLOT_LABEL: Record<string, string> = {
   MORNING: '오전',
   AFTERNOON: '오후',
   EVENING: '저녁',
+};
+
+const RUNNING_MODE_LABEL: Record<string, string> = {
+  FREE: '자유',
+  COURSE: '일반',
+  GHOST: '고스트',
+};
+
+const GHOST_RESULT_STYLE: Record<string, { label: string; className: string }> = {
+  WIN:  { label: '승리', className: 'bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))]' },
+  LOSE: { label: '패배', className: 'bg-[hsl(var(--error)/0.15)] text-[hsl(var(--error))]' },
+  DRAW: { label: '무승부', className: 'bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]' },
 };
 
 // 날짜 순서를 유지하면서 날짜별로 그룹핑
@@ -83,7 +96,9 @@ function SessionCard({ session, scrollRef }: { session: RunningHistoryItem; scro
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full" />
+          <div className="w-full h-full flex items-center justify-center text-[hsl(var(--text-secondary))]">
+            <MapPin size={20} />
+          </div>
         )}
       </div>
 
@@ -100,12 +115,24 @@ function SessionCard({ session, scrollRef }: { session: RunningHistoryItem; scro
         </div>
 
         {/* 거리 • 시간 • 페이스 */}
-        <div className="flex items-center body-r text-[hsl(var(--text-secondary))]">
-          <span className="flex-1 text-center">{(session.distanceM / 1000).toFixed(2)} km</span>
-          <span className="flex-shrink-0 px-[var(--space-2)]">•</span>
-          <span className="flex-1 text-center">{formatDuration(session.durationSec)}</span>
-          <span className="flex-shrink-0 px-[var(--space-2)]">•</span>
-          <span className="flex-1 text-center">{formatPace(session.distanceM, session.durationSec)}</span>
+        <div className="flex items-center justify-between body-r text-[hsl(var(--text-secondary))]">
+          <span>{(session.distanceM / 1000).toFixed(2)} km</span>
+          <span>•</span>
+          <span>{formatDuration(session.durationSec)}</span>
+          <span>•</span>
+          <span>{formatPace(session.distanceM, session.durationSec)}</span>
+        </div>
+
+        {/* 모드 태그 + 고스트런 결과 */}
+        <div className="flex gap-[var(--space-1)]">
+          <span className="caption-r px-[var(--space-2)] py-0.5 rounded-full bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]">
+            {RUNNING_MODE_LABEL[session.runningMode] ?? session.runningMode}
+          </span>
+          {session.ghostResultStatus && GHOST_RESULT_STYLE[session.ghostResultStatus] && (
+            <span className={`caption-r px-[var(--space-2)] py-0.5 rounded-full ${GHOST_RESULT_STYLE[session.ghostResultStatus].className}`}>
+              {GHOST_RESULT_STYLE[session.ghostResultStatus].label}
+            </span>
+          )}
         </div>
       </div>
     </button>

@@ -10,7 +10,7 @@ export function StreakCard({ currentStreakDays, longestStreakDays, isLoading }: 
   return (
     <div className="flex flex-col gap-[var(--space-2)]">
       <p className="body-b text-[hsl(var(--text-primary))]">연속 러닝 기록</p>
-      <div className="flex items-center justify-center gap-[var(--space-3)] bg-[hsl(var(--surface-subtle))] rounded-[var(--radius-lg)] py-[var(--space-4)]">
+      <div className="flex items-center justify-center gap-[var(--space-3)] bg-[hsl(var(--surface-default))] border border-[hsl(var(--border-default))] rounded-[var(--radius-lg)] py-[var(--space-4)]">
         <div className="flex flex-col items-center">
           <span className="h4-b text-[hsl(var(--text-primary))]">
             {isLoading ? '--' : (currentStreakDays ?? '--')}

@@ -18,7 +18,7 @@ export type CalendarSummaryData = {
   calculatedDate: string;
 };
 
-// GET /calendars/{userId} 응답 - 날짜별 요약 항목
+// GET /calendars/me 응답 - 날짜별 요약 항목
 // 활동이 있는 날짜만 포함됨 (운동 기록 없는 날짜는 배열에 포함되지 않음)
 export type DailyCalendarData = {
   calendarDate: string;
@@ -30,7 +30,7 @@ export type DailyCalendarData = {
   dailyGhostRunCount: number;
 };
 
-// GET /calendars/{userId}?year=&month= 응답
+// GET /calendars/me?year=&month= 응답
 export type MonthlyCalendarData = {
   year: number;
   month: number;
