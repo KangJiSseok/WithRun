@@ -31,6 +31,7 @@ import java.util.List;
 public class RewardGachaDrawService {
 
     private static final int DRAW_COST = 1;
+    private static final int MAX_CARDS_PER_DRAW = 3;
 
     private final RewardDrawPoolRepository rewardDrawPoolRepository;
     private final RewardDrawPoolItemRepository rewardDrawPoolItemRepository;
@@ -78,14 +79,15 @@ public class RewardGachaDrawService {
                 .orElseThrow(() -> new CustomException(ResponseCode.REWARD_DRAW_POOL_NOT_FOUND));
         List<RewardDrawPoolItem> rewardDrawPoolItems = rewardDrawPoolItemRepository
                 .findWithRewardItemByRewardDrawPoolIdAndDeletedAtIsNullOrderByIdAsc(rewardDrawPoolId);
+        int cardsPerDraw = Math.min(rewardDrawPool.getCardsPerDraw(), MAX_CARDS_PER_DRAW);
 
         User user = userRepository.getReferenceById(userId);
         RewardGachaDraw rewardGachaDraw = rewardGachaDrawRepository.save(
-                RewardGachaDraw.create(user, rewardDrawPool, rewardDrawPool.getCardsPerDraw())
+                RewardGachaDraw.create(user, rewardDrawPool, cardsPerDraw)
         );
 
         List<RewardGachaDrawCard> savedCards = rewardGachaDrawCardRepository.saveAll(
-                drawCards(rewardGachaDraw, rewardDrawPool, rewardDrawPoolItems)
+                drawCards(rewardGachaDraw, rewardDrawPool, rewardDrawPoolItems, cardsPerDraw)
         );
 
         rewardPointHistoryRepository.saveAndFlush(
@@ -113,7 +115,8 @@ public class RewardGachaDrawService {
     private List<RewardGachaDrawCard> drawCards(
             RewardGachaDraw rewardGachaDraw,
             RewardDrawPool rewardDrawPool,
-            List<RewardDrawPoolItem> rewardDrawPoolItems
+            List<RewardDrawPoolItem> rewardDrawPoolItems,
+            int cardsPerDraw
     ) {
         int totalWeight = rewardDrawPool.getMissWeight()
                 + rewardDrawPoolItems.stream().mapToInt(RewardDrawPoolItem::getWeight).sum();
@@ -122,7 +125,7 @@ public class RewardGachaDrawService {
         }
 
         List<RewardGachaDrawCard> cards = new ArrayList<>();
-        for (int cardIndex = 1; cardIndex <= rewardDrawPool.getCardsPerDraw(); cardIndex++) {
+        for (int cardIndex = 1; cardIndex <= cardsPerDraw; cardIndex++) {
             int drawValue = rewardDrawRandomGenerator.nextInt(totalWeight);
             cards.add(selectCard(rewardGachaDraw, rewardDrawPool, rewardDrawPoolItems, cardIndex, drawValue));
         }

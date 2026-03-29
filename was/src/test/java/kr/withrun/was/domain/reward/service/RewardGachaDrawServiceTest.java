@@ -146,6 +146,61 @@ class RewardGachaDrawServiceTest {
         verify(rewardPointBalanceRepository).decreaseBalanceIfEnough(1L, 1);
     }
 
+    @DisplayName("활성 pool 설정이 3장을 넘겨도 draw 는 최대 3장만 반환하고 저장한다")
+    @Test
+    void capsDrawToAtMostThreeCards() {
+        User user = user(1L);
+        RewardItem missRewardItem = rewardItem(200L, "Miss Reward", "reward-item/miss.png");
+        RewardDrawPool rewardDrawPool = rewardDrawPool(10L, "Launch Pool", 5, 40, true, missRewardItem);
+        RewardItem rewardItem = rewardItem(100L, "Reward A", "reward-item/1.png");
+        RewardDrawPoolItem rewardDrawPoolItem = rewardDrawPoolItem(1000L, rewardDrawPool, rewardItem, 60);
+
+        when(rewardDrawPoolRepository.findByActiveTrueAndDeletedAtIsNull()).thenReturn(Optional.of(rewardDrawPool));
+        when(rewardDrawPoolRepository.findWithMissRewardItemByIdAndDeletedAtIsNull(10L))
+                .thenReturn(Optional.of(rewardDrawPool));
+        when(rewardDrawPoolItemRepository.findWithRewardItemByRewardDrawPoolIdAndDeletedAtIsNullOrderByIdAsc(10L))
+                .thenReturn(List.of(rewardDrawPoolItem));
+        when(rewardPointBalanceRepository.decreaseBalanceIfEnough(1L, 1)).thenReturn(1);
+        when(rewardPointBalanceRepository.findByIdAndDeletedAtIsNull(1L))
+                .thenReturn(Optional.of(rewardPointBalance(1L, 6)));
+        when(userRepository.getReferenceById(1L)).thenReturn(user);
+        when(cloudFrontSignedUrlService.generateSignedUrl("reward-item/1.png")).thenReturn("signed::reward-item/1.png");
+        when(cloudFrontSignedUrlService.generateSignedUrl("reward-item/miss.png")).thenReturn("signed::reward-item/miss.png");
+        when(rewardDrawRandomGenerator.nextInt(100)).thenReturn(40, 0, 40);
+        when(rewardGachaDrawRepository.save(any(RewardGachaDraw.class))).thenAnswer(invocation -> {
+            RewardGachaDraw rewardGachaDraw = invocation.getArgument(0);
+            setField(rewardGachaDraw, "id", 500L);
+            setField(rewardGachaDraw, "createdAt", LocalDateTime.of(2026, 3, 29, 21, 0));
+            setField(rewardGachaDraw, "updatedAt", LocalDateTime.of(2026, 3, 29, 21, 0));
+            return rewardGachaDraw;
+        });
+        when(rewardGachaDrawCardRepository.saveAll(any())).thenAnswer(invocation -> {
+            @SuppressWarnings("unchecked")
+            List<RewardGachaDrawCard> cards = invocation.getArgument(0);
+            setField(cards.get(0), "id", 700L);
+            setField(cards.get(1), "id", 701L);
+            setField(cards.get(2), "id", 702L);
+            return cards;
+        });
+
+        RewardGachaDrawResponse response = rewardGachaDrawService.draw(1L);
+
+        ArgumentCaptor<RewardGachaDraw> drawCaptor = ArgumentCaptor.forClass(RewardGachaDraw.class);
+        verify(rewardGachaDrawRepository).save(drawCaptor.capture());
+        assertThat(drawCaptor.getValue().getCardsPerDraw()).isEqualTo(3);
+
+        ArgumentCaptor<List<RewardGachaDrawCard>> cardsCaptor = ArgumentCaptor.forClass(List.class);
+        verify(rewardGachaDrawCardRepository).saveAll(cardsCaptor.capture());
+        assertThat(cardsCaptor.getValue()).hasSize(3);
+        assertThat(cardsCaptor.getValue())
+                .extracting(RewardGachaDrawCard::getCardIndex)
+                .containsExactly(1, 2, 3);
+
+        assertThat(response.cards()).hasSize(3);
+        assertThat(response.cards()).extracting(card -> card.cardType().name())
+                .containsExactly("REWARD", "MISS", "REWARD");
+    }
+
     @DisplayName("현재 포인트가 부족하면 draw 를 실행하지 않는다")
     @Test
     void throwsWhenRewardPointIsInsufficient() {

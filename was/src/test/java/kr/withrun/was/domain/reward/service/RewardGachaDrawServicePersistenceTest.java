@@ -4,6 +4,7 @@ import jakarta.persistence.EntityManager;
 import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
 import kr.withrun.was.domain.reward.dto.RewardGachaDrawResponse;
 import kr.withrun.was.domain.reward.entity.RewardDrawPool;
+import kr.withrun.was.domain.reward.entity.RewardGachaDraw;
 import kr.withrun.was.domain.reward.entity.RewardPointBalance;
 import kr.withrun.was.domain.reward.entity.RewardItem;
 import kr.withrun.was.domain.reward.repository.RewardDrawPoolItemRepository;
@@ -127,6 +128,53 @@ class RewardGachaDrawServicePersistenceTest {
                 .extracting(RewardPointBalance::getCurrentBalance)
                 .isEqualTo(4);
         assertThat(rewardDrawPoolItemRepository.findAll()).isEmpty();
+    }
+
+    @DisplayName("활성 pool 설정이 3장을 넘겨도 draw 결과와 저장 레코드는 최대 3장으로 제한된다")
+    @Test
+    void drawCapsPersistedCardsPerDrawToThree() {
+        User user = userRepository.saveAndFlush(User.createPendingSocialUser("capped-draw-user"));
+
+        RewardPointBalance rewardPointBalance = RewardPointBalance.create(user);
+        entityManager.persist(rewardPointBalance);
+        entityManager.flush();
+        entityManager.createNativeQuery("update reward_point_balances set current_balance = 5 where user_id = :userId")
+                .setParameter("userId", user.getId())
+                .executeUpdate();
+
+        RewardItem missRewardItem = rewardItemRepository.saveAndFlush(
+                RewardItem.builder()
+                        .title("Miss Reward")
+                        .imageUrl("reward-item/miss.png")
+                        .active(true)
+                        .build()
+        );
+
+        RewardDrawPool rewardDrawPool = rewardDrawPoolRepository.saveAndFlush(
+                RewardDrawPool.create("Launch Pool", 5, 100, missRewardItem)
+        );
+        rewardDrawPool.activate();
+
+        entityManager.flush();
+        entityManager.clear();
+
+        RewardGachaDrawResponse response = rewardGachaDrawService.draw(user.getId());
+
+        entityManager.flush();
+        entityManager.clear();
+
+        RewardGachaDraw persistedDraw = rewardGachaDrawRepository.findAll().getFirst();
+
+        assertThat(response.rewardGachaDrawId()).isNotNull();
+        assertThat(response.cards()).hasSize(3);
+        assertThat(persistedDraw.getCardsPerDraw()).isEqualTo(3);
+        assertThat(rewardGachaDrawRepository.findAll()).hasSize(1);
+        assertThat(rewardGachaDrawCardRepository.findAll()).hasSize(3);
+        assertThat(rewardPointHistoryRepository.findAll()).hasSize(1);
+        assertThat(rewardPointBalanceRepository.findByIdAndDeletedAtIsNull(user.getId()))
+                .get()
+                .extracting(RewardPointBalance::getCurrentBalance)
+                .isEqualTo(4);
     }
 
     @TestConfiguration
