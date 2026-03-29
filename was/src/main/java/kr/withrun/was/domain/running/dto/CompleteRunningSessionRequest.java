@@ -58,9 +58,8 @@ public record CompleteRunningSessionRequest(
         @PositiveOrZero
         Integer elevationGainM,
 
-        @Schema(description = "고스트 러닝 거리 차이(m). 고스트 모드가 아니면 0 권장", example = "32", minimum = "0", requiredMode = Schema.RequiredMode.REQUIRED)
+        @Schema(description = "고스트 러닝 거리 차이(m). 음수/양수 모두 허용하며 고스트 모드가 아니면 0 권장", example = "-32", requiredMode = Schema.RequiredMode.REQUIRED)
         @NotNull
-        @PositiveOrZero
         Integer distanceGapM,
 
         @Schema(description = "GPS 샘플 목록", requiredMode = Schema.RequiredMode.REQUIRED)

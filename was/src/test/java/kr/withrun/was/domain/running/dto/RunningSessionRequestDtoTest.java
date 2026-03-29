@@ -111,6 +111,28 @@ class RunningSessionRequestDtoTest {
         assertThat(validator.validate(request)).isEmpty();
     }
 
+    @DisplayName("세션 종료 요청의 distanceGapM 은 음수도 허용한다")
+    @Test
+    void acceptsNegativeDistanceGapM() {
+        CompleteRunningSessionRequest request = new CompleteRunningSessionRequest(
+                RunningSessionCompleteState.SUCCESS,
+                5320,
+                328,
+                37.5701,
+                126.9812,
+                2.92,
+                1925,
+                362,
+                46,
+                -32,
+                List.of(),
+                List.of(),
+                List.of()
+        );
+
+        assertThat(validator.validate(request)).isEmpty();
+    }
+
     private String[] componentNamesOf(Class<?> type) {
         RecordComponent[] components = type.getRecordComponents();
         assertThat(components).isNotNull();
