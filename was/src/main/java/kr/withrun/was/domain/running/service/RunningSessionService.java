@@ -339,6 +339,10 @@ public class RunningSessionService {
             return;
         }
 
+        if (runningSession.getCompleteState() != RunningSessionCompleteState.SUCCESS) {
+            return;
+        }
+
         Difficulty difficulty = resolveGhostDifficulty(runningSession, runningSession.getGhostTargetRunningSession());
         int point = ghostRunningResultService.calculateGhostRunningPoint(runningSession.getDurationSec(), difficulty);
         upsertCourseGhostLeaderboard(runningSession, point);
