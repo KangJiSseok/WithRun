@@ -51,6 +51,7 @@ export type CreateRunningSessionResponse = {
   runningSessionId: number;
   mode: RunningMode;
   courseId: number | null;
+  navigationBundleUrl: string | null;
   ghostTargetRunningSessionId: number | null;
   ghostTargetGpsSamples: GpsSample[] | null;
   distanceM: number;
