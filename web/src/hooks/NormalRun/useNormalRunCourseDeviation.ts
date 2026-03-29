@@ -26,12 +26,15 @@ interface UseNormalRunCourseDeviationParams {
   courseCoordinates: CoordinatePoint[];
   isPaused: boolean;
   onForceStop: () => void;
+  /** 마지막 방문 체크포인트 이후 구간만 이탈 감지에 사용 */
+  lastCheckpointCoordIdx?: number;
 }
 
 export function useNormalRunCourseDeviation({
   courseCoordinates,
   isPaused,
   onForceStop,
+  lastCheckpointCoordIdx = 0,
 }: UseNormalRunCourseDeviationParams): {
   isDeviating: boolean;
   deviationSec: number;
@@ -55,12 +58,16 @@ export function useNormalRunCourseDeviation({
   useEffect(() => {
     if (!gpsLocation) return;
 
-    const dist = pointToPolylineM(gpsLocation.latitude, gpsLocation.longitude, courseCoordinates);
+    // 마지막 방문 체크포인트 이후 구간만 기준으로 이탈 감지
+    const activeCourse = lastCheckpointCoordIdx > 0
+      ? courseCoordinates.slice(lastCheckpointCoordIdx)
+      : courseCoordinates;
+    const dist = pointToPolylineM(gpsLocation.latitude, gpsLocation.longitude, activeCourse);
     const deviating = dist > DEVIATION_THRESHOLD_M;
 
     // nearest는 업데이터 밖에서 미리 계산 (순수 함수 유지)
     const nearest = deviating
-      ? nearestPointOnPolyline(gpsLocation.latitude, gpsLocation.longitude, courseCoordinates)
+      ? nearestPointOnPolyline(gpsLocation.latitude, gpsLocation.longitude, activeCourse)
       : null;
 
     setIsDeviating((prev) => {
@@ -89,7 +96,7 @@ export function useNormalRunCourseDeviation({
     });
   // courseCoordinates는 렌더 간 참조 변경이 없다고 가정 (memoized)
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [gpsLocation, isPaused]);
+  }, [gpsLocation, isPaused, lastCheckpointCoordIdx]);
 
   // 이탈 중 1초 카운터
   useEffect(() => {
