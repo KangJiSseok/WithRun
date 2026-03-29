@@ -98,15 +98,15 @@ class GhostRunningResultServiceTest {
         assertThat(mediumPoint).isLessThan(hardPoint);
     }
 
-    @DisplayName("120초 미만 기록은 120초로 보정해 동일 점수를 반환한다")
+    @DisplayName("120초 미만 기록도 실제 시간 그대로 계산해 더 빠르면 더 높은 점수를 준다")
     @Test
-    void normalizesTooFastDurationToMinimumThreshold() {
+    void calculatesPointUsingActualDurationBelowMinimumThreshold() {
         GhostRunningResultService ghostRunningResultService = new GhostRunningResultService(ghostRunningResultRepository);
 
-        Integer underThresholdPoint = ghostRunningResultService.calculateGhostRunningPoint(80, Difficulty.HARD);
-        Integer minimumPoint = ghostRunningResultService.calculateGhostRunningPoint(120, Difficulty.HARD);
+        Integer fasterPoint = ghostRunningResultService.calculateGhostRunningPoint(80, Difficulty.HARD);
+        Integer slowerPoint = ghostRunningResultService.calculateGhostRunningPoint(120, Difficulty.HARD);
 
-        assertThat(underThresholdPoint).isEqualTo(minimumPoint);
+        assertThat(fasterPoint).isGreaterThan(slowerPoint);
     }
 
     @DisplayName("점수 상한 클램프 없이 3000점을 초과할 수 있다")

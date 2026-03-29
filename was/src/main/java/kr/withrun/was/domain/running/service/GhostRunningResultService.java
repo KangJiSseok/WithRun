@@ -26,8 +26,7 @@ GhostRunningResultService {
             throw new CustomException(ResponseCode.INVALID_INPUT_VALUE);
         }
 
-        int adjustedDurationSec = Math.max(120, durationSec);
-        double durationMinutes = adjustedDurationSec / 60.0;
+        double durationMinutes = durationSec / 60.0;
 
         double baseScore = 5_000.0 / (1.0 + Math.pow(durationMinutes / 18.0, 1.55));
         double paceBonus = 320.0 / (Math.log1p(durationMinutes) + 0.8);
