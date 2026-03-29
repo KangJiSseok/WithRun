@@ -10,7 +10,7 @@ import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
 import { useRunDetailMap } from '@/shared/hooks/useRunDetailMap';
 import { formatTime } from '@/shared/utils';
-import { useNormalRunSessionStore } from '@/stores/NormalRun';
+import { useGhostRunSessionStore } from '@/stores/GhostRun';
 import { useGhostRunLeaderboard } from '@/hooks/GhostRun/useGhostRunLeaderboard';
 
 type GhostTarget = { runningSessionId: number; isMine: boolean };
@@ -30,7 +30,7 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
   );
 
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
-  const setSession = useNormalRunSessionStore((s) => s.setSession);
+  const setSession = useGhostRunSessionStore((s) => s.setSession);
 
   const { isNearStart } = useRunDetailMap(containerRef, {
     coordinates: course.coordinates,
@@ -65,19 +65,19 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
   }, [hasMore, leaderboardLoading, loadMore]);
 
   const handleStartRunning = useCallback(async () => {
-    if (!gpsLocation || !courseId || !selectedTarget) return;
+    if (!gpsLocation || !courseId) return;
 
     setIsStarting(true);
     try {
       const res = await createRunningSession({
         mode: 'GHOST',
         courseId: Number(courseId),
-        ghostTargetRunningSessionId: selectedTarget.runningSessionId,
+        ghostTargetRunningSessionId: selectedTarget?.runningSessionId,
         startLatitude: gpsLocation.latitude,
         startLongitude: gpsLocation.longitude,
       });
       setSession(res.data);
-      navigate(`/normal-run-session/${courseId}`);
+      navigate(`/ghost-run-session/${courseId}`);
     } finally {
       setIsStarting(false);
     }
@@ -100,7 +100,8 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
     );
   };
 
-  const isDisabled = !isNearStart || !selectedTarget || isStarting;
+  const hasNoRecords = !course.myRecord && items.length === 0;
+  const isDisabled = !isNearStart || (!selectedTarget && !hasNoRecords) || isStarting;
 
   return (
     <div className="relative h-screen w-full">

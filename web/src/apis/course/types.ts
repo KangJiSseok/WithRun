@@ -5,6 +5,22 @@ import type {
   RouteType,
 } from '@/shared/types/api.type';
 
+export type PostCourseReviewRequest = {
+  userId: number;
+  rating: number;
+  courseTypes: CourseType[];
+  submittedDifficulty: CourseDifficulty;
+};
+
+export type PostCourseReviewResponse = {
+  courseReviewId: number;
+  courseId: number;
+  rating: number;
+  courseTypes: { data: string; label: string }[];
+  submittedDifficulty: { data: string; label: string };
+  createdAt: string;
+};
+
 export type CoordinatePoint = {
   latitude: number;
   longitude: number;
