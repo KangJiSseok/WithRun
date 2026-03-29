@@ -199,6 +199,8 @@ class NearbyCoursesRequestTest {
                         "isRecommended",
                         "likeCount",
                         "bookmarkCount",
+                        "isLiked",
+                        "isBookmarked",
                         "snapshotImageUrl"
                 );
     }
