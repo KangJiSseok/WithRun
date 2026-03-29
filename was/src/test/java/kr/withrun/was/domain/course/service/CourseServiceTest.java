@@ -485,6 +485,7 @@ class CourseServiceTest {
                 126.9820,
                 3000,
                 List.of(new PreferredDistanceRange(1, 5000)),
+                CourseStatus.COMMUNITY,
                 NearbyCourseSortBy.DISTANCE,
                 1,
                 2
@@ -514,6 +515,7 @@ class CourseServiceTest {
                 request.targetLongitude(),
                 request.latitude(),
                 request.longitude(),
+                request.status(),
                 request.sortBy(),
                 request.radiusM(),
                 request.page(),
@@ -523,6 +525,7 @@ class CourseServiceTest {
                 request.preferredDistanceMs(),
                 request.targetLatitude(),
                 request.targetLongitude(),
+                request.status(),
                 request.radiusM()
         )).thenReturn(3L);
         when(courseTypeMapRepository.findCourseTypesByCourseId(13L)).thenReturn(List.of(CourseType.TRACK));

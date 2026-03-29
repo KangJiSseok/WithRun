@@ -256,6 +256,7 @@ class CourseControllerTest {
                 ),
                 null,
                 null,
+                null,
                 3
         );
         NearbyCoursesResponse response = new NearbyCoursesResponse(
@@ -331,6 +332,7 @@ class CourseControllerTest {
                         new PreferredDistanceRange(1, 3000),
                         new PreferredDistanceRange(3001, 5000)
                 ),
+                null,
                 NearbyCourseSortBy.DISTANCE,
                 1,
                 2
@@ -620,6 +622,7 @@ class CourseControllerTest {
                 ),
                 null,
                 null,
+                null,
                 Integer.parseInt(pageSize)
         );
         NearbyCoursesResponse response = new NearbyCoursesResponse(List.of(), 0, Integer.parseInt(pageSize), 0L, 0, false);
@@ -653,6 +656,7 @@ class CourseControllerTest {
                         new PreferredDistanceRange(1, 3000),
                         new PreferredDistanceRange(3001, 5000)
                 ),
+                CourseStatus.COMMUNITY,
                 NearbyCourseSortBy.POPULAR,
                 0,
                 3
@@ -667,6 +671,7 @@ class CourseControllerTest {
                         "126.9820",
                         "1000",
                         new String[][]{{"1", "3000"}, {"3001", "5000"}},
+                        "COMMUNITY",
                         "POPULAR",
                         "0",
                         "3"
@@ -1001,7 +1006,7 @@ class CourseControllerTest {
             String page,
             String size
     ) {
-        return nearbyCoursesRequest(latitude, longitude, targetLatitude, targetLongitude, radiusM, preferredDistanceMs, null, page, size);
+        return nearbyCoursesRequest(latitude, longitude, targetLatitude, targetLongitude, radiusM, preferredDistanceMs, null, null, page, size);
     }
 
     private static org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder nearbyCoursesRequest(
@@ -1011,6 +1016,7 @@ class CourseControllerTest {
             String targetLongitude,
             String radiusM,
             String[][] preferredDistanceMs,
+            String status,
             String sortBy,
             String page,
             String size
@@ -1036,6 +1042,9 @@ class CourseControllerTest {
                 requestBuilder.param("preferredDistanceMs[" + index + "].min", preferredDistanceMs[index][0]);
                 requestBuilder.param("preferredDistanceMs[" + index + "].max", preferredDistanceMs[index][1]);
             }
+        }
+        if (status != null) {
+            requestBuilder.param("status", status);
         }
         if (sortBy != null) {
             requestBuilder.param("sortBy", sortBy);

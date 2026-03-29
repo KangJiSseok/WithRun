@@ -3,6 +3,7 @@ package kr.withrun.was.domain.course.dto;
 import jakarta.validation.ConstraintViolation;
 import jakarta.validation.Validation;
 import jakarta.validation.Validator;
+import kr.withrun.was.domain.course.type.CourseStatus;
 import kr.withrun.was.domain.course.type.NearbyCourseSortBy;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -30,6 +31,7 @@ class NearbyCoursesRequestTest {
                         "targetLongitude",
                         "radiusM",
                         "preferredDistanceMs",
+                        "status",
                         "sortBy",
                         "page",
                         "size"
@@ -43,6 +45,15 @@ class NearbyCoursesRequestTest {
 
         assertThat(violations).isEmpty();
         assertThat(request.sortBy()).isEqualTo(NearbyCourseSortBy.DISTANCE);
+    }
+
+    @Test
+    void acceptsCommunityStatusFilter() {
+        NearbyCoursesRequest request = request(37.5665, 126.9780, 37.5700, 126.9820, 3000, defaultRanges(), CourseStatus.COMMUNITY, null, null, null);
+        Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(request);
+
+        assertThat(violations).isEmpty();
+        assertThat(request.status()).isEqualTo(CourseStatus.COMMUNITY);
     }
 
     @Test
@@ -104,7 +115,7 @@ class NearbyCoursesRequestTest {
     @ValueSource(doubles = {-90.1, 90.1})
     void rejectsLatitudeOutsideSupportedRange(double latitude) {
         Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
-                request(latitude, 126.9780, 37.5700, 126.9820, 3000, defaultRanges(), null, null, null)
+                request(latitude, 126.9780, 37.5700, 126.9820, 3000, defaultRanges(), null, null, null, null)
         );
 
         assertOnlyViolationOn(violations, "latitude");
@@ -114,7 +125,7 @@ class NearbyCoursesRequestTest {
     @ValueSource(doubles = {-180.1, 180.1})
     void rejectsLongitudeOutsideSupportedRange(double longitude) {
         Set<ConstraintViolation<NearbyCoursesRequest>> violations = validate(
-                request(37.5665, longitude, 37.5700, 126.9820, 3000, defaultRanges(), null, null, null)
+                request(37.5665, longitude, 37.5700, 126.9820, 3000, defaultRanges(), null, null, null, null)
         );
 
         assertOnlyViolationOn(violations, "longitude");
@@ -221,7 +232,7 @@ class NearbyCoursesRequestTest {
             Integer page,
             Integer size
     ) {
-        return request(37.5665, 126.9780, targetLatitude, targetLongitude, radiusM, preferredDistanceMs, null, page, size);
+        return request(37.5665, 126.9780, targetLatitude, targetLongitude, radiusM, preferredDistanceMs, null, null, page, size);
     }
 
     private NearbyCoursesRequest request(
@@ -231,6 +242,7 @@ class NearbyCoursesRequestTest {
             Double targetLongitude,
             Integer radiusM,
             List<PreferredDistanceRange> preferredDistanceMs,
+            CourseStatus status,
             NearbyCourseSortBy sortBy,
             Integer page,
             Integer size
@@ -242,6 +254,7 @@ class NearbyCoursesRequestTest {
                 targetLongitude,
                 radiusM,
                 preferredDistanceMs,
+                status,
                 sortBy,
                 page,
                 size
