@@ -6,3 +6,5 @@ export * from './meta';
 export * from './RunningPreferences';
 export * from './runningSessions';
 export * from './UserProfile';
+export * from './rewardPoints';
+export * from './rewardGacha';

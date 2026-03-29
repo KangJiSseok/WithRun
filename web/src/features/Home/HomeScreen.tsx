@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
-import { HeartPulse, Route, Settings2 } from 'lucide-react';
+import { HeartPulse, Route, Settings2, Gift } from 'lucide-react';
 import { toast } from 'sonner';
+import { useNavigate } from 'react-router-dom';
 
 import type {
   Difficulty,
@@ -204,6 +205,7 @@ function SummaryCard({ title, value, unit }: SummaryCardProps) {
 }
 
 export function HomeScreen() {
+  const navigate = useNavigate();
   const user = useAuthStore((state) => state.user);
   const { label: healthConnectionLabel, isConnected } =
     useHealthConnectionStatus();
@@ -378,6 +380,31 @@ export function HomeScreen() {
             <SummaryCard {...summaryCards[1]} />
             <SummaryCard {...summaryCards[2]} />
             <SummaryCard {...summaryCards[3]} />
+          </section>
+
+          <section>
+            <button
+              type="button"
+              onClick={() => navigate('/reward-gacha')}
+              className="flex w-full items-center justify-between rounded-[2rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-5 shadow-[var(--shadow-md)] transition-colors hover:bg-[hsl(var(--surface-subtle))]"
+            >
+              <div className="flex items-center gap-3">
+                <div className="rounded-full bg-[hsl(var(--primary-1))] p-3 text-[hsl(var(--text-inverse))]">
+                  <Gift size={24} />
+                </div>
+                <div className="text-left">
+                  <h2 className="text-lg font-black text-[hsl(var(--text-primary))]">
+                    리워드 뽑기
+                  </h2>
+                  <p className="text-sm text-[hsl(var(--text-secondary))]">
+                    포인트로 스페셜 아이템 획득
+                  </p>
+                </div>
+              </div>
+              <div className="text-[hsl(var(--text-secondary))]">
+                <Route size={20} className="rotate-45" />
+              </div>
+            </button>
           </section>
 
           <section className="rounded-[2rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-5 shadow-[var(--shadow-md)]">
