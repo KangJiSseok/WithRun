@@ -19,6 +19,7 @@ import kr.withrun.was.domain.file.service.CloudFrontSignedUrlService;
 import kr.withrun.was.domain.navigation.exception.NavigationBundleGenerationException;
 import kr.withrun.was.domain.navigation.service.bundle.NavigationBundleGenerationService;
 import kr.withrun.was.domain.navigation.type.NavigationBundleFailureCode;
+import kr.withrun.was.domain.reward.service.RewardPointGrantService;
 import kr.withrun.was.domain.running.dto.CompleteRunningSessionRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningGpsSampleRequest;
 import kr.withrun.was.domain.running.dto.CreateRunningHealthSampleRequest;
@@ -78,13 +79,15 @@ import static kr.withrun.was.domain.running.type.RunningMode.GHOST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.inOrder;
 
 @ExtendWith(MockitoExtension.class)
 @DisplayName("러닝 세션 서비스")
@@ -129,6 +132,9 @@ class RunningSessionServiceTest {
     private GhostRunningResultService ghostRunningResultService;
 
     @Mock
+    private RewardPointGrantService rewardPointGrantService;
+
+    @Mock
     private CourseSignalService courseSignalService;
 
     @Mock
@@ -154,11 +160,17 @@ class RunningSessionServiceTest {
                 runningSessionSplitRepository,
                 ghostRunningResultRepository,
                 ghostRunningResultService,
+                rewardPointGrantService,
                 courseSignalService,
                 cloudFrontSignedUrlService,
                 navigationBundleGenerationService,
                 new CourseAccessPolicy()
         );
+        lenient().when(userCalendarRepository.findByUserIdAndCalendarDateAndDeletedAtIsNull(any(), any()))
+                .thenReturn(Optional.empty());
+        lenient().when(userCalendarRepository.findDailySummaries(any(), any(), any()))
+                .thenReturn(List.of());
+        lenient().when(userCalendarRepository.save(any(UserCalendar.class))).thenAnswer(invocation -> invocation.getArgument(0));
         lenient().when(cloudFrontSignedUrlService.normalizeObjectKey(any())).thenAnswer(invocation -> {
             String value = invocation.getArgument(0);
             if (value == null || value.isBlank()) {
@@ -790,6 +802,7 @@ class RunningSessionServiceTest {
         assertThat(runningSession.getEndedAt()).isEqualTo(response.endedAt());
         assertThat(runningSession.getCompleteState()).isEqualTo(RunningSessionCompleteState.SUCCESS);
         assertThat(response.completeState()).isEqualTo(RunningSessionCompleteState.SUCCESS);
+        verify(rewardPointGrantService).grantCompletedRunningRewards(eq(runningSession), any(UserCalendar.class), isNull());
     }
 
     @DisplayName("종료 요청의 completeState 값으로 세션 종료 상태를 반영한다")
