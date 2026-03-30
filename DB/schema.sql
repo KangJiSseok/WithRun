@@ -134,6 +134,159 @@ CREATE TABLE courses (
   CONSTRAINT chk_courses_end_lng CHECK (end_longitude IS NULL OR end_longitude BETWEEN -180 AND 180)
 );
 
+-- Reward item catalog for gacha/inventory metadata.
+CREATE TABLE reward_items (
+  reward_item_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  title VARCHAR(100) NOT NULL,
+  image_url VARCHAR(500) NOT NULL,
+  is_active BOOLEAN NOT NULL DEFAULT TRUE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP
+);
+
+CREATE INDEX idx_reward_items_active_created_at ON reward_items (is_active, created_at DESC);
+
+-- Draw pool header for weight-based reward probability management.
+CREATE TABLE reward_draw_pools (
+  reward_draw_pool_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  name VARCHAR(100) NOT NULL,
+  cards_per_draw INTEGER NOT NULL,
+  miss_weight INTEGER NOT NULL DEFAULT 0,
+  miss_reward_item_id BIGINT,
+  is_active BOOLEAN NOT NULL DEFAULT FALSE,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_reward_draw_pools_miss_reward_item
+    FOREIGN KEY (miss_reward_item_id)
+    REFERENCES reward_items (reward_item_id)
+    ON DELETE SET NULL,
+  CONSTRAINT chk_reward_draw_pools_cards_per_draw CHECK (cards_per_draw > 0),
+  CONSTRAINT chk_reward_draw_pools_miss_weight CHECK (miss_weight >= 0)
+);
+
+CREATE INDEX idx_reward_draw_pools_active_created_at
+  ON reward_draw_pools (is_active, created_at DESC, reward_draw_pool_id DESC);
+
+-- Item membership + weight inside a draw pool.
+CREATE TABLE reward_draw_pool_items (
+  reward_draw_pool_item_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  reward_draw_pool_id BIGINT NOT NULL,
+  reward_item_id BIGINT NOT NULL,
+  weight INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_reward_draw_pool_items_pool
+    FOREIGN KEY (reward_draw_pool_id)
+    REFERENCES reward_draw_pools (reward_draw_pool_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_reward_draw_pool_items_reward_item
+    FOREIGN KEY (reward_item_id)
+    REFERENCES reward_items (reward_item_id)
+    ON DELETE CASCADE,
+  CONSTRAINT uq_reward_draw_pool_items_pool_reward_item UNIQUE (reward_draw_pool_id, reward_item_id),
+  CONSTRAINT chk_reward_draw_pool_items_weight CHECK (weight > 0)
+);
+
+CREATE INDEX idx_reward_draw_pool_items_pool_created_at
+  ON reward_draw_pool_items (reward_draw_pool_id, created_at DESC, reward_draw_pool_item_id DESC);
+
+-- One header row per user draw execution.
+CREATE TABLE reward_gacha_draws (
+  reward_gacha_draw_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  reward_draw_pool_id BIGINT NOT NULL,
+  cards_per_draw INTEGER NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_reward_gacha_draws_user
+    FOREIGN KEY (user_id)
+    REFERENCES users (user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_reward_gacha_draws_pool
+    FOREIGN KEY (reward_draw_pool_id)
+    REFERENCES reward_draw_pools (reward_draw_pool_id)
+    ON DELETE RESTRICT,
+  CONSTRAINT chk_reward_gacha_draws_cards_per_draw CHECK (cards_per_draw > 0)
+);
+
+CREATE INDEX idx_reward_gacha_draws_user_created_at
+  ON reward_gacha_draws (user_id, created_at DESC, reward_gacha_draw_id DESC);
+
+-- Fully decided per-card results for one draw.
+CREATE TABLE reward_gacha_draw_cards (
+  reward_gacha_draw_card_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  reward_gacha_draw_id BIGINT NOT NULL,
+  card_index INTEGER NOT NULL,
+  card_type VARCHAR(16) NOT NULL,
+  reward_item_id BIGINT,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_reward_gacha_draw_cards_draw
+    FOREIGN KEY (reward_gacha_draw_id)
+    REFERENCES reward_gacha_draws (reward_gacha_draw_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_reward_gacha_draw_cards_reward_item
+    FOREIGN KEY (reward_item_id)
+    REFERENCES reward_items (reward_item_id)
+    ON DELETE SET NULL,
+  CONSTRAINT uq_reward_gacha_draw_cards_draw_index UNIQUE (reward_gacha_draw_id, card_index),
+  CONSTRAINT chk_reward_gacha_draw_cards_index CHECK (card_index > 0),
+  CONSTRAINT chk_reward_gacha_draw_cards_type CHECK (card_type IN ('MISS', 'REWARD'))
+);
+
+CREATE INDEX idx_reward_gacha_draw_cards_draw_index
+  ON reward_gacha_draw_cards (reward_gacha_draw_id, card_index ASC);
+
+-- One-row-per-user current reward point balance.
+CREATE TABLE reward_point_balances (
+  user_id BIGINT PRIMARY KEY,
+  current_balance INTEGER NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_reward_point_balances_user
+    FOREIGN KEY (user_id)
+    REFERENCES users (user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT chk_reward_point_balances_current_balance CHECK (current_balance >= 0)
+);
+
+-- Append-only reward point accrual and future deduction history.
+CREATE TABLE reward_point_histories (
+  reward_point_history_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  delta_point INTEGER NOT NULL,
+  reason VARCHAR(32) NOT NULL,
+  idempotency_key VARCHAR(100) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_reward_point_histories_user
+    FOREIGN KEY (user_id)
+    REFERENCES users (user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT uq_reward_point_histories_user_key UNIQUE (user_id, idempotency_key),
+  CONSTRAINT chk_reward_point_histories_delta_point CHECK (delta_point <> 0),
+  CONSTRAINT chk_reward_point_histories_reason CHECK (
+    reason IN (
+      'DAILY_RUNNING',
+      'WEEKLY_STREAK_3_DAYS',
+      'WEEKLY_STREAK_5_DAYS',
+      'WEEKLY_STREAK_7_DAYS',
+      'GHOST_WIN',
+      'GACHA_DRAW'
+    )
+  )
+);
+
+CREATE INDEX idx_reward_point_histories_user_created_at
+  ON reward_point_histories (user_id, created_at DESC, reward_point_history_id DESC);
+
 -- 1:1 course difficulty mapping (shared PK with courses).
 CREATE TABLE course_difficulties (
   course_id BIGINT PRIMARY KEY,

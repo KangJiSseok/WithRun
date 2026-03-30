@@ -66,6 +66,8 @@ public class SecurityConfig {
                         .requestMatchers("/v3/api-docs/**", "/swagger-ui/**", "/swagger-ui.html").permitAll()
                         // meta 조회 API는 앱 부트스트랩 단계에서 비인증으로 사용합니다.
                         .requestMatchers(HttpMethod.GET, "/api/meta/**").permitAll()
+                        // reward showcase 조회 API는 앱 메인 전시 영역에서 비인증으로 사용합니다.
+                        .requestMatchers(HttpMethod.GET, "/api/reward-items/showcase").permitAll()
                         // refresh 재발급과 모바일 code 교환은 로그인 직전 단계라 비인증 접근을 허용합니다.
                         .requestMatchers(HttpMethod.POST, "/api/auth/reissue", "/api/auth/exchange").permitAll()
                         // 현재 사용자 조회는 access token 인증이 필요합니다.
