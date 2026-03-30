@@ -140,7 +140,8 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
     );
   };
 
-  const requiresGhostSelection = !selectedTarget;
+  const hasAnyGhostCandidate = !!course.myRecord || items.length > 0;
+  const requiresGhostSelection = hasAnyGhostCandidate && !selectedTarget;
   const isNearStartRequired = !isNearStart;
   const isDisabled =
     isNearStartRequired ||
@@ -153,6 +154,8 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
       ? '출발 지점에 서주세요!'
     : requiresGhostSelection
       ? '고스트를 선택해주세요!'
+      : !hasAnyGhostCandidate
+        ? '첫 기록 만들기'
       : !gpsLocation
         ? '위치 정보를 확인중입니다...'
         : '대결 시작';
@@ -256,9 +259,15 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
                     </span>
                   </div>
 
-                  {!selectedTarget && (
+                  {!selectedTarget && hasAnyGhostCandidate && (
                     <p className="caption-r text-[hsl(var(--text-secondary))]">
                       대결할 상대를 선택하세요
+                    </p>
+                  )}
+
+                  {!hasAnyGhostCandidate && (
+                    <p className="caption-r text-[hsl(var(--text-secondary))]">
+                      아직 기록이 없어 이번 러닝을 기준 기록으로 시작합니다.
                     </p>
                   )}
 

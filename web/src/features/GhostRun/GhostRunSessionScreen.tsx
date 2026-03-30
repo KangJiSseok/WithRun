@@ -273,67 +273,64 @@ export function GhostRunSessionScreen({
   }, [isGiveupModalOpen]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      {/* 지도 */}
-      <GhostRunMap
-        coordinates={courseDetail.coordinates}
-        routeType={courseDetail.routeType}
-        courseAnchor={deviationAnchor}
-        ghostDurationSec={ghostDurationSec}
-        isPaused={isEffectivelyPaused}
-        ghostDistanceMRef={ghostDistanceMRef}
-        onGhostFinished={handleGhostFinished}
-        checkpoints={checkpoints}
-        visitedCount={visitedCount}
-        nextCheckpointIdx={nextCheckpointIdx}
-      />
-
-      {isStartupCountdown && (
-        <div className="absolute inset-0 z-modal flex items-center justify-center bg-[hsl(var(--black)/0.35)]">
-          <div className="flex h-36 w-36 items-center justify-center rounded-full bg-[hsl(var(--surface-inverse)/0.9)] shadow-[var(--shadow-soft-xl)]">
-            <span className="font-bold tabular-nums text-8xl text-[hsl(var(--text-inverse))]">
-              {startupCountdownSec}
-            </span>
-          </div>
+    <div className="absolute inset-0 flex flex-col overflow-hidden bg-[hsl(var(--surface-inverse))]">
+      <div className="shrink-0 border-b border-[hsl(var(--secondary-3))] px-6 py-4">
+        <div className="grid grid-cols-4 gap-2">
+          <StatItem label="거리" value={distance} sub="km" />
+          <StatItem label="페이스" value={pace} />
+          <StatItem
+            label="칼로리"
+            value={String(calories)}
+            valueClassName="text-primary"
+            sub={<span className="text-primary">🔥</span>}
+          />
+          <StatItem label="심박수" value={String(heartRate)} sub="bpm" />
         </div>
-      )}
-
-      {/* 상단 통계 오버레이 */}
-      <div className="absolute left-0 right-0 top-0 z-sticky flex justify-between px-8 pt-14">
-        <StatItem label="거리" value={distance} sub="km" />
-        <StatItem label="페이스" value={pace} />
-        <StatItem
-          label="칼로리"
-          value={String(calories)}
-          valueClassName="text-primary"
-          sub={<span className="text-primary">🔥</span>}
-        />
       </div>
 
-      {/* 고스트 완주 배너 */}
-      {ghostFinished && (
-        <div className="absolute top-28 left-0 right-0 z-sticky flex justify-center">
-          <div className="rounded-full bg-[hsl(var(--error))] px-4 py-2 text-[hsl(var(--text-inverse))] body-b">
-            고스트가 먼저 도착했습니다! 계속 달리세요
+      <div className="relative min-h-0 flex-1">
+        <GhostRunMap
+          coordinates={courseDetail.coordinates}
+          routeType={courseDetail.routeType}
+          courseAnchor={deviationAnchor}
+          ghostDurationSec={ghostDurationSec}
+          isPaused={isEffectivelyPaused}
+          ghostDistanceMRef={ghostDistanceMRef}
+          onGhostFinished={handleGhostFinished}
+          checkpoints={checkpoints}
+          visitedCount={visitedCount}
+          nextCheckpointIdx={nextCheckpointIdx}
+        />
+
+        {isStartupCountdown && (
+          <div className="absolute inset-0 z-modal flex items-center justify-center bg-[hsl(var(--black)/0.35)]">
+            <div className="flex h-36 w-36 items-center justify-center rounded-full bg-[hsl(var(--surface-inverse)/0.9)] shadow-[var(--shadow-soft-xl)]">
+              <span className="font-bold tabular-nums text-8xl text-[hsl(var(--text-inverse))]">
+                {startupCountdownSec}
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 코스 이탈 경고 배너 */}
-      {isDeviating && !ghostFinished && (
-        <div className="absolute top-28 left-0 right-0 z-sticky flex justify-center">
-          <div className="rounded-full bg-[hsl(var(--error))] px-4 py-2 text-[hsl(var(--text-inverse))] body-b">
-            코스 이탈 중 · {deviationSec}s / 10s
+        {ghostFinished && (
+          <div className="absolute top-3 left-0 right-0 z-sticky flex justify-center">
+            <div className="rounded-full bg-[hsl(var(--error))] px-4 py-2 text-[hsl(var(--text-inverse))] body-b">
+              고스트가 먼저 도착했습니다! 계속 달리세요
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 하단 그라데이션 + 컨트롤 */}
-      <div className="absolute bottom-0 left-0 right-0 z-sticky">
-        <div className="h-52 bg-linear-to-b from-transparent to-[hsl(var(--surface-inverse))]" />
+        {isDeviating && !ghostFinished && (
+          <div className="absolute top-14 left-0 right-0 z-sticky flex justify-center">
+            <div className="rounded-full bg-[hsl(var(--error))] px-4 py-2 text-[hsl(var(--text-inverse))] body-b">
+              코스 이탈 중 · {deviationSec}s / 10s
+            </div>
+          </div>
+        )}
+      </div>
 
-        <div className="flex flex-col items-center gap-5 bg-[hsl(var(--surface-inverse))] pb-14 pt-2">
-          {/* 타이머 */}
+      <div className="shrink-0 border-t border-[hsl(var(--secondary-3))] px-6 pb-8 pt-4">
+        <div className="flex flex-col items-center gap-5">
           <div className="flex flex-col items-center gap-2">
             <span
               className={cn(
@@ -348,7 +345,6 @@ export function GhostRunSessionScreen({
             </span>
           </div>
 
-          {/* 포기 버튼 */}
           <button
             onClick={() => setIsGiveupModalOpen(true)}
             disabled={isEnding}

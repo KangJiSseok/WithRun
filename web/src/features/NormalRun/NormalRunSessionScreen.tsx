@@ -186,63 +186,60 @@ export function NormalRunSessionScreen({
   autoCompleteRef.current = handleAutoComplete;
 
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      {/* 지도 */}
-      <NormalRunMap
-        coordinates={courseDetail.coordinates}
-        routeType={courseDetail.routeType}
-        courseAnchor={courseAnchor}
-        checkpoints={checkpoints}
-        visitedCount={visitedCount}
-        nextCheckpointIdx={nextCheckpointIdx}
-      />
-
-      {/* 상단 통계 오버레이 */}
-      <div className="absolute left-0 right-0 top-0 z-sticky flex justify-between px-8 pt-14">
-        <StatItem label="거리" value={distance} sub="km" />
-        <StatItem label="페이스" value={pace} />
-        <StatItem
-          label="칼로리"
-          value={String(calories)}
-          valueClassName="text-[hsl(var(--primary-1))]"
-          sub={<span className="text-[hsl(var(--primary-1))]">🔥</span>}
-        />
+    <div className="absolute inset-0 flex flex-col overflow-hidden bg-[hsl(var(--surface-inverse))]">
+      <div className="shrink-0 border-b border-[hsl(var(--secondary-3))] px-6 py-4">
+        <div className="grid grid-cols-4 gap-2">
+          <StatItem label="거리" value={distance} sub="km" />
+          <StatItem label="페이스" value={pace} />
+          <StatItem
+            label="칼로리"
+            value={String(calories)}
+            valueClassName="text-[hsl(var(--primary-1))]"
+            sub={<span className="text-[hsl(var(--primary-1))]">🔥</span>}
+          />
+          <StatItem label="심박수" value={String(heartRate)} sub="bpm" />
+        </div>
       </div>
 
-      {isStartupCountdown && (
-        <div className="absolute inset-0 z-modal flex items-center justify-center bg-[hsl(var(--black)/0.35)]">
-          <div className="flex h-36 w-36 items-center justify-center rounded-full bg-[hsl(var(--surface-inverse)/0.9)] shadow-[var(--shadow-soft-xl)]">
-            <span className="font-bold tabular-nums text-8xl text-[hsl(var(--text-inverse))]">
-              {startupCountdownSec}
-            </span>
+      <div className="relative min-h-0 flex-1">
+        <NormalRunMap
+          coordinates={courseDetail.coordinates}
+          routeType={courseDetail.routeType}
+          courseAnchor={courseAnchor}
+          checkpoints={checkpoints}
+          visitedCount={visitedCount}
+          nextCheckpointIdx={nextCheckpointIdx}
+        />
+
+        {isStartupCountdown && (
+          <div className="absolute inset-0 z-modal flex items-center justify-center bg-[hsl(var(--black)/0.35)]">
+            <div className="flex h-36 w-36 items-center justify-center rounded-full bg-[hsl(var(--surface-inverse)/0.9)] shadow-[var(--shadow-soft-xl)]">
+              <span className="font-bold tabular-nums text-8xl text-[hsl(var(--text-inverse))]">
+                {startupCountdownSec}
+              </span>
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 체크포인트 진행 배지 */}
-      {checkpoints.length > 0 && !allCheckpointsVisited && (
-        <div className="absolute top-28 left-0 right-0 z-sticky flex justify-center">
-          <div className="rounded-full bg-[hsl(var(--surface-default)/0.85)] px-4 py-1.5 text-[hsl(var(--text-primary))] caption-b shadow-sm">
-            체크포인트 {visitedCount} / {checkpoints.length}
+        {checkpoints.length > 0 && !allCheckpointsVisited && (
+          <div className="absolute top-3 left-0 right-0 z-sticky flex justify-center">
+            <div className="rounded-full bg-[hsl(var(--surface-default)/0.88)] px-4 py-1.5 text-[hsl(var(--text-primary))] caption-b shadow-sm">
+              체크포인트 {visitedCount} / {checkpoints.length}
+            </div>
           </div>
-        </div>
-      )}
+        )}
 
-      {/* 코스 이탈 경고 배너 */}
-      {isDeviating && !isPaused && (
-        <div className="absolute top-28 left-0 right-0 z-sticky flex justify-center">
-          <div className="rounded-full bg-[hsl(var(--error))] px-4 py-2 text-[hsl(var(--text-inverse))] body-b">
-            코스 이탈 중 · {deviationSec}s / 10s
+        {isDeviating && !isPaused && (
+          <div className="absolute top-14 left-0 right-0 z-sticky flex justify-center">
+            <div className="rounded-full bg-[hsl(var(--error))] px-4 py-2 text-[hsl(var(--text-inverse))] body-b">
+              코스 이탈 중 · {deviationSec}s / 10s
+            </div>
           </div>
-        </div>
-      )}
+        )}
+      </div>
 
-      {/* 하단 그라데이션 + 컨트롤 */}
-      <div className="absolute bottom-0 left-0 right-0 z-sticky">
-        <div className="h-52 bg-linear-to-b from-transparent to-[hsl(var(--surface-inverse))]" />
-
-        <div className="flex flex-col items-center gap-5 bg-[hsl(var(--surface-inverse))] pb-14 pt-2">
-          {/* 타이머 */}
+      <div className="shrink-0 border-t border-[hsl(var(--secondary-3))] px-6 pb-8 pt-4">
+        <div className="flex flex-col items-center gap-5">
           <div className="flex flex-col items-center gap-2">
             <span
               className={cn(
@@ -257,16 +254,13 @@ export function NormalRunSessionScreen({
             </span>
           </div>
 
-          {/* 버튼 영역 */}
           <div className="flex flex-col items-center gap-2">
-            {/* 재개 잠금 안내 문구 */}
             {isPaused && !isWithinPauseAnchor && (
               <span className="caption-r text-center text-[hsl(var(--secondary-5))]">
                 안정권으로 복귀 후 재개 가능
               </span>
             )}
             <div className="relative flex w-full items-center justify-center">
-              {/* 일시정지 / 재개 */}
               <button
                 onClick={togglePause}
                 disabled={isPaused && !isWithinPauseAnchor}
@@ -285,7 +279,6 @@ export function NormalRunSessionScreen({
                 )}
               </button>
 
-              {/* 종료 버튼 (일시정지 시 등장) */}
               <button
                 onClick={handleStopRunning}
                 disabled={isEnding}
