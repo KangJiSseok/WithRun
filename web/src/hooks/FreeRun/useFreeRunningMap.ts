@@ -1,68 +1,16 @@
 import { useEffect, useRef } from 'react';
 
 import { useRunLocation } from '@/shared/hooks/useRunLocation';
+import { MAP_DEFAULT_CENTER, MAP_LERP } from '@/shared/constants/map';
+import { createUserMarkerContent, lerpAngle } from '@/shared/utils';
 import { haversineM } from '@/shared/utils/geo';
 
-const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
-const LERP = 0.12;
 const TRACE_STROKE_WEIGHT = 6;
 const TRACE_STROKE_COLOR = '#FF3B3B';
 const TRACE_STROKE_OPACITY = 0.9;
 const TRACE_NOISE_MIN_M = 0.7;
 const TRACE_NOISE_MAX_M = 120;
 
-/** 최단 경로 각도 보간 (359° → 1° = +2°, −358°가 아님) */
-function lerpAngle(current: number, target: number, t: number): number {
-  const diff = ((target - current + 540) % 360) - 180;
-  return (current + diff * t + 360) % 360;
-}
-
-function createUserMarkerContent(): { element: HTMLElement; coneEl: HTMLElement } {
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText = `
-    position: relative;
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-  `;
-
-  // 방향 삼각형 (CSS border trick)
-  const cone = document.createElement('div');
-  cone.style.cssText = `
-    position: absolute;
-    left: calc(50% - 8px);
-    bottom: 50%;
-    transform-origin: 8px 18px;
-    transform: rotate(0deg);
-    width: 0;
-    height: 0;
-    border-left: 8px solid transparent;
-    border-right: 8px solid transparent;
-    border-bottom: 18px solid rgba(59,130,246,0.5);
-    opacity: 0;
-    transition: opacity 0.3s;
-  `;
-
-  // 파란 도트
-  const dot = document.createElement('div');
-  dot.style.cssText = `
-    position: relative;
-    z-index: 1;
-    width: 16px;
-    height: 16px;
-    background: #3B82F6;
-    border: 2.5px solid white;
-    border-radius: 50%;
-    box-shadow: 0 0 0 6px rgba(59,130,246,0.2), 0 2px 4px rgba(0,0,0,0.3);
-  `;
-
-  wrapper.appendChild(cone);
-  wrapper.appendChild(dot);
-
-  return { element: wrapper, coneEl: cone };
-}
 
 export function useFreeRunningMap(containerRef: React.RefObject<HTMLDivElement | null>): void {
   const { location } = useRunLocation();
@@ -91,7 +39,7 @@ export function useFreeRunningMap(containerRef: React.RefObject<HTMLDivElement |
     const container = containerRef.current;
 
     kakao.maps.load(() => {
-      const center = new kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
+      const center = new kakao.maps.LatLng(MAP_DEFAULT_CENTER.lat, MAP_DEFAULT_CENTER.lng);
       mapRef.current = new kakao.maps.Map(container, { center, level: 5 });
       tracePolylineRef.current = new kakao.maps.Polyline({
         path: tracePathRef.current,
@@ -123,14 +71,14 @@ export function useFreeRunningMap(containerRef: React.RefObject<HTMLDivElement |
         if (!userDotRef.current) return;
 
         // 위치 보간
-        s.currentLat += (s.targetLat - s.currentLat) * LERP;
-        s.currentLng += (s.targetLng - s.currentLng) * LERP;
+        s.currentLat += (s.targetLat - s.currentLat) * MAP_LERP;
+        s.currentLng += (s.targetLng - s.currentLng) * MAP_LERP;
         userDotRef.current.setPosition(new kakao.maps.LatLng(s.currentLat, s.currentLng));
 
         // 방향 cone 업데이트
         const isMoving = (s.targetSpeed ?? 0) > 0.5;
         if (s.coneEl && s.targetHeading !== null && isMoving) {
-          s.currentHeading = lerpAngle(s.currentHeading, s.targetHeading, LERP);
+          s.currentHeading = lerpAngle(s.currentHeading, s.targetHeading, MAP_LERP);
           s.coneEl.style.transform = `rotate(${s.currentHeading}deg)`;
           s.coneEl.style.opacity = '0.75';
         } else if (s.coneEl) {
