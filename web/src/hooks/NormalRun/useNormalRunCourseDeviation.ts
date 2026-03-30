@@ -2,8 +2,8 @@
 // 책임: GPS 비교 → 이탈 감지 → 카운터 → 브릿지 알림 → 강제 종료 신호
 //
 // 동작 명세:
-//   GPS 갱신 + 코스와 거리 > 30m + !isPaused → isDeviating = true
-//   GPS 갱신 + 코스와 거리 ≤ 30m            → isDeviating = false, deviationSec = 0
+//   GPS 갱신 + 코스와 거리 > 70m + !isPaused → isDeviating = true
+//   GPS 갱신 + 코스와 거리 ≤ 70m            → isDeviating = false, deviationSec = 0
 //   isDeviating false→true + !isPaused       → bridge.notifyCourseDeviation(1) (진동 1회) + toast 경고
 //   deviationSec === 4                        → bridge.notifyCourseDeviation(2) (진동 2회) + toast 주의
 //   deviationSec === 8                        → bridge.notifyCourseDeviation(3) (진동 3회) + toast 위험
@@ -19,7 +19,7 @@ import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
 import type { CoordinatePoint } from '@/apis/course';
 import { pointToPolylineM, nearestPointOnPolyline } from '@/shared/utils/geo';
 
-const DEVIATION_THRESHOLD_M = 30;
+const DEVIATION_THRESHOLD_M = 70;
 const FORCE_STOP_SEC = 10;
 
 interface UseNormalRunCourseDeviationParams {

@@ -117,7 +117,9 @@ function buildCheckpoints(coords: CoordinatePoint[], cumDist: number[]): Checkpo
   const checkpointCount = resolveCheckpointCount(totalDist);
   if (checkpointCount <= 0) return [];
 
-  const checkpointsBase: Array<Omit<Checkpoint, 'gate'>> = [];
+  const checkpointsBase: Array<
+    Omit<Checkpoint, 'gate'> & { gateDir: { x: number; y: number } }
+  > = [];
 
   for (let step = 1; step <= checkpointCount; step++) {
     // 마지막 체크포인트는 정확히 종점
@@ -137,20 +139,29 @@ function buildCheckpoints(coords: CoordinatePoint[], cumDist: number[]): Checkpo
     const latitude = coords[lo].latitude + t * (coords[hi].latitude - coords[lo].latitude);
     const longitude = coords[lo].longitude + t * (coords[hi].longitude - coords[lo].longitude);
 
+    const segDir = normalizeDirection(
+      (coords[hi].longitude - coords[lo].longitude) * metersPerDegLon(latitude),
+      (coords[hi].latitude - coords[lo].latitude) * 110_540
+    );
+
     checkpointsBase.push({
       latitude,
       longitude,
       routeDistM: targetDist,
       coordIdx: hi,
       visited: false,
+      gateDir: segDir,
     });
   }
 
   const checkpoints: Checkpoint[] = checkpointsBase.map((cp) => {
-    const dir = resolveRouteDirectionAtIdx(coords, cp.coordIdx);
     return {
-      ...cp,
-      gate: buildGateLine(cp.latitude, cp.longitude, dir.x, dir.y),
+      latitude: cp.latitude,
+      longitude: cp.longitude,
+      routeDistM: cp.routeDistM,
+      coordIdx: cp.coordIdx,
+      visited: cp.visited,
+      gate: buildGateLine(cp.latitude, cp.longitude, cp.gateDir.x, cp.gateDir.y),
     };
   });
 
