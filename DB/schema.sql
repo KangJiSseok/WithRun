@@ -6,6 +6,7 @@ CREATE TABLE users (
   gender VARCHAR(16) NOT NULL,
   height_cm NUMERIC(5, 2) NOT NULL,
   weight_kg NUMERIC(5, 2) NOT NULL,
+  profile_completed BOOLEAN NOT NULL,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
@@ -111,12 +112,14 @@ CREATE TABLE courses (
   distance_m INTEGER NOT NULL,
   elevation_gain_m INTEGER NOT NULL DEFAULT 0,
   snapshot_image_url TEXT,
+  navigation_bundle_url TEXT,
   start_latitude NUMERIC(9, 6) NOT NULL,
   start_longitude NUMERIC(9, 6) NOT NULL,
   end_latitude NUMERIC(9, 6),
   end_longitude NUMERIC(9, 6),
   coordinates JSONB,
   promoted_at TIMESTAMP,
+  route_type VARCHAR(32),
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
   deleted_at TIMESTAMP,
@@ -128,6 +131,7 @@ CREATE TABLE courses (
     CHECK (status IN ('OFFICIAL', 'COMMUNITY', 'PRIVATE')),
   CONSTRAINT chk_courses_distance CHECK (distance_m > 0),
   CONSTRAINT chk_courses_elevation_gain CHECK (elevation_gain_m >= 0),
+  CONSTRAINT chk_courses_route_type CHECK (route_type IS NULL OR route_type IN ('LOOP', 'OUT_AND_BACK')),
   CONSTRAINT chk_courses_start_lat CHECK (start_latitude BETWEEN -90 AND 90),
   CONSTRAINT chk_courses_start_lng CHECK (start_longitude BETWEEN -180 AND 180),
   CONSTRAINT chk_courses_end_lat CHECK (end_latitude IS NULL OR end_latitude BETWEEN -90 AND 90),
@@ -164,6 +168,53 @@ CREATE TABLE course_type_map (
   CONSTRAINT uq_course_type_map_course_type UNIQUE (course_id, course_type),
   CONSTRAINT chk_course_type_map_course_type
     CHECK (course_type IN ('RIVERSIDE', 'PARK', 'MOUNTAIN_TRAIL', 'TRACK', 'URBAN', 'OTHER'))
+);
+
+-- 1:1 aggregate feedback counters and rating stats per course.
+CREATE TABLE course_feedback_stats (
+  course_id BIGINT PRIMARY KEY,
+  like_count BIGINT NOT NULL DEFAULT 0,
+  bookmark_count BIGINT NOT NULL DEFAULT 0,
+  completion_count BIGINT NOT NULL DEFAULT 0,
+  review_count BIGINT NOT NULL DEFAULT 0,
+  rating_sum DOUBLE PRECISION NOT NULL DEFAULT 0,
+  easy_review_count BIGINT NOT NULL DEFAULT 0,
+  medium_review_count BIGINT NOT NULL DEFAULT 0,
+  hard_review_count BIGINT NOT NULL DEFAULT 0,
+  riverside_type_review_count BIGINT NOT NULL DEFAULT 0,
+  park_type_review_count BIGINT NOT NULL DEFAULT 0,
+  mountain_trail_type_review_count BIGINT NOT NULL DEFAULT 0,
+  track_type_review_count BIGINT NOT NULL DEFAULT 0,
+  urban_type_review_count BIGINT NOT NULL DEFAULT 0,
+  other_type_review_count BIGINT NOT NULL DEFAULT 0,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_course_feedback_stats_course
+    FOREIGN KEY (course_id)
+    REFERENCES courses (course_id)
+    ON DELETE CASCADE
+);
+
+-- 1:1 derived feature vector per course for recommendation/search.
+CREATE TABLE course_features (
+  course_id BIGINT PRIMARY KEY,
+  distance_norm DOUBLE PRECISION NOT NULL,
+  difficulty_score DOUBLE PRECISION NOT NULL,
+  type_riverside_score DOUBLE PRECISION NOT NULL,
+  type_park_score DOUBLE PRECISION NOT NULL,
+  type_mountain_trail_score DOUBLE PRECISION NOT NULL,
+  type_track_score DOUBLE PRECISION NOT NULL,
+  type_urban_score DOUBLE PRECISION NOT NULL,
+  type_other_score DOUBLE PRECISION NOT NULL,
+  feature_version VARCHAR(32) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_course_features_course
+    FOREIGN KEY (course_id)
+    REFERENCES courses (course_id)
+    ON DELETE CASCADE
 );
 
 -- Running session summary/read-model data for free/course/ghost runs.
@@ -363,6 +414,7 @@ CREATE TABLE ghost_running_results (
   ghost_target_running_session_id BIGINT NOT NULL,
   target_user_id BIGINT,
   result_status VARCHAR(16) NOT NULL,
+  point INTEGER NOT NULL DEFAULT 0,
   time_gap_sec INTEGER NOT NULL DEFAULT 0,
   distance_gap_m INTEGER NOT NULL DEFAULT 0,
   created_at TIMESTAMP NOT NULL DEFAULT NOW(),
@@ -383,6 +435,7 @@ CREATE TABLE ghost_running_results (
   CONSTRAINT uq_ghost_running_results_session UNIQUE (running_session_id),
   CONSTRAINT chk_ghost_running_results_status
     CHECK (result_status IN ('WIN', 'LOSE', 'DRAW', 'INCOMPLETE')),
+  CONSTRAINT chk_ghost_running_results_point CHECK (point >= 0),
   CONSTRAINT chk_ghost_running_results_diff_session
     CHECK (running_session_id <> ghost_target_running_session_id)
 );
@@ -459,6 +512,33 @@ CREATE TABLE course_review_course_types (
   CONSTRAINT uq_course_review_course_types_review_type UNIQUE (course_review_id, course_type),
   CONSTRAINT chk_course_review_course_types_course_type
     CHECK (course_type IN ('RIVERSIDE', 'PARK', 'MOUNTAIN_TRAIL', 'TRACK', 'URBAN', 'OTHER'))
+);
+
+-- User-course interaction log for recommendation and ranking signals.
+CREATE TABLE user_course_interactions (
+  user_course_interaction_id BIGINT GENERATED ALWAYS AS IDENTITY PRIMARY KEY,
+  user_id BIGINT NOT NULL,
+  course_id BIGINT NOT NULL,
+  interaction_type VARCHAR(16) NOT NULL,
+  weight INTEGER NOT NULL,
+  occurred_at TIMESTAMP NOT NULL,
+  source VARCHAR(32) NOT NULL,
+  source_ref VARCHAR(64) NOT NULL,
+  created_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  updated_at TIMESTAMP NOT NULL DEFAULT NOW(),
+  deleted_at TIMESTAMP,
+  CONSTRAINT fk_user_course_interactions_user
+    FOREIGN KEY (user_id)
+    REFERENCES users (user_id)
+    ON DELETE CASCADE,
+  CONSTRAINT fk_user_course_interactions_course
+    FOREIGN KEY (course_id)
+    REFERENCES courses (course_id)
+    ON DELETE CASCADE,
+  CONSTRAINT uq_user_course_interactions_source
+    UNIQUE (user_id, course_id, interaction_type, source, source_ref),
+  CONSTRAINT chk_user_course_interactions_type
+    CHECK (interaction_type IN ('LIKE', 'BOOKMARK', 'REVIEW', 'COMPLETE'))
 );
 
 -- Daily aggregate running statistics per user.

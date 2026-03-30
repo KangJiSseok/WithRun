@@ -23,6 +23,7 @@
 ### 1.2 프로필 관리
 
 - 유저는 자신의 프로필 정보(닉네임, 키, 몸무게 등) 를 수정한다.
+- WAS는 사용자 온보딩 완료 여부를 `users.profile_completed`로 관리한다.
 - 유저는 자신의 러닝 선호도를 설정한다:
     - 러닝 목적 - 여러개 선택 가능
     - 선호 난이도
@@ -70,6 +71,7 @@
     1. 유저는 러닝 기록을 경쟁모드로 실행했을때는 강제 공개.
     2. 유저는 러닝 기록을 일반모드로 실행했을때는 비공개.
 - `running_sessions`, `running_session_splits`는 세션 결과와 구간 요약을 담는 summary/read model이다.
+- `running_sessions.complete_state`는 `FAIL`, `SUCCESS`, `GIVEUP`으로 종료 상태를 표현한다.
 - `running_health_samples`, `running_gps_samples`는 러닝 중 raw telemetry를 담는 `append-only` 테이블이다.
 
 ### 2.6 러닝 기록을 코스로 등록
@@ -95,6 +97,7 @@
     - 코스, 코스 제목이 저장된다.
     - 난이도 (쉬움, 보통, 어려움) 한개만 선택 가능, 코스 타입(한강변, 공원, 산/둘레길, 트랙, 도심, 기타) 등 여러개 선택 가능
     - 코스 스냅샷 이미지가 저장된다.
+- 코스에는 내비게이션 번들 URL(`navigation_bundle_url`)과 경로 형태(`route_type`)가 추가로 저장될 수 있다.
 
 ### 3.3 코스 검색 및 조회
 
@@ -144,7 +147,8 @@
 ### 4.3 러닝 생체 데이터
 
 - 워치는 1초마다 생체 정보와 GPS 좌표를 raw telemetry table에 저장한다 (`RDS PostgreSQL`).
-- 저장 데이터: 심박수, 속도, 페이스, 고도, GPS 좌표 등.
+- `running_health_samples`는 심박수/칼로리 중심 health telemetry를 저장한다.
+- `running_gps_samples`는 GPS 좌표와 속도/페이스/거리/케이던스 등 주행 telemetry를 저장한다.
 
 ---
 
@@ -210,6 +214,9 @@
 - `course_bookmarks`: 코스 북마크
 - `course_reviews`: 코스 평점 및 난이도 피드백
 - `course_review_course_types`: 리뷰 코스 타입 설문
+- `course_feedback_stats`: 코스별 좋아요/북마크/완주/리뷰 집계
+- `course_features`: 추천/검색용 코스 feature 벡터
+- `user_course_interactions`: 추천/랭킹용 사용자-코스 상호작용 로그
 - `running_sessions`: 러닝 세션 summary/read model
 - `running_session_splits`: 1km 구간별 summary/read model
 - `running_health_samples`: 1초 주기 raw 생체/주행 telemetry 데이터

@@ -27,6 +27,8 @@
 - `course_type`: `RIVERSIDE`, `PARK`, `MOUNTAIN_TRAIL`, `TRACK`, `URBAN`, `OTHER`
 - `time_slot`: `DAWN`, `MORNING`, `AFTERNOON`, `EVENING`
 - `status` (`courses.status`): `OFFICIAL`, `COMMUNITY`, `PRIVATE`
+- `route_type` (`courses.route_type`): `LOOP`, `OUT_AND_BACK`
+- `interaction_type` (`user_course_interactions.interaction_type`): `LIKE`, `BOOKMARK`, `REVIEW`, `COMPLETE`
 - `mode`: `FREE`, `COURSE`, `GHOST`
 - `result_status`: `WIN`, `LOSE`, `DRAW`, `INCOMPLETE`
 
@@ -37,12 +39,17 @@
 - `user_auth_accounts.user_id` -> `users.user_id`
 - `user_running_preferences.user_id` -> `users.user_id`
 - `course_difficulties.course_id` -> `courses.course_id`
+- `course_feedback_stats.course_id` -> `courses.course_id`
+- `course_features.course_id` -> `courses.course_id`
 
 ### 일반 FK / 매핑 테이블
 
 - 사용자 선호 다중 선택: `user_preference_purposes`, `user_preference_course_types`, `user_preference_time_slots`
 - 코스 타입 매핑: `course_type_map`
+- 코스 피드백 집계: `course_feedback_stats`
+- 코스 feature 벡터: `course_features`
 - 리뷰 다중 선택 매핑: `course_review_course_types`
+- 사용자-코스 상호작용 로그: `user_course_interactions`
 - 고스트 리더보드 매핑: `course_ghost_leaderboard`
 - 사용자 집계: `user_calendars`
 
@@ -66,6 +73,7 @@
   - `birth_date`: 생년월일
   - `gender`: `MALE`, `FEMALE`
   - `height_cm`, `weight_kg`: 신체 정보
+  - `profile_completed`: 온보딩 완료 여부
 - 주요 제약:
   - `uq_users_nickname`
   - `chk_users_birth_date`
@@ -142,13 +150,16 @@
   - `title`: 코스 제목
   - `status`: `OFFICIAL`, `COMMUNITY`, `PRIVATE`
   - `distance_m`, `elevation_gain_m`: 코스 기본 지표
+  - `navigation_bundle_url`: 내비게이션 번들 경로
   - `start_latitude`, `start_longitude`: 시작 좌표
   - `end_latitude`, `end_longitude`: 종료 좌표, nullable
   - `coordinates`: JSONB 경로 데이터
   - `snapshot_image_url`, `promoted_at`
+  - `route_type`: `LOOP`, `OUT_AND_BACK`, nullable
 - 주요 제약:
   - `fk_courses_created_by` (`ON DELETE SET NULL`)
   - `chk_courses_status`
+  - `chk_courses_route_type`
   - 거리/고도/좌표 범위 체크
 
 ### course_difficulties
@@ -190,7 +201,8 @@
   - `snapshot_image_url`
   - `start_latitude`, `start_longitude`, `end_latitude`, `end_longitude`
   - `coordinates`: JSONB 경로 데이터
-  - `is_public`, `is_completed`
+  - `is_public`
+  - `complete_state`: `FAIL`, `SUCCESS`, `GIVEUP`
 - 주요 제약:
   - `fk_running_sessions_user` (`ON DELETE CASCADE`)
   - `fk_running_sessions_course` (`ON DELETE SET NULL`)
@@ -200,7 +212,8 @@
   - `chk_running_sessions_course_mode`
   - `chk_running_sessions_ghost_mode`
   - `chk_running_sessions_visibility_for_ghost`
-  - `chk_running_sessions_completed_state`
+  - `chk_running_sessions_complete_state_enum`
+  - `chk_running_sessions_complete_state`
 - 비고:
   - `COURSE`와 `GHOST`는 `courses.status = OFFICIAL`인 코스만 사용할 수 있으며, 이 교차 테이블 규칙은 WAS 애플리케이션 검증으로 강제합니다.
   - `running_sessions`는 raw sample의 부모이면서 세션 결과를 담는 summary/read model입니다.
@@ -229,18 +242,17 @@
 
 ### running_health_samples
 
-- 목적: 세션별 raw health/주행 telemetry 저장
+- 목적: 세션별 raw health telemetry 저장
 - 핵심 컬럼:
   - `running_health_sample_id`: PK
   - `running_session_id`: 세션 FK
   - `sampled_at`: 샘플링 시각
   - `user_id`: 사용자 FK
-  - `heart_rate`, `speed_mps`, `pace_sec_per_km`
-  - `distance_m`, `calories_kcal`, `cadence_spm`
+  - `heart_rate`, `calories_kcal`
 - 주요 제약:
   - `fk_running_health_samples_running_session`, `fk_running_health_samples_user` (둘 다 `ON DELETE CASCADE`)
   - `uq_running_health_samples_session_time`
-  - 심박/속도/페이스/거리/칼로리/케이던스 체크
+  - 심박/칼로리 범위 체크
 - 비고:
   - `append-only` raw telemetry table로 사용합니다.
   - `1초 주기` 샘플 저장을 전제로 합니다.
@@ -260,6 +272,7 @@
   - `user_id`: 사용자 FK
   - `latitude`, `longitude`
   - `altitude_m`, `accuracy_m`, `bearing_deg`
+  - `speed_mps`, `pace_sec_per_km`, `distance_m`, `cadence_spm`
 - 주요 제약:
   - `fk_running_gps_samples_running_session`, `fk_running_gps_samples_user` (둘 다 `ON DELETE CASCADE`)
   - `uq_running_gps_samples_session_time`
@@ -297,14 +310,42 @@
   - `ghost_target_running_session_id`: 비교 대상 세션 FK
   - `target_user_id`: 대상 사용자 FK, nullable
   - `result_status`: `WIN`, `LOSE`, `DRAW`, `INCOMPLETE`
-  - `time_gap_sec`, `distance_gap_m`
+  - `point`, `time_gap_sec`, `distance_gap_m`
 - 주요 제약:
   - `fk_ghost_running_results_running_session` (`ON DELETE CASCADE`)
   - `fk_ghost_running_results_ghost_target_running_session` (`ON DELETE RESTRICT`)
   - `fk_ghost_running_results_target_user` (`ON DELETE SET NULL`)
   - `uq_ghost_running_results_session`
   - `chk_ghost_running_results_status`
+  - `chk_ghost_running_results_point`
   - `chk_ghost_running_results_diff_session`
+
+### course_feedback_stats
+
+- 목적: 코스별 좋아요/북마크/완주/리뷰 집계를 1:1로 저장
+- 관계: `courses`와 공유 PK 1:1
+- 핵심 컬럼:
+  - `course_id`: PK이자 FK
+  - `like_count`, `bookmark_count`, `completion_count`, `review_count`
+  - `rating_sum`
+  - `easy_review_count`, `medium_review_count`, `hard_review_count`
+  - `riverside_type_review_count`, `park_type_review_count`, `mountain_trail_type_review_count`
+  - `track_type_review_count`, `urban_type_review_count`, `other_type_review_count`
+- 주요 제약:
+  - `fk_course_feedback_stats_course` (`ON DELETE CASCADE`)
+
+### course_features
+
+- 목적: 추천/검색용 코스 feature 벡터를 1:1로 저장
+- 관계: `courses`와 공유 PK 1:1
+- 핵심 컬럼:
+  - `course_id`: PK이자 FK
+  - `distance_norm`, `difficulty_score`
+  - `type_riverside_score`, `type_park_score`, `type_mountain_trail_score`
+  - `type_track_score`, `type_urban_score`, `type_other_score`
+  - `feature_version`
+- 주요 제약:
+  - `fk_course_features_course` (`ON DELETE CASCADE`)
 
 ### course_likes
 
@@ -356,6 +397,21 @@
   - `fk_course_reviews_course_types_review` (`ON DELETE CASCADE`)
   - `uq_course_review_course_types_review_type`
   - `chk_course_review_course_types_course_type`
+
+### user_course_interactions
+
+- 목적: 추천/랭킹에 사용하는 사용자-코스 상호작용 이력을 저장
+- 핵심 컬럼:
+  - `user_course_interaction_id`: PK
+  - `user_id`, `course_id`: 사용자/코스 FK
+  - `interaction_type`: `LIKE`, `BOOKMARK`, `REVIEW`, `COMPLETE`
+  - `weight`
+  - `occurred_at`
+  - `source`, `source_ref`
+- 주요 제약:
+  - `fk_user_course_interactions_user`, `fk_user_course_interactions_course` (둘 다 `ON DELETE CASCADE`)
+  - `uq_user_course_interactions_source`
+  - `chk_user_course_interactions_type`
 
 ### user_calendars
 
