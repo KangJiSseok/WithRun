@@ -1,6 +1,5 @@
 import axiosClient from '@/shared/libs/axiosClient';
 import type { ApiResponse } from '@/shared/types/api.type';
-import { useAuthStore } from '@/stores/Auth';
 import type {
   CreateRunningSessionRequest,
   CreateRunningSessionResponse,
@@ -35,7 +34,6 @@ export const createRunningSession = async (
 export const getRunningHistoryApi = async (
   params: GetRunningHistoryParams = {}
 ): Promise<ApiResponse<GetRunningHistoryResponse>> => {
-  const userId = useAuthStore.getState().user!.userId;
   const { data } = await axiosClient.get<
     ApiResponse<GetRunningHistoryResponse>
   >('/running-sessions/history/past', {
