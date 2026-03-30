@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import type { CoordinatePoint } from '@/apis';
-import type { Checkpoint } from '@/hooks/shared/useRunCheckpoints';
+import type { Checkpoint } from '@/shared/hooks/useRunCheckpoints';
 import type { RouteType } from '@/shared/types/api.type';
 import { useRunLocation } from '@/shared/hooks/useRunLocation';
 import { buildCumDist } from '@/shared/utils/geo';
@@ -248,7 +248,10 @@ export function useGhostRunMap(
             params.routeType === 'OUT_AND_BACK'
               ? coordinates.slice(0, Math.ceil(coordinates.length / 2))
               : coordinates;
-          const step = Math.max(1, Math.floor(arrowCoords.length / ROUTE_ARROW_COUNT));
+          const step = Math.max(
+            1,
+            Math.floor(arrowCoords.length / ROUTE_ARROW_COUNT)
+          );
           const startOffset = Math.floor(step / 2);
           for (let i = startOffset; i < arrowCoords.length - 1; i += step) {
             const cur = arrowCoords[i];
@@ -459,7 +462,7 @@ export function useGhostRunMap(
       const el = overlay.getContent() as HTMLElement;
       el.style.background = i < visitedCount ? '#22c55e' : '#9ca3af';
     });
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.checkpoints, params.visitedCount]);
 
   // 다음 체크포인트 게이트 1개만 시각화
@@ -493,7 +496,7 @@ export function useGhostRunMap(
 
     nextGatePolylineRef.current.setPath(path);
     nextGatePolylineRef.current.setMap(mapRef.current);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [params.checkpoints, params.nextCheckpointIdx]);
 
   // isPaused 변화 → 고스트 시계 pause/resume

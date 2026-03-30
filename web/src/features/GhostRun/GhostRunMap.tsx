@@ -1,7 +1,7 @@
 import React, { useRef } from 'react';
 
 import type { CoordinatePoint } from '@/apis';
-import type { Checkpoint } from '@/hooks/shared/useRunCheckpoints';
+import type { Checkpoint } from '@/shared/hooks/useRunCheckpoints';
 import type { RouteType } from '@/shared/types/api.type';
 import { useGhostRunMap } from '@/hooks/GhostRun/useGhostRunMap';
 

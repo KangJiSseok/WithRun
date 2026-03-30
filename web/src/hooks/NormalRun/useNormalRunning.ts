@@ -17,9 +17,14 @@ import { useRunningGps } from '@/shared/hooks/Running/useRunningGps';
 import { useRunningHealth } from '@/shared/hooks/Running/useRunningHealth';
 import { useRunningSplits } from '@/shared/hooks/Running/useRunningSplits';
 import { useNormalRunCourseDeviation } from './useNormalRunCourseDeviation';
-import { useRunCheckpoints } from '@/hooks/shared/useRunCheckpoints';
-export type { Checkpoint } from '@/hooks/shared/useRunCheckpoints';
-import { nearestPointOnPolyline, haversineM, buildCumDist, projectOnRoute } from '@/shared/utils/geo';
+import { useRunCheckpoints } from '@/shared/hooks/useRunCheckpoints';
+export type { Checkpoint } from '@/shared/hooks/useRunCheckpoints';
+import {
+  nearestPointOnPolyline,
+  haversineM,
+  buildCumDist,
+  projectOnRoute,
+} from '@/shared/utils/geo';
 import type { CoordinatePoint } from '@/apis/course';
 
 interface UseNormalRunningParams {
@@ -28,11 +33,21 @@ interface UseNormalRunningParams {
   onDestinationReached?: () => void;
 }
 
-export function useNormalRunning({ courseCoordinates, onForceStop, onDestinationReached }: UseNormalRunningParams) {
+export function useNormalRunning({
+  courseCoordinates,
+  onForceStop,
+  onDestinationReached,
+}: UseNormalRunningParams) {
   const [startupCountdownSec, setStartupCountdownSec] = useState(3);
   const isStartupCountdown = startupCountdownSec > 0;
 
-  const { durationSec, formattedTime, isPaused, isEffectivelyPaused, togglePause } = useRunningTimer({
+  const {
+    durationSec,
+    formattedTime,
+    isPaused,
+    isEffectivelyPaused,
+    togglePause,
+  } = useRunningTimer({
     forcedPaused: isStartupCountdown,
   });
 
@@ -51,17 +66,21 @@ export function useNormalRunning({ courseCoordinates, onForceStop, onDestination
     togglePause();
   }, [isStartupCountdown, togglePause]);
 
-  const { checkpoints, nextCheckpointIdx, lastVisitedCoordIdx, allVisited, visitedCount } = useRunCheckpoints(
-    courseCoordinates,
-    isEffectivelyPaused
-  );
+  const {
+    checkpoints,
+    nextCheckpointIdx,
+    lastVisitedCoordIdx,
+    allVisited,
+    visitedCount,
+  } = useRunCheckpoints(courseCoordinates, isEffectivelyPaused);
 
-  const { isDeviating, deviationSec, deviationAnchor } = useNormalRunCourseDeviation({
-    courseCoordinates,
-    isPaused: isEffectivelyPaused,
-    onForceStop,
-    lastCheckpointCoordIdx: lastVisitedCoordIdx,
-  });
+  const { isDeviating, deviationSec, deviationAnchor } =
+    useNormalRunCourseDeviation({
+      courseCoordinates,
+      isPaused: isEffectivelyPaused,
+      onForceStop,
+      lastCheckpointCoordIdx: lastVisitedCoordIdx,
+    });
 
   // 이탈 중에도 데이터 수집 중단 (코스 데이터 오염 방지)
   const shouldPauseCollection = isEffectivelyPaused || isDeviating;
@@ -69,8 +88,12 @@ export function useNormalRunning({ courseCoordinates, onForceStop, onDestination
   const { haversineDistanceKm, elevationGainMRef, gpsSamplesRef } =
     useRunningGps({ isPaused: shouldPauseCollection });
 
-  const { isWatchConnected, watchHealthData, healthSamplesRef, currentKmHeartRatesRef } =
-    useRunningHealth({ isPaused: shouldPauseCollection });
+  const {
+    isWatchConnected,
+    watchHealthData,
+    healthSamplesRef,
+    currentKmHeartRatesRef,
+  } = useRunningHealth({ isPaused: shouldPauseCollection });
 
   // 표시값 계산용: GPS Doppler 속도·케이던스 (데이터 수집은 GPS 훅에서 담당)
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
@@ -91,7 +114,10 @@ export function useNormalRunning({ courseCoordinates, onForceStop, onDestination
 
   // ── 일시정지 앵커 (재개 잠금) ──────────────────────────────────────
   // 일시정지 진입 시 가장 가까운 코스 지점을 고정 → 해당 지점 30m 내에서만 재개 가능
-  const [pauseAnchor, setPauseAnchor] = useState<{ latitude: number; longitude: number } | null>(null);
+  const [pauseAnchor, setPauseAnchor] = useState<{
+    latitude: number;
+    longitude: number;
+  } | null>(null);
 
   // latest ref 패턴: useEffect dep 최소화
   const latestGpsRef = useRef(gpsLocation);
@@ -106,20 +132,27 @@ export function useNormalRunning({ courseCoordinates, onForceStop, onDestination
       // 일시정지 진입 → 현재 GPS 기준 코스 앵커 설정
       const gps = latestGpsRef.current;
       if (gps) {
-        setPauseAnchor(nearestPointOnPolyline(gps.latitude, gps.longitude, courseCoordinates));
+        setPauseAnchor(
+          nearestPointOnPolyline(gps.latitude, gps.longitude, courseCoordinates)
+        );
       }
     } else if (wasPaused && !isPaused) {
       // 재개 → 앵커 해제
       setPauseAnchor(null);
     }
-  // eslint-disable-next-line react-hooks/exhaustive-deps
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [isPaused]); // isPaused 전환 시만 실행
 
   // 재개 가능 여부: 앵커 없음 또는 앵커 30m 이내
   const isWithinPauseAnchor =
     !pauseAnchor ||
     !gpsLocation ||
-    haversineM(gpsLocation.latitude, gpsLocation.longitude, pauseAnchor.latitude, pauseAnchor.longitude) <= 30;
+    haversineM(
+      gpsLocation.latitude,
+      gpsLocation.longitude,
+      pauseAnchor.latitude,
+      pauseAnchor.longitude
+    ) <= 30;
 
   // ── 표시값 계산 ────────────────────────────────────────────────
 
@@ -142,7 +175,10 @@ export function useNormalRunning({ courseCoordinates, onForceStop, onDestination
     ? (watchHealthData?.cadenceSpm ?? gpsLocation?.cadenceSpm ?? 0)
     : (gpsLocation?.cadenceSpm ?? 0);
 
-  const routeCumDist = useMemo(() => buildCumDist(courseCoordinates), [courseCoordinates]);
+  const routeCumDist = useMemo(
+    () => buildCumDist(courseCoordinates),
+    [courseCoordinates]
+  );
   const totalRouteDistanceM = routeCumDist[routeCumDist.length - 1] ?? 0;
   const routeProgressM = gpsLocation
     ? projectOnRoute(
@@ -169,7 +205,8 @@ export function useNormalRunning({ courseCoordinates, onForceStop, onDestination
   const getCollectedData = useCallback(() => {
     const distanceM = Math.round(distanceKm * 1000);
     const avgSpeedMps = durationSec > 0 ? distanceM / durationSec : 0;
-    const avgPaceSecPerKm = distanceKm > 0 ? Math.round(durationSec / distanceKm) : 0;
+    const avgPaceSecPerKm =
+      distanceKm > 0 ? Math.round(durationSec / distanceKm) : 0;
 
     return {
       durationSec,
@@ -182,7 +219,15 @@ export function useNormalRunning({ courseCoordinates, onForceStop, onDestination
       healthSamples: healthSamplesRef.current,
       splits: splitsRef.current,
     };
-  }, [durationSec, distanceKm, calories, elevationGainMRef, gpsSamplesRef, healthSamplesRef, splitsRef]);
+  }, [
+    durationSec,
+    distanceKm,
+    calories,
+    elevationGainMRef,
+    gpsSamplesRef,
+    healthSamplesRef,
+    splitsRef,
+  ]);
 
   return {
     time: formattedTime,
