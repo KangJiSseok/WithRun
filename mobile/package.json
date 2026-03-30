@@ -12,6 +12,7 @@
     "@types/react": "~19.1.17",
     "@webview-bridge/react-native": "^1.7.9",
     "expo": "~54.0.33",
+    "expo-av": "~16.0.7",
     "expo-constants": "^18.0.13",
     "expo-location": "~19.0.8",
     "expo-sensors": "~15.0.8",

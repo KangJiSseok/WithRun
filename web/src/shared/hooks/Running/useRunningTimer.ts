@@ -5,15 +5,16 @@ import { useState, useEffect, useCallback, useRef } from 'react';
 
 import { formatTime } from '@/shared/utils';
 
-export function useRunningTimer() {
+export function useRunningTimer({ forcedPaused = false }: { forcedPaused?: boolean } = {}) {
   const [isPaused, setIsPaused] = useState(false);
   const [time, setTime] = useState(0); // seconds
 
   const startTimeRef = useRef<number | null>(null);
   const elapsedRef = useRef(0);
+  const effectivePaused = isPaused || forcedPaused;
 
   useEffect(() => {
-    if (isPaused) {
+    if (effectivePaused) {
       if (startTimeRef.current !== null) {
         elapsedRef.current += Date.now() - startTimeRef.current;
         startTimeRef.current = null;
@@ -29,7 +30,7 @@ export function useRunningTimer() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [isPaused]);
+  }, [effectivePaused]);
 
   const togglePause = useCallback(() => setIsPaused((prev) => !prev), []);
 
@@ -37,6 +38,7 @@ export function useRunningTimer() {
     durationSec: time,
     formattedTime: formatTime(time),
     isPaused,
+    isEffectivelyPaused: effectivePaused,
     togglePause,
   };
 }

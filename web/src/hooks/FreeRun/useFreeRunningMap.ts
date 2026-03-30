@@ -1,9 +1,15 @@
 import { useEffect, useRef } from 'react';
 
 import { useRunLocation } from '@/shared/hooks/useRunLocation';
+import { haversineM } from '@/shared/utils/geo';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const LERP = 0.12;
+const TRACE_STROKE_WEIGHT = 6;
+const TRACE_STROKE_COLOR = '#FF3B3B';
+const TRACE_STROKE_OPACITY = 0.9;
+const TRACE_NOISE_MIN_M = 0.7;
+const TRACE_NOISE_MAX_M = 120;
 
 /** 최단 경로 각도 보간 (359° → 1° = +2°, −358°가 아님) */
 function lerpAngle(current: number, target: number, t: number): number {
@@ -62,6 +68,9 @@ export function useFreeRunningMap(containerRef: React.RefObject<HTMLDivElement |
   const { location } = useRunLocation();
   const mapRef = useRef<kakao.maps.Map | null>(null);
   const userDotRef = useRef<kakao.maps.CustomOverlay | null>(null);
+  const tracePolylineRef = useRef<kakao.maps.Polyline | null>(null);
+  const tracePathRef = useRef<kakao.maps.LatLng[]>([]);
+  const lastTracePointRef = useRef<{ latitude: number; longitude: number } | null>(null);
   const animStateRef = useRef({
     rafId: null as number | null,
     currentLat: 0,
@@ -84,6 +93,14 @@ export function useFreeRunningMap(containerRef: React.RefObject<HTMLDivElement |
     kakao.maps.load(() => {
       const center = new kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
       mapRef.current = new kakao.maps.Map(container, { center, level: 5 });
+      tracePolylineRef.current = new kakao.maps.Polyline({
+        path: tracePathRef.current,
+        strokeWeight: TRACE_STROKE_WEIGHT,
+        strokeColor: TRACE_STROKE_COLOR,
+        strokeOpacity: TRACE_STROKE_OPACITY,
+        strokeStyle: 'solid',
+      });
+      tracePolylineRef.current.setMap(mapRef.current);
 
       // 사용자 위치 마커 (도트 + 방향 cone)
       const { element, coneEl } = createUserMarkerContent();
@@ -132,6 +149,10 @@ export function useFreeRunningMap(containerRef: React.RefObject<HTMLDivElement |
         cancelAnimationFrame(s.rafId);
         s.rafId = null;
       }
+      tracePolylineRef.current?.setMap(null);
+      tracePolylineRef.current = null;
+      tracePathRef.current = [];
+      lastTracePointRef.current = null;
     };
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [containerRef]);
@@ -154,7 +175,52 @@ export function useFreeRunningMap(containerRef: React.RefObject<HTMLDivElement |
       s.initialized = true;
     }
 
-    // 지도 중심 이동: 1Hz, Kakao 자체 애니메이션 사용 (RAF 루프 내 호출 금지)
-    mapRef.current?.panTo(new kakao.maps.LatLng(location.latitude, location.longitude));
+    // 지도 중심 이동: 사용자 중심으로 고정
+    mapRef.current?.setCenter(
+      new kakao.maps.LatLng(location.latitude, location.longitude)
+    );
+
+    const last = lastTracePointRef.current;
+    if (!last) {
+      tracePathRef.current = [
+        ...tracePathRef.current,
+        new kakao.maps.LatLng(location.latitude, location.longitude),
+      ];
+      lastTracePointRef.current = {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      };
+      tracePolylineRef.current?.setPath(tracePathRef.current);
+      return;
+    }
+
+    const deltaM = haversineM(
+      last.latitude,
+      last.longitude,
+      location.latitude,
+      location.longitude
+    );
+
+    if (deltaM < TRACE_NOISE_MIN_M) {
+      return;
+    }
+    if (deltaM > TRACE_NOISE_MAX_M) {
+      // 비정상 점프는 선으로 잇지 않고 기준점만 재설정해서 이후 누적이 멈추지 않게 한다.
+      lastTracePointRef.current = {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      };
+      return;
+    }
+
+    tracePathRef.current = [
+      ...tracePathRef.current,
+      new kakao.maps.LatLng(location.latitude, location.longitude),
+    ];
+    lastTracePointRef.current = {
+      latitude: location.latitude,
+      longitude: location.longitude,
+    };
+    tracePolylineRef.current?.setPath(tracePathRef.current);
   }, [location]);
 }

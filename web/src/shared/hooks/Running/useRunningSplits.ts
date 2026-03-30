@@ -34,7 +34,7 @@ export function useRunningSplits({
     for (let km = lastSplitKmRef.current + 1; km <= targetKm; km++) {
       const splitDurationSec = durationSec - lastSplitTimeRef.current;
       const splitElevGain = Math.round(
-        elevationGainMRef.current - lastSplitElevationRef.current,
+        elevationGainMRef.current - lastSplitElevationRef.current
       );
       const hrs = currentKmHeartRatesRef.current;
       const avgHeartRate =
@@ -56,7 +56,13 @@ export function useRunningSplits({
       currentKmHeartRatesRef.current = [];
     }
     lastSplitKmRef.current = targetKm;
-  }, [distanceKm, durationSec, isPaused, elevationGainMRef, currentKmHeartRatesRef]);
+  }, [
+    distanceKm,
+    durationSec,
+    isPaused,
+    elevationGainMRef,
+    currentKmHeartRatesRef,
+  ]);
 
   return { splitsRef };
 }

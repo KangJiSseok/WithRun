@@ -13,8 +13,11 @@ type Center = { latitude: number; longitude: number };
 export function useNormalRunMapCourses(
   center: Center | null,
   radiusM: number,
-  preferredDistanceMs: PreferredDistanceM[] = []
+  preferredDistanceMs: PreferredDistanceM[] = [],
+  sortBy: 'DISTANCE' | 'POPULAR' = 'DISTANCE',
+  refreshKey = 0
 ) {
+  const safeSortBy = sortBy === 'POPULAR' ? 'POPULAR' : 'DISTANCE';
   const [currentPage, setCurrentPage] = useState(0);
 
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
@@ -26,13 +29,21 @@ export function useNormalRunMapCourses(
     gpsLocationRef.current = gpsLocation;
   }, [gpsLocation]);
 
-  // center/radiusM/preferredDistanceMs 변경 시 첫 페이지로 리셋
+  // 필터 적용/초기화(refreshKey) 포함 조건 변경 시 첫 페이지로 리셋
   useEffect(() => {
     setCurrentPage(0);
-  }, [center, radiusM, preferredDistanceMs]);
+  }, [center, radiusM, preferredDistanceMs, safeSortBy, refreshKey]);
 
   const { data, isLoading, isFetching } = useQuery<GetNearbyCoursesData | null>({
-    queryKey: ['nearbyCourses', center, radiusM, preferredDistanceMs, currentPage],
+    queryKey: [
+      'nearbyCourses',
+      center,
+      radiusM,
+      preferredDistanceMs,
+      safeSortBy,
+      refreshKey,
+      currentPage,
+    ],
     queryFn: async () => {
       if (!center) return null;
       const gps = gpsLocationRef.current;
@@ -43,7 +54,9 @@ export function useNormalRunMapCourses(
         targetLongitude: center.longitude,
         radiusM: Math.max(1000, Math.min(5000, radiusM)),
         preferredDistanceMs,
+        sortBy: safeSortBy,
         page: currentPage,
+        size: 3,
       });
       return data;
     },

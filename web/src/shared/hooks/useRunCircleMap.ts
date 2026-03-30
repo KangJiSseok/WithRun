@@ -71,7 +71,8 @@ export function useRunCircleMap(
   courses: CourseItem[],
   circleMode: CircleMode,
   onMapTouched?: () => void,
-  markerColor = '--primary-1'
+  markerColor = '--primary-1',
+  recenterToUserRequestKey = 0
 ): UseRunCircleMapReturn {
   const containerRef = useRef<HTMLDivElement | null>(null);
   const gpsLocation = useBridgeDataStore((s) => s.gpsLocation);
@@ -84,6 +85,9 @@ export function useRunCircleMap(
   const clickHandlerRef = useRef<
     ((e: kakao.maps.event.MouseEvent) => void) | null
   >(null);
+  const collapseOnClickHandlerRef = useRef<(() => void) | null>(null);
+  const collapseOnDragStartHandlerRef = useRef<(() => void) | null>(null);
+  const onMapTouchedRef = useRef(onMapTouched);
 
   const [center, setCenter] = useState<Center | null>(null);
   const [radiusM, setRadiusM] = useState(DEFAULT_RADIUS_M);
@@ -91,6 +95,11 @@ export function useRunCircleMap(
 
   // 최신 radiusM을 click handler에서 stale closure 없이 접근하기 위한 ref
   const radiusMRef = useRef(DEFAULT_RADIUS_M);
+  const recenterKeyRef = useRef(recenterToUserRequestKey);
+
+  useEffect(() => {
+    onMapTouchedRef.current = onMapTouched;
+  }, [onMapTouched]);
 
   // 지도 + 원 + 마커 초기화 (최초 1회)
   useEffect(() => {
@@ -113,6 +122,23 @@ export function useRunCircleMap(
           center: initLatLng,
           level: DEFAULT_MAP_LEVEL,
         });
+
+        collapseOnClickHandlerRef.current = () => {
+          onMapTouchedRef.current?.();
+        };
+        collapseOnDragStartHandlerRef.current = () => {
+          onMapTouchedRef.current?.();
+        };
+        kakao.maps.event.addListener(
+          mapRef.current,
+          'click',
+          collapseOnClickHandlerRef.current
+        );
+        kakao.maps.event.addListener(
+          mapRef.current,
+          'dragstart',
+          collapseOnDragStartHandlerRef.current
+        );
 
         // 탐색 원
         circleRef.current = new kakao.maps.Circle({
@@ -227,6 +253,22 @@ export function useRunCircleMap(
 
     return () => {
       signal.cancelled = true;
+      if (mapRef.current) {
+        if (collapseOnClickHandlerRef.current) {
+          kakao.maps.event.removeListener(
+            mapRef.current,
+            'click',
+            collapseOnClickHandlerRef.current
+          );
+        }
+        if (collapseOnDragStartHandlerRef.current) {
+          kakao.maps.event.removeListener(
+            mapRef.current,
+            'dragstart',
+            collapseOnDragStartHandlerRef.current
+          );
+        }
+      }
     };
     // containerRef, gpsLocation: 초기화 시점 1회만 사용
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -258,7 +300,6 @@ export function useRunCircleMap(
           latitude: newLatLng.getLat(),
           longitude: newLatLng.getLng(),
         });
-        onMapTouched?.();
       };
       kakao.maps.event.addListener(
         mapRef.current,
@@ -268,6 +309,35 @@ export function useRunCircleMap(
     }
     // mapRef.current는 초기화 후 변경 없음
   }, [circleMode, onMapTouched]);
+
+  // "내 위치" 버튼 클릭 시 현재 사용자 좌표로 지도 중심 이동 + 재조회 트리거
+  useEffect(() => {
+    if (recenterToUserRequestKey === recenterKeyRef.current) return;
+    recenterKeyRef.current = recenterToUserRequestKey;
+    if (!mapRef.current) return;
+
+    const moveTo = (lat: number, lon: number) => {
+      const latLng = new kakao.maps.LatLng(lat, lon);
+      mapRef.current?.setCenter(latLng);
+      centerMarkerRef.current?.setPosition(latLng);
+      circleRef.current?.setPosition(latLng);
+      edgeMarkerRef.current?.setPosition(eastPoint(lat, lon, radiusMRef.current));
+      setCenter({ latitude: lat, longitude: lon });
+    };
+
+    if (gpsLocation) {
+      moveTo(gpsLocation.latitude, gpsLocation.longitude);
+      return;
+    }
+
+    navigator.geolocation.getCurrentPosition(
+      ({ coords }) => moveTo(coords.latitude, coords.longitude),
+      () => {
+        /* ignore */
+      },
+      { enableHighAccuracy: false, maximumAge: 30000, timeout: 10000 }
+    );
+  }, [gpsLocation, recenterToUserRequestKey]);
 
   // 코스 출발점 마커 업데이트 (courses 변경 시)
   useEffect(() => {

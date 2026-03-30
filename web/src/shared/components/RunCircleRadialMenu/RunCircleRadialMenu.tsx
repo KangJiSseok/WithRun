@@ -11,18 +11,19 @@ const MODE_BUTTONS: {
   dy: number;
 }[] = [
   { mode: 'USER_LOCATION', label: '내 위치', dx: -50, dy: -24 },
-  { mode: 'AREA_NEARBY', label: '지역 근처', dx: -55, dy: 30 },
   { mode: 'AREA_EXPLORE', label: '지역 탐색', dx: 0, dy: 70 },
 ];
 
 type RunCircleRadialMenuProps = {
   circleMode: CircleMode;
   onCircleModeChange: (mode: CircleMode) => void;
+  onUserLocationSelect?: () => void;
 };
 
 export function RunCircleRadialMenu({
   circleMode,
   onCircleModeChange,
+  onUserLocationSelect,
 }: RunCircleRadialMenuProps) {
   const [radialOpen, setRadialOpen] = useState(false);
 
@@ -62,6 +63,9 @@ export function RunCircleRadialMenu({
               }`}
               onClick={() => {
                 onCircleModeChange(mode);
+                if (mode === 'USER_LOCATION') {
+                  onUserLocationSelect?.();
+                }
                 setRadialOpen(false);
               }}
             >

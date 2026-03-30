@@ -1,5 +1,6 @@
 import { useEffect } from 'react'
 import * as Location from 'expo-location'
+import { NativeModules, Platform } from 'react-native'
 import type { GpsLocation } from '../types'
 import { createGpsKalmanFilter } from '../../utils/gpsKalmanFilter'
 
@@ -45,6 +46,25 @@ export function useGpsLocation(onLocation: (location: GpsLocation) => void) {
             speedMps: speed,  // GPS Doppler 직접 측정 (가속도계 추정보다 정확)
             cadenceSpm: null, // 케이던스는 useCadence에서 별도 수집
           })
+
+          if (Platform.OS === 'android') {
+            const watchBridge = NativeModules.WatchBridge as
+              | { sendGpsToWatch?: (payloadJson: string) => void }
+              | undefined
+            if (watchBridge?.sendGpsToWatch) {
+              watchBridge.sendGpsToWatch(
+                JSON.stringify({
+                  latitude: filtered.latitude,
+                  longitude: filtered.longitude,
+                  accuracy: accuracy ?? null,
+                  altitude: altitude ?? null,
+                  heading: heading ?? null,
+                  speedMps: speed ?? null,
+                  timestamp: location.timestamp ?? Date.now(),
+                })
+              )
+            }
+          }
         }
       )
 

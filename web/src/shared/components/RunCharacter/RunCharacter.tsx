@@ -1,8 +1,15 @@
-import { Mascot } from '@/shared/components/Mascot';
+import { useRive } from '@rive-app/react-canvas';
 import { cn } from '@/shared/utils';
 import type { RunCharacterProps } from './RunCharacter.types';
 
 export function RunCharacter({ onClick, disabled }: RunCharacterProps) {
+  const { RiveComponent } = useRive({
+    src: '/rive/withrun_character.riv',
+    artboard: 'main',
+    animations: 'running',
+    autoplay: true,
+  });
+
   return (
     <button
       onClick={onClick}
@@ -18,8 +25,8 @@ export function RunCharacter({ onClick, disabled }: RunCharacterProps) {
         <div
           className="w-32 h-32 backdrop-blur-md rounded-full border-4 border-primary flex items-center justify-center relative overflow-hidden bg-secondary-foreground/60 shadow-[0_0_40px_hsl(var(--primary)/60%)]"
         >
-          <div className="scale-[1.5] translate-y-2">
-            <Mascot />
+          <div className="h-28 w-28 scale-[1.2] translate-y-2">
+            <RiveComponent className="h-full w-full" />
           </div>
         </div>
       </div>

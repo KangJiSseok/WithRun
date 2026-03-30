@@ -6,7 +6,6 @@ import type {
 } from '@/shared/types/api.type';
 
 export type PostCourseReviewRequest = {
-  userId: number;
   rating: number;
   courseTypes: CourseType[];
   submittedDifficulty: CourseDifficulty;
@@ -129,7 +128,7 @@ export type GhostMyRecord = {
   createdAt: string;
 };
 
-// GET /courses/{courseId}/ghost-detail/{userId} 응답
+// GET /courses/{courseId}/ghost-detail 응답
 export type GhostCourseDetail = {
   courseId: number;
   title: string;

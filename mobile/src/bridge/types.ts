@@ -33,6 +33,48 @@ export type GpsLocation = {
   cadenceSpm: number | null  // 모바일 가속도계 기반 케이던스 (워치 SPM 대체)
 }
 
+export type VoiceCueKey =
+  | 'start_01'
+  | 'start_02'
+  | 'direction_left_100m'
+  | 'direction_left_70m'
+  | 'direction_left_50m'
+  | 'direction_left_30m'
+  | 'direction_left_10m'
+  | 'direction_right_100m'
+  | 'direction_right_70m'
+  | 'direction_right_50m'
+  | 'direction_right_30m'
+  | 'direction_right_10m'
+  | 'heart_rate_high_01'
+  | 'heart_rate_high_02'
+  | 'heart_rate_very_high_01'
+  | 'heart_rate_very_high_02'
+  | 'off_course_01'
+  | 'off_course_02'
+  | 'stable_back_01'
+  | 'stable_back_02'
+  | 'turnaround_01'
+  | 'turnaround_02'
+  | 'destination_01'
+  | 'destination_02'
+  | 'end_01'
+  | 'end_02'
+
+export type WatchRunMode = 'FREE' | 'COURSE' | 'GHOST'
+
+export type WatchLatLng = {
+  latitude: number
+  longitude: number
+}
+
+export type WatchRunStartPayload = {
+  runningSessionId: number
+  mode: WatchRunMode
+  courseCoordinates: WatchLatLng[]
+  ghostCoordinates: WatchLatLng[]
+}
+
 // ─── 브릿지 타입 (bridge.ts와 동기화 필요) ───────────────────────
 
 type _AppBridgeMethods = {
@@ -40,6 +82,11 @@ type _AppBridgeMethods = {
   startSocialLogin(url: string): Promise<void>
   notifyCourseDeviation(count: 1 | 2 | 3): Promise<void>
   notifyCourseDeviationForceStop(): Promise<void>
+  playVoiceCue(key: VoiceCueKey): Promise<void>
+  stopVoiceCue(): Promise<void>
+  setVoiceEnabled(enabled: boolean): Promise<void>
+  startWatchRunSync(payload: WatchRunStartPayload): Promise<void>
+  stopWatchRunSync(): Promise<void>
 }
 
 // bridge() 반환 타입과 구조적으로 동일

@@ -1,4 +1,5 @@
 // Haversine 공식 기반 GPS 거리 계산 유틸
+import type { CoordinatePoint } from '@/apis/course';
 
 const EARTH_RADIUS_KM = 6371;
 
@@ -113,4 +114,62 @@ export function nearestPointOnPolyline(
   }
 
   return { latitude: nearestLat, longitude: nearestLon };
+}
+
+/** 코스 좌표 배열에서 누적 거리(m) 배열 빌드. cumDist[i] = 좌표 0 → i 까지 */
+export function buildCumDist(coords: CoordinatePoint[]): number[] {
+  const cumDist = [0];
+  for (let i = 1; i < coords.length; i++) {
+    const d = haversineM(
+      coords[i - 1].latitude,
+      coords[i - 1].longitude,
+      coords[i].latitude,
+      coords[i].longitude
+    );
+    cumDist.push(cumDist[i - 1] + d);
+  }
+  return cumDist;
+}
+
+/** 사용자 위치(lat, lng)를 코스 폴리라인에 투영해 누적 이동 거리(m) 반환 */
+export function projectOnRoute(
+  lat: number,
+  lng: number,
+  coords: CoordinatePoint[],
+  cumDist: number[]
+): number {
+  if (coords.length < 2) return 0;
+
+  const DEG_TO_RAD = Math.PI / 180;
+  const cosLat = Math.cos(lat * DEG_TO_RAD);
+
+  let minDist = Infinity;
+  let result = 0;
+
+  for (let i = 0; i < coords.length - 1; i++) {
+    const ax = coords[i].longitude * cosLat;
+    const ay = coords[i].latitude;
+    const bx = coords[i + 1].longitude * cosLat;
+    const by = coords[i + 1].latitude;
+    const px = lng * cosLat;
+    const py = lat;
+
+    const abx = bx - ax;
+    const aby = by - ay;
+    const ab2 = abx * abx + aby * aby;
+
+    const t = ab2 > 0 ? Math.max(0, Math.min(1, ((px - ax) * abx + (py - ay) * aby) / ab2)) : 0;
+
+    const closestLon = (ax + t * abx) / cosLat;
+    const closestLat = ay + t * aby;
+    const d = haversineM(lat, lng, closestLat, closestLon);
+
+    if (d < minDist) {
+      minDist = d;
+      const segLen = cumDist[i + 1] - cumDist[i];
+      result = cumDist[i] + t * segLen;
+    }
+  }
+
+  return result;
 }

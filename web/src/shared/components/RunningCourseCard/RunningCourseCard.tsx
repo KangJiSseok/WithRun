@@ -35,11 +35,11 @@ export function RunningCourseCard({
           src={course.snapshotImageUrl || '/course-fallback.svg'}
           alt={course.title}
           draggable={false}
-          className="absolute inset-0 h-full w-full object-fit"
+          className="absolute inset-0 h-full w-full object-cover"
         />
 
         <div className="absolute left-5 top-5 z-raised">
-          <Badge className="rounded-full bg-[hsl(var(--surface-default))] px-[var(--space-3)] py-[var(--space-2)]">
+          <Badge className="rounded-full bg-[hsl(var(--surface-default))] px-[var(--space-3)] py-[var(--space-2)] text-[hsl(var(--text-primary))]">
             <MapPin
               size={14}
               className="mr-[var(--space-1)] text-[hsl(var(--primary-1))]"

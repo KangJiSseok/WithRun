@@ -9,6 +9,7 @@ import com.google.android.gms.wearable.MessageClient
 import com.google.android.gms.wearable.MessageEvent
 import com.google.android.gms.wearable.Wearable
 import java.util.concurrent.ConcurrentLinkedQueue
+import org.json.JSONObject
 
 class WatchBridgeModule(private val reactContext: ReactApplicationContext) :
     ReactContextBaseJavaModule(reactContext),
@@ -24,6 +25,28 @@ class WatchBridgeModule(private val reactContext: ReactApplicationContext) :
 
     @ReactMethod
     fun removeListeners(count: Int) {}
+
+    @ReactMethod
+    fun startRunSync(payloadJson: String) {
+        sendToWatchNodes("/run/start", payloadJson)
+    }
+
+    @ReactMethod
+    fun stopRunSync() {
+        sendToWatchNodes("/run/stop", "{}")
+    }
+
+    @ReactMethod
+    fun sendGpsToWatch(payloadJson: String) {
+        val payload = try {
+            JSONObject(payloadJson)
+                .put("sentAt", System.currentTimeMillis())
+                .toString()
+        } catch (e: Exception) {
+            payloadJson
+        }
+        sendToWatchNodes("/run/gps", payload)
+    }
 
     // 포그라운드: MessageClient 직접 수신
     override fun onMessageReceived(messageEvent: MessageEvent) {
@@ -114,5 +137,28 @@ class WatchBridgeModule(private val reactContext: ReactApplicationContext) :
 
     init {
         setContext(reactContext)
+    }
+
+    private fun sendToWatchNodes(path: String, payload: String) {
+        Wearable.getNodeClient(reactContext.applicationContext).connectedNodes
+            .addOnSuccessListener { nodes ->
+                if (nodes.isEmpty()) {
+                    Log.w("WatchBridge", "[send] 연결된 워치 노드 없음: path=$path")
+                    return@addOnSuccessListener
+                }
+                nodes.forEach { node ->
+                    messageClient
+                        .sendMessage(node.id, path, payload.toByteArray())
+                        .addOnSuccessListener {
+                            Log.d("WatchBridge", "[send] 전송 완료 path=$path → ${node.displayName}")
+                        }
+                        .addOnFailureListener { e ->
+                            Log.e("WatchBridge", "[send] 전송 실패 path=$path → ${node.displayName}: ${e.message}")
+                        }
+                }
+            }
+            .addOnFailureListener { e ->
+                Log.e("WatchBridge", "[send] 노드 조회 실패 path=$path: ${e.message}")
+            }
     }
 }

@@ -3,6 +3,7 @@
 // Drawer가 열릴 때 GET /meta/course/register로 코스 타입·난이도·모드 선택지를 조회해 렌더링
 
 import { useState } from 'react';
+import { useQueryClient } from '@tanstack/react-query';
 import { Button } from '@/shared/components/shadcn/button';
 import {
   Drawer,
@@ -10,7 +11,7 @@ import {
   DrawerHeader,
   DrawerTitle,
 } from '@/shared/components/shadcn/drawer';
-import { cn } from '@/shared/utils';
+import { cn, captureRouteAsBlob } from '@/shared/utils';
 import type {
   CourseDifficulty,
   CourseType,
@@ -19,6 +20,8 @@ import type {
 } from '@/shared/types/api.type';
 import { useCourseSurveys } from '@/hooks/FreeRun/useCourseSurveys';
 import { registerCourse } from '@/apis/runningSessions';
+import type { GpsSample } from '@/apis/runningSessions';
+import { uploadCourseSnapshotApi } from '@/apis/course';
 import { toast } from 'sonner';
 
 type CourseShareModalProps = {
@@ -26,6 +29,7 @@ type CourseShareModalProps = {
   onClose: () => void;
   runningSessionId: number | null;
   onRegistered: (courseId: number) => void;
+  gpsSamples: GpsSample[];
 };
 
 export function CourseShareModal({
@@ -33,7 +37,9 @@ export function CourseShareModal({
   onClose,
   runningSessionId,
   onRegistered,
+  gpsSamples,
 }: CourseShareModalProps) {
+  const queryClient = useQueryClient();
   const [courseTitle, setCourseTitle] = useState(
     `나의 러닝 ${new Date().toLocaleDateString()}`
   );
@@ -82,7 +88,25 @@ export function CourseShareModal({
         courseTypes,
         routeType,
       });
-      onRegistered(res.data.courseId);
+
+      const courseId = res.data.courseId;
+
+      // 경로 이미지 캡처 후 스냅샷 업로드 (실패해도 코스 등록은 유지)
+      const blob = await captureRouteAsBlob(gpsSamples);
+      if (blob) {
+        try {
+          await uploadCourseSnapshotApi(courseId, blob);
+        } catch {
+          // 스냅샷 업로드 실패는 무시
+        }
+      }
+
+      // 자유러닝 코스 등록 후 관련 화면(일반/고스트/캘린더) 캐시 초기화
+      queryClient.removeQueries({ queryKey: ['nearbyCourses'] });
+      queryClient.removeQueries({ queryKey: ['nearbyGhostCourses'] });
+      queryClient.removeQueries({ queryKey: ['runningHistory'] });
+
+      onRegistered(courseId);
       toast.success('코스가 등록되었습니다!');
       onClose();
     } catch {

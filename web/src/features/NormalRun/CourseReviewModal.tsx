@@ -9,7 +9,6 @@ import {
 import { cn } from '@/shared/utils';
 import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
 import { postCourseReviewApi } from '@/apis/course';
-import { useAuthStore } from '@/stores/Auth';
 
 type Step = 'rating' | 'detail';
 
@@ -35,14 +34,18 @@ type CourseReviewModalProps = {
   onDone: () => void;
 };
 
-export function CourseReviewModal({ isOpen, onClose, courseId, onDone }: CourseReviewModalProps) {
+export function CourseReviewModal({
+  isOpen,
+  onClose,
+  courseId,
+  onDone,
+}: CourseReviewModalProps) {
   const [step, setStep] = useState<Step>('rating');
   const [rating, setRating] = useState(0);
   const [hoveredRating, setHoveredRating] = useState(0);
   const [difficulty, setDifficulty] = useState<CourseDifficulty | null>(null);
   const [courseTypes, setCourseTypes] = useState<CourseType[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const userId = useAuthStore((s) => s.user!.userId);
 
   useEffect(() => {
     if (isOpen) {
@@ -61,7 +64,7 @@ export function CourseReviewModal({ isOpen, onClose, courseId, onDone }: CourseR
 
   function toggleCourseType(type: CourseType) {
     setCourseTypes((prev) =>
-      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type],
+      prev.includes(type) ? prev.filter((t) => t !== type) : [...prev, type]
     );
   }
 
@@ -70,7 +73,6 @@ export function CourseReviewModal({ isOpen, onClose, courseId, onDone }: CourseR
     setIsSubmitting(true);
     try {
       await postCourseReviewApi(courseId, {
-        userId,
         rating,
         courseTypes,
         submittedDifficulty: difficulty,
@@ -120,7 +122,7 @@ export function CourseReviewModal({ isOpen, onClose, courseId, onDone }: CourseR
                         'transition-colors',
                         value <= (hoveredRating || rating)
                           ? 'text-primary fill-primary'
-                          : 'text-[hsl(var(--secondary-5))]',
+                          : 'text-[hsl(var(--secondary-5))]'
                       )}
                     />
                   </button>
@@ -138,7 +140,9 @@ export function CourseReviewModal({ isOpen, onClose, courseId, onDone }: CourseR
         ) : (
           <>
             <DrawerHeader className="text-center px-6 pt-6 pb-0">
-              <DrawerTitle className="h3-b text-[hsl(var(--text-inverse))]">상세 평가</DrawerTitle>
+              <DrawerTitle className="h3-b text-[hsl(var(--text-inverse))]">
+                상세 평가
+              </DrawerTitle>
               <p className="body-r text-[hsl(var(--secondary-5))] mt-1">
                 더 자세한 정보를 입력해 주시면
                 <br />
@@ -162,7 +166,7 @@ export function CourseReviewModal({ isOpen, onClose, courseId, onDone }: CourseR
                         'flex-1 py-2 rounded-xl caption-m transition-colors border',
                         difficulty === data
                           ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
-                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
+                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]'
                       )}
                     >
                       {label}
@@ -176,7 +180,9 @@ export function CourseReviewModal({ isOpen, onClose, courseId, onDone }: CourseR
                 <label className="caption-b text-[hsl(var(--text-inverse))] flex items-center gap-1.5">
                   <span className="inline-block w-1 h-3.5 bg-primary rounded-full" />
                   코스 타입{' '}
-                  <span className="caption-r text-[hsl(var(--secondary-5))]">(중복 가능)</span>
+                  <span className="caption-r text-[hsl(var(--secondary-5))]">
+                    (중복 가능)
+                  </span>
                 </label>
                 <div className="flex flex-wrap gap-2">
                   {COURSE_TYPE_OPTIONS.map(({ data, label }) => (
@@ -187,7 +193,7 @@ export function CourseReviewModal({ isOpen, onClose, courseId, onDone }: CourseR
                         'px-3 py-2 rounded-xl caption-m transition-colors border',
                         courseTypes.includes(data)
                           ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
-                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]',
+                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]'
                       )}
                     >
                       {label}

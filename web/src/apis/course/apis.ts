@@ -126,6 +126,51 @@ export const getGhostRunningResultApi = async (
 };
 
 /**
+ * 추천 코스 조회
+ * GET /courses/nearby/recommended
+ */
+export const getRecommendedCoursesApi = async (
+  params: GetNearbyCoursesParams
+): Promise<ApiResponse<GetNearbyCoursesData>> => {
+  const { preferredDistanceMs, ...rest } = params;
+  const { data } = await axiosClient.get<ApiResponse<GetNearbyCoursesData>>(
+    '/courses/nearby/recommended',
+    {
+      params: rest,
+      paramsSerializer: (p) => {
+        const sp = new URLSearchParams();
+        Object.entries(p).forEach(([key, value]) => {
+          if (value !== undefined && value !== null) {
+            sp.append(key, String(value));
+          }
+        });
+        preferredDistanceMs.forEach((item, i) => {
+          sp.append(`preferredDistanceMs[${i}].min`, String(item.min));
+          sp.append(`preferredDistanceMs[${i}].max`, String(item.max));
+        });
+        return sp.toString();
+      },
+    }
+  );
+  return data;
+};
+
+/**
+ * 코스 스냅샷 이미지 업로드
+ * POST /files/course-snapshots/{courseId}
+ */
+export const uploadCourseSnapshotApi = async (
+  courseId: number,
+  file: Blob,
+): Promise<void> => {
+  const formData = new FormData();
+  formData.append('file', file, 'snapshot.png');
+  await axiosClient.post(`/files/course-snapshots/${courseId}`, formData, {
+    headers: { 'Content-Type': 'multipart/form-data' },
+  });
+};
+
+/**
  * 코스 리뷰 작성
  * POST /courses/{courseId}/reviews
  */

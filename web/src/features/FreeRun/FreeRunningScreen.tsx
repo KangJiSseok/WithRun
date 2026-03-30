@@ -1,4 +1,4 @@
-// 러닝 중 화면 (통계 3개 + 타이머 + 일시정지/종료 컨트롤)
+// 러닝 중 화면 (통계 + 타이머 + 일시정지/종료 컨트롤)
 
 import { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
@@ -10,6 +10,7 @@ import { completeRunningSession } from '@/apis';
 import type { GpsSample, HealthSample, SplitResult } from '@/apis';
 import { FreeRunningMap } from './FreeRunningMap';
 import { useFreeRunSessionStore } from '@/stores/FreeRun';
+import { stopWatchRunSync } from '@/shared/utils/watchRunBridge';
 
 export interface RunningResult {
   durationSec: number;
@@ -60,6 +61,7 @@ export function FreeRunningScreen({
     distance,
     pace,
     calories,
+    heartRate,
     isPaused,
     togglePause,
     getCollectedData,
@@ -91,6 +93,7 @@ export function FreeRunningScreen({
       if (!sessionId) return;
       const data = latestGetCollectedDataRef.current();
       const gps = latestGpsLocationRef.current;
+      void stopWatchRunSync();
       completeRunningSession(sessionId, {
         completeState: 'FAIL',
         ...data,
@@ -104,6 +107,7 @@ export function FreeRunningScreen({
   const handleStopRunning = useCallback(async () => {
     if (isEnding || !runningSessionId) return;
     setIsEnding(true);
+    void stopWatchRunSync();
     try {
       const data = getCollectedData();
       const res = await completeRunningSession(runningSessionId, {
@@ -140,23 +144,22 @@ export function FreeRunningScreen({
   ]);
 
   return (
-    <div className="absolute inset-0 overflow-hidden">
-      {/* 지도 */}
-      <FreeRunningMap />
-
-      {/* 상단 통계 오버레이 */}
-      <div className="absolute left-0 right-0 top-0 z-sticky flex justify-between px-8 pt-14">
-        <StatItem label="거리" value={distance} sub="km" />
-        <StatItem label="페이스" value={pace} />
-        <StatItem label="칼로리" value={String(calories)} sub="kcal" />
+    <div className="absolute inset-0 flex flex-col overflow-hidden bg-[hsl(var(--surface-inverse))]">
+      <div className="shrink-0 border-b border-[hsl(var(--secondary-3))] px-6 py-4">
+        <div className="grid grid-cols-4 gap-2">
+          <StatItem label="거리" value={distance} sub="km" />
+          <StatItem label="페이스" value={pace} />
+          <StatItem label="칼로리" value={String(calories)} sub="kcal" />
+          <StatItem label="심박수" value={String(heartRate)} sub="bpm" />
+        </div>
       </div>
 
-      {/* 하단 그라데이션 + 컨트롤 */}
-      <div className="absolute bottom-0 left-0 right-0 z-sticky">
-        <div className="h-52 bg-linear-to-b from-transparent to-[hsl(var(--surface-inverse))]" />
+      <div className="relative min-h-0 flex-1">
+        <FreeRunningMap />
+      </div>
 
-        <div className="flex flex-col items-center gap-5 bg-[hsl(var(--surface-inverse))] pb-14 pt-2">
-          {/* 타이머 */}
+      <div className="shrink-0 border-t border-[hsl(var(--secondary-3))] px-6 pb-8 pt-4">
+        <div className="flex flex-col items-center gap-5">
           <div className="flex flex-col items-center gap-2">
             <span
               className={cn(
@@ -171,9 +174,7 @@ export function FreeRunningScreen({
             </span>
           </div>
 
-          {/* 버튼 영역 */}
           <div className="relative flex w-full items-center justify-center">
-            {/* 일시정지/재개 버튼 */}
             <button
               onClick={togglePause}
               disabled={isEnding}
@@ -187,7 +188,6 @@ export function FreeRunningScreen({
               )}
             </button>
 
-            {/* 종료 버튼 — 일시정지 시 오른쪽으로 슬라이드 */}
             <button
               onClick={handleStopRunning}
               disabled={isEnding}
