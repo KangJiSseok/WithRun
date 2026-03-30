@@ -5,12 +5,11 @@ import { haversineM } from '@/shared/utils/geo';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 const LERP = 0.12;
-const MAP_CENTER_Y_OFFSET_PX = 120;
 const TRACE_STROKE_WEIGHT = 6;
 const TRACE_STROKE_COLOR = '#FF3B3B';
 const TRACE_STROKE_OPACITY = 0.9;
-const TRACE_NOISE_MIN_M = 2;
-const TRACE_NOISE_MAX_M = 50;
+const TRACE_NOISE_MIN_M = 0.7;
+const TRACE_NOISE_MAX_M = 120;
 
 /** 최단 경로 각도 보간 (359° → 1° = +2°, −358°가 아님) */
 function lerpAngle(current: number, target: number, t: number): number {
@@ -176,10 +175,10 @@ export function useFreeRunningMap(containerRef: React.RefObject<HTMLDivElement |
       s.initialized = true;
     }
 
-    // 지도 중심 이동: 1Hz, Kakao 자체 애니메이션 사용 (RAF 루프 내 호출 금지)
-    // panBy로 하단 패널 높이만큼 위로 보정 → 사용자 도트가 가시 영역 중앙에 위치
-    mapRef.current?.panTo(new kakao.maps.LatLng(location.latitude, location.longitude));
-    mapRef.current?.panBy(0, MAP_CENTER_Y_OFFSET_PX);
+    // 지도 중심 이동: 사용자 중심으로 고정
+    mapRef.current?.setCenter(
+      new kakao.maps.LatLng(location.latitude, location.longitude)
+    );
 
     const last = lastTracePointRef.current;
     if (!last) {
@@ -202,7 +201,15 @@ export function useFreeRunningMap(containerRef: React.RefObject<HTMLDivElement |
       location.longitude
     );
 
-    if (deltaM < TRACE_NOISE_MIN_M || deltaM > TRACE_NOISE_MAX_M) {
+    if (deltaM < TRACE_NOISE_MIN_M) {
+      return;
+    }
+    if (deltaM > TRACE_NOISE_MAX_M) {
+      // 비정상 점프는 선으로 잇지 않고 기준점만 재설정해서 이후 누적이 멈추지 않게 한다.
+      lastTracePointRef.current = {
+        latitude: location.latitude,
+        longitude: location.longitude,
+      };
       return;
     }
 

@@ -3,6 +3,7 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import type { CoordinatePoint } from '@/apis';
 import type { RouteType } from '@/shared/types/api.type';
 import { createMarkerContent, haversineM, loadKakaoMapSdk } from '@/shared/utils';
+import { buildCumDist } from '@/shared/utils/geo';
 import { useRunLocation } from './useRunLocation';
 
 const POLYLINE_STROKE_WEIGHT = 5;
@@ -18,6 +19,14 @@ const START_GATE_HALF_DEPTH_M = 2.5; // 총 폭 5m
 const START_FALLBACK_RADIUS_M = 10;
 const START_GATE_REACHED_COLOR = '#22c55e';
 const START_GATE_DEFAULT_FALLBACK_COLOR = '#4F80FF';
+const CHECKPOINT_GATE_COLOR = '#f97316';
+const CHECKPOINT_GATE_WEIGHT = 3;
+const CHECKPOINT_GATE_OPACITY = 0.85;
+
+const TARGET_CHECKPOINT_SPACING_M = 300;
+const MIN_CHECKPOINT_SPACING_M = 80;
+const MAX_CHECKPOINTS = 15;
+const CHECKPOINT_GATE_HALF_WIDTH_M = 20;
 
 type StartGate = {
   centerLat: number;
@@ -34,6 +43,13 @@ type StartGate = {
   lineEndLng: number;
 };
 
+type CheckpointGateLine = {
+  startLatitude: number;
+  startLongitude: number;
+  endLatitude: number;
+  endLongitude: number;
+};
+
 function metersPerDegLon(latDeg: number): number {
   return 111_320 * Math.cos((latDeg * Math.PI) / 180);
 }
@@ -43,6 +59,82 @@ function createRouteArrowElement(bearingDeg: number): HTMLElement {
   el.style.cssText = 'pointer-events:none;';
   el.innerHTML = `<svg viewBox="0 0 10 14" width="10" height="14" style="display:block;transform:rotate(${bearingDeg}deg);transform-origin:center"><path d="M5 0 L10 14 L5 9 L0 14Z" fill="white" fill-opacity="0.8"/></svg>`;
   return el;
+}
+
+function resolveCheckpointCount(totalDistM: number): number {
+  if (totalDistM <= 0) return 0;
+  if (totalDistM < MIN_CHECKPOINT_SPACING_M) return 1;
+
+  const estimated = Math.round(totalDistM / TARGET_CHECKPOINT_SPACING_M) + 1;
+  return Math.max(2, Math.min(MAX_CHECKPOINTS, estimated));
+}
+
+function normalizeDirection(dx: number, dy: number): { x: number; y: number } {
+  const len = Math.hypot(dx, dy);
+  if (len < 1e-6) return { x: 1, y: 0 };
+  return { x: dx / len, y: dy / len };
+}
+
+function buildCheckpointGateLine(
+  cpLat: number,
+  cpLng: number,
+  dirX: number,
+  dirY: number
+): CheckpointGateLine {
+  const mPerDegLat = 110_540;
+  const mPerDegLon = metersPerDegLon(cpLat);
+
+  const nx = -dirY;
+  const ny = dirX;
+
+  const startLat = cpLat + (ny * CHECKPOINT_GATE_HALF_WIDTH_M) / mPerDegLat;
+  const startLng = cpLng + (nx * CHECKPOINT_GATE_HALF_WIDTH_M) / mPerDegLon;
+  const endLat = cpLat - (ny * CHECKPOINT_GATE_HALF_WIDTH_M) / mPerDegLat;
+  const endLng = cpLng - (nx * CHECKPOINT_GATE_HALF_WIDTH_M) / mPerDegLon;
+
+  return {
+    startLatitude: startLat,
+    startLongitude: startLng,
+    endLatitude: endLat,
+    endLongitude: endLng,
+  };
+}
+
+function buildCheckpointGateLines(coords: CoordinatePoint[]): CheckpointGateLine[] {
+  if (coords.length < 2) return [];
+
+  const cumDist = buildCumDist(coords);
+  const totalDist = cumDist[cumDist.length - 1] ?? 0;
+  const checkpointCount = resolveCheckpointCount(totalDist);
+  if (checkpointCount <= 0) return [];
+
+  const gates: CheckpointGateLine[] = [];
+  for (let step = 1; step <= checkpointCount; step++) {
+    const targetDist = step === checkpointCount ? totalDist : (totalDist * step) / checkpointCount;
+
+    let lo = 0;
+    let hi = cumDist.length - 1;
+    while (lo + 1 < hi) {
+      const mid = (lo + hi) >> 1;
+      if (cumDist[mid] <= targetDist) lo = mid;
+      else hi = mid;
+    }
+
+    const segLen = cumDist[hi] - cumDist[lo];
+    const t = segLen > 0 ? (targetDist - cumDist[lo]) / segLen : 0;
+
+    const cpLat = coords[lo].latitude + t * (coords[hi].latitude - coords[lo].latitude);
+    const cpLng = coords[lo].longitude + t * (coords[hi].longitude - coords[lo].longitude);
+
+    const segDir = normalizeDirection(
+      (coords[hi].longitude - coords[lo].longitude) * metersPerDegLon(cpLat),
+      (coords[hi].latitude - coords[lo].latitude) * M_PER_DEG_LAT
+    );
+
+    gates.push(buildCheckpointGateLine(cpLat, cpLng, segDir.x, segDir.y));
+  }
+
+  return gates;
 }
 
 function toLocalMeters(
@@ -259,6 +351,7 @@ export function useRunDetailMap(
   const coursePathRef = useRef<kakao.maps.LatLng[]>([]);
   const hasInitialBoundsRef = useRef(false);
   const routeArrowOverlaysRef = useRef<kakao.maps.CustomOverlay[]>([]);
+  const checkpointGateLinesRef = useRef<kakao.maps.Polyline[]>([]);
   const collapseOnClickHandlerRef = useRef<(() => void) | null>(null);
   const collapseOnDragStartHandlerRef = useRef<(() => void) | null>(null);
 
@@ -342,6 +435,22 @@ export function useRunDetailMap(
         const bounds = new kakao.maps.LatLngBounds();
         path.forEach((latLng) => bounds.extend(latLng));
         mapRef.current.setBounds(bounds);
+
+        const checkpointGateLines = buildCheckpointGateLines(coordinates);
+        checkpointGateLinesRef.current = checkpointGateLines.map((gate) => {
+          const gateLine = new kakao.maps.Polyline({
+            path: [
+              new kakao.maps.LatLng(gate.startLatitude, gate.startLongitude),
+              new kakao.maps.LatLng(gate.endLatitude, gate.endLongitude),
+            ],
+            strokeWeight: CHECKPOINT_GATE_WEIGHT,
+            strokeColor: CHECKPOINT_GATE_COLOR,
+            strokeOpacity: CHECKPOINT_GATE_OPACITY,
+            strokeStyle: 'shortdash',
+          });
+          gateLine.setMap(mapRef.current);
+          return gateLine;
+        });
       }
 
       // 시작 게이트 시각화 (사각 윈도우 + 게이트 선)
@@ -463,6 +572,8 @@ export function useRunDetailMap(
       cancelled = true;
       routeArrowOverlaysRef.current.forEach((o) => o.setMap(null));
       routeArrowOverlaysRef.current = [];
+      checkpointGateLinesRef.current.forEach((line) => line.setMap(null));
+      checkpointGateLinesRef.current = [];
       startToUserLineRef.current?.setMap(null);
       startToUserLineRef.current = null;
       startToUserDistanceRef.current?.setMap(null);
