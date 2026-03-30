@@ -27,7 +27,7 @@ data class WatchRunSyncData(
 )
 
 object WatchRunSyncState {
-    private const val OFF_COURSE_THRESHOLD_M = 30.0
+    private const val OFF_COURSE_THRESHOLD_M = 70.0
 
     private val _state = MutableStateFlow(WatchRunSyncData())
     val state: StateFlow<WatchRunSyncData> = _state.asStateFlow()

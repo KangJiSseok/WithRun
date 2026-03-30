@@ -261,7 +261,11 @@ fun WatchApp(
 @Composable
 private fun WatchRunMiniMap(sync: WatchRunSyncData, size: Dp = 120.dp) {
     val points = remember(sync.courseCoordinates, sync.ghostCoordinates, sync.userTrail) {
-        sync.courseCoordinates + sync.ghostCoordinates + sync.userTrail
+        if (sync.courseCoordinates.isNotEmpty()) {
+            sync.courseCoordinates
+        } else {
+            sync.ghostCoordinates + sync.userTrail
+        }
     }
     if (points.isEmpty()) return
 
@@ -299,16 +303,13 @@ private fun WatchRunMiniMap(sync: WatchRunSyncData, size: Dp = 120.dp) {
             }
         }
 
-        // course polyline
+        // course polyline (항상 단일 라인만 노출)
         drawPath(sync.courseCoordinates, Color(0xFFFF6464), 4f)
-        // ghost polyline
-        drawPath(sync.ghostCoordinates, Color(0xFF66D9FF), 2.5f)
-        // user trail
-        drawPath(sync.userTrail, Color(0xFF8DFF8D), 3f)
 
         val ghostPoint = pointAtProgress(sync.ghostCoordinates, sync.ghostProgressRatio)
         ghostPoint?.let {
-            drawCircle(color = Color(0xFF66D9FF), radius = 4.5f, center = toOffset(it))
+            val ghostColor = if (sync.mode == "GHOST") Color(0xFFF97316) else Color(0xFF66D9FF)
+            drawCircle(color = ghostColor, radius = 4.5f, center = toOffset(it))
             drawCircle(
                 color = Color.White,
                 radius = 6f,
