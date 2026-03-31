@@ -9,20 +9,18 @@ import {
   M_PER_DEG_LON_EQUATOR,
   MAP_DEFAULT_CENTER,
   MAP_LERP,
-  NEXT_GATE_STROKE_COLOR,
-  NEXT_GATE_STROKE_WEIGHT,
-  POLYLINE_STROKE_COLOR,
-  POLYLINE_STROKE_COLOR_VISITED,
-  POLYLINE_STROKE_OPACITY,
-  POLYLINE_STROKE_WEIGHT,
   ROUTE_ARROW_COUNT,
 } from '@/shared/constants/map';
 import { loadKakaoMapSdk } from '@/shared/libs';
 import {
   createCheckpointDotContent,
   createGhostMarkerContent,
+  createNextGatePolyline,
   createRouteArrowElement,
+  createRoutePolyline,
+  createSafeZoneCircle,
   createUserMarkerContent,
+  createVisitedPolyline,
 } from '@/shared/kakaoMap';
 import { lerpAngle } from '@/shared/utils';
 
@@ -143,22 +141,10 @@ export function useGhostRunMap(
             (c) => new kakao.maps.LatLng(c.latitude, c.longitude)
           );
 
-          remainingPolylineRef.current = new kakao.maps.Polyline({
-            path,
-            strokeWeight: POLYLINE_STROKE_WEIGHT,
-            strokeColor: POLYLINE_STROKE_COLOR,
-            strokeOpacity: POLYLINE_STROKE_OPACITY,
-            strokeStyle: 'solid',
-          });
+          remainingPolylineRef.current = createRoutePolyline(path);
           remainingPolylineRef.current.setMap(mapRef.current);
 
-          visitedPolylineRef.current = new kakao.maps.Polyline({
-            path: [],
-            strokeWeight: POLYLINE_STROKE_WEIGHT,
-            strokeColor: POLYLINE_STROKE_COLOR_VISITED,
-            strokeOpacity: POLYLINE_STROKE_OPACITY,
-            strokeStyle: 'solid',
-          });
+          visitedPolylineRef.current = createVisitedPolyline([]);
           visitedPolylineRef.current.setMap(mapRef.current);
 
           // 진행 방향 화살표 오버레이 (OUT_AND_BACK은 전반부에만 배치)
@@ -394,13 +380,7 @@ export function useGhostRunMap(
     ];
 
     if (!nextGatePolylineRef.current) {
-      nextGatePolylineRef.current = new kakao.maps.Polyline({
-        path,
-        strokeWeight: NEXT_GATE_STROKE_WEIGHT,
-        strokeColor: NEXT_GATE_STROKE_COLOR,
-        strokeOpacity: 0.95,
-        strokeStyle: 'shortdash',
-      });
+      nextGatePolylineRef.current = createNextGatePolyline(path);
       nextGatePolylineRef.current.setMap(mapRef.current);
       return;
     }
@@ -437,16 +417,8 @@ export function useGhostRunMap(
       );
 
       if (!safeZoneCircleRef.current) {
-        safeZoneCircleRef.current = new kakao.maps.Circle({
-          map: mapRef.current,
-          center,
-          radius: 30,
-          strokeWeight: 2,
-          strokeColor: '#22c55e',
-          strokeOpacity: 0.7,
-          fillColor: '#22c55e',
-          fillOpacity: 0.15,
-        });
+        safeZoneCircleRef.current = createSafeZoneCircle(center);
+        safeZoneCircleRef.current.setMap(mapRef.current);
       } else {
         safeZoneCircleRef.current.setPosition(center);
       }

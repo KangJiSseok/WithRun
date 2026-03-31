@@ -1,24 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { CoordinatePoint, RouteType } from '@/apis';
+import {
+  M_PER_DEG_LAT,
+  M_PER_DEG_LON_EQUATOR,
+  ROUTE_ARROW_COUNT,
+} from '@/shared/constants/map';
 import { loadKakaoMapSdk } from '@/shared/libs';
 import {
   createDistanceBadgeElement,
   createMarkerContent,
   createRouteArrowElement,
+  createRoutePolyline,
   createUserDotContent,
 } from '@/shared/kakaoMap';
-import { haversineM } from '@/shared/utils';
+import { haversineM, metersPerDegLon } from '@/shared/utils';
 import { buildCumDist } from '@/shared/utils/geo';
 import { useRunLocation } from './useRunLocation';
-
-const POLYLINE_STROKE_WEIGHT = 5;
-const POLYLINE_STROKE_COLOR = '#4F80FF';
-const POLYLINE_STROKE_OPACITY = 0.9;
-
-const M_PER_DEG_LAT = 110_540;
-const M_PER_DEG_LON_EQUATOR = 111_320;
-const ROUTE_ARROW_COUNT = 15;
 
 const START_GATE_HALF_WIDTH_M = 15;
 const START_GATE_HALF_DEPTH_M = 2.5; // 총 폭 5m
@@ -56,11 +54,6 @@ type CheckpointGateLine = {
   endLongitude: number;
 };
 
-function metersPerDegLon(latDeg: number): number {
-  return 111_320 * Math.cos((latDeg * Math.PI) / 180);
-}
-
-
 function resolveCheckpointCount(totalDistM: number): number {
   if (totalDistM <= 0) return 0;
   if (totalDistM < MIN_CHECKPOINT_SPACING_M) return 1;
@@ -81,15 +74,14 @@ function buildCheckpointGateLine(
   dirX: number,
   dirY: number
 ): CheckpointGateLine {
-  const mPerDegLat = 110_540;
   const mPerDegLon = metersPerDegLon(cpLat);
 
   const nx = -dirY;
   const ny = dirX;
 
-  const startLat = cpLat + (ny * CHECKPOINT_GATE_HALF_WIDTH_M) / mPerDegLat;
+  const startLat = cpLat + (ny * CHECKPOINT_GATE_HALF_WIDTH_M) / M_PER_DEG_LAT;
   const startLng = cpLng + (nx * CHECKPOINT_GATE_HALF_WIDTH_M) / mPerDegLon;
-  const endLat = cpLat - (ny * CHECKPOINT_GATE_HALF_WIDTH_M) / mPerDegLat;
+  const endLat = cpLat - (ny * CHECKPOINT_GATE_HALF_WIDTH_M) / M_PER_DEG_LAT;
   const endLng = cpLng - (nx * CHECKPOINT_GATE_HALF_WIDTH_M) / mPerDegLon;
 
   return {
@@ -150,11 +142,10 @@ function toLocalMeters(
   originLat: number,
   originLng: number
 ): { x: number; y: number } {
-  const mPerDegLat = 110_540;
   const mPerDegLon = metersPerDegLon(originLat);
   return {
     x: (lng - originLng) * mPerDegLon,
-    y: (lat - originLat) * mPerDegLat,
+    y: (lat - originLat) * M_PER_DEG_LAT,
   };
 }
 
@@ -164,10 +155,9 @@ function addMetersToLatLng(
   xM: number,
   yM: number
 ): { lat: number; lng: number } {
-  const mPerDegLat = 110_540;
   const mPerDegLon = metersPerDegLon(originLat);
   return {
-    lat: originLat + yM / mPerDegLat,
+    lat: originLat + yM / M_PER_DEG_LAT,
     lng: originLng + xM / mPerDegLon,
   };
 }
@@ -212,10 +202,9 @@ function buildStartGate(
     endLongitude
   );
 
-  const mPerDegLat = 110_540;
   const mPerDegLon = metersPerDegLon(startLatitude);
   const txRaw = (next.longitude - startLongitude) * mPerDegLon;
-  const tyRaw = (next.latitude - startLatitude) * mPerDegLat;
+  const tyRaw = (next.latitude - startLatitude) * M_PER_DEG_LAT;
   const len = Math.hypot(txRaw, tyRaw);
   if (len < 1e-6) return null;
 
@@ -384,13 +373,7 @@ export function useRunDetailMap(
         );
         coursePathRef.current = path;
 
-        const polyline = new kakao.maps.Polyline({
-          path,
-          strokeWeight: POLYLINE_STROKE_WEIGHT,
-          strokeColor: POLYLINE_STROKE_COLOR,
-          strokeOpacity: POLYLINE_STROKE_OPACITY,
-          strokeStyle: 'solid',
-        });
+        const polyline = createRoutePolyline(path);
         polyline.setMap(mapRef.current);
 
         // 진행 방향 화살표 오버레이 (ROUTE_ARROW_COUNT개 균등 배치)

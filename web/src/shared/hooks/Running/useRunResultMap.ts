@@ -2,11 +2,7 @@ import { useEffect } from 'react';
 
 import type { GpsSample } from '@/apis/runningSessions';
 import { loadKakaoMapSdk } from '@/shared/libs';
-import { createMarkerContent } from '@/shared/kakaoMap';
-
-const POLYLINE_STROKE_WEIGHT = 5;
-const POLYLINE_STROKE_COLOR = '#4F80FF';
-const POLYLINE_STROKE_OPACITY = 0.9;
+import { createMarkerContent, createRoutePolyline } from '@/shared/kakaoMap';
 
 export function useRunResultMap(
   containerRef: React.RefObject<HTMLDivElement | null>,
@@ -30,14 +26,7 @@ export function useRunResultMap(
       if (gpsSamples.length >= 2) {
         const path = gpsSamples.map((s) => new kakao.maps.LatLng(s.latitude, s.longitude));
 
-        new kakao.maps.Polyline({
-          map,
-          path,
-          strokeWeight: POLYLINE_STROKE_WEIGHT,
-          strokeColor: POLYLINE_STROKE_COLOR,
-          strokeOpacity: POLYLINE_STROKE_OPACITY,
-          strokeStyle: 'solid',
-        });
+        createRoutePolyline(path).setMap(map);
 
         const bounds = new kakao.maps.LatLngBounds();
         path.forEach((latLng) => bounds.extend(latLng));

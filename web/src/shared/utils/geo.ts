@@ -131,6 +131,11 @@ export function buildCumDist(coords: CoordinatePoint[]): number[] {
   return cumDist;
 }
 
+/** 위도 latDeg 기준 경도 1도당 미터 (적도 기준 × cos(lat)) */
+export function metersPerDegLon(latDeg: number): number {
+  return 111_320 * Math.cos((latDeg * Math.PI) / 180);
+}
+
 /**
  * 최단 경로 각도 보간 (359° → 1° = +2°, −358° 아님)
  * @param current 현재 각도 (0~360)

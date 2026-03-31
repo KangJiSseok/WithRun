@@ -2,13 +2,10 @@ import { useEffect, useRef } from 'react';
 
 import { useRunLocation } from '@/shared/hooks/useRunLocation';
 import { MAP_DEFAULT_CENTER, MAP_LERP } from '@/shared/constants/map';
-import { createUserMarkerContent } from '@/shared/kakaoMap';
+import { createFreeRunTracePolyline, createUserMarkerContent } from '@/shared/kakaoMap';
 import { lerpAngle } from '@/shared/utils';
 import { haversineM } from '@/shared/utils/geo';
 
-const TRACE_STROKE_WEIGHT = 6;
-const TRACE_STROKE_COLOR = '#FF3B3B';
-const TRACE_STROKE_OPACITY = 0.9;
 const TRACE_NOISE_MIN_M = 0.7;
 const TRACE_NOISE_MAX_M = 120;
 
@@ -42,13 +39,7 @@ export function useFreeRunningMap(containerRef: React.RefObject<HTMLDivElement |
     kakao.maps.load(() => {
       const center = new kakao.maps.LatLng(MAP_DEFAULT_CENTER.lat, MAP_DEFAULT_CENTER.lng);
       mapRef.current = new kakao.maps.Map(container, { center, level: 5 });
-      tracePolylineRef.current = new kakao.maps.Polyline({
-        path: tracePathRef.current,
-        strokeWeight: TRACE_STROKE_WEIGHT,
-        strokeColor: TRACE_STROKE_COLOR,
-        strokeOpacity: TRACE_STROKE_OPACITY,
-        strokeStyle: 'solid',
-      });
+      tracePolylineRef.current = createFreeRunTracePolyline(tracePathRef.current);
       tracePolylineRef.current.setMap(mapRef.current);
 
       // 사용자 위치 마커 (도트 + 방향 cone)
