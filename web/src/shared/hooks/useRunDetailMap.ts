@@ -1,11 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
 import type { CoordinatePoint, RouteType } from '@/apis';
+import { loadKakaoMapSdk } from '@/shared/libs';
 import {
+  createDistanceBadgeElement,
   createMarkerContent,
-  haversineM,
-  loadKakaoMapSdk,
-} from '@/shared/utils';
+  createRouteArrowElement,
+  createUserDotContent,
+} from '@/shared/kakaoMap';
+import { haversineM } from '@/shared/utils';
 import { buildCumDist } from '@/shared/utils/geo';
 import { useRunLocation } from './useRunLocation';
 
@@ -57,12 +60,6 @@ function metersPerDegLon(latDeg: number): number {
   return 111_320 * Math.cos((latDeg * Math.PI) / 180);
 }
 
-function createRouteArrowElement(bearingDeg: number): HTMLElement {
-  const el = document.createElement('div');
-  el.style.cssText = 'pointer-events:none;';
-  el.innerHTML = `<svg viewBox="0 0 10 14" width="10" height="14" style="display:block;transform:rotate(${bearingDeg}deg);transform-origin:center"><path d="M5 0 L10 14 L5 9 L0 14Z" fill="white" fill-opacity="0.8"/></svg>`;
-  return el;
-}
 
 function resolveCheckpointCount(totalDistM: number): number {
   if (totalDistM <= 0) return 0;
@@ -282,38 +279,6 @@ function resolvePrimaryColor(): string {
   return `hsl(${token})`;
 }
 
-function createUserDotContent(label: string, color: string): HTMLElement {
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText =
-    'display:flex;flex-direction:column;align-items:center;gap:4px;';
-
-  const dot = document.createElement('div');
-  dot.style.cssText = `
-    width: 16px;
-    height: 16px;
-    background: ${color};
-    border: 2.5px solid white;
-    border-radius: 50%;
-    box-shadow: 0 0 0 6px rgba(59,130,246,0.2), 0 2px 4px rgba(0,0,0,0.3);
-  `;
-
-  const tag = document.createElement('span');
-  tag.textContent = label;
-  tag.style.cssText = `
-    background: ${color};
-    color: white;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 4px;
-    white-space: nowrap;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  `;
-
-  wrapper.appendChild(dot);
-  wrapper.appendChild(tag);
-  return wrapper;
-}
 
 type CourseMapParams = {
   coordinates: CoordinatePoint[];
@@ -584,19 +549,7 @@ export function useRunDetailMap(
       startToUserLineRef.current.setMap(mapRef.current);
 
       // 점선 중간 거리 배지
-      const distanceTag = document.createElement('div');
-      distanceTag.style.cssText = `
-        padding: 4px 8px;
-        border-radius: 999px;
-        background: rgba(17,24,39,0.86);
-        color: white;
-        font-size: 11px;
-        font-weight: 700;
-        line-height: 1;
-        white-space: nowrap;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-      `;
-      distanceTag.textContent = '0m';
+      const distanceTag = createDistanceBadgeElement();
       startToUserDistanceRef.current = new kakao.maps.CustomOverlay({
         map: mapRef.current,
         position: startLatLng,

@@ -131,6 +131,17 @@ export function buildCumDist(coords: CoordinatePoint[]): number[] {
   return cumDist;
 }
 
+/**
+ * 최단 경로 각도 보간 (359° → 1° = +2°, −358° 아님)
+ * @param current 현재 각도 (0~360)
+ * @param target 목표 각도 (0~360)
+ * @param t 보간 계수 (0~1), MAP_LERP 사용 권장
+ */
+export function lerpAngle(current: number, target: number, t: number): number {
+  const diff = ((target - current + 540) % 360) - 180;
+  return (current + diff * t + 360) % 360;
+}
+
 /** 사용자 위치(lat, lng)를 코스 폴리라인에 투영해 누적 이동 거리(m) 반환 */
 export function projectOnRoute(
   lat: number,

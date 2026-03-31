@@ -2,7 +2,8 @@ import { useEffect, useRef } from 'react';
 
 import { useRunLocation } from '@/shared/hooks/useRunLocation';
 import { MAP_DEFAULT_CENTER, MAP_LERP } from '@/shared/constants/map';
-import { createUserMarkerContent, lerpAngle } from '@/shared/utils';
+import { createUserMarkerContent } from '@/shared/kakaoMap';
+import { lerpAngle } from '@/shared/utils';
 import { haversineM } from '@/shared/utils/geo';
 
 const TRACE_STROKE_WEIGHT = 6;

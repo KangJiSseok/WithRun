@@ -17,13 +17,14 @@ import {
   POLYLINE_STROKE_WEIGHT,
   ROUTE_ARROW_COUNT,
 } from '@/shared/constants/map';
+import { loadKakaoMapSdk } from '@/shared/libs';
 import {
+  createCheckpointDotContent,
   createGhostMarkerContent,
   createRouteArrowElement,
   createUserMarkerContent,
-  lerpAngle,
-  loadKakaoMapSdk,
-} from '@/shared/utils';
+} from '@/shared/kakaoMap';
+import { lerpAngle } from '@/shared/utils';
 
 /** 누적 거리 배열에서 targetDist 위치의 lat/lng 보간 */
 function interpolateAlongRoute(
@@ -346,14 +347,7 @@ export function useGhostRunMap(
     if (checkpointOverlaysRef.current.length !== checkpoints.length) {
       checkpointOverlaysRef.current.forEach((overlay) => overlay.setMap(null));
       checkpointOverlaysRef.current = checkpoints.map((cp) => {
-        const el = document.createElement('div');
-        el.style.cssText = `
-          width: 10px; height: 10px;
-          background: #9ca3af;
-          border: 2px solid white;
-          border-radius: 50%;
-          box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-        `;
+        const el = createCheckpointDotContent();
         return new kakao.maps.CustomOverlay({
           map: mapRef.current!,
           position: new kakao.maps.LatLng(cp.latitude, cp.longitude),

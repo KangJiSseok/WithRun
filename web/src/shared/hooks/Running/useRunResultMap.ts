@@ -1,7 +1,8 @@
 import { useEffect } from 'react';
 
 import type { GpsSample } from '@/apis/runningSessions';
-import { createMarkerContent, loadKakaoMapSdk } from '@/shared/utils';
+import { loadKakaoMapSdk } from '@/shared/libs';
+import { createMarkerContent } from '@/shared/kakaoMap';
 
 const POLYLINE_STROKE_WEIGHT = 5;
 const POLYLINE_STROKE_COLOR = '#4F80FF';

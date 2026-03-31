@@ -1,7 +1,7 @@
 import { useEffect, useRef } from 'react';
 
 import type { CoordinatePoint } from '@/apis';
-import { loadKakaoMapSdk } from '@/shared/utils';
+import { loadKakaoMapSdk } from '@/shared/libs';
 
 const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 // 폴리라인 스타일 상수

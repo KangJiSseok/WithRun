@@ -2,7 +2,8 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { CourseItem } from '@/apis';
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
-import { createMarkerContent, loadKakaoMapSdk } from '@/shared/utils';
+import { loadKakaoMapSdk } from '@/shared/libs';
+import { createMarkerContent } from '@/shared/kakaoMap';
 
 export type CircleMode = 'USER_LOCATION' | 'AREA_NEARBY' | 'AREA_EXPLORE';
 

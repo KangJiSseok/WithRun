@@ -1,6 +1,6 @@
 import { useEffect, useRef } from 'react';
 
-import { loadKakaoMapSdk } from '@/shared/utils';
+import { loadKakaoMapSdk } from '@/shared/libs';
 
 // GPS는 비동기라 응답이 늦게 오기에 먼저 서울 지도를 보여주고,
 // GPS 응답이 오면, 실제 위치로 이동하게 해줌.

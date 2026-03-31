@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 
 import { GhostRunDetailScreen } from '@/features/GhostRun';
 import { useGhostRunCourseDetail } from '@/hooks/GhostRun/useGhostRunCourseDetail';
-import { loadKakaoMapSdk } from '@/shared/utils';
+import { loadKakaoMapSdk } from '@/shared/libs';
 
 export function GhostRunDetailPage() {
   // API 호출과 병렬로 SDK 미리 로드
