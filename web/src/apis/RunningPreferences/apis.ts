@@ -1,4 +1,4 @@
-import type { ApiResponse } from '@/shared/types/api.type';
+import type { ApiResponse } from '../types';
 
 import axiosClient from '@/shared/libs/axiosClient';
 import type {
@@ -16,10 +16,10 @@ export async function getUserRunningPreferences(): Promise<UserRunningPreference
 }
 
 export async function updateUserRunningPreferences(
-  payload: UpdateUserRunningPreferenceRequest,
+  payload: UpdateUserRunningPreferenceRequest
 ): Promise<void> {
   await axiosClient.put<ApiResponse<void>>(
     '/users/me/running-preferences',
-    payload,
+    payload
   );
 }

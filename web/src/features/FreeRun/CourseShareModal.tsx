@@ -17,7 +17,7 @@ import type {
   CourseType,
   CourseRegistrationMode,
   RouteType,
-} from '@/shared/types/api.type';
+} from '@/apis';
 import { useCourseSurveys } from '@/hooks/FreeRun/useCourseSurveys';
 import { registerCourse } from '@/apis/runningSessions';
 import type { GpsSample } from '@/apis/runningSessions';
@@ -258,8 +258,8 @@ export function CourseShareModal({
             {isSubmitting
               ? '등록 중...'
               : courseMode === 'PRIVATE'
-              ? '개인 코스로 저장'
-              : '커뮤니티에 등록'}
+                ? '개인 코스로 저장'
+                : '커뮤니티에 등록'}
           </Button>
         </div>
       </DrawerContent>

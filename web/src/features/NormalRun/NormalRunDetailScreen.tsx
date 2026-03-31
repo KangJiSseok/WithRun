@@ -8,7 +8,7 @@ import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
 import { useRunDetailMap } from '@/shared/hooks/useRunDetailMap';
 import type { CourseDetail } from '@/apis/course';
-import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
+import type { CourseDifficulty, CourseType } from '@/apis';
 import { createRunningSession } from '@/apis/runningSessions';
 import { useNormalRunSessionStore } from '@/stores/NormalRun';
 import { bridge, useBridgeDataStore } from '@/bridge';
@@ -63,16 +63,20 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
     bottomInset: BOTTOM_NAV_HEIGHT,
   });
 
-  const { isNearStart } = useRunDetailMap(containerRef, {
-    coordinates: course.coordinates,
-    routeType: course.routeType,
-    startLatitude: course.startLatitude,
-    startLongitude: course.startLongitude,
-    endLatitude: course.endLatitude,
-    endLongitude: course.endLongitude,
-  }, {
-    onMapTouched: collapse,
-  });
+  const { isNearStart } = useRunDetailMap(
+    containerRef,
+    {
+      coordinates: course.coordinates,
+      routeType: course.routeType,
+      startLatitude: course.startLatitude,
+      startLongitude: course.startLongitude,
+      endLatitude: course.endLatitude,
+      endLongitude: course.endLongitude,
+    },
+    {
+      onMapTouched: collapse,
+    }
+  );
 
   const handleStartRunning = async () => {
     if (!gpsLocation || !courseId) return;
@@ -105,9 +109,9 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
     ? '시작 중...'
     : !gpsLocation
       ? '위치 정보를 확인중입니다...'
-    : isNearStart
-      ? '러닝 시작'
-      : '출발 지점에 서주세요!';
+      : isNearStart
+        ? '러닝 시작'
+        : '출발 지점에 서주세요!';
 
   return (
     <div className="relative h-screen w-full overflow-hidden">
@@ -159,7 +163,9 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
               <div className="h-1 w-10 rounded-full bg-[hsl(var(--border-default))]" />
             </div>
             <div className="px-[var(--space-5)] pb-[var(--space-4)]">
-              <h2 className="h2-b text-[hsl(var(--text-primary))]">{course.title}</h2>
+              <h2 className="h2-b text-[hsl(var(--text-primary))]">
+                {course.title}
+              </h2>
               <div className="mt-[var(--space-4)] flex flex-wrap gap-[var(--space-2)]">
                 <Badge
                   variant="outline"

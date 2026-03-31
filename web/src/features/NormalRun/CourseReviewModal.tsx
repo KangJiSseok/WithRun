@@ -7,7 +7,7 @@ import {
   DrawerTitle,
 } from '@/shared/components/shadcn/drawer';
 import { cn } from '@/shared/utils';
-import type { CourseDifficulty, CourseType } from '@/shared/types/api.type';
+import type { CourseDifficulty, CourseType } from '@/apis';
 import { postCourseReviewApi } from '@/apis/course';
 
 type Step = 'rating' | 'detail';

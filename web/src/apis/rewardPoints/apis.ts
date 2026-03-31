@@ -1,5 +1,5 @@
 import axiosClient from '@/shared/libs/axiosClient';
-import type { ApiResponse } from '@/shared/types/api.type';
+import type { ApiResponse } from '../types';
 
 import type {
   RewardPointBalanceResponse,
@@ -9,9 +9,10 @@ import type {
 export async function getRewardPointBalance(): Promise<
   ApiResponse<RewardPointBalanceResponse>
 > {
-  const { data } = await axiosClient.get<ApiResponse<RewardPointBalanceResponse>>(
-    '/reward-points/me'
-  );
+  const { data } =
+    await axiosClient.get<ApiResponse<RewardPointBalanceResponse>>(
+      '/reward-points/me'
+    );
 
   return data;
 }

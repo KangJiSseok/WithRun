@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
 
-import type { CoordinatePoint } from '@/apis';
+import type { CoordinatePoint, RouteType } from '@/apis';
 import type { Checkpoint } from '@/shared/hooks/useRunCheckpoints';
-import type { RouteType } from '@/shared/types/api.type';
 import { useRunLocation } from '@/shared/hooks/useRunLocation';
 import {
   M_PER_DEG_LAT,
@@ -187,7 +186,11 @@ export function useNormalRunMap(
         // 방향 cone 업데이트
         const isMoving = (s.targetSpeed ?? 0) > 0.5;
         if (s.coneEl && s.targetHeading !== null && isMoving) {
-          s.currentHeading = lerpAngle(s.currentHeading, s.targetHeading, MAP_LERP);
+          s.currentHeading = lerpAngle(
+            s.currentHeading,
+            s.targetHeading,
+            MAP_LERP
+          );
           s.coneEl.style.transform = `rotate(${s.currentHeading}deg)`;
           s.coneEl.style.opacity = '0.75';
         } else if (s.coneEl) {

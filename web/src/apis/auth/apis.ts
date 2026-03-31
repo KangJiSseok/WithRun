@@ -1,4 +1,4 @@
-import type { ApiResponse } from '@/shared/types/api.type';
+import type { ApiResponse } from '../types';
 
 import { buildServerUrl } from '@/shared/config/api';
 import { authApiClient } from '@/shared/libs/axiosClient';
@@ -12,28 +12,26 @@ import type {
 export type SocialProvider = 'kakao' | 'google';
 
 export async function reissueAccessToken(): Promise<ReissueAccessTokenResponse> {
-  const { data } = await authApiClient.post<
-    ApiResponse<ReissueAccessTokenResponse>
-  >('/auth/reissue');
+  const { data } =
+    await authApiClient.post<ApiResponse<ReissueAccessTokenResponse>>(
+      '/auth/reissue'
+    );
 
   return data.data;
 }
 
 export async function exchangeAuthCode(
-  request: ExchangeAuthCodeRequest,
+  request: ExchangeAuthCodeRequest
 ): Promise<ExchangeAuthCodeResponse> {
   // 모바일 OAuth 복귀 직후에는 refresh cookie가 없을 수 있으므로 code를 먼저 세션으로 교환합니다.
-  const { data } = await authApiClient.post<ApiResponse<ExchangeAuthCodeResponse>>(
-    '/auth/exchange',
-    request,
-  );
+  const { data } = await authApiClient.post<
+    ApiResponse<ExchangeAuthCodeResponse>
+  >('/auth/exchange', request);
 
   return data.data;
 }
 
-export async function getCurrentUser(
-  accessToken: string,
-): Promise<AuthUser> {
+export async function getCurrentUser(accessToken: string): Promise<AuthUser> {
   // /auth/me 는 bootstrap 중 "이 토큰이 실제로 누구인지"를 확정하는 마지막 단계다.
   const { data } = await authApiClient.get<ApiResponse<AuthUser>>('/auth/me', {
     headers: {
@@ -54,7 +52,7 @@ export async function logout(accessToken: string | null): Promise<void> {
             Authorization: `Bearer ${accessToken}`,
           },
         }
-      : undefined,
+      : undefined
   );
 }
 
@@ -68,6 +66,6 @@ export function buildWebSocialLoginUrl(provider: SocialProvider): string {
   const origin = encodeURIComponent(window.location.origin);
 
   return buildServerUrl(
-    `/web/oauth2/authorization/${provider}?origin=${origin}`,
+    `/web/oauth2/authorization/${provider}?origin=${origin}`
   );
 }

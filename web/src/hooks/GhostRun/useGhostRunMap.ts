@@ -1,8 +1,7 @@
 import { useEffect, useRef } from 'react';
 
-import type { CoordinatePoint } from '@/apis';
+import type { CoordinatePoint, RouteType } from '@/apis';
 import type { Checkpoint } from '@/shared/hooks/useRunCheckpoints';
-import type { RouteType } from '@/shared/types/api.type';
 import { useRunLocation } from '@/shared/hooks/useRunLocation';
 import { buildCumDist } from '@/shared/utils/geo';
 import {

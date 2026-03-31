@@ -1,8 +1,11 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { CoordinatePoint } from '@/apis';
-import type { RouteType } from '@/shared/types/api.type';
-import { createMarkerContent, haversineM, loadKakaoMapSdk } from '@/shared/utils';
+import type { CoordinatePoint, RouteType } from '@/apis';
+import {
+  createMarkerContent,
+  haversineM,
+  loadKakaoMapSdk,
+} from '@/shared/utils';
 import { buildCumDist } from '@/shared/utils/geo';
 import { useRunLocation } from './useRunLocation';
 
@@ -100,7 +103,9 @@ function buildCheckpointGateLine(
   };
 }
 
-function buildCheckpointGateLines(coords: CoordinatePoint[]): CheckpointGateLine[] {
+function buildCheckpointGateLines(
+  coords: CoordinatePoint[]
+): CheckpointGateLine[] {
   if (coords.length < 2) return [];
 
   const cumDist = buildCumDist(coords);
@@ -110,7 +115,10 @@ function buildCheckpointGateLines(coords: CoordinatePoint[]): CheckpointGateLine
 
   const gates: CheckpointGateLine[] = [];
   for (let step = 1; step <= checkpointCount; step++) {
-    const targetDist = step === checkpointCount ? totalDist : (totalDist * step) / checkpointCount;
+    const targetDist =
+      step === checkpointCount
+        ? totalDist
+        : (totalDist * step) / checkpointCount;
 
     let lo = 0;
     let hi = cumDist.length - 1;
@@ -123,8 +131,10 @@ function buildCheckpointGateLines(coords: CoordinatePoint[]): CheckpointGateLine
     const segLen = cumDist[hi] - cumDist[lo];
     const t = segLen > 0 ? (targetDist - cumDist[lo]) / segLen : 0;
 
-    const cpLat = coords[lo].latitude + t * (coords[hi].latitude - coords[lo].latitude);
-    const cpLng = coords[lo].longitude + t * (coords[hi].longitude - coords[lo].longitude);
+    const cpLat =
+      coords[lo].latitude + t * (coords[hi].latitude - coords[lo].latitude);
+    const cpLng =
+      coords[lo].longitude + t * (coords[hi].longitude - coords[lo].longitude);
 
     const segDir = normalizeDirection(
       (coords[hi].longitude - coords[lo].longitude) * metersPerDegLon(cpLat),
@@ -246,7 +256,11 @@ function buildStartGate(
   };
 }
 
-function isInsideStartGate(lat: number, lng: number, gate: StartGate | null): boolean {
+function isInsideStartGate(
+  lat: number,
+  lng: number,
+  gate: StartGate | null
+): boolean {
   if (!gate) return false;
 
   const { x, y } = toLocalMeters(lat, lng, gate.centerLat, gate.centerLng);
@@ -363,7 +377,13 @@ export function useRunDetailMap(
     if (!containerRef.current) return;
 
     const container = containerRef.current;
-    const { coordinates, startLatitude, startLongitude, endLatitude, endLongitude } = course;
+    const {
+      coordinates,
+      startLatitude,
+      startLongitude,
+      endLatitude,
+      endLongitude,
+    } = course;
     let cancelled = false;
     defaultGateColorRef.current = resolvePrimaryColor();
 
@@ -371,7 +391,10 @@ export function useRunDetailMap(
       if (cancelled) return;
 
       const startLatLng = new kakao.maps.LatLng(startLatitude, startLongitude);
-      mapRef.current = new kakao.maps.Map(container, { center: startLatLng, level: 5 });
+      mapRef.current = new kakao.maps.Map(container, {
+        center: startLatLng,
+        level: 5,
+      });
 
       collapseOnClickHandlerRef.current = () => {
         onMapTouchedRef.current?.();
@@ -391,7 +414,9 @@ export function useRunDetailMap(
       );
 
       if (coordinates.length > 0) {
-        const path = coordinates.map((c) => new kakao.maps.LatLng(c.latitude, c.longitude));
+        const path = coordinates.map(
+          (c) => new kakao.maps.LatLng(c.latitude, c.longitude)
+        );
         coursePathRef.current = path;
 
         const polyline = new kakao.maps.Polyline({
@@ -409,7 +434,10 @@ export function useRunDetailMap(
           course.routeType === 'OUT_AND_BACK'
             ? coordinates.slice(0, Math.ceil(coordinates.length / 2))
             : coordinates;
-        const step = Math.max(1, Math.floor(arrowCoords.length / ROUTE_ARROW_COUNT));
+        const step = Math.max(
+          1,
+          Math.floor(arrowCoords.length / ROUTE_ARROW_COUNT)
+        );
         const startOffset = Math.floor(step / 2);
         for (let i = startOffset; i < arrowCoords.length - 1; i += step) {
           const cur = arrowCoords[i];
@@ -458,26 +486,34 @@ export function useRunDetailMap(
         const p1 = addMetersToLatLng(
           startGate.centerLat,
           startGate.centerLng,
-          startGate.nx * startGate.halfWidthM + startGate.tx * startGate.halfDepthM,
-          startGate.ny * startGate.halfWidthM + startGate.ty * startGate.halfDepthM
+          startGate.nx * startGate.halfWidthM +
+            startGate.tx * startGate.halfDepthM,
+          startGate.ny * startGate.halfWidthM +
+            startGate.ty * startGate.halfDepthM
         );
         const p2 = addMetersToLatLng(
           startGate.centerLat,
           startGate.centerLng,
-          -startGate.nx * startGate.halfWidthM + startGate.tx * startGate.halfDepthM,
-          -startGate.ny * startGate.halfWidthM + startGate.ty * startGate.halfDepthM
+          -startGate.nx * startGate.halfWidthM +
+            startGate.tx * startGate.halfDepthM,
+          -startGate.ny * startGate.halfWidthM +
+            startGate.ty * startGate.halfDepthM
         );
         const p3 = addMetersToLatLng(
           startGate.centerLat,
           startGate.centerLng,
-          -startGate.nx * startGate.halfWidthM - startGate.tx * startGate.halfDepthM,
-          -startGate.ny * startGate.halfWidthM - startGate.ty * startGate.halfDepthM
+          -startGate.nx * startGate.halfWidthM -
+            startGate.tx * startGate.halfDepthM,
+          -startGate.ny * startGate.halfWidthM -
+            startGate.ty * startGate.halfDepthM
         );
         const p4 = addMetersToLatLng(
           startGate.centerLat,
           startGate.centerLng,
-          startGate.nx * startGate.halfWidthM - startGate.tx * startGate.halfDepthM,
-          startGate.ny * startGate.halfWidthM - startGate.ty * startGate.halfDepthM
+          startGate.nx * startGate.halfWidthM -
+            startGate.tx * startGate.halfDepthM,
+          startGate.ny * startGate.halfWidthM -
+            startGate.ty * startGate.halfDepthM
         );
 
         startGateRectRef.current = new kakao.maps.Polygon({
@@ -498,7 +534,10 @@ export function useRunDetailMap(
 
         startGateLineRef.current = new kakao.maps.Polyline({
           path: [
-            new kakao.maps.LatLng(startGate.lineStartLat, startGate.lineStartLng),
+            new kakao.maps.LatLng(
+              startGate.lineStartLat,
+              startGate.lineStartLng
+            ),
             new kakao.maps.LatLng(startGate.lineEndLat, startGate.lineEndLng),
           ],
           strokeWeight: 4,
@@ -606,7 +645,10 @@ export function useRunDetailMap(
     const latLng = new kakao.maps.LatLng(latitude, longitude);
     userDotRef.current.setPosition(latLng);
 
-    const startLatLng = new kakao.maps.LatLng(course.startLatitude, course.startLongitude);
+    const startLatLng = new kakao.maps.LatLng(
+      course.startLatitude,
+      course.startLongitude
+    );
     startToUserLineRef.current?.setPath([startLatLng, latLng]);
 
     const midpoint = new kakao.maps.LatLng(
@@ -630,10 +672,13 @@ export function useRunDetailMap(
       course.startLatitude,
       course.startLongitude
     );
-    const distanceEl = startToUserDistanceRef.current?.getContent() as HTMLElement | undefined;
+    const distanceEl = startToUserDistanceRef.current?.getContent() as
+      | HTMLElement
+      | undefined;
     if (distanceEl) distanceEl.textContent = `${Math.round(fallbackDistM)}m`;
 
-    const nextIsNearStart = inStartGate || fallbackDistM <= START_FALLBACK_RADIUS_M;
+    const nextIsNearStart =
+      inStartGate || fallbackDistM <= START_FALLBACK_RADIUS_M;
     setIsNearStart(nextIsNearStart);
 
     const gateColor = nextIsNearStart

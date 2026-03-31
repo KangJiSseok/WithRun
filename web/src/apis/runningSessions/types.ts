@@ -1,12 +1,16 @@
 import type {
-  RunningMode,
   CourseDifficulty,
   CourseType,
   CourseStatus,
-  CourseRegistrationMode,
   RouteType,
-  CompleteState,
-} from '@/shared/types/api.type';
+} from '../types';
+
+// 러닝 모드
+export type RunningMode = 'FREE' | 'COURSE' | 'GHOST';
+// 코스 등록 모드 (개인 저장 or 커뮤니티 공개)
+export type CourseRegistrationMode = 'PRIVATE' | 'COMMUNITY';
+// 코스 세션 상태
+export type CompleteState = 'SUCCESS' | 'FAIL' | 'GIVEUP';
 
 // GET /running-sessions/history/past - 과거 러닝 세션 항목
 export type RunningHistoryItem = {

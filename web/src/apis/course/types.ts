@@ -3,7 +3,7 @@ import type {
   CourseStatus,
   CourseType,
   RouteType,
-} from '@/shared/types/api.type';
+} from '../types';
 
 export type PostCourseReviewRequest = {
   rating: number;
