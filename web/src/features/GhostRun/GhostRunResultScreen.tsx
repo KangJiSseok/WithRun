@@ -15,7 +15,7 @@ import type {
   CompleteRunningSessionResponse,
   HealthSample,
 } from '@/apis/runningSessions';
-import { NormalRunResultMap } from '@/features/NormalRun/NormalRunResultMap';
+import { RunResultMap } from '@/shared/components/Running/RunResultMap';
 import { cn } from '@/shared/utils';
 import { useGhostRunSessionStore } from '@/stores/GhostRun';
 
@@ -187,7 +187,7 @@ export function GhostRunResultScreen({ result }: GhostRunResultScreenProps) {
         {/* 지도 */}
         <div className="h-40 rounded-2xl overflow-hidden border border-[hsl(var(--secondary-3))]">
           {result.gpsSamples.length >= 2 ? (
-            <NormalRunResultMap gpsSamples={result.gpsSamples} />
+            <RunResultMap gpsSamples={result.gpsSamples} />
           ) : (
             <div className="h-full bg-[hsl(var(--secondary-2))] flex items-center justify-center">
               <div className="flex flex-col items-center gap-2 text-[hsl(var(--secondary-5))]">

@@ -5,7 +5,7 @@ import { CalendarDetailHeader } from './CalendarDetailHeader';
 
 import { cn } from '@/shared/utils';
 import { formatDuration, formatPace, formatStartTime } from '@/shared/utils';
-import { useNormalRunResultMap } from '@/hooks/NormalRun/useNormalRunResultMap';
+import { useRunResultMap } from '@/shared/hooks/Running/useRunResultMap';
 import type { RunningSessionDetailResponse, GhostRunningResult } from '@/apis/runningSessions';
 import type { GpsSample, HealthSample, SplitResult } from '@/apis/runningSessions';
 
@@ -65,7 +65,7 @@ function GhostResultCard({ result }: { result: GhostRunningResult }) {
 function DetailMap({ gpsSamples }: { gpsSamples: GpsSample[] }) {
   // div 가리키는 ref 만들기 (지도 라이브러리에서 이 div에 지도를 그릴 예정)
   const containerRef = useRef<HTMLDivElement>(null);
-  useNormalRunResultMap(containerRef, gpsSamples);
+  useRunResultMap(containerRef, gpsSamples);
   // 빈 div 반환 (지도 라이브러리가 이 div에 지도를 그릴 예정)
   return <div ref={containerRef} className="w-full h-full" />;
 }
