@@ -57,6 +57,8 @@ local.properties
 !.opencode/oh-my-openagent.jsonc
 .opencode/node_modules/
 .opencode/**/node_modules/
+__pycache__/
+*.py[cod]
 .sisyphus/
 .claude/
 _research/
