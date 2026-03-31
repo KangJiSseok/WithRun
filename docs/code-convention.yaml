@@ -1,0 +1,68 @@
+general:
+  - id: GEN-001
+    rule: 변경은 소유 모듈 경계를 존중한다. Product screen UI는 기본적으로 web에 두고, mobile은 shell/bridge/device integration에 한정한다.
+    stacks: [all]
+  - id: GEN-002
+    rule: 타입 에러를 숨기기 위한 any, ts-ignore, ts-expect-error를 사용하지 않는다. 불가피하면 unknown과 명시적 타입 가드를 사용한다.
+    stacks: [all]
+  - id: GEN-003
+    rule: 한 변경은 한 책임에 집중한다. 버그 수정 시 원인과 직접 관련 없는 리팩터링을 함께 넣지 않는다.
+    stacks: [all]
+  - id: GEN-004
+    rule: 사용자나 호출자가 관찰하는 동작이 바뀌는 경우에는 변경 근거와 검증 방법을 함께 남긴다.
+    stacks: [all]
+
+web:
+  - id: WEB-001
+    rule: 화면/사용자 경험 변경은 web/src/features를 우선 수정하고 pages는 route wrapper 역할에 가깝게 유지한다.
+    stacks: [react, vite, tailwind]
+  - id: WEB-002
+    rule: web의 스타일링은 토큰 기반으로 작성한다. 임의 hex, rgb 값으로 디자인 시스템을 우회하지 않는다.
+    stacks: [react, tailwind]
+  - id: WEB-003
+    rule: 라우팅, 인증 가드, 접근 제어 변경은 routes 계층에서 일관되게 처리하고 feature 컴포넌트로 흩뿌리지 않는다.
+    stacks: [react]
+  - id: WEB-004
+    rule: 서버 데이터와 UI 상태를 구분한다. 원격 데이터 동기화는 query 계층에서 처리하고, 화면 표현 로직과 혼합하지 않는다.
+    stacks: [react, react-query]
+
+mobile:
+  - id: MOB-001
+    rule: mobile은 web을 감싸는 thin shell 구조를 유지한다. 제품 화면 로직을 mobile에 중복 구현하지 않는다.
+    stacks: [expo, react-native, webview]
+  - id: MOB-002
+    rule: web과 mobile 사이의 계약 변경은 mobile/src/bridge/types.ts를 기준으로 관리하고 양쪽 호환성을 함께 검증한다.
+    stacks: [expo, typescript, bridge]
+  - id: MOB-003
+    rule: device permission, deep link, sensor, native bridge 로직은 화면 렌더링 코드와 분리한다.
+    stacks: [expo, react-native]
+
+backend:
+  - id: WAS-001
+    rule: Controller는 요청/응답 매핑에 집중하고 비즈니스 로직은 domain service 계층에 둔다.
+    stacks: [spring, java]
+  - id: WAS-002
+    rule: 도메인별 패키지 경계를 유지한다. 관련 없는 도메인 간 직접 결합보다 공통 계층이나 명시적 계약을 사용한다.
+    stacks: [spring, java]
+  - id: WAS-003
+    rule: API 응답 형식, 보안, 필터, 예외 처리 같은 cross-cutting concern은 global 계층에서 일관되게 관리한다.
+    stacks: [spring, java]
+
+watch:
+  - id: WAT-001
+    rule: wearable 관련 변경은 watch 모듈을 기준으로 작업한다. wear 디렉터리는 활성 모듈로 취급하지 않는다.
+    stacks: [kotlin, wearos]
+  - id: WAT-002
+    rule: 센서 수집과 데이터 전달 책임은 MainActivity와 ExerciseService의 역할 경계를 흐리지 않도록 분리한다.
+    stacks: [kotlin, wearos]
+
+monorepo:
+  - id: MONO-001
+    rule: 모노레포 루트에는 단일 앱 실행 스크립트를 가정하지 않는다. web/mobile은 pnpm, was/watch는 각자 도구 체인을 따른다.
+    stacks: [monorepo]
+  - id: MONO-002
+    rule: 변경 검증은 영향을 받는 소유 모듈 단위로 수행한다. 관련 없는 앱 전체 빌드를 기본값으로 강제하지 않는다.
+    stacks: [monorepo]
+  - id: MONO-003
+    rule: cross-project 계약 변경은 관련 모듈을 함께 갱신하고, 한쪽만 맞춘 부분 적용 상태로 남기지 않는다.
+    stacks: [monorepo]

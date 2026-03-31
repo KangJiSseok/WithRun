@@ -1,0 +1,57 @@
+- id: ADR-001
+  title: Product UI ownership lives in web
+  status: adopted
+  date: 2026-03-31
+  stacks: [react, vite, expo, webview]
+  context: |
+    이 저장소는 web, mobile, was, watch를 함께 가진 모노레포다.
+    모바일 앱은 실제 제품 화면을 native 쪽에 다시 구현하는 구조가 아니라 web 앱을 감싸는 shell 역할에 가깝다.
+    화면 로직이 web과 mobile에 중복되기 시작하면 기능 수정 시 두 구현을 동시에 유지해야 하고,
+    bridge 계약과 사용자 경험 차이가 빠르게 벌어진다.
+  decision: 제품 화면 UI와 화면 수준의 비즈니스 표현 로직은 기본적으로 web에서 소유하고, mobile은 shell/bridge/device integration에 집중한다.
+  consequence: UI 변경은 먼저 web에서 검토하고, mobile에는 필요한 native integration 변경만 추가한다.
+
+- id: ADR-002
+  title: Web-mobile bridge contract is centralized in mobile/src/bridge/types.ts
+  status: adopted
+  date: 2026-03-31
+  stacks: [typescript, expo, react]
+  context: |
+    web은 mobile shell과 메시지/상태 계약을 공유한다.
+    bridge 타입이 여러 위치에 흩어지면 한쪽만 업데이트된 상태가 생기고,
+    런타임 메시지 호환성 문제를 정적 검증으로 잡기 어려워진다.
+  decision: web과 mobile 사이의 bridge 계약은 mobile/src/bridge/types.ts를 기준으로 관리한다.
+  consequence: bridge 변경은 cross-project change로 취급하며 web과 mobile을 함께 검증해야 한다.
+
+- id: ADR-003
+  title: Backend is organized by domain with global cross-cutting layers
+  status: adopted
+  date: 2026-03-31
+  stacks: [spring, java]
+  context: |
+    backend는 auth, course, navigation, running, user 등 여러 도메인을 가진 Spring Boot 서비스다.
+    보안, 필터, 응답 envelope, 환경 설정 같은 concern은 도메인마다 제각각 구현하면 중복과 불일치가 생긴다.
+  decision: 도메인별 비즈니스 로직은 domain 패키지 아래에 두고, 공통 concern은 global 계층에서 관리한다.
+  consequence: API/보안/예외 처리 변경은 domain 수정만으로 끝내지 않고 global 영향까지 함께 검토해야 한다.
+
+- id: ADR-004
+  title: Watch is the active wearable module
+  status: adopted
+  date: 2026-03-31
+  stacks: [kotlin, wearos]
+  context: |
+    저장소에는 watch와 wear 두 디렉터리가 공존하지만, 실제 활성 Wear OS 구현은 watch에 있다.
+    placeholder 성격의 디렉터리를 활성 코드베이스로 오인하면 잘못된 위치에 기능을 추가하거나 검증 누락이 발생한다.
+  decision: wearable 기능은 watch 모듈을 기준으로 작업하고 wear 디렉터리는 기본적으로 무시한다.
+  consequence: wearable 관련 리뷰와 검증은 watch 기준으로 진행하고, wear는 명시적 부활 결정 없이는 수정 대상으로 포함하지 않는다.
+
+- id: ADR-005
+  title: Web styling uses token-based mobile-first design
+  status: adopted
+  date: 2026-03-31
+  stacks: [react, tailwind]
+  context: |
+    web은 러닝 동반 앱 특성에 맞춘 모바일 퍼스트 시각 체계를 사용한다.
+    토큰 시스템을 우회한 임의 색상과 개별 스타일이 늘어나면 화면 일관성이 깨지고 디자인 변경 비용이 커진다.
+  decision: web 스타일링은 shared styles와 semantic token 체계를 우선 사용한다.
+  consequence: UI 리뷰에서는 기능 동작뿐 아니라 토큰 사용 여부와 기존 시각 체계 준수 여부를 함께 확인한다.
