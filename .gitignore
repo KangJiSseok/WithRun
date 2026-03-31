@@ -40,23 +40,14 @@ local.properties
 
 # AI / Tooling
 .opencode/*
-!.opencode/agents/
-!.opencode/agents/**
 !.opencode/commands/
 !.opencode/commands/**
-!.opencode/modes/
-!.opencode/modes/**
-!.opencode/plugins/
-!.opencode/plugins/**
 !.opencode/skills/
 !.opencode/skills/**
-!.opencode/themes/
-!.opencode/themes/**
-!.opencode/tools/
-!.opencode/tools/**
 !.opencode/oh-my-openagent.jsonc
 .opencode/node_modules/
 .opencode/**/node_modules/
+.review-artifacts/
 __pycache__/
 *.py[cod]
 .sisyphus/

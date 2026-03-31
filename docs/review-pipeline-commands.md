@@ -19,7 +19,7 @@
 
 ### `review-pipeline-auto.md`
 
-전체 파이프라인 오케스트레이터다. 현재 브랜치와 base branch를 점검하고, `.review-artifacts/{branch-name}/` 아래에 산출물을 모은다. 개별 커맨드를 순서대로 연결하는 허브 역할을 한다.
+전체 파이프라인 오케스트레이터다. 현재 브랜치를 점검하고, 고정 base branch인 `dev` 기준으로 `.review-artifacts/{branch-name}/` 아래에 산출물을 모은다. 개별 커맨드를 순서대로 연결하는 허브 역할을 한다.
 
 ### `review-pipeline-write-intent.md`
 
@@ -54,7 +54,7 @@
 - **사용자 확인 지점 분리**: 의도/기준/PR 본문은 사용자 피드백을 반영해 확정하고, 자동 리뷰 단계는 사용자 확인 없이 진행한다.
 - **worktree(fork) 활용**: 문서 생성이나 반영 단계는 격리된 컨텍스트에서 수행하도록 전제한다.
 - **sub-agent 활용**: ADR 추출이나 자동 리뷰처럼 독립적으로 위임 가능한 작업은 sub-agent에게 맡긴다.
-- **base branch diff 고정**: 여러 단계가 `git diff dev...HEAD`를 기준으로 동작하므로, 파이프라인 전체가 같은 비교 기준을 공유한다.
+- **base branch diff 고정(dev 전용)**: 여러 단계가 `git diff dev...HEAD`를 기준으로 동작하므로, 파이프라인 전체는 `dev`를 고정 비교 기준으로 공유한다.
 
 ## 생성되는 주요 산출물
 

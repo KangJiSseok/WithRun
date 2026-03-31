@@ -19,13 +19,12 @@ description: 현재 브랜치에서 전체 코드리뷰 파이프라인을 실�
 2. `git diff dev...HEAD --stat`으로 변경 파일 목록을 확인한다.
 3. 사용자에게 다음을 확인한다:
    - branch명
-   - base branch (기본: `dev`)
    - 변경 파일 수
 4. `.review-artifacts/{branch-name}/` 디렉토리를 생성한다.
 
 ### Step 2: 설계의도 작성
 
-1. **worktree(fork)를 생성**하여 `/write-intent` skill을 실행한다.
+1. **worktree(fork)를 생성**하여 `/review-pipeline-write-intent` command를 실행한다.
 2. 초안과 함께 **모호한 논의점**을 사용자에게 제시한다.
 3. 사용자 피드백을 반영하여 `design-intent.md`를 확정한다.
 4. 산출물을 `.review-artifacts/{branch-name}/`에 저장한다.
@@ -33,7 +32,7 @@ description: 현재 브랜치에서 전체 코드리뷰 파이프라인을 실�
 
 ### Step 3: 평가기준 수립
 
-1. **worktree(fork)를 생성**하여 `/gen-criteria` skill을 실행한다.
+1. **worktree(fork)를 생성**하여 `/review-pipeline-gen-criteria` command를 실행한다.
 2. sub-agent가 `docs/adr.yaml`을 분석하여 관련 항목을 추출한다.
 3. 초안과 함께 **기준 적용 범위가 모호한 논의점**을 사용자에게 제시한다.
 4. 사용자 피드백을 반영하여 `code-quality-guide.md`를 확정한다.
@@ -42,7 +41,7 @@ description: 현재 브랜치에서 전체 코드리뷰 파이프라인을 실�
 
 ### Step 4: PR 본문 생성
 
-1. **worktree(fork)를 생성**하여 `/create-pr-body` skill을 실행한다.
+1. **worktree(fork)를 생성**하여 `/review-pipeline-create-pr-body` command를 실행한다.
 2. git diff 기반으로 PR 본문 초안을 생성한다.
 3. 초안과 함께 **명확히 해야 할 논의점**을 사용자에게 제시한다.
 4. 사용자 피드백을 반영하여 `pr-body.md`를 확정한다.
@@ -51,7 +50,7 @@ description: 현재 브랜치에서 전체 코드리뷰 파이프라인을 실�
 
 ### Step 5: 코드리뷰 실행
 
-1. **sub-agent를 호출**하여 `/review` skill을 실행한다.
+1. **sub-agent를 호출**하여 `/review-pipeline-review` command를 실행한다.
 2. sub-agent는 다음을 입력받아 자동으로 리뷰한다:
    - `.review-artifacts/{branch-name}/code-quality-guide.md`
    - `.review-artifacts/{branch-name}/design-intent.md`
@@ -62,7 +61,7 @@ description: 현재 브랜치에서 전체 코드리뷰 파이프라인을 실�
 
 ### Step 6: 리뷰 반영
 
-1. **worktree(fork)를 생성**하여 `/reflect-review` skill을 실행한다.
+1. **worktree(fork)를 생성**하여 `/review-pipeline-reflect-review` command를 실행한다.
 2. 각 리뷰 코멘트의 수용/거부 판단을 사용자에게 제시한다.
 3. 사용자 확인 후 코드를 수정한다.
 4. QA를 수행한다 (빌드, 테스트).
