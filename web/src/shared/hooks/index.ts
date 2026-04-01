@@ -1,5 +1,4 @@
 export * from './useInfiniteScroll';
-export * from './useKakaoMap';
 export * from './useRunBottomSheet';
 export * from './useRunCircleMap';
 export * from './useRunCourseFilter';
