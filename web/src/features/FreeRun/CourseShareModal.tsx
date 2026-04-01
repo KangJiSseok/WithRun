@@ -21,8 +21,8 @@ import type {
 import { registerCourse } from '@/apis/runningSessions';
 import type { GpsSample } from '@/apis/runningSessions';
 import { uploadCourseSnapshotApi } from '@/apis/course';
+import { useCourseSurveys } from '@/hooks/FreeRun/useCourseSurveys';
 import { toast } from 'sonner';
-import { useCourseSurveys } from './hooks/useCourseSurveys';
 
 type CourseShareModalProps = {
   isOpen: boolean;

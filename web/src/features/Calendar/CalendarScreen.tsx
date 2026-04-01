@@ -1,7 +1,7 @@
 import { ChevronDown } from 'lucide-react';
 import { useEffect, useRef } from 'react';
+import { useCalendar } from '@/hooks/Calendar';
 import { cn, formatDateLabel } from '@/shared/utils';
-import { useCalendar } from './hooks/useCalendar';
 import { CalendarHeader } from './CalendarHeader';
 import { CalendarGrid } from './CalendarGrid';
 import { ActivitySummary } from './ActivitySummary';

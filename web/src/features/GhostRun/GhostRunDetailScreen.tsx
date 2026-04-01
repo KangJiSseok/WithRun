@@ -15,8 +15,8 @@ import { useRunBottomSheet } from '@/shared/hooks/useRunBottomSheet';
 import { useRunLocation } from '@/shared/hooks/useRunLocation';
 import { formatTime } from '@/shared/utils';
 import { useGhostRunSessionStore } from '@/stores/GhostRun';
+import { useGhostRunLeaderboard } from '@/hooks/GhostRun/useGhostRunLeaderboard';
 import { startWatchRunSync } from '@/shared/utils/watchRunBridge';
-import { useGhostRunLeaderboard } from './hooks/useGhostRunLeaderboard';
 
 type GhostTarget = { runningSessionId: number; isMine: boolean };
 
