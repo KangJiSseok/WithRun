@@ -18,11 +18,11 @@ import type {
   CourseRegistrationMode,
   RouteType,
 } from '@/apis';
-import { useCourseSurveys } from '@/hooks/FreeRun/useCourseSurveys';
 import { registerCourse } from '@/apis/runningSessions';
 import type { GpsSample } from '@/apis/runningSessions';
 import { uploadCourseSnapshotApi } from '@/apis/course';
 import { toast } from 'sonner';
+import { useCourseSurveys } from './hooks/useCourseSurveys';
 
 type CourseShareModalProps = {
   isOpen: boolean;

@@ -1,7 +1,7 @@
 import { useParams } from 'react-router-dom';
 
-import { useCalendarDetail } from '@/hooks/Calendar';
 import { CalendarDetailScreen, CalendarDetailHeader } from '@/features/Calendar';
+import { useCalendarDetail } from '@/features/Calendar/hooks/useCalendarDetail';
 
 export function CalendarDetailPage() {
   const { runningSessionId } = useParams();
