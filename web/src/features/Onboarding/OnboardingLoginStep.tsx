@@ -3,7 +3,7 @@ import { AlertCircle, LoaderCircle } from 'lucide-react';
 import { useEffect, useMemo, useState } from 'react';
 
 import type { SocialProvider } from '@/apis/auth';
-import { useSocialLogin } from '@/hooks/Auth/useSocialLogin';
+import { useSocialLogin } from '@/hooks/Auth';
 import { ONBOARDING_LOGIN_COPY_TEXTS } from '@/constants/Onboarding';
 
 type LoginErrorCode = 'cancelled' | 'access_denied' | 'server_error';

@@ -2,18 +2,18 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { CourseItem } from '@/apis';
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
+import {
+  COURSE_SEARCH_DEFAULT_RADIUS_M,
+  MAP_DEFAULT_CENTER,
+} from '@/shared/constants/map';
 import { loadKakaoMapSdk } from '@/shared/libs';
 import { createExplorationCircle, createMarkerContent } from '@/shared/kakaoMap';
 import { haversineM } from '@/shared/utils';
 
 export type CircleMode = 'USER_LOCATION' | 'AREA_NEARBY' | 'AREA_EXPLORE';
 
-// 초기 탐색 반경 (m)
-const DEFAULT_RADIUS_M = 3000;
 // 기본 지도 레벨
 const DEFAULT_MAP_LEVEL = 7;
-// 서울 시청 (GPS 모두 실패 시 최종 폴백)
-const FALLBACK_CENTER = { lat: 37.5665, lng: 126.978 };
 const DEFAULT_MARKER_COLOR = 'hsl(29 94% 58%)';
 
 function resolveMapColor(colorOrToken: string): string {
@@ -74,11 +74,11 @@ export function useRunCircleMap(
   const onMapTouchedRef = useRef(onMapTouched);
 
   const [center, setCenter] = useState<Center | null>(null);
-  const [radiusM, setRadiusM] = useState(DEFAULT_RADIUS_M);
+  const [radiusM, setRadiusM] = useState(COURSE_SEARCH_DEFAULT_RADIUS_M);
   const resolvedMarkerColor = resolveMapColor(markerColor);
 
   // 최신 radiusM을 click handler에서 stale closure 없이 접근하기 위한 ref
-  const radiusMRef = useRef(DEFAULT_RADIUS_M);
+  const radiusMRef = useRef(COURSE_SEARCH_DEFAULT_RADIUS_M);
   const recenterKeyRef = useRef(recenterToUserRequestKey);
 
   useEffect(() => {
@@ -125,7 +125,11 @@ export function useRunCircleMap(
         );
 
         // 탐색 원
-        circleRef.current = createExplorationCircle(initLatLng, DEFAULT_RADIUS_M, resolvedMarkerColor);
+        circleRef.current = createExplorationCircle(
+          initLatLng,
+          COURSE_SEARCH_DEFAULT_RADIUS_M,
+          resolvedMarkerColor
+        );
         circleRef.current.setMap(mapRef.current);
 
         // 구심점 마커 (시각적 표시용)
@@ -135,7 +139,11 @@ export function useRunCircleMap(
         });
 
         // 엣지 마커 — 항상 드래그 가능 (반경 조정용)
-        const initEdgeLatLng = eastPoint(initLat, initLon, DEFAULT_RADIUS_M);
+        const initEdgeLatLng = eastPoint(
+          initLat,
+          initLon,
+          COURSE_SEARCH_DEFAULT_RADIUS_M
+        );
         edgeMarkerRef.current = new kakao.maps.Marker({
           position: initEdgeLatLng,
           map: mapRef.current,
@@ -219,7 +227,7 @@ export function useRunCircleMap(
       } catch {
         // 3. 모두 실패 시 서울 시청 폴백
         if (!signal.cancelled) {
-          initMap(FALLBACK_CENTER.lat, FALLBACK_CENTER.lng);
+          initMap(MAP_DEFAULT_CENTER.lat, MAP_DEFAULT_CENTER.lng);
         }
       }
     }

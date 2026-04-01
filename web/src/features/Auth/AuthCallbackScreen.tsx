@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 
 import { useAuthStore } from '@/stores/Auth';
-import { bootstrapAuthSession } from '@/hooks/Auth';
+import { bootstrapAuthSession } from '@/utils/auth/bootstrapAuthSession';
 
 export function AuthCallbackScreen() {
   const navigate = useNavigate();

@@ -1,10 +1,7 @@
 import { useEffect, useRef } from 'react';
 
+import { MAP_DEFAULT_CENTER } from '@/shared/constants/map';
 import { loadKakaoMapSdk } from '@/shared/libs';
-
-// GPS는 비동기라 응답이 늦게 오기에 먼저 서울 지도를 보여주고,
-// GPS 응답이 오면, 실제 위치로 이동하게 해줌.
-const DEFAULT_CENTER = { lat: 37.5665, lng: 126.978 };
 
 export function useFreeRunMap() {
   // useRef: 화면을 다시 그리지 않고 값을 저장하는 상자
@@ -35,7 +32,10 @@ export function useFreeRunMap() {
       if (cancelled) return;
 
       // 1. 서울 좌표로 지도 생성
-      const kakaoCenter = new kakao.maps.LatLng(DEFAULT_CENTER.lat, DEFAULT_CENTER.lng);
+      const kakaoCenter = new kakao.maps.LatLng(
+        MAP_DEFAULT_CENTER.lat,
+        MAP_DEFAULT_CENTER.lng
+      );
       mapRef.current = new kakao.maps.Map(container, { center: kakaoCenter, level: 3 });
       markerRef.current = new kakao.maps.Marker({ position: kakaoCenter });
       markerRef.current.setMap(mapRef.current);

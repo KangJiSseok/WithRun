@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 
 import { useAuthStore } from '@/stores/Auth';
-import { bootstrapAuthSession } from './bootstrapAuthSession';
+import { bootstrapAuthSession } from '@/utils/auth/bootstrapAuthSession';
 
 function isAuthCallbackPath(): boolean {
   if (typeof window === 'undefined') {
