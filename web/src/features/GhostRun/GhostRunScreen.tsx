@@ -15,7 +15,7 @@ import {
 import { Button } from '@/shared/components/shadcn/button';
 import { useRunCircleMap } from '@/shared/hooks/useRunCircleMap';
 import { useRunMapFilter } from '@/shared/hooks/useRunMapFilter';
-import { useRunBottomSheet } from '@/shared/hooks/useRunBottomSheet';
+import { useSnapBottomSheet } from '@/shared/hooks/useSnapBottomSheet';
 import { useGhostRunMapCourses } from '@/hooks/GhostRun/useGhostRunMapCourses';
 import { useGhostRunFilterStore } from '@/stores/GhostRun/useGhostRunFilterStore';
 
@@ -61,7 +61,7 @@ export function GhostRunScreen() {
     startDrag,
     handleDragStart,
     handleDragEnd,
-  } = useRunBottomSheet({
+  } = useSnapBottomSheet({
     bottomInset: BOTTOM_NAV_HEIGHT,
     initialSnap: persistedSheetSnap,
     onSnapChange: setSheetSnap,

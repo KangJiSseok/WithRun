@@ -1,5 +1,5 @@
 export * from './useInfiniteScroll';
-export * from './useRunBottomSheet';
+export * from './useSnapBottomSheet';
 export * from './useRunCircleMap';
 export * from './useRunCourseFilter';
 export * from './useRunDetailMap';

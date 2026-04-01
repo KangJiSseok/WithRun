@@ -13,7 +13,7 @@ import { createRunningSession } from '@/apis/runningSessions';
 import { useNormalRunSessionStore } from '@/stores/NormalRun';
 import { bridge, useBridgeDataStore } from '@/bridge';
 import { BOTTOM_NAV_HEIGHT } from '@/shared/components';
-import { useRunBottomSheet } from '@/shared/hooks/useRunBottomSheet';
+import { useSnapBottomSheet } from '@/shared/hooks/useSnapBottomSheet';
 import { startWatchRunSync } from '@/shared/utils/watchRunBridge';
 
 const DIFFICULTY_LABEL: Record<CourseDifficulty, string> = {
@@ -58,7 +58,7 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
     handleContentTouchStart,
     handleContentTouchMove,
     handleContentTouchEnd,
-  } = useRunBottomSheet({
+  } = useSnapBottomSheet({
     initialSnap: 'middle',
     bottomInset: BOTTOM_NAV_HEIGHT,
   });

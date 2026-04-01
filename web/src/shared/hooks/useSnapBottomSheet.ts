@@ -1,25 +1,25 @@
 import { useEffect, useRef, useState } from 'react';
 import { useDragControls, type PanInfo } from 'motion/react';
 
-export type RunBottomSheetSnap = 'collapsed' | 'middle' | 'expanded';
+export type BottomSheetSnap = 'collapsed' | 'middle' | 'expanded';
 
-interface UseRunBottomSheetOptions {
-  initialSnap?: RunBottomSheetSnap;
-  onSnapChange?: (snap: RunBottomSheetSnap) => void;
+interface UseSnapBottomSheetOptions {
+  initialSnap?: BottomSheetSnap;
+  onSnapChange?: (snap: BottomSheetSnap) => void;
   bottomInset?: number;
 }
 
-export const useRunBottomSheet = ({
+export const useSnapBottomSheet = ({
   initialSnap = 'collapsed',
   onSnapChange,
   bottomInset = 0,
-}: UseRunBottomSheetOptions = {}) => {
+}: UseSnapBottomSheetOptions = {}) => {
   const sheetRef = useRef<HTMLDivElement>(null);
   const headerRef = useRef<HTMLDivElement>(null);
   const dragStartYRef = useRef(0);
   const [sheetHeight, setSheetHeight] = useState(0);
   const [headerHeight, setHeaderHeight] = useState(80);
-  const [sheetSnap, setSheetSnap] = useState<RunBottomSheetSnap>(initialSnap);
+  const [sheetSnap, setSheetSnap] = useState<BottomSheetSnap>(initialSnap);
   const [isDragging, setIsDragging] = useState(false);
   const dragControls = useDragControls();
   const contentPullStartYRef = useRef<number | null>(null);
@@ -31,7 +31,7 @@ export const useRunBottomSheet = ({
   const COLLAPSED_THRESHOLD = 0.4;
   const CONTENT_PULL_DOWN_THRESHOLD = 72;
 
-  function getSnapY(snap: RunBottomSheetSnap) {
+  function getSnapY(snap: BottomSheetSnap) {
     if (snap === 'expanded') return 0;
     if (snap === 'middle') return middleY;
     return collapsibleRange;

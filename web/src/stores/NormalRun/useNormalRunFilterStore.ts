@@ -3,7 +3,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { INITIAL_FILTERS } from '@/constants/NormalRun';
 import type { CircleMode } from '@/shared/hooks/useRunCircleMap';
-import type { RunBottomSheetSnap } from '@/shared/hooks/useRunBottomSheet';
+import type { BottomSheetSnap } from '@/shared/hooks/useSnapBottomSheet';
 import type { RunningCourseFilterState } from '@/shared/components';
 
 type CourseTab = 'official' | 'community';
@@ -12,7 +12,7 @@ interface NormalRunFilterStore {
   searchKeyword: string;
   circleMode: CircleMode;
   courseTab: CourseTab;
-  sheetSnap: RunBottomSheetSnap;
+  sheetSnap: BottomSheetSnap;
   showFilterDrawer: boolean;
   filters: RunningCourseFilterState;
   appliedFilters: RunningCourseFilterState;
@@ -20,7 +20,7 @@ interface NormalRunFilterStore {
   setSearchKeyword: (value: string) => void;
   setCircleMode: (mode: CircleMode) => void;
   setCourseTab: (tab: CourseTab) => void;
-  setSheetSnap: (snap: RunBottomSheetSnap) => void;
+  setSheetSnap: (snap: BottomSheetSnap) => void;
   setShowFilterDrawer: (open: boolean) => void;
   handleFilterChange: (key: 'courseType' | 'difficulty', value: string) => void;
   handleDistanceRangeChange: (range: { min: number; max: number }) => void;

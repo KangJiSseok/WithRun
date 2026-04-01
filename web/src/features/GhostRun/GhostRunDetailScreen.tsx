@@ -11,7 +11,7 @@ import { WatchRunStatusNotice } from '@/shared/components';
 import { Badge } from '@/shared/components/shadcn/badge';
 import { Button } from '@/shared/components/shadcn/button';
 import { useRunDetailMap } from '@/shared/hooks/useRunDetailMap';
-import { useRunBottomSheet } from '@/shared/hooks/useRunBottomSheet';
+import { useSnapBottomSheet } from '@/shared/hooks/useSnapBottomSheet';
 import { useRunLocation } from '@/shared/hooks/useRunLocation';
 import { formatTime } from '@/shared/utils';
 import { useGhostRunSessionStore } from '@/stores/GhostRun';
@@ -51,7 +51,7 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
     handleContentTouchStart,
     handleContentTouchMove,
     handleContentTouchEnd,
-  } = useRunBottomSheet({
+  } = useSnapBottomSheet({
     initialSnap: 'middle',
     bottomInset: BOTTOM_NAV_HEIGHT,
   });

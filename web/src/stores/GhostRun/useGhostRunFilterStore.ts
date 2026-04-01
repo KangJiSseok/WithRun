@@ -3,20 +3,20 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { INITIAL_FILTERS } from '@/constants/NormalRun';
 import type { CircleMode } from '@/shared/hooks/useRunCircleMap';
-import type { RunBottomSheetSnap } from '@/shared/hooks/useRunBottomSheet';
+import type { BottomSheetSnap } from '@/shared/hooks/useSnapBottomSheet';
 import type { RunningCourseFilterState } from '@/shared/components';
 
 interface GhostRunFilterStore {
   searchKeyword: string;
   circleMode: CircleMode;
-  sheetSnap: RunBottomSheetSnap;
+  sheetSnap: BottomSheetSnap;
   showFilterDrawer: boolean;
   filters: RunningCourseFilterState;
   appliedFilters: RunningCourseFilterState;
   filterRequestNonce: number;
   setSearchKeyword: (value: string) => void;
   setCircleMode: (mode: CircleMode) => void;
-  setSheetSnap: (snap: RunBottomSheetSnap) => void;
+  setSheetSnap: (snap: BottomSheetSnap) => void;
   setShowFilterDrawer: (open: boolean) => void;
   handleFilterChange: (key: 'courseType' | 'difficulty', value: string) => void;
   handleDistanceRangeChange: (range: { min: number; max: number }) => void;

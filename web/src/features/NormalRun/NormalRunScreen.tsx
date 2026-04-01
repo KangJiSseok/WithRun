@@ -19,7 +19,7 @@ import { Button } from '@/shared/components/shadcn/button';
 import { useRunCircleMap } from '@/shared/hooks/useRunCircleMap';
 import { useNormalRunMapCourses } from '@/hooks/NormalRun/useNormalRunMapCourses';
 import { useRunMapFilter } from '@/shared/hooks/useRunMapFilter';
-import { useRunBottomSheet } from '@/shared/hooks/useRunBottomSheet';
+import { useSnapBottomSheet } from '@/shared/hooks/useSnapBottomSheet';
 import { RunCircleRadialMenu } from '@/shared/components';
 import { useNormalRunFilterStore } from '@/stores/NormalRun/useNormalRunFilterStore';
 import { useBridgeDataStore } from '@/bridge';
@@ -72,7 +72,7 @@ export function NormalRunScreen() {
     startDrag,
     handleDragStart,
     handleDragEnd,
-  } = useRunBottomSheet({
+  } = useSnapBottomSheet({
     bottomInset: BOTTOM_NAV_HEIGHT,
     initialSnap: persistedSheetSnap,
     onSnapChange: setSheetSnap,
