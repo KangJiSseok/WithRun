@@ -3,7 +3,7 @@ import { useParams } from 'react-router-dom';
 
 import { NormalRunDetailScreen } from '@/features/NormalRun';
 import { useNormalRunCourseDetail } from '@/hooks/NormalRun/useNormalRunCourseDetail';
-import { loadKakaoMapSdk } from '@/shared/utils';
+import { loadKakaoMapSdk } from '@/shared/libs';
 
 export function NormalRunDetailPage() {
   // API 호출과 병렬로 SDK 미리 로드

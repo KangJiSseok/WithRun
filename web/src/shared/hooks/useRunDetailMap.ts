@@ -1,18 +1,22 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 
-import type { CoordinatePoint } from '@/apis';
-import type { RouteType } from '@/shared/types/api.type';
-import { createMarkerContent, haversineM, loadKakaoMapSdk } from '@/shared/utils';
+import type { CoordinatePoint, RouteType } from '@/apis';
+import {
+  M_PER_DEG_LAT,
+  M_PER_DEG_LON_EQUATOR,
+  ROUTE_ARROW_COUNT,
+} from '@/shared/constants/map';
+import { loadKakaoMapSdk } from '@/shared/libs';
+import {
+  createDistanceBadgeElement,
+  createMarkerContent,
+  createRouteArrowElement,
+  createRoutePolyline,
+  createUserDotContent,
+} from '@/shared/kakaoMap';
+import { haversineM, metersPerDegLon } from '@/shared/utils';
 import { buildCumDist } from '@/shared/utils/geo';
 import { useRunLocation } from './useRunLocation';
-
-const POLYLINE_STROKE_WEIGHT = 5;
-const POLYLINE_STROKE_COLOR = '#4F80FF';
-const POLYLINE_STROKE_OPACITY = 0.9;
-
-const M_PER_DEG_LAT = 110_540;
-const M_PER_DEG_LON_EQUATOR = 111_320;
-const ROUTE_ARROW_COUNT = 15;
 
 const START_GATE_HALF_WIDTH_M = 15;
 const START_GATE_HALF_DEPTH_M = 2.5; // 총 폭 5m
@@ -50,17 +54,6 @@ type CheckpointGateLine = {
   endLongitude: number;
 };
 
-function metersPerDegLon(latDeg: number): number {
-  return 111_320 * Math.cos((latDeg * Math.PI) / 180);
-}
-
-function createRouteArrowElement(bearingDeg: number): HTMLElement {
-  const el = document.createElement('div');
-  el.style.cssText = 'pointer-events:none;';
-  el.innerHTML = `<svg viewBox="0 0 10 14" width="10" height="14" style="display:block;transform:rotate(${bearingDeg}deg);transform-origin:center"><path d="M5 0 L10 14 L5 9 L0 14Z" fill="white" fill-opacity="0.8"/></svg>`;
-  return el;
-}
-
 function resolveCheckpointCount(totalDistM: number): number {
   if (totalDistM <= 0) return 0;
   if (totalDistM < MIN_CHECKPOINT_SPACING_M) return 1;
@@ -81,15 +74,14 @@ function buildCheckpointGateLine(
   dirX: number,
   dirY: number
 ): CheckpointGateLine {
-  const mPerDegLat = 110_540;
   const mPerDegLon = metersPerDegLon(cpLat);
 
   const nx = -dirY;
   const ny = dirX;
 
-  const startLat = cpLat + (ny * CHECKPOINT_GATE_HALF_WIDTH_M) / mPerDegLat;
+  const startLat = cpLat + (ny * CHECKPOINT_GATE_HALF_WIDTH_M) / M_PER_DEG_LAT;
   const startLng = cpLng + (nx * CHECKPOINT_GATE_HALF_WIDTH_M) / mPerDegLon;
-  const endLat = cpLat - (ny * CHECKPOINT_GATE_HALF_WIDTH_M) / mPerDegLat;
+  const endLat = cpLat - (ny * CHECKPOINT_GATE_HALF_WIDTH_M) / M_PER_DEG_LAT;
   const endLng = cpLng - (nx * CHECKPOINT_GATE_HALF_WIDTH_M) / mPerDegLon;
 
   return {
@@ -100,7 +92,9 @@ function buildCheckpointGateLine(
   };
 }
 
-function buildCheckpointGateLines(coords: CoordinatePoint[]): CheckpointGateLine[] {
+function buildCheckpointGateLines(
+  coords: CoordinatePoint[]
+): CheckpointGateLine[] {
   if (coords.length < 2) return [];
 
   const cumDist = buildCumDist(coords);
@@ -110,7 +104,10 @@ function buildCheckpointGateLines(coords: CoordinatePoint[]): CheckpointGateLine
 
   const gates: CheckpointGateLine[] = [];
   for (let step = 1; step <= checkpointCount; step++) {
-    const targetDist = step === checkpointCount ? totalDist : (totalDist * step) / checkpointCount;
+    const targetDist =
+      step === checkpointCount
+        ? totalDist
+        : (totalDist * step) / checkpointCount;
 
     let lo = 0;
     let hi = cumDist.length - 1;
@@ -123,8 +120,10 @@ function buildCheckpointGateLines(coords: CoordinatePoint[]): CheckpointGateLine
     const segLen = cumDist[hi] - cumDist[lo];
     const t = segLen > 0 ? (targetDist - cumDist[lo]) / segLen : 0;
 
-    const cpLat = coords[lo].latitude + t * (coords[hi].latitude - coords[lo].latitude);
-    const cpLng = coords[lo].longitude + t * (coords[hi].longitude - coords[lo].longitude);
+    const cpLat =
+      coords[lo].latitude + t * (coords[hi].latitude - coords[lo].latitude);
+    const cpLng =
+      coords[lo].longitude + t * (coords[hi].longitude - coords[lo].longitude);
 
     const segDir = normalizeDirection(
       (coords[hi].longitude - coords[lo].longitude) * metersPerDegLon(cpLat),
@@ -143,11 +142,10 @@ function toLocalMeters(
   originLat: number,
   originLng: number
 ): { x: number; y: number } {
-  const mPerDegLat = 110_540;
   const mPerDegLon = metersPerDegLon(originLat);
   return {
     x: (lng - originLng) * mPerDegLon,
-    y: (lat - originLat) * mPerDegLat,
+    y: (lat - originLat) * M_PER_DEG_LAT,
   };
 }
 
@@ -157,10 +155,9 @@ function addMetersToLatLng(
   xM: number,
   yM: number
 ): { lat: number; lng: number } {
-  const mPerDegLat = 110_540;
   const mPerDegLon = metersPerDegLon(originLat);
   return {
-    lat: originLat + yM / mPerDegLat,
+    lat: originLat + yM / M_PER_DEG_LAT,
     lng: originLng + xM / mPerDegLon,
   };
 }
@@ -205,10 +202,9 @@ function buildStartGate(
     endLongitude
   );
 
-  const mPerDegLat = 110_540;
   const mPerDegLon = metersPerDegLon(startLatitude);
   const txRaw = (next.longitude - startLongitude) * mPerDegLon;
-  const tyRaw = (next.latitude - startLatitude) * mPerDegLat;
+  const tyRaw = (next.latitude - startLatitude) * M_PER_DEG_LAT;
   const len = Math.hypot(txRaw, tyRaw);
   if (len < 1e-6) return null;
 
@@ -246,7 +242,11 @@ function buildStartGate(
   };
 }
 
-function isInsideStartGate(lat: number, lng: number, gate: StartGate | null): boolean {
+function isInsideStartGate(
+  lat: number,
+  lng: number,
+  gate: StartGate | null
+): boolean {
   if (!gate) return false;
 
   const { x, y } = toLocalMeters(lat, lng, gate.centerLat, gate.centerLng);
@@ -268,38 +268,6 @@ function resolvePrimaryColor(): string {
   return `hsl(${token})`;
 }
 
-function createUserDotContent(label: string, color: string): HTMLElement {
-  const wrapper = document.createElement('div');
-  wrapper.style.cssText =
-    'display:flex;flex-direction:column;align-items:center;gap:4px;';
-
-  const dot = document.createElement('div');
-  dot.style.cssText = `
-    width: 16px;
-    height: 16px;
-    background: ${color};
-    border: 2.5px solid white;
-    border-radius: 50%;
-    box-shadow: 0 0 0 6px rgba(59,130,246,0.2), 0 2px 4px rgba(0,0,0,0.3);
-  `;
-
-  const tag = document.createElement('span');
-  tag.textContent = label;
-  tag.style.cssText = `
-    background: ${color};
-    color: white;
-    font-size: 11px;
-    font-weight: 700;
-    padding: 2px 6px;
-    border-radius: 4px;
-    white-space: nowrap;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.2);
-  `;
-
-  wrapper.appendChild(dot);
-  wrapper.appendChild(tag);
-  return wrapper;
-}
 
 type CourseMapParams = {
   coordinates: CoordinatePoint[];
@@ -363,7 +331,13 @@ export function useRunDetailMap(
     if (!containerRef.current) return;
 
     const container = containerRef.current;
-    const { coordinates, startLatitude, startLongitude, endLatitude, endLongitude } = course;
+    const {
+      coordinates,
+      startLatitude,
+      startLongitude,
+      endLatitude,
+      endLongitude,
+    } = course;
     let cancelled = false;
     defaultGateColorRef.current = resolvePrimaryColor();
 
@@ -371,7 +345,10 @@ export function useRunDetailMap(
       if (cancelled) return;
 
       const startLatLng = new kakao.maps.LatLng(startLatitude, startLongitude);
-      mapRef.current = new kakao.maps.Map(container, { center: startLatLng, level: 5 });
+      mapRef.current = new kakao.maps.Map(container, {
+        center: startLatLng,
+        level: 5,
+      });
 
       collapseOnClickHandlerRef.current = () => {
         onMapTouchedRef.current?.();
@@ -391,16 +368,12 @@ export function useRunDetailMap(
       );
 
       if (coordinates.length > 0) {
-        const path = coordinates.map((c) => new kakao.maps.LatLng(c.latitude, c.longitude));
+        const path = coordinates.map(
+          (c) => new kakao.maps.LatLng(c.latitude, c.longitude)
+        );
         coursePathRef.current = path;
 
-        const polyline = new kakao.maps.Polyline({
-          path,
-          strokeWeight: POLYLINE_STROKE_WEIGHT,
-          strokeColor: POLYLINE_STROKE_COLOR,
-          strokeOpacity: POLYLINE_STROKE_OPACITY,
-          strokeStyle: 'solid',
-        });
+        const polyline = createRoutePolyline(path);
         polyline.setMap(mapRef.current);
 
         // 진행 방향 화살표 오버레이 (ROUTE_ARROW_COUNT개 균등 배치)
@@ -409,7 +382,10 @@ export function useRunDetailMap(
           course.routeType === 'OUT_AND_BACK'
             ? coordinates.slice(0, Math.ceil(coordinates.length / 2))
             : coordinates;
-        const step = Math.max(1, Math.floor(arrowCoords.length / ROUTE_ARROW_COUNT));
+        const step = Math.max(
+          1,
+          Math.floor(arrowCoords.length / ROUTE_ARROW_COUNT)
+        );
         const startOffset = Math.floor(step / 2);
         for (let i = startOffset; i < arrowCoords.length - 1; i += step) {
           const cur = arrowCoords[i];
@@ -458,26 +434,34 @@ export function useRunDetailMap(
         const p1 = addMetersToLatLng(
           startGate.centerLat,
           startGate.centerLng,
-          startGate.nx * startGate.halfWidthM + startGate.tx * startGate.halfDepthM,
-          startGate.ny * startGate.halfWidthM + startGate.ty * startGate.halfDepthM
+          startGate.nx * startGate.halfWidthM +
+            startGate.tx * startGate.halfDepthM,
+          startGate.ny * startGate.halfWidthM +
+            startGate.ty * startGate.halfDepthM
         );
         const p2 = addMetersToLatLng(
           startGate.centerLat,
           startGate.centerLng,
-          -startGate.nx * startGate.halfWidthM + startGate.tx * startGate.halfDepthM,
-          -startGate.ny * startGate.halfWidthM + startGate.ty * startGate.halfDepthM
+          -startGate.nx * startGate.halfWidthM +
+            startGate.tx * startGate.halfDepthM,
+          -startGate.ny * startGate.halfWidthM +
+            startGate.ty * startGate.halfDepthM
         );
         const p3 = addMetersToLatLng(
           startGate.centerLat,
           startGate.centerLng,
-          -startGate.nx * startGate.halfWidthM - startGate.tx * startGate.halfDepthM,
-          -startGate.ny * startGate.halfWidthM - startGate.ty * startGate.halfDepthM
+          -startGate.nx * startGate.halfWidthM -
+            startGate.tx * startGate.halfDepthM,
+          -startGate.ny * startGate.halfWidthM -
+            startGate.ty * startGate.halfDepthM
         );
         const p4 = addMetersToLatLng(
           startGate.centerLat,
           startGate.centerLng,
-          startGate.nx * startGate.halfWidthM - startGate.tx * startGate.halfDepthM,
-          startGate.ny * startGate.halfWidthM - startGate.ty * startGate.halfDepthM
+          startGate.nx * startGate.halfWidthM -
+            startGate.tx * startGate.halfDepthM,
+          startGate.ny * startGate.halfWidthM -
+            startGate.ty * startGate.halfDepthM
         );
 
         startGateRectRef.current = new kakao.maps.Polygon({
@@ -498,7 +482,10 @@ export function useRunDetailMap(
 
         startGateLineRef.current = new kakao.maps.Polyline({
           path: [
-            new kakao.maps.LatLng(startGate.lineStartLat, startGate.lineStartLng),
+            new kakao.maps.LatLng(
+              startGate.lineStartLat,
+              startGate.lineStartLng
+            ),
             new kakao.maps.LatLng(startGate.lineEndLat, startGate.lineEndLng),
           ],
           strokeWeight: 4,
@@ -545,19 +532,7 @@ export function useRunDetailMap(
       startToUserLineRef.current.setMap(mapRef.current);
 
       // 점선 중간 거리 배지
-      const distanceTag = document.createElement('div');
-      distanceTag.style.cssText = `
-        padding: 4px 8px;
-        border-radius: 999px;
-        background: rgba(17,24,39,0.86);
-        color: white;
-        font-size: 11px;
-        font-weight: 700;
-        line-height: 1;
-        white-space: nowrap;
-        box-shadow: 0 1px 3px rgba(0,0,0,0.25);
-      `;
-      distanceTag.textContent = '0m';
+      const distanceTag = createDistanceBadgeElement();
       startToUserDistanceRef.current = new kakao.maps.CustomOverlay({
         map: mapRef.current,
         position: startLatLng,
@@ -606,7 +581,10 @@ export function useRunDetailMap(
     const latLng = new kakao.maps.LatLng(latitude, longitude);
     userDotRef.current.setPosition(latLng);
 
-    const startLatLng = new kakao.maps.LatLng(course.startLatitude, course.startLongitude);
+    const startLatLng = new kakao.maps.LatLng(
+      course.startLatitude,
+      course.startLongitude
+    );
     startToUserLineRef.current?.setPath([startLatLng, latLng]);
 
     const midpoint = new kakao.maps.LatLng(
@@ -630,10 +608,13 @@ export function useRunDetailMap(
       course.startLatitude,
       course.startLongitude
     );
-    const distanceEl = startToUserDistanceRef.current?.getContent() as HTMLElement | undefined;
+    const distanceEl = startToUserDistanceRef.current?.getContent() as
+      | HTMLElement
+      | undefined;
     if (distanceEl) distanceEl.textContent = `${Math.round(fallbackDistM)}m`;
 
-    const nextIsNearStart = inStartGate || fallbackDistM <= START_FALLBACK_RADIUS_M;
+    const nextIsNearStart =
+      inStartGate || fallbackDistM <= START_FALLBACK_RADIUS_M;
     setIsNearStart(nextIsNearStart);
 
     const gateColor = nextIsNearStart

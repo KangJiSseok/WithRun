@@ -1,4 +1,4 @@
-import type { CourseStatus } from '@/shared/types/api.type';
+import type { CourseStatus } from '../types';
 
 // 코스 좋아요 응답 (POST /courses/{courseId}/like)
 export type CourseLikeResponse = {

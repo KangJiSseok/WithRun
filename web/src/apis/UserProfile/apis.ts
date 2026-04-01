@@ -1,4 +1,4 @@
-import type { ApiResponse } from '@/shared/types/api.type';
+import type { ApiResponse } from '../types';
 
 import axiosClient from '@/shared/libs/axiosClient';
 import type {
@@ -9,15 +9,14 @@ import type {
 
 export async function getUserProfile(): Promise<UserProfileResponse> {
   // 프로필 화면 진입 시 store 의 캐시보다 서버 값을 한 번 더 읽어 최신 상태로 맞춘다.
-  const { data } = await axiosClient.get<ApiResponse<UserProfileResponse>>(
-    '/users/me',
-  );
+  const { data } =
+    await axiosClient.get<ApiResponse<UserProfileResponse>>('/users/me');
 
   return data.data;
 }
 
 export async function updateUserProfile(
-  payload: UpdateUserProfileRequest,
+  payload: UpdateUserProfileRequest
 ): Promise<void> {
   await axiosClient.put<ApiResponse<void>>('/users/me', payload);
 }
@@ -28,7 +27,7 @@ export async function deleteUserProfile(): Promise<void> {
 }
 
 export async function checkNicknameAvailability(
-  nickname: string,
+  nickname: string
 ): Promise<NicknameAvailabilityResponse> {
   const { data } = await axiosClient.get<
     ApiResponse<NicknameAvailabilityResponse>

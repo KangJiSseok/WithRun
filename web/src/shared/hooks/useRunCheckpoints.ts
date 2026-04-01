@@ -5,7 +5,7 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { CoordinatePoint } from '@/apis/course';
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
-import { buildCumDist, pointToPolylineM, projectOnRoute } from '@/shared/utils/geo';
+import { buildCumDist, metersPerDegLon, pointToPolylineM, projectOnRoute } from '@/shared/utils/geo';
 
 const TARGET_CHECKPOINT_SPACING_M = 300;
 const MIN_CHECKPOINT_SPACING_M = 80;
@@ -45,10 +45,6 @@ function resolveCheckpointCount(totalDistM: number): number {
 
   const estimated = Math.round(totalDistM / TARGET_CHECKPOINT_SPACING_M) + 1;
   return Math.max(2, Math.min(MAX_CHECKPOINTS, estimated));
-}
-
-function metersPerDegLon(latDeg: number): number {
-  return 111_320 * Math.cos((latDeg * Math.PI) / 180);
 }
 
 function buildGateLine(

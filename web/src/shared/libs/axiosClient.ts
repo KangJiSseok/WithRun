@@ -1,11 +1,8 @@
-import axios, {
-  AxiosError,
-  type InternalAxiosRequestConfig,
-} from 'axios';
+import axios, { AxiosError, type InternalAxiosRequestConfig } from 'axios';
 
 import type { ReissueAccessTokenResponse } from '@/apis/auth';
 import { getApiBaseUrl } from '@/shared/config/api';
-import type { ApiResponse } from '@/shared/types/api.type';
+import type { ApiResponse } from '@/apis';
 import { useAuthStore } from '@/stores/Auth';
 
 type RetryableAxiosRequestConfig = InternalAxiosRequestConfig & {
@@ -53,9 +50,10 @@ function shouldSkipRefresh(config?: RetryableAxiosRequestConfig): boolean {
 
 async function requestAccessTokenRefresh(): Promise<string> {
   // refresh token 은 HttpOnly cookie 에 있으므로 재발급 요청은 별도 헤더 없이 쿠키 기반으로만 보낸다.
-  const { data } = await authApiClient.post<ApiResponse<ReissueAccessTokenResponse>>(
-    '/auth/reissue',
-  );
+  const { data } =
+    await authApiClient.post<ApiResponse<ReissueAccessTokenResponse>>(
+      '/auth/reissue'
+    );
 
   const nextAccessToken = data.data.accessToken;
   useAuthStore.getState().setAccessToken(nextAccessToken);
@@ -80,13 +78,15 @@ axiosClient.interceptors.request.use(
 
     return config;
   },
-  (error) => Promise.reject(error),
+  (error) => Promise.reject(error)
 );
 
 axiosClient.interceptors.response.use(
   (response) => response,
   async (error: AxiosError) => {
-    const originalRequest = error.config as RetryableAxiosRequestConfig | undefined;
+    const originalRequest = error.config as
+      | RetryableAxiosRequestConfig
+      | undefined;
 
     if (
       error.response?.status !== 401 ||
@@ -118,7 +118,7 @@ axiosClient.interceptors.response.use(
       // }
       return Promise.reject(refreshError);
     }
-  },
+  }
 );
 
 export default axiosClient;

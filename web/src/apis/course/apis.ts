@@ -1,5 +1,5 @@
 import axiosClient from '@/shared/libs/axiosClient';
-import type { ApiResponse } from '@/shared/types/api.type';
+import type { ApiResponse } from '../types';
 import type { GhostRunningResult } from '../runningSessions';
 import type {
   GetNearbyCoursesParams,
@@ -161,7 +161,7 @@ export const getRecommendedCoursesApi = async (
  */
 export const uploadCourseSnapshotApi = async (
   courseId: number,
-  file: Blob,
+  file: Blob
 ): Promise<void> => {
   const formData = new FormData();
   formData.append('file', file, 'snapshot.png');
@@ -176,11 +176,10 @@ export const uploadCourseSnapshotApi = async (
  */
 export const postCourseReviewApi = async (
   courseId: number,
-  body: PostCourseReviewRequest,
+  body: PostCourseReviewRequest
 ): Promise<ApiResponse<PostCourseReviewResponse>> => {
-  const { data } = await axiosClient.post<ApiResponse<PostCourseReviewResponse>>(
-    `/courses/${courseId}/reviews`,
-    body,
-  );
+  const { data } = await axiosClient.post<
+    ApiResponse<PostCourseReviewResponse>
+  >(`/courses/${courseId}/reviews`, body);
   return data;
 };

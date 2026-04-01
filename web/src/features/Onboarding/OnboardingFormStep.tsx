@@ -1,20 +1,11 @@
 import { AnimatePresence, motion } from 'motion/react';
-import {
-  ChevronLeft,
-  ChevronRight,
-  Ruler,
-  Weight,
-} from 'lucide-react';
+import { ChevronLeft, ChevronRight, Ruler, Weight } from 'lucide-react';
 import { useState, useMemo, type ReactNode } from 'react';
 import Picker from 'react-mobile-picker';
 import { toast } from 'sonner';
 
 import type { AuthGender } from '@/apis/auth';
-import type {
-  Difficulty,
-  Purpose,
-  TimeSlot,
-} from '@/apis/RunningPreferences';
+import type { Difficulty, Purpose, TimeSlot } from '@/apis';
 import {
   DEFAULT_ONBOARDING_FORM_STATE,
   ONBOARDING_COURSE_TYPE_OPTIONS,
@@ -25,8 +16,11 @@ import {
 } from '@/constants/Onboarding';
 import { getCurrentUser } from '@/apis/auth';
 import { updateUserRunningPreferences } from '@/apis/RunningPreferences';
-import { checkNicknameAvailability, updateUserProfile } from '@/apis/UserProfile';
-import type { CourseType } from '@/shared/types/api.type';
+import {
+  checkNicknameAvailability,
+  updateUserProfile,
+} from '@/apis/UserProfile';
+import type { CourseType } from '@/apis';
 import { cn } from '@/shared/utils';
 import { useAuthStore } from '@/stores/Auth';
 
@@ -227,7 +221,7 @@ function isStepComplete(
   stepId: OnboardingStepId,
   formState: OnboardingFormState,
   nicknameCheck: NicknameCheckState,
-  physicalTouched: { height: boolean; weight: boolean },
+  physicalTouched: { height: boolean; weight: boolean }
 ): boolean {
   switch (stepId) {
     case 'nickname':
@@ -286,18 +280,18 @@ export function OnboardingFormStep({ onComplete }: OnboardingFormStepProps) {
   const pickerOptions = useMemo(() => {
     const currentYear = new Date().getFullYear();
     const years = Array.from({ length: currentYear - 1939 }, (_, i) =>
-      String(1940 + i),
+      String(1940 + i)
     );
     const months = Array.from({ length: 12 }, (_, i) =>
-      String(i + 1).padStart(2, '0'),
+      String(i + 1).padStart(2, '0')
     );
     const daysInMonth = new Date(
       Number(birthdatePicker.year),
       Number(birthdatePicker.month),
-      0,
+      0
     ).getDate();
     const days = Array.from({ length: daysInMonth }, (_, i) =>
-      String(i + 1).padStart(2, '0'),
+      String(i + 1).padStart(2, '0')
     );
 
     return { years, months, days };
@@ -306,7 +300,12 @@ export function OnboardingFormStep({ onComplete }: OnboardingFormStepProps) {
   const currentStep = ONBOARDING_STEPS[currentStepIndex];
   const isFirstStep = currentStepIndex === 0;
   const isLastStep = currentStepIndex === ONBOARDING_STEPS.length - 1;
-  const isCurrentStepValid = isStepComplete(currentStep.id, formState, nicknameCheck, physicalTouched);
+  const isCurrentStepValid = isStepComplete(
+    currentStep.id,
+    formState,
+    nicknameCheck,
+    physicalTouched
+  );
 
   function setField<K extends keyof OnboardingFormState>(
     field: K,
@@ -438,7 +437,9 @@ export function OnboardingFormStep({ onComplete }: OnboardingFormStepProps) {
                 }
                 className="rounded-xl bg-gray-700 px-3 py-2 text-sm font-bold text-white transition-colors hover:bg-gray-900 disabled:opacity-40"
               >
-                {nicknameCheck.status === 'checking' ? '확인 중...' : '중복 확인'}
+                {nicknameCheck.status === 'checking'
+                  ? '확인 중...'
+                  : '중복 확인'}
               </button>
               {nicknameCheck.status === 'available' && (
                 <p className="col-start-1 mt-2 text-center text-sm font-medium text-green-600">
@@ -505,16 +506,16 @@ export function OnboardingFormStep({ onComplete }: OnboardingFormStepProps) {
                   const daysInNewMonth = new Date(
                     Number(newPicker.year),
                     Number(newPicker.month),
-                    0,
+                    0
                   ).getDate();
                   const clampedDay = String(
-                    Math.min(Number(newPicker.day), daysInNewMonth),
+                    Math.min(Number(newPicker.day), daysInNewMonth)
                   ).padStart(2, '0');
                   const resolved = { ...newPicker, day: clampedDay };
                   setBirthdatePicker(resolved);
                   setField(
                     'birthdate',
-                    `${resolved.year}-${resolved.month}-${resolved.day}`,
+                    `${resolved.year}-${resolved.month}-${resolved.day}`
                   );
                 }}
                 wheelMode="natural"

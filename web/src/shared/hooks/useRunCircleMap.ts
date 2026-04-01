@@ -2,7 +2,9 @@ import { useEffect, useRef, useState } from 'react';
 
 import type { CourseItem } from '@/apis';
 import { useBridgeDataStore } from '@/bridge/stores/useBridgeDataStore';
-import { createMarkerContent, loadKakaoMapSdk } from '@/shared/utils';
+import { loadKakaoMapSdk } from '@/shared/libs';
+import { createExplorationCircle, createMarkerContent } from '@/shared/kakaoMap';
+import { haversineM } from '@/shared/utils';
 
 export type CircleMode = 'USER_LOCATION' | 'AREA_NEARBY' | 'AREA_EXPLORE';
 
@@ -28,24 +30,6 @@ function resolveMapColor(colorOrToken: string): string {
   }
 
   return colorOrToken;
-}
-
-// 두 좌표 간 거리 계산 (Haversine, 단위: 미터)
-function haversineM(
-  lat1: number,
-  lon1: number,
-  lat2: number,
-  lon2: number
-): number {
-  const R = 6371000;
-  const dLat = ((lat2 - lat1) * Math.PI) / 180;
-  const dLon = ((lon2 - lon1) * Math.PI) / 180;
-  const a =
-    Math.sin(dLat / 2) ** 2 +
-    Math.cos((lat1 * Math.PI) / 180) *
-      Math.cos((lat2 * Math.PI) / 180) *
-      Math.sin(dLon / 2) ** 2;
-  return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
 // 구심점에서 정동쪽으로 radiusM 떨어진 좌표 (엣지 마커 초기 위치)
@@ -141,16 +125,7 @@ export function useRunCircleMap(
         );
 
         // 탐색 원
-        circleRef.current = new kakao.maps.Circle({
-          center: initLatLng,
-          radius: DEFAULT_RADIUS_M,
-          strokeWeight: 2,
-          strokeColor: resolvedMarkerColor,
-          strokeOpacity: 0.8,
-          strokeStyle: 'solid',
-          fillColor: resolvedMarkerColor,
-          fillOpacity: 0.1,
-        });
+        circleRef.current = createExplorationCircle(initLatLng, DEFAULT_RADIUS_M, resolvedMarkerColor);
         circleRef.current.setMap(mapRef.current);
 
         // 구심점 마커 (시각적 표시용)

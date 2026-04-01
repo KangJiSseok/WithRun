@@ -21,7 +21,7 @@ import {
   ONBOARDING_TIME_SLOT_OPTIONS,
 } from '@/constants/Onboarding';
 import { useAuthStore } from '@/stores/Auth';
-import type { CourseType } from '@/shared/types/api.type';
+import type { CourseType } from '@/apis';
 import { cn } from '@/shared/utils';
 import { getWeeklyCalendarApi } from '@/apis/userCalendar';
 import { useHealthConnectionStatus } from './useHealthConnectionStatus';
@@ -159,7 +159,9 @@ function SingleSelectChipGroup<TValue extends string>({
       <div className="grid grid-cols-3 gap-2">
         {options.map((option) => {
           const isSelected = selectedValue === option.value;
-          const wasSelected = serverSelectedValue !== undefined && serverSelectedValue === option.value;
+          const wasSelected =
+            serverSelectedValue !== undefined &&
+            serverSelectedValue === option.value;
 
           return (
             <button
@@ -170,7 +172,9 @@ function SingleSelectChipGroup<TValue extends string>({
                 'rounded-3xl border px-4 py-4 text-base font-semibold transition-colors',
                 isSelected && serverSelectedValue !== undefined && !wasSelected
                   ? 'border-[hsl(var(--success))] bg-[hsl(var(--success))] text-[hsl(var(--text-inverse))]'
-                  : !isSelected && serverSelectedValue !== undefined && wasSelected
+                  : !isSelected &&
+                      serverSelectedValue !== undefined &&
+                      wasSelected
                     ? 'border-[hsl(var(--error))] bg-[hsl(var(--surface-subtle))] text-[hsl(var(--error))]'
                     : isSelected
                       ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
@@ -218,7 +222,8 @@ export function HomeScreen() {
   const [preferences, setPreferences] = useState<RunningPreferenceFormState>(
     createDefaultPreferenceState()
   );
-  const [serverPreferences, setServerPreferences] = useState<RunningPreferenceFormState | null>(null);
+  const [serverPreferences, setServerPreferences] =
+    useState<RunningPreferenceFormState | null>(null);
   const [isLoadingPreferences, setIsLoadingPreferences] = useState(true);
   const [isSavingPreferences, setIsSavingPreferences] = useState(false);
 
@@ -236,7 +241,9 @@ export function HomeScreen() {
       },
       {
         title: '소모 칼로리',
-        value: weeklySummary ? weeklySummary.caloriesKcal.toLocaleString('ko-KR') : '--',
+        value: weeklySummary
+          ? weeklySummary.caloriesKcal.toLocaleString('ko-KR')
+          : '--',
         unit: 'kcal',
       },
       {
@@ -248,13 +255,16 @@ export function HomeScreen() {
     [weeklySummary]
   );
 
-  const isPreferencesChanged = serverPreferences === null || (
-    [...preferences.purposes].sort().join() !== [...serverPreferences.purposes].sort().join() ||
-    [...preferences.timeSlots].sort().join() !== [...serverPreferences.timeSlots].sort().join() ||
-    [...preferences.courseTypes].sort().join() !== [...serverPreferences.courseTypes].sort().join() ||
+  const isPreferencesChanged =
+    serverPreferences === null ||
+    [...preferences.purposes].sort().join() !==
+      [...serverPreferences.purposes].sort().join() ||
+    [...preferences.timeSlots].sort().join() !==
+      [...serverPreferences.timeSlots].sort().join() ||
+    [...preferences.courseTypes].sort().join() !==
+      [...serverPreferences.courseTypes].sort().join() ||
     preferences.preferredDistanceKm !== serverPreferences.preferredDistanceKm ||
-    preferences.preferredDifficulty !== serverPreferences.preferredDifficulty
-  );
+    preferences.preferredDifficulty !== serverPreferences.preferredDifficulty;
 
   const canSavePreferences =
     preferences.purposes.length > 0 &&
@@ -270,7 +280,12 @@ export function HomeScreen() {
       try {
         const response = await getWeeklyCalendarApi();
         if (isCancelled) return;
-        const { weeklyRunCount, weeklyDistanceM, weeklyCaloriesKcal, weeklyDurationSec } = response.data;
+        const {
+          weeklyRunCount,
+          weeklyDistanceM,
+          weeklyCaloriesKcal,
+          weeklyDurationSec,
+        } = response.data;
         setWeeklySummary({
           runCount: weeklyRunCount,
           distanceKm: weeklyDistanceM / 1000,
@@ -282,7 +297,9 @@ export function HomeScreen() {
       }
     })();
 
-    return () => { isCancelled = true; };
+    return () => {
+      isCancelled = true;
+    };
   }, []);
 
   useEffect(() => {
@@ -367,7 +384,9 @@ export function HomeScreen() {
             <div className="space-y-2 pl-2">
               <h1 className="leading-tight tracking-tight text-[hsl(var(--text-primary))]">
                 <span className="block text-base font-black">달려볼까요,</span>
-                <span className="block text-2xl font-black">{user?.nickname ?? 'Runner'}님</span>
+                <span className="block text-2xl font-black">
+                  {user?.nickname ?? 'Runner'}님
+                </span>
               </h1>
               <p className="max-w-[14rem] text-base leading-7 text-[hsl(var(--text-secondary))]">
                 오늘도 목표를 향해 달려보세요!

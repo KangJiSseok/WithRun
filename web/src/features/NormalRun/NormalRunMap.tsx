@@ -2,7 +2,7 @@ import { useRef } from 'react';
 
 import type { CoordinatePoint } from '@/apis';
 import type { Checkpoint } from '@/shared/hooks/useRunCheckpoints';
-import type { RouteType } from '@/shared/types/api.type';
+import type { RouteType } from '@/apis';
 import { useNormalRunMap } from '@/hooks/NormalRun/useNormalRunMap';
 
 type NormalRunMapProps = {
