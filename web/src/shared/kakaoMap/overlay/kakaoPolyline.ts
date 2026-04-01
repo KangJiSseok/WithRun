@@ -11,7 +11,7 @@ function makePolyline(options: {
   strokeWeight: number;
   strokeColor: string;
   strokeOpacity: number;
-  strokeStyle: string;
+  strokeStyle: kakao.maps.StrokeStyles;
 }): (path: kakao.maps.LatLng[]) => kakao.maps.Polyline {
   return (path) =>
     new kakao.maps.Polyline({
