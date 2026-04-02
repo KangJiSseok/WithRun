@@ -66,15 +66,15 @@ export function CalendarGrid({
   return (
     <div>
       {/* 요일 헤더 -> 일, 월, 화, 수, 목, 금, 토 */}
-      <div className="grid grid-cols-7 mb-[var(--space-1)]">
+      <div className="grid grid-cols-7 mb-1">
         {DAY_LABELS.map((label) => (
-          <div key={label} className="flex justify-center py-[var(--space-2)]">
-            <span className="caption-m text-[hsl(var(--text-secondary))]">{label}</span>
+          <div key={label} className="flex justify-center py-2">
+            <span className="caption-m text-fg-secondary">{label}</span>
           </div>
         ))}
       </div>
 
-      <div className="grid grid-cols-7 gap-y-[var(--space-1)]">
+      <div className="grid grid-cols-7 gap-y-1">
         {cells.map((day, idx) => {
           // 1. null이면 빈칸
           // 1일 앞의 빈 칸들 안그림
@@ -100,17 +100,17 @@ export function CalendarGrid({
               type="button"
               onClick={() => onSelectDate(dateStr)}
               disabled={isFuture}
-              className="flex flex-col items-center gap-[var(--space-1)] py-[var(--space-2)]"
+              className="flex flex-col items-center gap-1 py-2"
             >
               {/* 우선순위: isSelected > isToday > 일반 > isFuture */}
               <span
                 className={cn(
                   'w-8 h-8 flex items-center justify-center rounded-full caption-m transition-colors',
                   isSelected &&
-                    'bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]',
-                  !isSelected && isToday && 'border border-[hsl(var(--primary-1))] text-[hsl(var(--primary-1))]',
-                  !isSelected && !isToday && !isFuture && 'text-[hsl(var(--text-primary))]',
-                  isFuture && 'text-[hsl(var(--text-disabled))]',
+                    'bg-primary-1 text-fg-inverse',
+                  !isSelected && isToday && 'border border-primary-1 text-primary-1',
+                  !isSelected && !isToday && !isFuture && 'text-fg-primary',
+                  isFuture && 'text-fg-disabled',
                 )}
               >
                 {day}
@@ -119,7 +119,7 @@ export function CalendarGrid({
               <span
                 className={cn(
                   'w-1.5 h-1.5 rounded-full',
-                  isActive && !isFuture ? 'bg-[hsl(var(--primary-1))]' : 'invisible',
+                  isActive && !isFuture ? 'bg-primary-1' : 'invisible',
                 )}
               />
             </button>

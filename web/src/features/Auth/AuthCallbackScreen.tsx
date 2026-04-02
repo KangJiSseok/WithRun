@@ -56,10 +56,10 @@ export function AuthCallbackScreen() {
   }, [bootstrapAuth, clearAuth, navigate, searchParams, setAuthenticated]);
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-[hsl(var(--surface-subtle))] px-6 text-center text-[hsl(var(--text-primary))]">
-      <div className="space-y-4 rounded-[var(--radius-2xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-8 py-10 shadow-[var(--shadow-lg)]">
-        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-[hsl(var(--border-default))] border-t-[hsl(var(--primary-1))]" />
-        <p className="body-r text-[hsl(var(--text-secondary))]">
+    <div className="flex min-h-screen items-center justify-center bg-surface-subtle px-6 text-center text-fg-primary">
+      <div className="space-y-4 rounded-2xl border border-border-default bg-surface-default px-8 py-10 shadow-lg">
+        <div className="mx-auto h-12 w-12 animate-spin rounded-full border-4 border-border-default border-t-primary-1" />
+        <p className="body-r text-fg-secondary">
           처리 중입니다...
         </p>
       </div>

@@ -61,10 +61,10 @@ function HeartRateSection({ samples }: { samples: HealthSample[] }) {
       : null;
 
   return (
-    <div className="bg-[hsl(var(--secondary-2))] rounded-2xl p-4">
+    <div className="bg-secondary-2 rounded-2xl p-4">
       <div className="flex items-center gap-2 mb-4">
         <Activity size={16} className="text-primary" />
-        <span className="caption-b text-[hsl(var(--text-inverse))]">
+        <span className="caption-b text-fg-inverse">
           심박수 변동
         </span>
       </div>
@@ -76,20 +76,20 @@ function HeartRateSection({ samples }: { samples: HealthSample[] }) {
         ].map(({ label, value, highlight }) => (
           <div
             key={label}
-            className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-3))] rounded-xl py-3"
+            className="flex-1 flex flex-col items-center gap-1 bg-secondary-3 rounded-xl py-3"
           >
-            <span className="caption-r text-[hsl(var(--secondary-5))]">
+            <span className="caption-r text-secondary-5">
               {label}
             </span>
             <span
               className={cn(
                 'h3-b',
-                highlight ? 'text-primary' : 'text-[hsl(var(--text-inverse))]'
+                highlight ? 'text-primary' : 'text-fg-inverse'
               )}
             >
               {value}
             </span>
-            <span className="caption-r text-[hsl(var(--secondary-5))]">
+            <span className="caption-r text-secondary-5">
               bpm
             </span>
           </div>
@@ -125,25 +125,25 @@ const STATUS_CONFIG = {
     label: '승리!',
     emoji: '🏆',
     bg: 'bg-black',
-    border: 'border-[hsl(var(--primary-1)/0.4)]',
-    textColor: 'text-[hsl(var(--primary-1))]',
-    icon: <Trophy size={48} className="text-[hsl(var(--primary-1))]" />,
+    border: 'border-primary-1/[0.4]',
+    textColor: 'text-primary-1',
+    icon: <Trophy size={48} className="text-primary-1" />,
   },
   LOSE: {
     label: '패배',
     emoji: '💪',
     bg: 'bg-black',
-    border: 'border-[hsl(var(--error)/0.35)]',
-    textColor: 'text-[hsl(var(--error))]',
-    icon: <Swords size={48} className="text-[hsl(var(--error))]" />,
+    border: 'border-error/[0.35]',
+    textColor: 'text-error',
+    icon: <Swords size={48} className="text-error" />,
   },
   DRAW: {
     label: '무승부',
     emoji: '🤝',
     bg: 'bg-black',
-    border: 'border-[hsl(var(--secondary-4))]',
-    textColor: 'text-[hsl(var(--text-inverse))]',
-    icon: <Swords size={48} className="text-[hsl(var(--secondary-5))]" />,
+    border: 'border-secondary-4',
+    textColor: 'text-fg-inverse',
+    icon: <Swords size={48} className="text-secondary-5" />,
   },
 };
 
@@ -169,28 +169,28 @@ export function GhostRunResultScreen({ result }: GhostRunResultScreenProps) {
   const config = ghostResult ? STATUS_CONFIG[ghostResult.resultStatus] : null;
 
   return (
-    <div className="absolute inset-0 bg-[hsl(var(--secondary-1))] overflow-y-auto">
+    <div className="absolute inset-0 bg-secondary-1 overflow-y-auto">
       <div className="flex flex-col gap-4 px-6 pb-10">
         {/* 헤더 */}
         <div className="flex flex-col items-center pt-10 pb-2">
           <div className="p-4 rounded-full bg-primary/20 border border-primary/30 mb-4">
             <Award size={40} className="text-primary" />
           </div>
-          <h1 className="h2-b text-[hsl(var(--text-inverse))] mb-1">
+          <h1 className="h2-b text-fg-inverse mb-1">
             고스트런 완료!
           </h1>
-          <p className="body-r text-[hsl(var(--secondary-5))]">
+          <p className="body-r text-secondary-5">
             수고하셨습니다
           </p>
         </div>
 
         {/* 지도 */}
-        <div className="h-40 rounded-2xl overflow-hidden border border-[hsl(var(--secondary-3))]">
+        <div className="h-40 rounded-2xl overflow-hidden border border-secondary-3">
           {result.gpsSamples.length >= 2 ? (
             <RunResultMap gpsSamples={result.gpsSamples} />
           ) : (
-            <div className="h-full bg-[hsl(var(--secondary-2))] flex items-center justify-center">
-              <div className="flex flex-col items-center gap-2 text-[hsl(var(--secondary-5))]">
+            <div className="h-full bg-secondary-2 flex items-center justify-center">
+              <div className="flex flex-col items-center gap-2 text-secondary-5">
                 <MapPin size={24} />
                 <span className="caption-r">GPS 데이터 없음</span>
               </div>
@@ -199,31 +199,31 @@ export function GhostRunResultScreen({ result }: GhostRunResultScreenProps) {
         </div>
 
         {/* 거리 */}
-        <div className="bg-[hsl(var(--secondary-2))] rounded-2xl p-6 flex flex-col items-center relative overflow-hidden">
+        <div className="bg-secondary-2 rounded-2xl p-6 flex flex-col items-center relative overflow-hidden">
           <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -mr-6 -mt-6" />
-          <span className="text-6xl font-bold text-[hsl(var(--text-inverse))] tabular-nums relative z-base">
+          <span className="text-6xl font-bold text-fg-inverse tabular-nums relative z-base">
             {(result.distanceM / 1000).toFixed(2)}
           </span>
-          <span className="caption-r text-[hsl(var(--secondary-5))] uppercase tracking-widest mt-1 relative z-base">
+          <span className="caption-r text-secondary-5 uppercase tracking-widest mt-1 relative z-base">
             킬로미터
           </span>
         </div>
 
         {/* 시간 + 평균 페이스 */}
         <div className="flex gap-3">
-          <div className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-2))] rounded-2xl py-4 px-2">
-            <span className="caption-r text-[hsl(var(--secondary-5))]">
+          <div className="flex-1 flex flex-col items-center gap-1 bg-secondary-2 rounded-2xl py-4 px-2">
+            <span className="caption-r text-secondary-5">
               시간
             </span>
-            <span className="h3-b text-[hsl(var(--text-inverse))] tabular-nums">
+            <span className="h3-b text-fg-inverse tabular-nums">
               {formatDuration(result.durationSec)}
             </span>
           </div>
-          <div className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-2))] rounded-2xl py-4 px-2">
-            <span className="caption-r text-[hsl(var(--secondary-5))]">
+          <div className="flex-1 flex flex-col items-center gap-1 bg-secondary-2 rounded-2xl py-4 px-2">
+            <span className="caption-r text-secondary-5">
               평균 페이스
             </span>
-            <span className="h3-b text-[hsl(var(--text-inverse))] tabular-nums">
+            <span className="h3-b text-fg-inverse tabular-nums">
               {formatPace(result.avgPaceSecPerKm)}
             </span>
           </div>
@@ -234,32 +234,32 @@ export function GhostRunResultScreen({ result }: GhostRunResultScreenProps) {
 
         {/* 구간별 페이스 */}
         {result.splits.length > 0 && (
-          <div className="bg-[hsl(var(--secondary-2))] rounded-2xl p-4">
+          <div className="bg-secondary-2 rounded-2xl p-4">
             <div className="flex items-center gap-2 mb-4">
               <Timer size={16} className="text-primary" />
-              <span className="caption-b text-[hsl(var(--text-inverse))]">
+              <span className="caption-b text-fg-inverse">
                 구간별 페이스 (1km)
               </span>
             </div>
-            <div className="rounded-xl overflow-hidden border border-[hsl(var(--secondary-3))]">
+            <div className="rounded-xl overflow-hidden border border-secondary-3">
               <table className="w-full">
-                <thead className="bg-[hsl(var(--secondary-3))]">
+                <thead className="bg-secondary-3">
                   <tr>
-                    <th className="px-4 py-2 text-left caption-r text-[hsl(var(--secondary-5))] font-normal">
+                    <th className="px-4 py-2 text-left caption-r text-secondary-5 font-normal">
                       구간
                     </th>
-                    <th className="px-4 py-2 text-left caption-r text-[hsl(var(--secondary-5))] font-normal">
+                    <th className="px-4 py-2 text-left caption-r text-secondary-5 font-normal">
                       페이스
                     </th>
-                    <th className="px-4 py-2 text-left caption-r text-[hsl(var(--secondary-5))] font-normal">
+                    <th className="px-4 py-2 text-left caption-r text-secondary-5 font-normal">
                       상태
                     </th>
                   </tr>
                 </thead>
-                <tbody className="divide-y divide-[hsl(var(--secondary-3))]">
+                <tbody className="divide-y divide-secondary-3">
                   {result.splits.map((split) => (
                     <tr key={split.splitIndex}>
-                      <td className="px-4 py-3 caption-m text-[hsl(var(--text-inverse))]">
+                      <td className="px-4 py-3 caption-m text-fg-inverse">
                         {split.splitIndex}km
                       </td>
                       <td className="px-4 py-3 caption-m text-primary font-bold">
@@ -270,8 +270,8 @@ export function GhostRunResultScreen({ result }: GhostRunResultScreenProps) {
                           className={cn(
                             'w-2 h-2 rounded-full',
                             split.splitPaceSecPerKm < avgSplitSec
-                              ? 'bg-[hsl(var(--success))]'
-                              : 'bg-[hsl(var(--warning))]'
+                              ? 'bg-success'
+                              : 'bg-warning'
                           )}
                         />
                       </td>
@@ -287,7 +287,7 @@ export function GhostRunResultScreen({ result }: GhostRunResultScreenProps) {
         <div className="pt-2">
           <button
             onClick={handleHome}
-            className="w-full py-4 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] body-b flex items-center justify-center gap-2"
+            className="w-full py-4 rounded-2xl bg-primary text-fg-inverse body-b flex items-center justify-center gap-2"
           >
             <Home size={18} />홈
           </button>
@@ -303,7 +303,7 @@ export function GhostRunResultScreen({ result }: GhostRunResultScreenProps) {
             {/* 닫기 버튼 */}
             <button
               onClick={() => setModalDismissed(true)}
-              className="absolute right-4 top-4 text-[hsl(var(--secondary-5))]"
+              className="absolute right-4 top-4 text-secondary-5"
               aria-label="닫기"
             >
               <X size={20} />
@@ -324,29 +324,29 @@ export function GhostRunResultScreen({ result }: GhostRunResultScreenProps) {
 
             {/* 획득 포인트 */}
             <div className="flex flex-col items-center gap-0.5">
-              <span className="caption-r text-[hsl(var(--secondary-5))]">
+              <span className="caption-r text-secondary-5">
                 획득 포인트
               </span>
-              <span className="h2-b text-[hsl(var(--primary-1))]">
+              <span className="h2-b text-primary-1">
                 +{ghostResult.point.toLocaleString()}P
               </span>
             </div>
 
             {/* 시간 차 / 거리 차 */}
             <div className="flex w-full gap-3">
-              <div className="flex-1 flex flex-col items-center gap-0.5 rounded-2xl bg-[hsl(var(--secondary-2))] py-3">
-                <span className="caption-r text-[hsl(var(--secondary-5))]">
+              <div className="flex-1 flex flex-col items-center gap-0.5 rounded-2xl bg-secondary-2 py-3">
+                <span className="caption-r text-secondary-5">
                   시간 차
                 </span>
-                <span className="body-l-b text-[hsl(var(--text-inverse))] tabular-nums">
+                <span className="body-l-b text-fg-inverse tabular-nums">
                   {ghostResult.timeGapSec}초
                 </span>
               </div>
-              <div className="flex-1 flex flex-col items-center gap-0.5 rounded-2xl bg-[hsl(var(--secondary-2))] py-3">
-                <span className="caption-r text-[hsl(var(--secondary-5))]">
+              <div className="flex-1 flex flex-col items-center gap-0.5 rounded-2xl bg-secondary-2 py-3">
+                <span className="caption-r text-secondary-5">
                   거리 차
                 </span>
-                <span className="body-l-b text-[hsl(var(--text-inverse))] tabular-nums">
+                <span className="body-l-b text-fg-inverse tabular-nums">
                   {ghostResult.distanceGapM}m
                 </span>
               </div>
@@ -355,7 +355,7 @@ export function GhostRunResultScreen({ result }: GhostRunResultScreenProps) {
             {/* 확인 버튼 */}
             <button
               onClick={() => setModalDismissed(true)}
-              className="w-full py-3 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] body-b"
+              className="w-full py-3 rounded-2xl bg-primary text-fg-inverse body-b"
             >
               결과 확인
             </button>

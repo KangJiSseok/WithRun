@@ -8,23 +8,23 @@ interface StreakCardProps {
 
 export function StreakCard({ currentStreakDays, longestStreakDays, isLoading }: StreakCardProps) {
   return (
-    <div className="flex flex-col gap-[var(--space-2)]">
-      <p className="body-b text-[hsl(var(--text-primary))]">연속 러닝 기록</p>
-      <div className="flex items-center justify-center gap-[var(--space-3)] bg-[hsl(var(--surface-default))] border border-[hsl(var(--border-default))] rounded-[var(--radius-lg)] py-[var(--space-4)]">
+    <div className="flex flex-col gap-2">
+      <p className="body-b text-fg-primary">연속 러닝 기록</p>
+      <div className="flex items-center justify-center gap-3 bg-surface-default border border-border-default rounded-lg py-4">
         <div className="flex flex-col items-center">
-          <span className="h4-b text-[hsl(var(--text-primary))]">
+          <span className="h4-b text-fg-primary">
             {isLoading ? '--' : (currentStreakDays ?? '--')}
-            <span className="caption-r text-[hsl(var(--text-secondary))] ml-0.5">일</span>
+            <span className="caption-r text-fg-secondary ml-0.5">일</span>
           </span>
-          <span className="caption-r text-[hsl(var(--text-secondary))]">연속</span>
+          <span className="caption-r text-fg-secondary">연속</span>
         </div>
-        <span className="body-r text-[hsl(var(--text-secondary))]">/</span>
+        <span className="body-r text-fg-secondary">/</span>
         <div className="flex flex-col items-center">
-          <span className="h4-b text-[hsl(var(--text-primary))]">
+          <span className="h4-b text-fg-primary">
             {isLoading ? '--' : (longestStreakDays ?? '--')}
-            <span className="caption-r text-[hsl(var(--text-secondary))] ml-0.5">일</span>
+            <span className="caption-r text-fg-secondary ml-0.5">일</span>
           </span>
-          <span className="caption-r text-[hsl(var(--text-secondary))]">최대</span>
+          <span className="caption-r text-fg-secondary">최대</span>
         </div>
       </div>
     </div>

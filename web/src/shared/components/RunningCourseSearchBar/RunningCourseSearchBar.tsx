@@ -13,10 +13,10 @@ export function RunningCourseSearchBar({
   compact = false,
 }: RunningCourseSearchBarProps) {
   return (
-    <div className="relative flex-1 bg-white rounded-[var(--radius-xl)]">
+    <div className="relative flex-1 bg-white rounded-xl">
       <Search
         size={18}
-        className="pointer-events-none absolute left-[var(--space-4)] top-1/2 -translate-y-1/2 text-[hsl(var(--text-secondary))]"
+        className="pointer-events-none absolute left-4 top-1/2 -translate-y-1/2 text-fg-secondary"
       />
       <Input
         value={searchKeyword}
@@ -24,7 +24,7 @@ export function RunningCourseSearchBar({
         placeholder="코스 이름 검색..."
         className={`${
           compact ? 'h-10' : 'h-14'
-        } rounded-[var(--radius-xl)] border-[hsl(var(--border-default))] bg-white pl-11 text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-secondary))]`}
+        } rounded-xl border-border-default bg-white pl-11 text-fg-primary placeholder:text-fg-secondary`}
       />
     </div>
   );

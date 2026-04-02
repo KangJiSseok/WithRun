@@ -77,26 +77,26 @@ export function RunningGuideModal({
         }
       }}
     >
-      <DialogContent className="w-[calc(100%-2rem)] max-w-[343px] gap-[var(--space-6)] rounded-[var(--radius-xl)] bg-[hsl(var(--surface-default))] p-[var(--space-6)] shadow-[var(--shadow-lg)]">
-        <DialogHeader className="gap-[var(--space-2)] text-left">
-          <DialogTitle className="h3-b text-[hsl(var(--text-primary))]">
+      <DialogContent className="w-[calc(100%-2rem)] max-w-[343px] gap-6 rounded-xl bg-surface-default p-6 shadow-lg">
+        <DialogHeader className="gap-2 text-left">
+          <DialogTitle className="h3-b text-fg-primary">
             러닝 가이드
           </DialogTitle>
         </DialogHeader>
 
         <div className="flex items-center justify-between">
-          <span className="caption-m text-[hsl(var(--text-secondary))]">
+          <span className="caption-m text-fg-secondary">
             {currentStep + 1} / {steps.length}
           </span>
 
-          <div className="flex items-center gap-[var(--space-2)]">
+          <div className="flex items-center gap-2">
             {steps.map((step, index) => (
               <span
                 key={step.title}
                 className={
                   index === currentStep
-                    ? 'h-2 w-6 rounded-full bg-[hsl(var(--primary-1))]'
-                    : 'h-2 w-2 rounded-full bg-[hsl(var(--border-strong))]'
+                    ? 'h-2 w-6 rounded-full bg-primary-1'
+                    : 'h-2 w-2 rounded-full bg-border-strong'
                 }
               />
             ))}
@@ -119,13 +119,13 @@ export function RunningGuideModal({
             {steps.map((step) => (
               <div
                 key={step.title}
-                className="w-full shrink-0 rounded-[var(--radius-lg)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] p-[var(--space-4)]"
+                className="w-full shrink-0 rounded-lg border border-border-default bg-surface-subtle p-4"
               >
-                <div className="flex flex-col gap-[var(--space-3)]">
-                  <h3 className="body-l-b text-[hsl(var(--text-primary))]">
+                <div className="flex flex-col gap-3">
+                  <h3 className="body-l-b text-fg-primary">
                     {step.title}
                   </h3>
-                  <p className="body-r text-[hsl(var(--text-secondary))]">
+                  <p className="body-r text-fg-secondary">
                     {step.content}
                   </p>
                 </div>
@@ -134,7 +134,7 @@ export function RunningGuideModal({
           </div>
         </div>
 
-        <DialogFooter className="flex-row justify-between gap-[var(--space-3)]">
+        <DialogFooter className="flex-row justify-between gap-3">
           <Button
             variant="outline"
             onClick={handlePrevious}

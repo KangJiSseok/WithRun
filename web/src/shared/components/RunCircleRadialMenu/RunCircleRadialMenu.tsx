@@ -40,8 +40,8 @@ export function RunCircleRadialMenu({
         onClick={() => setRadialOpen((v) => !v)}
         className={`flex h-10 w-10 items-center justify-center rounded-full border shadow-lg ${
           radialOpen
-            ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-white'
-            : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))]'
+            ? 'border-primary-1 bg-primary-1 text-white'
+            : 'border-border-default bg-surface-default text-fg-primary'
         }`}
       >
         <MapPin size={18} />
@@ -58,8 +58,8 @@ export function RunCircleRadialMenu({
               transition={{ type: 'spring', damping: 20, stiffness: 300 }}
               className={`absolute right-0 top-0 flex h-8 items-center justify-center whitespace-nowrap rounded-full border px-2 text-xs font-medium shadow-lg ${
                 circleMode === mode
-                  ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-white'
-                  : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))]'
+                  ? 'border-primary-1 bg-primary-1 text-white'
+                  : 'border-border-default bg-surface-default text-fg-primary'
               }`}
               onClick={() => {
                 onCircleModeChange(mode);

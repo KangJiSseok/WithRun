@@ -89,8 +89,8 @@ function syncProfileIntoAuthStore(profile: UserProfileResponse): void {
 
 function ProfileMetricChip({ label, value }: ProfileMetricChipProps) {
   return (
-    <div className="rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--primary-5))] px-[var(--space-4)] py-[var(--space-2)] body-m text-[hsl(var(--text-primary))]">
-      <span className="text-[hsl(var(--text-secondary))]">{label}</span> {value}
+    <div className="rounded-full border border-border-default bg-primary-5 px-4 py-2 body-m text-fg-primary">
+      <span className="text-fg-secondary">{label}</span> {value}
     </div>
   );
 }
@@ -185,25 +185,25 @@ export function ProfileScreen() {
 
   return (
     <>
-      <div className="min-h-[calc(100dvh-5rem)] overflow-y-auto bg-[hsl(var(--surface-subtle))] px-[var(--space-5)] pb-[var(--space-10)] pt-[var(--space-3)]">
-        <div className="mx-auto flex max-w-[430px] flex-col gap-[var(--space-5)]">
-          <section className="overflow-hidden rounded-[var(--radius-3xl)] border border-[hsl(var(--border-default))] bg-[linear-gradient(180deg,hsl(var(--primary-5))_0%,hsl(var(--surface-default))_62%,hsl(var(--surface-subtle))_100%)] p-[var(--space-6)] text-[hsl(var(--text-primary))] shadow-[var(--shadow-lg)]">
-            <div className="mt-[var(--space-2)] flex flex-col items-center text-center">
-              <div className="space-y-[var(--space-1)]">
+      <div className="min-h-[calc(100dvh-5rem)] overflow-y-auto bg-surface-subtle px-5 pb-10 pt-3">
+        <div className="mx-auto flex max-w-[430px] flex-col gap-5">
+          <section className="overflow-hidden rounded-3xl border border-border-default bg-[linear-gradient(180deg,hsl(var(--primary-5))_0%,hsl(var(--surface-default))_62%,hsl(var(--surface-subtle))_100%)] p-6 text-fg-primary shadow-lg">
+            <div className="mt-2 flex flex-col items-center text-center">
+              <div className="space-y-1">
                 <h2 className="text-3xl font-black">
                   {profile.nickname ?? 'Runner'}
                 </h2>
-                <p className="caption-b text-[hsl(var(--text-secondary))]">
+                <p className="caption-b text-fg-secondary">
                   {providerLabel}
                 </p>
-                <p className="body-r text-[hsl(var(--text-secondary))]">
+                <p className="body-r text-fg-secondary">
                   {birthDateLabel ?? '생년월일 미등록'}
                   {birthDateLabel && genderLabel ? ' · ' : ''}
                   {genderLabel ?? '성별 미등록'}
                 </p>
               </div>
 
-              <div className="mt-[var(--space-4)] flex flex-wrap items-center justify-center gap-[var(--space-2)]">
+              <div className="mt-4 flex flex-wrap items-center justify-center gap-2">
                 {profile.height ? (
                   <ProfileMetricChip
                     label="키"
@@ -222,17 +222,17 @@ export function ProfileScreen() {
           </section>
 
           {isLoadingProfile ? (
-            <div className="rounded-[var(--radius-2xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] px-[var(--space-4)] py-[var(--space-6)] text-center body-r text-[hsl(var(--text-secondary))]">
+            <div className="rounded-2xl border border-border-default bg-surface-default px-4 py-6 text-center body-r text-fg-secondary">
               프로필 정보를 불러오는 중이에요.
             </div>
           ) : null}
 
-          <section className="flex flex-col gap-[var(--space-3)]">
+          <section className="flex flex-col gap-3">
             <Button
               type="button"
               variant="outline"
               onClick={() => setIsEditOpen(true)}
-              className="h-14 w-full rounded-[var(--radius-2xl)] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-primary))] shadow-[var(--shadow-sm)] hover:bg-[hsl(var(--surface-subtle))]"
+              className="h-14 w-full rounded-2xl border-border-default bg-surface-default text-base font-black text-fg-primary shadow-sm hover:bg-surface-subtle"
             >
               <PencilLine size={18} />
               프로필 수정
@@ -243,7 +243,7 @@ export function ProfileScreen() {
               variant="outline"
               onClick={() => setIsLogoutOpen(true)}
               disabled={isLoggingOut}
-              className="h-14 w-full rounded-[var(--radius-2xl)] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-primary))] shadow-[var(--shadow-sm)] hover:bg-[hsl(var(--surface-subtle))]"
+              className="h-14 w-full rounded-2xl border-border-default bg-surface-default text-base font-black text-fg-primary shadow-sm hover:bg-surface-subtle"
             >
               <LogOut size={18} />
               로그아웃
@@ -254,7 +254,7 @@ export function ProfileScreen() {
               variant="outline"
               onClick={() => void handleDeleteAccount()}
               disabled={isDeletingAccount}
-              className="h-14 w-full rounded-[var(--radius-2xl)] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-error))] shadow-[var(--shadow-sm)] hover:bg-[hsl(var(--error)/0.05)] disabled:opacity-70"
+              className="h-14 w-full rounded-2xl border-border-default bg-surface-default text-base font-black text-fg-error shadow-sm hover:bg-error/[0.05] disabled:opacity-70"
             >
               <ShieldAlert size={18} />
               {isDeletingAccount ? '회원탈퇴 처리 중...' : '회원탈퇴'}

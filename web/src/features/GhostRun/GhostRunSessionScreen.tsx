@@ -23,19 +23,19 @@ interface StatItemProps {
 function StatItem({ label, value, valueClassName, sub }: StatItemProps) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="body-r tracking-wide text-[hsl(var(--secondary-5))]">
+      <span className="body-r tracking-wide text-secondary-5">
         {label}
       </span>
       <span
         className={cn(
           'h2-b tabular-nums [text-shadow:0_2px_8px_hsl(var(--black)/0.35)]',
-          valueClassName ?? 'text-[hsl(var(--text-inverse))]'
+          valueClassName ?? 'text-fg-inverse'
         )}
       >
         {value}
       </span>
       {sub && (
-        <span className="body-r font-semibold text-[hsl(var(--secondary-5))]">
+        <span className="body-r font-semibold text-secondary-5">
           {sub}
         </span>
       )}
@@ -273,8 +273,8 @@ export function GhostRunSessionScreen({
   }, [isGiveupModalOpen]);
 
   return (
-    <div className="absolute inset-0 flex flex-col overflow-hidden bg-[hsl(var(--surface-inverse))]">
-      <div className="shrink-0 border-b border-[hsl(var(--secondary-3))] px-6 py-4">
+    <div className="absolute inset-0 flex flex-col overflow-hidden bg-surface-inverse">
+      <div className="shrink-0 border-b border-secondary-3 px-6 py-4">
         <div className="grid grid-cols-4 gap-2">
           <StatItem label="거리" value={distance} sub="km" />
           <StatItem label="페이스" value={pace} />
@@ -303,9 +303,9 @@ export function GhostRunSessionScreen({
         />
 
         {isStartupCountdown && (
-          <div className="absolute inset-0 z-modal flex items-center justify-center bg-[hsl(var(--black)/0.35)]">
-            <div className="flex h-36 w-36 items-center justify-center rounded-full bg-[hsl(var(--surface-inverse)/0.9)] shadow-[var(--shadow-soft-xl)]">
-              <span className="font-bold tabular-nums text-8xl text-[hsl(var(--text-inverse))]">
+          <div className="absolute inset-0 z-modal flex items-center justify-center bg-black/[0.35]">
+            <div className="flex h-36 w-36 items-center justify-center rounded-full bg-surface-inverse/[0.9] shadow-soft-xl">
+              <span className="font-bold tabular-nums text-8xl text-fg-inverse">
                 {startupCountdownSec}
               </span>
             </div>
@@ -314,7 +314,7 @@ export function GhostRunSessionScreen({
 
         {ghostFinished && (
           <div className="absolute top-3 left-0 right-0 z-sticky flex justify-center">
-            <div className="rounded-full bg-[hsl(var(--error))] px-4 py-2 text-[hsl(var(--text-inverse))] body-b">
+            <div className="rounded-full bg-error px-4 py-2 text-fg-inverse body-b">
               고스트가 먼저 도착했습니다! 계속 달리세요
             </div>
           </div>
@@ -322,25 +322,25 @@ export function GhostRunSessionScreen({
 
         {isDeviating && !ghostFinished && (
           <div className="absolute top-14 left-0 right-0 z-sticky flex justify-center">
-            <div className="rounded-full bg-[hsl(var(--error))] px-4 py-2 text-[hsl(var(--text-inverse))] body-b">
+            <div className="rounded-full bg-error px-4 py-2 text-fg-inverse body-b">
               코스 이탈 중 · {deviationSec}s / 10s
             </div>
           </div>
         )}
       </div>
 
-      <div className="shrink-0 border-t border-[hsl(var(--secondary-3))] px-6 pb-8 pt-4">
+      <div className="shrink-0 border-t border-secondary-3 px-6 pb-8 pt-4">
         <div className="flex flex-col items-center gap-5">
           <div className="flex flex-col items-center gap-2">
             <span
               className={cn(
-                'font-bold leading-none tabular-nums text-[hsl(var(--text-inverse))]',
+                'font-bold leading-none tabular-nums text-fg-inverse',
                 time.length > 5 ? 'text-7xl' : 'text-8xl'
               )}
             >
               {time}
             </span>
-            <span className="caption-r tracking-[0.2em] text-[hsl(var(--secondary-5))] uppercase">
+            <span className="caption-r tracking-[0.2em] text-secondary-5 uppercase">
               Total Time
             </span>
           </div>
@@ -348,7 +348,7 @@ export function GhostRunSessionScreen({
           <button
             onClick={() => setIsGiveupModalOpen(true)}
             disabled={isEnding}
-            className="flex h-20 w-20 items-center justify-center rounded-full bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))] shadow-(--shadow-soft-lg)"
+            className="flex h-20 w-20 items-center justify-center rounded-full bg-secondary-3 text-fg-inverse shadow-soft-lg"
             aria-label="포기"
           >
             <Flag size={30} />
@@ -359,21 +359,21 @@ export function GhostRunSessionScreen({
       {/* 포기 확인 모달 */}
       {isGiveupModalOpen && (
         <div className="absolute inset-0 z-modal flex items-center justify-center bg-black/60 px-6">
-          <div className="w-full max-w-sm rounded-3xl bg-[hsl(var(--surface-default))] p-8 flex flex-col items-center gap-5">
-            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-[hsl(var(--error)/0.12)]">
-              <Flag size={32} className="text-[hsl(var(--error))]" />
+          <div className="w-full max-w-sm rounded-3xl bg-surface-default p-8 flex flex-col items-center gap-5">
+            <div className="flex h-16 w-16 items-center justify-center rounded-full bg-error/[0.12]">
+              <Flag size={32} className="text-error" />
             </div>
 
             <div className="flex flex-col items-center gap-1 text-center">
-              <span className="h3-b text-[hsl(var(--text-primary))]">정말 포기하시겠어요?</span>
-              <span className="body-r text-[hsl(var(--text-secondary))]">
+              <span className="h3-b text-fg-primary">정말 포기하시겠어요?</span>
+              <span className="body-r text-fg-secondary">
                 포기 시 패배 처리됩니다
               </span>
             </div>
 
             {/* 5초 카운트다운 */}
-            <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-[hsl(var(--border-default))]">
-              <span className="h2-b tabular-nums text-[hsl(var(--text-secondary))]">
+            <div className="flex h-14 w-14 items-center justify-center rounded-full border-2 border-border-default">
+              <span className="h2-b tabular-nums text-fg-secondary">
                 {giveupCountdown}
               </span>
             </div>
@@ -381,14 +381,14 @@ export function GhostRunSessionScreen({
             <div className="flex w-full gap-3">
               <button
                 onClick={() => setIsGiveupModalOpen(false)}
-                className="flex-1 py-3 rounded-2xl border border-[hsl(var(--border-default))] body-b text-[hsl(var(--text-primary))]"
+                className="flex-1 py-3 rounded-2xl border border-border-default body-b text-fg-primary"
               >
                 계속 달리기
               </button>
               <button
                 onClick={handleGiveup}
                 disabled={isEnding}
-                className="flex-1 py-3 rounded-2xl bg-[hsl(var(--error))] body-b text-[hsl(var(--text-inverse))]"
+                className="flex-1 py-3 rounded-2xl bg-error body-b text-fg-inverse"
               >
                 {isEnding ? '처리 중...' : '포기'}
               </button>

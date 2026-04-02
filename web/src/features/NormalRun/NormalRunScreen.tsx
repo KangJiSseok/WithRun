@@ -220,7 +220,7 @@ export function NormalRunScreen() {
           variant="outline"
           size="icon"
           onClick={() => navigate('/home')}
-          className="h-10 w-10 shrink-0 rounded-full border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-(--shadow-md)"
+          className="h-10 w-10 shrink-0 rounded-full border-border-default bg-surface-default text-fg-primary shadow-md"
         >
           <Home size={18} />
         </Button>
@@ -235,7 +235,7 @@ export function NormalRunScreen() {
       <div className="absolute right-4 top-4 z-20">
         <button
           onClick={() => setShowFilterDrawer(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-(--shadow-md)"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-border-default bg-surface-default text-fg-primary shadow-md"
         >
           <Filter size={18} />
         </button>
@@ -268,7 +268,7 @@ export function NormalRunScreen() {
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        className="absolute bottom-0 left-0 right-0 z-10 flex max-h-[60dvh] flex-col rounded-t-2xl bg-[hsl(var(--surface-default))] shadow-(--shadow-soft-xl)"
+        className="absolute bottom-0 left-0 right-0 z-10 flex max-h-[60dvh] flex-col rounded-t-2xl bg-surface-default shadow-soft-xl"
       >
         {/* 시트 헤더 (드래그 타겟 + 탭 버튼) */}
         <div
@@ -279,7 +279,7 @@ export function NormalRunScreen() {
         >
           {/* 드래그 바 */}
           <div className="flex justify-center pt-3 pb-2">
-            <div className="h-1 w-10 rounded-full bg-[hsl(var(--border-default))]" />
+            <div className="h-1 w-10 rounded-full bg-border-default" />
           </div>
 
           {/* 탭 버튼 + 코스 추천 버튼 */}
@@ -294,7 +294,7 @@ export function NormalRunScreen() {
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   courseTab === 'official'
                     ? 'bg-primary text-primary-foreground'
-                    : 'border border-[hsl(var(--border-default))] text-[hsl(var(--text-secondary))]'
+                    : 'border border-border-default text-fg-secondary'
                 }`}
               >
                 공식코스
@@ -308,7 +308,7 @@ export function NormalRunScreen() {
                 className={`rounded-full px-4 py-1.5 text-sm font-medium transition-colors ${
                   courseTab === 'community'
                     ? 'bg-primary text-primary-foreground'
-                    : 'border border-[hsl(var(--border-default))] text-[hsl(var(--text-secondary))]'
+                    : 'border border-border-default text-fg-secondary'
                 }`}
               >
                 커뮤니티 코스
@@ -331,7 +331,7 @@ export function NormalRunScreen() {
 
         {/* 스크롤 가능한 코스 리스트 */}
         <div
-          className={`flex-1 overflow-y-auto px-(--space-5) py-(--space-4) ${
+          className={`flex-1 overflow-y-auto px-5 py-4 ${
             isDragging ? 'pointer-events-none' : ''
           }`}
           style={{ touchAction: 'pan-y', paddingBottom: 16 }}
@@ -341,7 +341,7 @@ export function NormalRunScreen() {
               {activeFilterChips.map((chip) => (
                 <span
                   key={chip}
-                  className="rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-muted))] px-3 py-1 text-xs text-[hsl(var(--text-secondary))]"
+                  className="rounded-full border border-border-default bg-surface-muted px-3 py-1 text-xs text-fg-secondary"
                 >
                   {chip}
                 </span>
@@ -350,21 +350,21 @@ export function NormalRunScreen() {
           )}
           {isLoading && courses.length === 0 ? (
             <div className="flex h-24 items-center justify-center">
-              <p className="body-r text-[hsl(var(--text-secondary))]">
+              <p className="body-r text-fg-secondary">
                 코스를 불러오는 중입니다...
               </p>
             </div>
           ) : courses.length === 0 ? (
-            <div className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border border-[hsl(var(--border-default))] px-(--space-5) py-4 text-center">
-              <p className="body-l-b text-[hsl(var(--text-primary))]">
+            <div className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border border-border-default px-5 py-4 text-center">
+              <p className="body-l-b text-fg-primary">
                 검색 결과가 없습니다
               </p>
-              <p className="body-r text-[hsl(var(--text-secondary))]">
+              <p className="body-r text-fg-secondary">
                 지도에서 탐색 범위를 넓혀보세요.
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-(--space-4)">
+            <div className="flex flex-col gap-4">
               {courses.map((course) => (
                 <RunningCourseCard
                   key={course.courseId}
@@ -386,11 +386,11 @@ export function NormalRunScreen() {
           >
             {isLoading ? (
               <div className="flex items-center justify-center gap-2">
-                <div className="h-8 w-8 animate-pulse rounded-full bg-[hsl(var(--surface-subtle))]" />
-                <div className="h-8 w-8 animate-pulse rounded-full bg-[hsl(var(--surface-subtle))]" />
-                <div className="h-8 w-8 animate-pulse rounded-full bg-[hsl(var(--surface-subtle))]" />
-                <div className="h-8 w-8 animate-pulse rounded-full bg-[hsl(var(--surface-subtle))]" />
-                <div className="h-8 w-8 animate-pulse rounded-full bg-[hsl(var(--surface-subtle))]" />
+                <div className="h-8 w-8 animate-pulse rounded-full bg-surface-subtle" />
+                <div className="h-8 w-8 animate-pulse rounded-full bg-surface-subtle" />
+                <div className="h-8 w-8 animate-pulse rounded-full bg-surface-subtle" />
+                <div className="h-8 w-8 animate-pulse rounded-full bg-surface-subtle" />
+                <div className="h-8 w-8 animate-pulse rounded-full bg-surface-subtle" />
               </div>
             ) : (
               <CoursePageNav
@@ -431,7 +431,7 @@ export function NormalRunScreen() {
             transition={{ duration: 0.2 }}
           >
             <motion.div
-              className="flex w-full max-w-sm max-h-[70dvh] flex-col rounded-3xl bg-[hsl(var(--surface-default))] shadow-2xl"
+              className="flex w-full max-w-sm max-h-[70dvh] flex-col rounded-3xl bg-surface-default shadow-2xl"
               onClick={(e) => e.stopPropagation()}
               initial={{ opacity: 0, scale: 0.92, y: 16 }}
               animate={{ opacity: 1, scale: 1, y: 0 }}
@@ -445,13 +445,13 @@ export function NormalRunScreen() {
                     <div className="flex h-8 w-8 shrink-0 items-center justify-center rounded-full bg-primary/10">
                       <Sparkles size={16} className="text-primary" />
                     </div>
-                    <span className="body-l-b text-[hsl(var(--text-primary))]">
+                    <span className="body-l-b text-fg-primary">
                       러너님이 좋아하실만한 코스에요!
                     </span>
                   </div>
                   <button
                     onClick={() => setIsRecommendModalOpen(false)}
-                    className="shrink-0 text-[hsl(var(--text-secondary))]"
+                    className="shrink-0 text-fg-secondary"
                   >
                     <X size={18} />
                   </button>
@@ -459,16 +459,16 @@ export function NormalRunScreen() {
               </div>
 
               {/* 구분선 */}
-              <div className="mx-5 h-px bg-[hsl(var(--border-default))]" />
+              <div className="mx-5 h-px bg-border-default" />
 
               {/* 스크롤 가능한 코스 리스트 */}
               <div className="flex-1 overflow-y-auto px-5 pt-4 pb-4">
                 {recommendedCourses.length === 0 ? (
                   <div className="flex h-32 flex-col items-center justify-center gap-2">
-                    <p className="body-l-b text-[hsl(var(--text-primary))]">
+                    <p className="body-l-b text-fg-primary">
                       추천 코스가 없습니다
                     </p>
-                    <p className="body-r text-[hsl(var(--text-secondary))]">
+                    <p className="body-r text-fg-secondary">
                       탐색 범위를 조정하거나 필터를 변경해보세요.
                     </p>
                   </div>

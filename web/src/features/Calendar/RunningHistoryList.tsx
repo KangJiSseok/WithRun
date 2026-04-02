@@ -21,9 +21,9 @@ const RUNNING_MODE_LABEL: Record<string, string> = {
 };
 
 const GHOST_RESULT_STYLE: Record<string, { label: string; className: string }> = {
-  WIN:  { label: '승리', className: 'bg-[hsl(var(--success)/0.15)] text-[hsl(var(--success))]' },
-  LOSE: { label: '패배', className: 'bg-[hsl(var(--error)/0.15)] text-[hsl(var(--error))]' },
-  DRAW: { label: '무승부', className: 'bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]' },
+  WIN:  { label: '승리', className: 'bg-success/[0.15] text-success' },
+  LOSE: { label: '패배', className: 'bg-error/[0.15] text-error' },
+  DRAW: { label: '무승부', className: 'bg-surface-subtle text-fg-secondary' },
 };
 
 // 날짜 순서를 유지하면서 날짜별로 그룹핑
@@ -86,9 +86,9 @@ function SessionCard({ session, scrollRef }: { session: RunningHistoryItem; scro
         sessionStorage.setItem(SCROLL_KEY, String(scrollRef.current?.scrollTop ?? 0));
         navigate(`/calendar/${session.runningSessionId}`);
       }}
-      className="w-full text-left rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-[var(--space-3)] flex gap-[var(--space-3)] items-center active:opacity-70 transition-opacity">
+      className="w-full text-left rounded-xl border border-border-default bg-surface-default p-3 flex gap-3 items-center active:opacity-70 transition-opacity">
       {/* 스냅샷 썸네일 */}
-      <div className="w-[var(--space-16)] h-[var(--space-16)] rounded-[var(--radius-lg)] bg-[hsl(var(--surface-subtle))] flex-shrink-0 overflow-hidden">
+      <div className="w-16 h-16 rounded-lg bg-surface-subtle flex-shrink-0 overflow-hidden">
         {session.snapshotImageUrl ? (
           <img
             src={session.snapshotImageUrl}
@@ -96,26 +96,26 @@ function SessionCard({ session, scrollRef }: { session: RunningHistoryItem; scro
             className="w-full h-full object-cover"
           />
         ) : (
-          <div className="w-full h-full flex items-center justify-center text-[hsl(var(--text-secondary))]">
+          <div className="w-full h-full flex items-center justify-center text-fg-secondary">
             <MapPin size={20} />
           </div>
         )}
       </div>
 
       {/* 러닝 정보 */}
-      <div className="flex-1 flex flex-col gap-[var(--space-2)]">
+      <div className="flex-1 flex flex-col gap-2">
         {/* 시간대 + 시각 */}
         <div className="flex justify-between items-center">
-          <span className="body-b text-[hsl(var(--text-primary))]">
+          <span className="body-b text-fg-primary">
             {TIME_SLOT_LABEL[session.timeSlot] ?? session.timeSlot} 러닝
           </span>
-          <span className="caption-r text-[hsl(var(--text-secondary))]">
+          <span className="caption-r text-fg-secondary">
             {formatStartTime(session.startedAt)}
           </span>
         </div>
 
         {/* 거리 • 시간 • 페이스 */}
-        <div className="flex items-center justify-between body-r text-[hsl(var(--text-secondary))]">
+        <div className="flex items-center justify-between body-r text-fg-secondary">
           <span>{(session.distanceM / 1000).toFixed(2)} km</span>
           <span>•</span>
           <span>{formatDuration(session.durationSec)}</span>
@@ -124,12 +124,12 @@ function SessionCard({ session, scrollRef }: { session: RunningHistoryItem; scro
         </div>
 
         {/* 모드 태그 + 고스트런 결과 */}
-        <div className="flex gap-[var(--space-1)]">
-          <span className="caption-r px-[var(--space-2)] py-0.5 rounded-full bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-secondary))]">
+        <div className="flex gap-1">
+          <span className="caption-r px-2 py-0.5 rounded-full bg-surface-subtle text-fg-secondary">
             {RUNNING_MODE_LABEL[session.runningMode] ?? session.runningMode}
           </span>
           {session.ghostResultStatus && GHOST_RESULT_STYLE[session.ghostResultStatus] && (
-            <span className={`caption-r px-[var(--space-2)] py-0.5 rounded-full ${GHOST_RESULT_STYLE[session.ghostResultStatus].className}`}>
+            <span className={`caption-r px-2 py-0.5 rounded-full ${GHOST_RESULT_STYLE[session.ghostResultStatus].className}`}>
               {GHOST_RESULT_STYLE[session.ghostResultStatus].label}
             </span>
           )}
@@ -144,25 +144,25 @@ export function RunningHistoryList({ title, items, isLoading, hasMore, isScrollL
   const sentinelRef = useInfiniteScroll(hasMore, isScrollLoading, onLoadMore);
 
   return (
-    <div className="flex flex-col gap-[var(--space-3)]">
-      <p className="body-b text-[hsl(var(--text-primary))]">{title}</p>
+    <div className="flex flex-col gap-3">
+      <p className="body-b text-fg-primary">{title}</p>
 
       {isLoading && (
-        <div className="rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-[var(--space-4)] flex justify-center">
-          <span className="body-r text-[hsl(var(--text-secondary))]">로딩 중...</span>
+        <div className="rounded-xl border border-border-default bg-surface-default p-4 flex justify-center">
+          <span className="body-r text-fg-secondary">로딩 중...</span>
         </div>
       )}
 
       {!isLoading && items.length === 0 && (
-        <div className="rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-[var(--space-4)] text-center">
-          <p className="body-r text-[hsl(var(--text-secondary))]">러닝 기록이 없습니다.</p>
+        <div className="rounded-xl border border-border-default bg-surface-default p-4 text-center">
+          <p className="body-r text-fg-secondary">러닝 기록이 없습니다.</p>
         </div>
       )}
 
       {!isLoading && showDateHeader
         ? groupByDate(items).map(({ dateKey, sessions }) => (
-            <div key={dateKey} className="flex flex-col gap-[var(--space-2)]">
-              <p className="caption-b text-[hsl(var(--text-secondary))]">{formatDateLabel(dateKey)}</p>
+            <div key={dateKey} className="flex flex-col gap-2">
+              <p className="caption-b text-fg-secondary">{formatDateLabel(dateKey)}</p>
               {sessions.map((session) => (
                 <SessionCard key={session.runningSessionId} session={session} scrollRef={scrollRef} />
               ))}
@@ -176,8 +176,8 @@ export function RunningHistoryList({ title, items, isLoading, hasMore, isScrollL
       <div ref={sentinelRef} />
 
       {isScrollLoading && (
-        <div className="flex justify-center py-[var(--space-2)]">
-          <span className="caption-r text-[hsl(var(--text-secondary))]">불러오는 중...</span>
+        <div className="flex justify-center py-2">
+          <span className="caption-r text-fg-secondary">불러오는 중...</span>
         </div>
       )}
     </div>

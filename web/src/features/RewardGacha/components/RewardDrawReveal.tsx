@@ -90,10 +90,10 @@ export function RewardDrawReveal({ cards, onClose }: RewardDrawRevealProps) {
                 )}
               >
                 {!isFlipped ? (
-                  <div className="absolute inset-0 flex flex-col items-center justify-center rounded-[1.5rem] border-2 border-[hsl(var(--border-strong))] bg-[hsl(var(--surface-default))] shadow-[var(--shadow-md)]">
+                  <div className="absolute inset-0 flex flex-col items-center justify-center rounded-2xl border-2 border-border-strong bg-surface-default shadow-md">
                     <div
                       className={cn(
-                        'rounded-full bg-[hsl(var(--primary-5))] text-[hsl(var(--primary-2))]',
+                        'rounded-full bg-primary-5 text-primary-2',
                         isThreeCards ? 'mb-2 p-2' : 'mb-3 p-4'
                       )}
                     >
@@ -101,7 +101,7 @@ export function RewardDrawReveal({ cards, onClose }: RewardDrawRevealProps) {
                     </div>
                     <span
                       className={cn(
-                        'font-bold tracking-[0.14em] text-[hsl(var(--text-secondary))]',
+                        'font-bold tracking-[0.14em] text-fg-secondary',
                         isThreeCards ? 'text-[10px]' : 'text-sm'
                       )}
                     >
@@ -111,17 +111,17 @@ export function RewardDrawReveal({ cards, onClose }: RewardDrawRevealProps) {
                 ) : (
                   <div
                     className={cn(
-                      'absolute inset-0 flex flex-col items-center justify-center rounded-[1.5rem] border-2 p-2 shadow-[var(--shadow-md)] animate-in fade-in zoom-in duration-300',
+                      'absolute inset-0 flex flex-col items-center justify-center rounded-2xl border-2 p-2 shadow-md animate-in fade-in zoom-in duration-300',
                       isReward
-                        ? 'border-[hsl(var(--primary-3))] bg-[hsl(var(--surface-default))]'
-                        : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))]'
+                        ? 'border-primary-3 bg-surface-default'
+                        : 'border-border-default bg-surface-subtle'
                     )}
                   >
                     {isReward ? (
                       <>
                         <div
                           className={cn(
-                            'relative flex items-center justify-center overflow-hidden rounded-full bg-[hsl(var(--surface-subtle))]',
+                            'relative flex items-center justify-center overflow-hidden rounded-full bg-surface-subtle',
                             isThreeCards ? 'mb-2 h-12 w-12' : 'mb-4 h-20 w-20'
                           )}
                         >
@@ -133,7 +133,7 @@ export function RewardDrawReveal({ cards, onClose }: RewardDrawRevealProps) {
                         </div>
                         <span
                           className={cn(
-                            'text-center font-bold text-[hsl(var(--text-primary))] line-clamp-2',
+                            'text-center font-bold text-fg-primary line-clamp-2',
                             isThreeCards ? 'text-[10px]' : 'text-sm'
                           )}
                         >
@@ -141,14 +141,14 @@ export function RewardDrawReveal({ cards, onClose }: RewardDrawRevealProps) {
                         </span>
                         <Sparkles
                           size={isThreeCards ? 16 : 24}
-                          className="absolute right-2 top-2 text-[hsl(var(--primary-3))]"
+                          className="absolute right-2 top-2 text-primary-3"
                         />
                       </>
                     ) : (
                       <>
                         <div
                           className={cn(
-                            'text-[hsl(var(--text-secondary))]',
+                            'text-fg-secondary',
                             isThreeCards ? 'mb-2' : 'mb-4'
                           )}
                         >
@@ -156,7 +156,7 @@ export function RewardDrawReveal({ cards, onClose }: RewardDrawRevealProps) {
                         </div>
                         <span
                           className={cn(
-                            'text-center font-bold text-[hsl(var(--text-secondary))]',
+                            'text-center font-bold text-fg-secondary',
                             isThreeCards ? 'text-[10px]' : 'text-sm'
                           )}
                         >
@@ -182,7 +182,7 @@ export function RewardDrawReveal({ cards, onClose }: RewardDrawRevealProps) {
             <button
               type="button"
               onClick={handleRevealAll}
-              className="w-full rounded-[1.5rem] bg-[hsl(var(--primary-1))] px-4 py-4 text-xl font-black text-[hsl(var(--text-inverse))] transition-all hover:bg-[hsl(var(--primary-1-hover))] active:scale-95"
+              className="w-full rounded-2xl bg-primary-1 px-4 py-4 text-xl font-black text-fg-inverse transition-all hover:bg-primary-1-hover active:scale-95"
             >
               모두 열기
             </button>
@@ -190,7 +190,7 @@ export function RewardDrawReveal({ cards, onClose }: RewardDrawRevealProps) {
             <button
               type="button"
               onClick={onClose}
-              className="w-full rounded-[1.5rem] bg-[hsl(var(--surface-subtle))] px-4 py-4 text-xl font-black text-[hsl(var(--text-primary))] transition-all hover:bg-[hsl(var(--surface-muted))] active:scale-95"
+              className="w-full rounded-2xl bg-surface-subtle px-4 py-4 text-xl font-black text-fg-primary transition-all hover:bg-surface-muted active:scale-95"
             >
               닫기
             </button>

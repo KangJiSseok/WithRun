@@ -39,7 +39,7 @@ export function ProfileLogoutDialog({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="h-12 flex-1 rounded-[1.5rem] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-primary))]"
+            className="h-12 flex-1 rounded-2xl border-border-default bg-surface-default text-base font-black text-fg-primary"
           >
             취소
           </Button>
@@ -47,7 +47,7 @@ export function ProfileLogoutDialog({
             type="button"
             onClick={onConfirm}
             disabled={isLoggingOut}
-            className="h-12 flex-1 rounded-[1.5rem] bg-[hsl(var(--error))] text-base font-black text-white hover:bg-[hsl(var(--error)/0.9)]"
+            className="h-12 flex-1 rounded-2xl bg-error text-base font-black text-white hover:bg-error/[0.9]"
           >
             {isLoggingOut ? '로그아웃 중...' : '로그아웃'}
           </Button>

@@ -35,10 +35,10 @@ export function WatchRunStatusNotice({ className }: WatchRunStatusNoticeProps) {
   return (
     <div
       className={[
-        'rounded-2xl border px-4 py-3 shadow-[var(--shadow-md)]',
+        'rounded-2xl border px-4 py-3 shadow-md',
         isConnected
-          ? 'border-[hsl(var(--success)/0.4)] bg-[hsl(var(--success)/0.12)]'
-          : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default)/0.9)]',
+          ? 'border-success/[0.4] bg-success/[0.12]'
+          : 'border-border-default bg-surface-default/[0.9]',
         className ?? '',
       ].join(' ')}
     >
@@ -47,15 +47,15 @@ export function WatchRunStatusNotice({ className }: WatchRunStatusNoticeProps) {
           size={16}
           className={
             isConnected
-              ? 'text-[hsl(var(--success))]'
-              : 'text-[hsl(var(--text-secondary))]'
+              ? 'text-success'
+              : 'text-fg-secondary'
           }
         />
-        <span className="caption-b text-[hsl(var(--text-primary))]">
+        <span className="caption-b text-fg-primary">
           워치 연동 {statusLabel}
         </span>
       </div>
-      <p className="mt-1 body-r text-[hsl(var(--text-secondary))]">{message}</p>
+      <p className="mt-1 body-r text-fg-secondary">{message}</p>
     </div>
   );
 }

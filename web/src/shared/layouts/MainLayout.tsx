@@ -16,15 +16,15 @@ export function MainLayout({
   return (
     <div
       className={
-        'relative mx-auto flex h-dvh min-w-[375px] max-w-[430px] items-center justify-center bg-[hsl(var(--surface-subtle))]'
+        'relative mx-auto flex h-dvh min-w-[375px] max-w-[430px] items-center justify-center bg-surface-subtle'
       }
     >
-      <div className="flex h-dvh w-full flex-col overflow-hidden border-x border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] shadow-[var(--shadow-soft-xl)]">
+      <div className="flex h-dvh w-full flex-col overflow-hidden border-x border-border-default bg-surface-default shadow-soft-xl">
         {showTopNav && <TopNavigation />}
 
         <main
           className={cn(
-            'flex-1 min-h-0 overflow-y-overlay bg-[hsl(var(--surface-subtle))] p-5',
+            'flex-1 min-h-0 overflow-y-overlay bg-surface-subtle p-5',
             fullScreen && 'bg-transparent p-0'
           )}
         >

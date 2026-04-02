@@ -10,9 +10,9 @@ import type { RunningSessionDetailResponse, GhostRunningResult } from '@/apis/ru
 import type { GpsSample, HealthSample, SplitResult } from '@/apis/runningSessions';
 
 const GHOST_RESULT_CONFIG = {
-  WIN:  { label: '승리', cardClass: 'border-[hsl(var(--success))] bg-[hsl(var(--success)/0.08)]', labelClass: 'text-[hsl(var(--success))]' },
-  LOSE: { label: '패배', cardClass: 'border-[hsl(var(--error))] bg-[hsl(var(--error)/0.08)]',   labelClass: 'text-[hsl(var(--error))]' },
-  DRAW: { label: '무승부', cardClass: 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))]', labelClass: 'text-[hsl(var(--text-secondary))]' },
+  WIN:  { label: '승리', cardClass: 'border-success bg-success/[0.08]', labelClass: 'text-success' },
+  LOSE: { label: '패배', cardClass: 'border-error bg-error/[0.08]',   labelClass: 'text-error' },
+  DRAW: { label: '무승부', cardClass: 'border-border-default bg-surface-subtle', labelClass: 'text-fg-secondary' },
 } as const;
 
 function formatGapDistance(m: number): string {
@@ -26,15 +26,15 @@ function GhostResultCard({ result }: { result: GhostRunningResult }) {
   const isLose = result.resultStatus === 'LOSE';
 
   return (
-    <div className={cn('rounded-[var(--radius-xl)] border p-[var(--space-4)] flex flex-col gap-[var(--space-3)]', config.cardClass)}>
+    <div className={cn('rounded-xl border p-4 flex flex-col gap-3', config.cardClass)}>
       {/* 결과 라벨 */}
       <div className="flex items-center justify-between">
         <span className={cn('h3-b', config.labelClass)}>{config.label}</span>
-        <span className="caption-r text-[hsl(var(--text-secondary))]">고스트런</span>
+        <span className="caption-r text-fg-secondary">고스트런</span>
       </div>
 
       {/* 수치 2개 */}
-      <div className="flex gap-[var(--space-2)]">
+      <div className="flex gap-2">
         {[
           {
             label: '거리 차',
@@ -49,11 +49,11 @@ function GhostResultCard({ result }: { result: GhostRunningResult }) {
         ].map(({ label, value, sub }) => (
           <div
             key={label}
-            className="flex-1 flex flex-col items-center gap-[var(--space-1)] bg-[hsl(var(--surface-default))] rounded-[var(--radius-lg)] py-[var(--space-3)]"
+            className="flex-1 flex flex-col items-center gap-1 bg-surface-default rounded-lg py-3"
           >
-            <span className="caption-r text-[hsl(var(--text-secondary))]">{label}</span>
-            <span className="body-b text-[hsl(var(--text-primary))] tabular-nums">{value}</span>
-            <span className="caption-r text-[hsl(var(--text-secondary))]">{sub}</span>
+            <span className="caption-r text-fg-secondary">{label}</span>
+            <span className="body-b text-fg-primary tabular-nums">{value}</span>
+            <span className="caption-r text-fg-secondary">{sub}</span>
           </div>
         ))}
       </div>
@@ -100,12 +100,12 @@ function HeartRateSection({ samples }: { samples: HealthSample[] }) {
       : null;
 
   return (
-    <div className="flex flex-col gap-[var(--space-3)] rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-[var(--space-4)]">
-      <div className="flex items-center gap-[var(--space-2)]">
-        <Activity size={16} className="text-[hsl(var(--primary))]" />
-        <span className="caption-b text-[hsl(var(--text-primary))]">심박수 변동</span>
+    <div className="flex flex-col gap-3 rounded-xl border border-border-default bg-surface-default p-4">
+      <div className="flex items-center gap-2">
+        <Activity size={16} className="text-primary" />
+        <span className="caption-b text-fg-primary">심박수 변동</span>
       </div>
-      <div className="flex gap-[var(--space-3)]">
+      <div className="flex gap-3">
         {[
           { label: '최소', value: String(min), highlight: false },
           { label: '평균', value: String(avg), highlight: true },
@@ -113,13 +113,13 @@ function HeartRateSection({ samples }: { samples: HealthSample[] }) {
         ].map(({ label, value, highlight }) => (
           <div
             key={label}
-            className="flex-1 flex flex-col items-center gap-[var(--space-1)] bg-[hsl(var(--surface-subtle))] rounded-[var(--radius-lg)] py-[var(--space-3)]"
+            className="flex-1 flex flex-col items-center gap-1 bg-surface-subtle rounded-lg py-3"
           >
-            <span className="caption-r text-[hsl(var(--text-secondary))]">{label}</span>
-            <span className={cn('h3-b', highlight ? 'text-[hsl(var(--primary))]' : 'text-[hsl(var(--text-primary))]')}>
+            <span className="caption-r text-fg-secondary">{label}</span>
+            <span className={cn('h3-b', highlight ? 'text-primary' : 'text-fg-primary')}>
               {value}
             </span>
-            <span className="caption-r text-[hsl(var(--text-secondary))]">bpm</span>
+            <span className="caption-r text-fg-secondary">bpm</span>
           </div>
         ))}
       </div>
@@ -149,39 +149,39 @@ function SplitsSection({ splits, avgPaceSecPerKm }: { splits: SplitResult[]; avg
   if (splits.length === 0) return null;
 
   return (
-    <div className="flex flex-col gap-[var(--space-3)] rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-[var(--space-4)]">
-      <div className="flex items-center gap-[var(--space-2)]">
-        <Timer size={16} className="text-[hsl(var(--primary))]" />
-        <span className="caption-b text-[hsl(var(--text-primary))]">구간별 페이스 (1km)</span>
+    <div className="flex flex-col gap-3 rounded-xl border border-border-default bg-surface-default p-4">
+      <div className="flex items-center gap-2">
+        <Timer size={16} className="text-primary" />
+        <span className="caption-b text-fg-primary">구간별 페이스 (1km)</span>
       </div>
-      <div className="rounded-[var(--radius-lg)] overflow-hidden border border-[hsl(var(--border-default))]">
+      <div className="rounded-lg overflow-hidden border border-border-default">
         <table className="w-full">
-          <thead className="bg-[hsl(var(--surface-subtle))]">
+          <thead className="bg-surface-subtle">
             <tr>
-              <th className="px-[var(--space-3)] py-[var(--space-2)] text-left caption-r text-[hsl(var(--text-secondary))] font-normal">구간</th>
-              <th className="px-[var(--space-3)] py-[var(--space-2)] text-left caption-r text-[hsl(var(--text-secondary))] font-normal">페이스</th>
-              <th className="px-[var(--space-3)] py-[var(--space-2)] text-left caption-r text-[hsl(var(--text-secondary))] font-normal">상태</th>
+              <th className="px-3 py-2 text-left caption-r text-fg-secondary font-normal">구간</th>
+              <th className="px-3 py-2 text-left caption-r text-fg-secondary font-normal">페이스</th>
+              <th className="px-3 py-2 text-left caption-r text-fg-secondary font-normal">상태</th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[hsl(var(--border-default))]">
+          <tbody className="divide-y divide-border-default">
             {splits.map((split) => (
               <tr key={split.splitIndex}>
-                <td className="px-[var(--space-3)] py-[var(--space-3)] caption-m text-[hsl(var(--text-primary))]">
+                <td className="px-3 py-3 caption-m text-fg-primary">
                   {split.splitDistanceM < 1000
                     ? `${parseFloat((split.splitDistanceM / 1000).toFixed(2))}km`
                     : `${split.splitIndex}km`}
                 </td>
-                <td className="px-[var(--space-3)] py-[var(--space-3)] caption-m text-[hsl(var(--primary))] font-bold">
+                <td className="px-3 py-3 caption-m text-primary font-bold">
                   {formatPace(split.splitPaceSecPerKm)}
                 </td>
-                <td className="px-[var(--space-3)] py-[var(--space-3)]">
+                <td className="px-3 py-3">
                   <div
                     className={cn(
                       'w-2 h-2 rounded-full',
                       split.splitPaceSecPerKm < avgPaceSecPerKm
                         // 평균 페이스보다 빠르면 초록, 느리면 노랑
-                        ? 'bg-[hsl(var(--success))]'
-                        : 'bg-[hsl(var(--warning))]',
+                        ? 'bg-success'
+                        : 'bg-warning',
                     )}
                   />
                 </td>
@@ -220,22 +220,22 @@ export function CalendarDetailScreen({ detail }: CalendarDetailScreenProps) {
   })();
 
   return (
-    <div className="absolute inset-0 flex flex-col bg-[hsl(var(--surface-subtle))]">
+    <div className="absolute inset-0 flex flex-col bg-surface-subtle">
       {/* 상단 헤더 */}
       <CalendarDetailHeader />
 
       {/* 스크롤 콘텐츠 */}
       <div className="flex-1 overflow-y-auto">
-      <div className="flex flex-col gap-[var(--space-4)] px-[var(--space-5)] pb-[var(--space-10)] pt-[var(--space-4)]">
+      <div className="flex flex-col gap-4 px-5 pb-10 pt-4">
 
         {/* 날짜 / 시간 */}
-        <div className="flex flex-col gap-[var(--space-1)]">
-          <div className="flex items-center gap-[var(--space-2)]">
-            <span className="h3-b text-[hsl(var(--text-primary))]">{dateLabel}</span>
-            <span className="body-r text-[hsl(var(--text-secondary))]">-</span>
-            <span className="body-r text-[hsl(var(--text-secondary))]">{timeLabel}</span>
+        <div className="flex flex-col gap-1">
+          <div className="flex items-center gap-2">
+            <span className="h3-b text-fg-primary">{dateLabel}</span>
+            <span className="body-r text-fg-secondary">-</span>
+            <span className="body-r text-fg-secondary">{timeLabel}</span>
           </div>
-          <span className="body-r text-[hsl(var(--text-secondary))]">{runningLabel}</span>
+          <span className="body-r text-fg-secondary">{runningLabel}</span>
         </div>
 
         {/* 고스트런 결과 */}
@@ -244,12 +244,12 @@ export function CalendarDetailScreen({ detail }: CalendarDetailScreenProps) {
         )}
 
         {/* 지도 */}
-        <div className="h-40 rounded-[var(--radius-xl)] overflow-hidden border border-[hsl(var(--border-default))]">
+        <div className="h-40 rounded-xl overflow-hidden border border-border-default">
           {detail.gpsSamples.length >= 2 ? (
             <DetailMap gpsSamples={detail.gpsSamples} />
           ) : (
-            <div className="h-full bg-[hsl(var(--surface-subtle))] flex items-center justify-center">
-              <div className="flex flex-col items-center gap-[var(--space-2)] text-[hsl(var(--text-secondary))]">
+            <div className="h-full bg-surface-subtle flex items-center justify-center">
+              <div className="flex flex-col items-center gap-2 text-fg-secondary">
                 <MapPin size={24} />
                 <span className="caption-r">GPS 데이터 없음</span>
               </div>
@@ -258,44 +258,44 @@ export function CalendarDetailScreen({ detail }: CalendarDetailScreenProps) {
         </div>
 
         {/* 거리 */}
-        <div className="rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-[var(--space-6)] flex flex-col items-center">
-          <span className="text-6xl font-bold text-[hsl(var(--text-primary))] tabular-nums">
+        <div className="rounded-xl border border-border-default bg-surface-default p-6 flex flex-col items-center">
+          <span className="text-6xl font-bold text-fg-primary tabular-nums">
             {(detail.distanceM / 1000).toFixed(2)}
           </span>
-          <span className="caption-r text-[hsl(var(--text-secondary))] uppercase tracking-widest mt-1">
+          <span className="caption-r text-fg-secondary uppercase tracking-widest mt-1">
             킬로미터
           </span>
         </div>
 
         {/* 시간 + 페이스 */}
-        <div className="flex gap-[var(--space-3)]">
-          <div className="flex-1 flex flex-col items-center gap-[var(--space-1)] rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] py-[var(--space-4)] px-[var(--space-2)]">
-            <span className="h3-b text-[hsl(var(--text-primary))] tabular-nums">
+        <div className="flex gap-3">
+          <div className="flex-1 flex flex-col items-center gap-1 rounded-xl border border-border-default bg-surface-default py-4 px-2">
+            <span className="h3-b text-fg-primary tabular-nums">
               {formatDuration(detail.durationSec)}
             </span>
-            <span className="caption-r text-[hsl(var(--text-secondary))]">시간</span>
+            <span className="caption-r text-fg-secondary">시간</span>
           </div>
-          <div className="flex-1 flex flex-col items-center gap-[var(--space-1)] rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] py-[var(--space-4)] px-[var(--space-2)]">
-            <span className="h3-b text-[hsl(var(--text-primary))] tabular-nums">
+          <div className="flex-1 flex flex-col items-center gap-1 rounded-xl border border-border-default bg-surface-default py-4 px-2">
+            <span className="h3-b text-fg-primary tabular-nums">
               {formatPace(detail.avgPaceSecPerKm)}
             </span>
-            <span className="caption-r text-[hsl(var(--text-secondary))]">평균 페이스</span>
+            <span className="caption-r text-fg-secondary">평균 페이스</span>
           </div>
         </div>
 
         {/* 칼로리 + 고도 */}
-        <div className="flex gap-[var(--space-3)]">
-          <div className="flex-1 flex flex-col items-center gap-[var(--space-1)] rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] py-[var(--space-4)] px-[var(--space-2)]">
-            <span className="h3-b text-[hsl(var(--text-primary))] tabular-nums">
+        <div className="flex gap-3">
+          <div className="flex-1 flex flex-col items-center gap-1 rounded-xl border border-border-default bg-surface-default py-4 px-2">
+            <span className="h3-b text-fg-primary tabular-nums">
               {detail.caloriesKcal === 0 ? '--' : detail.caloriesKcal}
             </span>
-            <span className="caption-r text-[hsl(var(--text-secondary))]">칼로리</span>
+            <span className="caption-r text-fg-secondary">칼로리</span>
           </div>
-          <div className="flex-1 flex flex-col items-center gap-[var(--space-1)] rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] py-[var(--space-4)] px-[var(--space-2)]">
-            <span className="h3-b text-[hsl(var(--text-primary))] tabular-nums">
-              {detail.elevationGainM}<span className="caption-r text-[hsl(var(--text-secondary))] ml-0.5">m</span>
+          <div className="flex-1 flex flex-col items-center gap-1 rounded-xl border border-border-default bg-surface-default py-4 px-2">
+            <span className="h3-b text-fg-primary tabular-nums">
+              {detail.elevationGainM}<span className="caption-r text-fg-secondary ml-0.5">m</span>
             </span>
-            <span className="caption-r text-[hsl(var(--text-secondary))]">고도 상승</span>
+            <span className="caption-r text-fg-secondary">고도 상승</span>
           </div>
         </div>
 

@@ -39,7 +39,7 @@ export function CoursePageNav({
       <button
         onClick={() => onPageChange(currentPage - 1)}
         disabled={currentPage === 1}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-[hsl(var(--text-secondary))] transition-colors disabled:opacity-30"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-fg-secondary transition-colors disabled:opacity-30"
         aria-label="이전 페이지"
       >
         <ChevronLeft size={16} />
@@ -49,7 +49,7 @@ export function CoursePageNav({
         page === '...' ? (
           <span
             key={`ellipsis-${idx}`}
-            className="flex h-8 w-8 items-center justify-center text-sm text-[hsl(var(--text-secondary))]"
+            className="flex h-8 w-8 items-center justify-center text-sm text-fg-secondary"
           >
             …
           </span>
@@ -60,7 +60,7 @@ export function CoursePageNav({
             className={`flex h-8 w-8 items-center justify-center rounded-full text-sm font-medium transition-colors ${
               page === currentPage
                 ? 'bg-primary text-primary-foreground'
-                : 'border border-[hsl(var(--border-default))] text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--surface-subtle))]'
+                : 'border border-border-default text-fg-primary hover:bg-surface-subtle'
             }`}
             aria-current={page === currentPage ? 'page' : undefined}
           >
@@ -72,7 +72,7 @@ export function CoursePageNav({
       <button
         onClick={() => onPageChange(currentPage + 1)}
         disabled={currentPage === totalPages}
-        className="flex h-8 w-8 items-center justify-center rounded-full text-[hsl(var(--text-secondary))] transition-colors disabled:opacity-30"
+        className="flex h-8 w-8 items-center justify-center rounded-full text-fg-secondary transition-colors disabled:opacity-30"
         aria-label="다음 페이지"
       >
         <ChevronRight size={16} />

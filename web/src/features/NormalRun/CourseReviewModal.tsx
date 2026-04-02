@@ -89,7 +89,7 @@ export function CourseReviewModal({
 
   return (
     <Drawer open={isOpen} onOpenChange={(open) => !open && onClose()}>
-      <DrawerContent className="bg-[hsl(var(--secondary-2))] border-t border-[hsl(var(--secondary-3))] max-h-[85dvh]">
+      <DrawerContent className="bg-secondary-2 border-t border-secondary-3 max-h-[85dvh]">
         {step === 'rating' ? (
           <>
             <DrawerHeader className="text-center px-6 pt-6 pb-0">
@@ -98,10 +98,10 @@ export function CourseReviewModal({
                   <Star size={28} className="text-primary fill-primary" />
                 </div>
               </div>
-              <DrawerTitle className="h3-b text-[hsl(var(--text-inverse))]">
+              <DrawerTitle className="h3-b text-fg-inverse">
                 코스 추천 시스템이 어땠나요?
               </DrawerTitle>
-              <p className="body-r text-[hsl(var(--secondary-5))] mt-1">
+              <p className="body-r text-secondary-5 mt-1">
                 리뷰를 남겨 도움을 제공하세요.
               </p>
             </DrawerHeader>
@@ -122,7 +122,7 @@ export function CourseReviewModal({
                         'transition-colors',
                         value <= (hoveredRating || rating)
                           ? 'text-primary fill-primary'
-                          : 'text-[hsl(var(--secondary-5))]'
+                          : 'text-secondary-5'
                       )}
                     />
                   </button>
@@ -131,7 +131,7 @@ export function CourseReviewModal({
 
               <button
                 onClick={onClose}
-                className="w-full py-4 rounded-2xl bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] body-b"
+                className="w-full py-4 rounded-2xl bg-secondary-3 text-secondary-5 body-b"
               >
                 나중에 하기
               </button>
@@ -140,20 +140,20 @@ export function CourseReviewModal({
         ) : (
           <>
             <DrawerHeader className="text-center px-6 pt-6 pb-0">
-              <DrawerTitle className="h3-b text-[hsl(var(--text-inverse))]">
+              <DrawerTitle className="h3-b text-fg-inverse">
                 상세 평가
               </DrawerTitle>
-              <p className="body-r text-[hsl(var(--secondary-5))] mt-1">
+              <p className="body-r text-secondary-5 mt-1">
                 더 자세한 정보를 입력해 주시면
                 <br />
                 도움이 됩니다
               </p>
             </DrawerHeader>
 
-            <div className="overflow-y-auto px-6 pb-8 pt-4 space-y-[var(--space-5)]">
+            <div className="overflow-y-auto px-6 pb-8 pt-4 space-y-5">
               {/* 코스 난이도 */}
-              <div className="space-y-[var(--space-2)]">
-                <label className="caption-b text-[hsl(var(--text-inverse))] flex items-center gap-1.5">
+              <div className="space-y-2">
+                <label className="caption-b text-fg-inverse flex items-center gap-1.5">
                   <span className="inline-block w-1 h-3.5 bg-primary rounded-full" />
                   코스 난이도
                 </label>
@@ -165,8 +165,8 @@ export function CourseReviewModal({
                       className={cn(
                         'flex-1 py-2 rounded-xl caption-m transition-colors border',
                         difficulty === data
-                          ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
-                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]'
+                          ? 'bg-primary text-fg-inverse border-transparent'
+                          : 'bg-secondary-3 text-secondary-5 border-secondary-4'
                       )}
                     >
                       {label}
@@ -176,11 +176,11 @@ export function CourseReviewModal({
               </div>
 
               {/* 코스 타입 */}
-              <div className="space-y-[var(--space-2)]">
-                <label className="caption-b text-[hsl(var(--text-inverse))] flex items-center gap-1.5">
+              <div className="space-y-2">
+                <label className="caption-b text-fg-inverse flex items-center gap-1.5">
                   <span className="inline-block w-1 h-3.5 bg-primary rounded-full" />
                   코스 타입{' '}
-                  <span className="caption-r text-[hsl(var(--secondary-5))]">
+                  <span className="caption-r text-secondary-5">
                     (중복 가능)
                   </span>
                 </label>
@@ -192,8 +192,8 @@ export function CourseReviewModal({
                       className={cn(
                         'px-3 py-2 rounded-xl caption-m transition-colors border',
                         courseTypes.includes(data)
-                          ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
-                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]'
+                          ? 'bg-primary text-fg-inverse border-transparent'
+                          : 'bg-secondary-3 text-secondary-5 border-secondary-4'
                       )}
                     >
                       {label}
@@ -205,7 +205,7 @@ export function CourseReviewModal({
               <button
                 onClick={handleSubmit}
                 disabled={isSubmitting || !difficulty}
-                className="w-full py-4 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] body-b disabled:opacity-50"
+                className="w-full py-4 rounded-2xl bg-primary text-fg-inverse body-b disabled:opacity-50"
               >
                 {isSubmitting ? '제출 중...' : '완료'}
               </button>

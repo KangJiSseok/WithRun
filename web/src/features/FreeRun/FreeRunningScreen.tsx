@@ -36,14 +36,14 @@ interface StatItemProps {
 function StatItem({ label, value, sub }: StatItemProps) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="body-r tracking-wide text-[hsl(var(--secondary-5))]">
+      <span className="body-r tracking-wide text-secondary-5">
         {label}
       </span>
-      <span className="h2-b tabular-nums text-[hsl(var(--text-inverse))] [text-shadow:0_2px_8px_hsl(var(--black)/0.35)]">
+      <span className="h2-b tabular-nums text-fg-inverse [text-shadow:0_2px_8px_hsl(var(--black)/0.35)]">
         {value}
       </span>
       {sub && (
-        <span className="body-r font-semibold text-[hsl(var(--secondary-5))]">
+        <span className="body-r font-semibold text-secondary-5">
           {sub}
         </span>
       )}
@@ -144,8 +144,8 @@ export function FreeRunningScreen({
   ]);
 
   return (
-    <div className="absolute inset-0 flex flex-col overflow-hidden bg-[hsl(var(--surface-inverse))]">
-      <div className="shrink-0 border-b border-[hsl(var(--secondary-3))] px-6 py-4">
+    <div className="absolute inset-0 flex flex-col overflow-hidden bg-surface-inverse">
+      <div className="shrink-0 border-b border-secondary-3 px-6 py-4">
         <div className="grid grid-cols-4 gap-2">
           <StatItem label="거리" value={distance} sub="km" />
           <StatItem label="페이스" value={pace} />
@@ -158,18 +158,18 @@ export function FreeRunningScreen({
         <FreeRunningMap />
       </div>
 
-      <div className="shrink-0 border-t border-[hsl(var(--secondary-3))] px-6 pb-8 pt-4">
+      <div className="shrink-0 border-t border-secondary-3 px-6 pb-8 pt-4">
         <div className="flex flex-col items-center gap-5">
           <div className="flex flex-col items-center gap-2">
             <span
               className={cn(
-                'font-bold leading-none tabular-nums text-[hsl(var(--text-inverse))]',
+                'font-bold leading-none tabular-nums text-fg-inverse',
                 time.length > 5 ? 'text-7xl' : 'text-8xl'
               )}
             >
               {time}
             </span>
-            <span className="caption-r tracking-[0.2em] text-[hsl(var(--secondary-5))] uppercase">
+            <span className="caption-r tracking-[0.2em] text-secondary-5 uppercase">
               Total Time
             </span>
           </div>
@@ -178,7 +178,7 @@ export function FreeRunningScreen({
             <button
               onClick={togglePause}
               disabled={isEnding}
-              className="z-10 flex h-20 w-20 items-center justify-center rounded-full bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-soft-lg)] disabled:opacity-50"
+              className="z-10 flex h-20 w-20 items-center justify-center rounded-full bg-primary-1 text-fg-inverse shadow-soft-lg disabled:opacity-50"
               aria-label={isPaused ? '러닝 재개' : '일시정지'}
             >
               {isPaused ? (
@@ -192,7 +192,7 @@ export function FreeRunningScreen({
               onClick={handleStopRunning}
               disabled={isEnding}
               className={cn(
-                'absolute flex h-14 w-14 items-center justify-center rounded-full border border-[hsl(var(--secondary-4))] bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-md)] transition-all duration-300',
+                'absolute flex h-14 w-14 items-center justify-center rounded-full border border-secondary-4 bg-secondary-3 text-fg-inverse shadow-md transition-all duration-300',
                 isPaused
                   ? 'translate-x-20 opacity-100'
                   : 'pointer-events-none translate-x-[50px] opacity-0'

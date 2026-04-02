@@ -31,10 +31,10 @@ export function HeartRateSection({ samples }: HeartRateSectionProps) {
       : null;
 
   return (
-    <div className="bg-[hsl(var(--secondary-2))] rounded-2xl p-4">
+    <div className="bg-secondary-2 rounded-2xl p-4">
       <div className="flex items-center gap-2 mb-4">
         <Activity size={16} className="text-primary" />
-        <span className="caption-b text-[hsl(var(--text-inverse))]">심박수 변동</span>
+        <span className="caption-b text-fg-inverse">심박수 변동</span>
       </div>
 
       <div className="flex gap-3 mb-4">
@@ -45,13 +45,13 @@ export function HeartRateSection({ samples }: HeartRateSectionProps) {
         ].map(({ label, value, highlight }) => (
           <div
             key={label}
-            className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-3))] rounded-xl py-3"
+            className="flex-1 flex flex-col items-center gap-1 bg-secondary-3 rounded-xl py-3"
           >
-            <span className="caption-r text-[hsl(var(--secondary-5))]">{label}</span>
-            <span className={cn('h3-b', highlight ? 'text-primary' : 'text-[hsl(var(--text-inverse))]')}>
+            <span className="caption-r text-secondary-5">{label}</span>
+            <span className={cn('h3-b', highlight ? 'text-primary' : 'text-fg-inverse')}>
               {value}
             </span>
-            <span className="caption-r text-[hsl(var(--secondary-5))]">bpm</span>
+            <span className="caption-r text-secondary-5">bpm</span>
           </div>
         ))}
       </div>

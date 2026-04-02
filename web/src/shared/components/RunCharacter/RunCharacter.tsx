@@ -33,7 +33,7 @@ export function RunCharacter({ onClick, disabled }: RunCharacterProps) {
 
       {/* 상태 레이블 */}
       <span
-        className="caption-b px-4 py-1 rounded-full font-bold tracking-widest animate-bounce text-[hsl(var(--text-inverse))] text-shadow-[0_2px_4px_hsl(var(--black)/80%)]"
+        className="caption-b px-4 py-1 rounded-full font-bold tracking-widest animate-bounce text-fg-inverse text-shadow-[0_2px_4px_hsl(var(--black)/80%)]"
       >
         {disabled ? '로딩중..' : 'RUN!'}
       </span>

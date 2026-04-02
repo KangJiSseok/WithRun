@@ -140,17 +140,17 @@ export function ProfileEditDialog({
         showCloseButton={false}
         onInteractOutside={(e) => e.preventDefault()}
         onEscapeKeyDown={(e) => e.preventDefault()}
-        className="w-[calc(100%-2rem)] max-w-[360px] gap-6 rounded-[2rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-6 text-[hsl(var(--text-primary))] shadow-[var(--shadow-xl)]"
+        className="w-[calc(100%-2rem)] max-w-[360px] gap-6 rounded-[2rem] border border-border-default bg-surface-default p-6 text-fg-primary shadow-xl"
       >
         <DialogHeader className="gap-1 text-left">
           <div className="flex items-center justify-between">
-            <DialogTitle className="text-xl font-black text-[hsl(var(--text-primary))]">
+            <DialogTitle className="text-xl font-black text-fg-primary">
               프로필 수정
             </DialogTitle>
             <DialogClose asChild>
               <button
                 type="button"
-                className="flex h-10 w-10 items-center justify-center rounded-full text-[hsl(var(--text-secondary))] hover:bg-[hsl(var(--surface-subtle))] active:opacity-70"
+                className="flex h-10 w-10 items-center justify-center rounded-full text-fg-secondary hover:bg-surface-subtle active:opacity-70"
                 aria-label="닫기"
               >
                 <X size={22} />
@@ -161,20 +161,20 @@ export function ProfileEditDialog({
 
         <div className="space-y-5">
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-[hsl(var(--text-secondary))]">
+            <label className="text-sm font-semibold text-fg-secondary">
               닉네임
             </label>
             <Input
               value={formValues.nickname}
               onChange={(event) => updateField('nickname', event.target.value)}
               placeholder="닉네임을 입력해주세요"
-              className="h-12 rounded-2xl border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] px-4 text-base text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-secondary))]"
+              className="h-12 rounded-2xl border-border-default bg-surface-subtle px-4 text-base text-fg-primary placeholder:text-fg-secondary"
             ></Input>
           </div>
 
           {needsBirthDateInput ? (
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-[hsl(var(--text-secondary))]">
+              <label className="text-sm font-semibold text-fg-secondary">
                 생년월일
               </label>
               <Input
@@ -183,14 +183,14 @@ export function ProfileEditDialog({
                 onChange={(event) =>
                   updateField('birthDate', event.target.value)
                 }
-                className="h-12 rounded-2xl border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] px-4 text-base text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-secondary))]"
+                className="h-12 rounded-2xl border-border-default bg-surface-subtle px-4 text-base text-fg-primary placeholder:text-fg-secondary"
               />
             </div>
           ) : null}
 
           <div className="grid grid-cols-2 gap-3">
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-[hsl(var(--text-secondary))]">
+              <label className="text-sm font-semibold text-fg-secondary">
                 키 (cm)
               </label>
               <Input
@@ -199,12 +199,12 @@ export function ProfileEditDialog({
                 value={formValues.height}
                 onChange={(event) => updateField('height', event.target.value)}
                 placeholder="175"
-                className="h-12 rounded-2xl border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] px-4 text-base text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-secondary))]"
+                className="h-12 rounded-2xl border-border-default bg-surface-subtle px-4 text-base text-fg-primary placeholder:text-fg-secondary"
               />
             </div>
 
             <div className="space-y-2">
-              <label className="text-sm font-semibold text-[hsl(var(--text-secondary))]">
+              <label className="text-sm font-semibold text-fg-secondary">
                 몸무게 (kg)
               </label>
               <Input
@@ -213,13 +213,13 @@ export function ProfileEditDialog({
                 value={formValues.weight}
                 onChange={(event) => updateField('weight', event.target.value)}
                 placeholder="70"
-                className="h-12 rounded-2xl border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))] px-4 text-base text-[hsl(var(--text-primary))] placeholder:text-[hsl(var(--text-secondary))]"
+                className="h-12 rounded-2xl border-border-default bg-surface-subtle px-4 text-base text-fg-primary placeholder:text-fg-secondary"
               ></Input>
             </div>
           </div>
 
           <div className="space-y-2">
-            <label className="text-sm font-semibold text-[hsl(var(--text-secondary))]">
+            <label className="text-sm font-semibold text-fg-secondary">
               성별
             </label>
             <div className="grid grid-cols-2 gap-3">
@@ -234,8 +234,8 @@ export function ProfileEditDialog({
                     className={cn(
                       'h-12 rounded-2xl border text-base font-bold transition-colors',
                       isSelected
-                        ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-5))] text-[hsl(var(--primary-2))]'
-                        : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-secondary))]'
+                        ? 'border-primary-1 bg-primary-5 text-primary-2'
+                        : 'border-border-default bg-surface-default text-fg-secondary'
                     )}
                   >
                     {gender === 'MALE' ? '남성' : '여성'}

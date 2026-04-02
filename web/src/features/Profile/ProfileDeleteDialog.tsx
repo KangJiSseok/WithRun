@@ -31,8 +31,8 @@ export function ProfileDeleteDialog({
         onEscapeKeyDown={(e) => e.preventDefault()}
       >
         <DialogHeader className="items-center text-center">
-          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-[hsl(var(--error)/0.1)]">
-            <TriangleAlert size={22} className="text-[hsl(var(--error))]" />
+          <div className="flex h-12 w-12 items-center justify-center rounded-full bg-error/[0.1]">
+            <TriangleAlert size={22} className="text-error" />
           </div>
           <DialogTitle className="text-xl font-black">회원탈퇴 하시겠습니까?</DialogTitle>
           <DialogDescription className="text-sm">
@@ -44,7 +44,7 @@ export function ProfileDeleteDialog({
             type="button"
             variant="outline"
             onClick={() => onOpenChange(false)}
-            className="h-12 flex-1 rounded-[1.5rem] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-base font-black text-[hsl(var(--text-primary))]"
+            className="h-12 flex-1 rounded-2xl border-border-default bg-surface-default text-base font-black text-fg-primary"
           >
             취소
           </Button>
@@ -52,7 +52,7 @@ export function ProfileDeleteDialog({
             type="button"
             onClick={onConfirm}
             disabled={isDeletingAccount}
-            className="h-12 flex-1 rounded-[1.5rem] bg-[hsl(var(--error))] text-base font-black text-white hover:bg-[hsl(var(--error)/0.9)]"
+            className="h-12 flex-1 rounded-2xl bg-error text-base font-black text-white hover:bg-error/[0.9]"
           >
             {isDeletingAccount ? '탈퇴 중...' : '탈퇴하기'}
           </Button>

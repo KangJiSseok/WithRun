@@ -166,13 +166,13 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
       <div ref={containerRef} className="h-full w-full" />
 
       {/* 상단 뒤로가기 버튼 */}
-      <div className="absolute left-[var(--space-4)] top-[var(--space-4)] z-raised">
+      <div className="absolute left-4 top-4 z-raised">
         <Button
           type="button"
           variant="outline"
           size="icon"
           onClick={() => navigate(-1)}
-          className="h-12 w-12 rounded-full border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))]"
+          className="h-12 w-12 rounded-full border-border-default bg-surface-default text-fg-primary"
         >
           <ArrowLeft size={20} />
         </Button>
@@ -194,7 +194,7 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        className="absolute bottom-0 left-0 right-0 z-raised flex h-dvh flex-col overflow-hidden rounded-t-2xl bg-[hsl(var(--surface-default))] shadow-[var(--shadow-lg)]"
+        className="absolute bottom-0 left-0 right-0 z-raised flex h-dvh flex-col overflow-hidden rounded-t-2xl bg-surface-default shadow-lg"
       >
         <div
           className="flex h-full flex-col"
@@ -207,27 +207,27 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
             onPointerDown={startDrag}
           >
             <div className="flex justify-center py-4">
-              <div className="h-1 w-10 rounded-full bg-[hsl(var(--border-default))]" />
+              <div className="h-1 w-10 rounded-full bg-border-default" />
             </div>
-            <div className="px-[var(--space-5)] pb-[var(--space-4)]">
-              <h2 className="h2-b text-[hsl(var(--text-primary))]">{course.title}</h2>
-              <div className="mt-[var(--space-4)] flex flex-wrap gap-[var(--space-2)]">
+            <div className="px-5 pb-4">
+              <h2 className="h2-b text-fg-primary">{course.title}</h2>
+              <div className="mt-4 flex flex-wrap gap-2">
                 <Badge
                   variant="outline"
-                  className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+                  className="rounded-full border-border-default bg-transparent px-3 py-1"
                 >
                   {(course.distanceM / 1000).toFixed(1)}km
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+                  className="rounded-full border-border-default bg-transparent px-3 py-1"
                 >
                   고도 {course.elevationGainM}m
                 </Badge>
                 {course.difficulty != null && (
                   <Badge
                     variant="outline"
-                    className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+                    className="rounded-full border-border-default bg-transparent px-3 py-1"
                   >
                     {course.difficulty.label}
                   </Badge>
@@ -238,7 +238,7 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
 
           <div className="min-h-0 flex-1 overflow-hidden">
             <div
-              className={`h-full overflow-y-auto overscroll-contain px-[var(--space-5)] ${
+              className={`h-full overflow-y-auto overscroll-contain px-5 ${
                 isDragging ? 'pointer-events-none' : ''
               }`}
               onTouchStart={handleContentTouchStart}
@@ -250,23 +250,23 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
                 WebkitOverflowScrolling: 'touch',
               }}
             >
-              <div className="flex flex-col gap-[var(--space-4)] pb-[var(--space-5)]">
-                <div className="flex flex-col gap-[var(--space-2)]">
-                  <div className="flex items-center gap-[var(--space-2)]">
-                    <Trophy size={16} className="text-[hsl(var(--primary-1))]" />
-                    <span className="body-l-b text-[hsl(var(--text-primary))]">
+              <div className="flex flex-col gap-4 pb-5">
+                <div className="flex flex-col gap-2">
+                  <div className="flex items-center gap-2">
+                    <Trophy size={16} className="text-primary-1" />
+                    <span className="body-l-b text-fg-primary">
                       리더보드
                     </span>
                   </div>
 
                   {!selectedTarget && hasAnyGhostCandidate && (
-                    <p className="caption-r text-[hsl(var(--text-secondary))]">
+                    <p className="caption-r text-fg-secondary">
                       대결할 상대를 선택하세요
                     </p>
                   )}
 
                   {!hasAnyGhostCandidate && (
-                    <p className="caption-r text-[hsl(var(--text-secondary))]">
+                    <p className="caption-r text-fg-secondary">
                       아직 기록이 없어 이번 러닝을 기준 기록으로 시작합니다.
                     </p>
                   )}
@@ -274,52 +274,52 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
                   {course.myRecord && (
                     <button
                       onClick={handleSelectMyRecord}
-                      className={`flex items-center justify-between rounded-xl border p-[var(--space-3)] text-left transition-colors ${
+                      className={`flex items-center justify-between rounded-xl border p-3 text-left transition-colors ${
                         selectedTarget?.runningSessionId ===
                         course.myRecord.runningSessionId
-                          ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1)/0.08)]'
-                          : 'border-[hsl(var(--border-default))] bg-[hsl(var(--surface-subtle))]'
+                          ? 'border-primary-1 bg-primary-1/[0.08]'
+                          : 'border-border-default bg-surface-subtle'
                       }`}
                     >
                       <div className="flex flex-col gap-0.5">
-                        <span className="caption-r text-[hsl(var(--primary-1))]">
+                        <span className="caption-r text-primary-1">
                           나의 최고 기록
                         </span>
-                        <span className="body-l-b text-[hsl(var(--text-primary))]">
+                        <span className="body-l-b text-fg-primary">
                           {formatTime(course.myRecord.durationSec)}
                         </span>
                       </div>
                       <div className="flex flex-col items-end gap-0.5">
-                        <span className="caption-r text-[hsl(var(--text-secondary))]">
+                        <span className="caption-r text-fg-secondary">
                           {course.myRecord.rank}위
                         </span>
-                        <span className="body-m text-[hsl(var(--primary-1))]">
+                        <span className="body-m text-primary-1">
                           {course.myRecord.point.toLocaleString()}P
                         </span>
                       </div>
                     </button>
                   )}
 
-                  <div className="flex flex-col gap-[var(--space-1)]">
+                  <div className="flex flex-col gap-1">
                     {items.map((item) => (
                       <button
                         key={item.leaderboardId}
                         onClick={() => handleSelectLeaderboard(item.runningSessionId)}
-                        className={`flex items-center justify-between rounded-lg border px-[var(--space-3)] py-[var(--space-2)] text-left transition-colors ${
+                        className={`flex items-center justify-between rounded-lg border px-3 py-2 text-left transition-colors ${
                           selectedTarget?.runningSessionId === item.runningSessionId
-                            ? 'border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1)/0.08)]'
-                            : 'border-[hsl(var(--border-default))] bg-transparent'
+                            ? 'border-primary-1 bg-primary-1/[0.08]'
+                            : 'border-border-default bg-transparent'
                         }`}
                       >
-                        <div className="flex items-center gap-[var(--space-2)]">
-                          <span className="caption-r w-5 text-center text-[hsl(var(--text-secondary))]">
+                        <div className="flex items-center gap-2">
+                          <span className="caption-r w-5 text-center text-fg-secondary">
                             {item.rank}
                           </span>
-                          <span className="body-m text-[hsl(var(--text-primary))]">
+                          <span className="body-m text-fg-primary">
                             {item.nickname}
                           </span>
                         </div>
-                        <span className="caption-r text-[hsl(var(--primary-1))]">
+                        <span className="caption-r text-primary-1">
                           {item.point.toLocaleString()}P
                         </span>
                       </button>
@@ -328,7 +328,7 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
                     <div ref={sentinelRef} className="h-1" />
 
                     {leaderboardLoading && (
-                      <p className="caption-r py-2 text-center text-[hsl(var(--text-secondary))]">
+                      <p className="caption-r py-2 text-center text-fg-secondary">
                         불러오는 중...
                       </p>
                     )}
@@ -339,10 +339,10 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
           </div>
 
           <div
-            className="shrink-0 border-t border-[hsl(var(--border-default))] px-[var(--space-5)] pt-[var(--space-4)]"
+            className="shrink-0 border-t border-border-default px-5 pt-4"
             style={{ paddingBottom: BOTTOM_NAV_HEIGHT + 20 }}
           >
-            <WatchRunStatusNotice className="mb-[var(--space-3)]" />
+            <WatchRunStatusNotice className="mb-3" />
             {bridge.isWebViewBridgeAvailable ? (
               <Button
                 type="button"
@@ -353,7 +353,7 @@ export function GhostRunDetailScreen({ course }: GhostRunDetailScreenProps) {
                 {ghostStartButtonLabel}
               </Button>
             ) : (
-              <p className="body-m py-(--space-3) text-center text-[hsl(var(--text-secondary))]">
+              <p className="body-m py-3 text-center text-fg-secondary">
                 모바일 앱에서 이용할 수 있는 서비스입니다.
               </p>
             )}
