@@ -75,13 +75,13 @@
   --color-surface-muted:   hsl(var(--surface-muted));
   --color-surface-inverse: hsl(var(--surface-inverse));
 
-  --color-text-primary:    hsl(var(--text-primary));
-  --color-text-secondary:  hsl(var(--text-secondary));
-  --color-text-disabled:   hsl(var(--text-disabled));
-  --color-text-inverse:    hsl(var(--text-inverse));
-  --color-text-link:       hsl(var(--text-link));
-  --color-text-link-hover: hsl(var(--text-link-hover));
-  --color-text-error:      hsl(var(--text-error));
+  --color-fg-primary:    hsl(var(--fg-primary));
+  --color-fg-secondary:  hsl(var(--fg-secondary));
+  --color-fg-disabled:   hsl(var(--fg-disabled));
+  --color-fg-inverse:    hsl(var(--fg-inverse));
+  --color-fg-link:       hsl(var(--fg-link));
+  --color-fg-link-hover: hsl(var(--fg-link-hover));
+  --color-fg-error:      hsl(var(--fg-error));
 
   --color-border-default: hsl(var(--border-default));
   --color-border-strong:  hsl(var(--border-strong));
