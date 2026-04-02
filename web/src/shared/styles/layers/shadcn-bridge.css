@@ -1,25 +1,25 @@
 /*
  * shadcn 토큰 브리지
- * 목적: shadcn 컴포넌트가 참조하는 의미 기반 변수들을
- * 우리 프로젝트의 공용 디자인 토큰에 연결한다.
+ * 목적: shadcn 컴포넌트가 기대하는 변수 이름을
+ * 우리 프로젝트의 semantic 토큰에 연결합니다.
  *
  * 원칙:
- * - 실제 색상 값은 tokens/color.css 에서만 관리한다.
- * - 이 파일에서는 의미 이름만 연결한다.
- * - 전역 테마를 바꿀 때는 먼저 color.css 를 바꾸고,
- *   그다음 이 파일에서 의미 매핑을 조정한다.
+ * - 실제 색상 값은 tokens/primitive/color.css 와 tokens/semantic/color.css 에서 관리한다.
+ * - 이 파일은 토큰을 새로 정의하지 않고 매핑만 담당한다.
+ * - 글로벌 테마가 바뀌어도 shadcn 컴포넌트는 color.css 를 몰라도
+ *   동작하도록 이 브리지 레이어를 유지한다.
  */
 
 :root {
-  /* 기본 배경과 기본 글자색 */
+  /* 기본 배경색과 기본 글자색 */
   --background: var(--surface-default);
   --foreground: var(--text-primary);
 
-  /* 카드 계열 */
+  /* 카드 배경 */
   --card: var(--surface-default);
   --card-foreground: var(--text-primary);
 
-  /* 팝오버, 드롭다운, 다이얼로그 계열 */
+  /* 팝오버, 드롭다운, 다이얼로그 배경 */
   --popover: var(--surface-default);
   --popover-foreground: var(--text-primary);
 
@@ -31,7 +31,7 @@
   --secondary: var(--surface-muted);
   --secondary-foreground: var(--text-primary);
 
-  /* 약한 정보 표현 */
+  /* 약한 정보 영역 */
   --muted: var(--surface-muted);
   --muted-foreground: var(--text-secondary);
 
@@ -43,7 +43,7 @@
   --destructive: var(--error);
   --destructive-foreground: var(--text-inverse);
 
-  /* 테두리, 입력창, 포커스 */
+  /* 테두리와 입력창, 포커스 링 */
   --border: var(--border-default);
   --input: var(--border-default);
   --ring: var(--border-focus);
