@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react';
 import { Outlet } from 'react-router-dom';
 
 import { BottomNavigation } from '../components';
@@ -13,6 +14,28 @@ export function MainLayout({
   showBottomNav?: boolean;
   fullScreen?: boolean;
 }) {
+  const mainRef = useRef<HTMLElement | null>(null);
+  const [showTopNavBorder, setShowTopNavBorder] = useState(false);
+
+  useEffect(() => {
+    const mainEl = mainRef.current;
+
+    if (!mainEl) {
+      return;
+    }
+
+    const updateBorderState = () => {
+      setShowTopNavBorder(mainEl.scrollTop > 0);
+    };
+
+    updateBorderState();
+    mainEl.addEventListener('scroll', updateBorderState, { passive: true });
+
+    return () => {
+      mainEl.removeEventListener('scroll', updateBorderState);
+    };
+  }, []);
+
   return (
     <div
       className={
@@ -20,9 +43,10 @@ export function MainLayout({
       }
     >
       <div className="flex h-dvh w-full flex-col overflow-hidden border-x border-border-default bg-surface-default shadow-soft-xl">
-        {showTopNav && <TopNavigation />}
+        {showTopNav && <TopNavigation showBottomBorder={showTopNavBorder} />}
 
         <main
+          ref={mainRef}
           className={cn(
             'flex-1 min-h-0 overflow-y-overlay bg-surface-subtle p-5',
             fullScreen && 'bg-transparent p-0'

@@ -25,6 +25,7 @@ import type { CourseType } from '@/apis';
 import { cn } from '@/shared/utils';
 import { getWeeklyCalendarApi } from '@/apis/userCalendar';
 import { useHealthConnectionStatus } from './useHealthConnectionStatus';
+import RunCharactor from '@/shared/rive/RunCharactor';
 
 type RunningPreferenceFormState = {
   purposes: Purpose[];
@@ -111,9 +112,7 @@ function PreferenceChipGroup<TValue extends string>({
 }: PreferenceChipGroupProps<TValue>) {
   return (
     <section className="space-y-3">
-      <h3 className="text-sm font-semibold text-fg-secondary">
-        {label}
-      </h3>
+      <h3 className="text-sm font-semibold text-fg-secondary">{label}</h3>
       <div className={cn('flex flex-wrap gap-2', className)}>
         {options.map((option) => {
           const isSelected = selectedValues.includes(option.value);
@@ -153,9 +152,7 @@ function SingleSelectChipGroup<TValue extends string>({
 }: SingleSelectChipGroupProps<TValue>) {
   return (
     <section className="space-y-3">
-      <h3 className="text-sm font-semibold text-fg-secondary">
-        {label}
-      </h3>
+      <h3 className="text-sm font-semibold text-fg-secondary">{label}</h3>
       <div className="grid grid-cols-3 gap-2">
         {options.map((option) => {
           const isSelected = selectedValue === option.value;
@@ -197,13 +194,9 @@ function SummaryCard({ title, value, unit }: SummaryCardProps) {
         <span className="text-xl font-black leading-none tracking-tight text-fg-primary">
           {value}
         </span>
-        <span className="text-xs font-medium text-fg-secondary">
-          {unit}
-        </span>
+        <span className="text-xs font-medium text-fg-secondary">{unit}</span>
       </div>
-      <p className="mt-3 text-sm font-medium text-fg-secondary">
-        {title}
-      </p>
+      <p className="mt-3 text-sm font-medium text-fg-secondary">{title}</p>
     </article>
   );
 }
@@ -372,25 +365,28 @@ export function HomeScreen() {
             <div className="inline-flex items-center gap-2 rounded-full border border-border-default bg-surface-default px-4 py-2 text-xs font-bold tracking-[0.08em] text-fg-secondary">
               <HeartPulse
                 size={14}
-                className={
-                  isConnected
-                    ? 'text-success'
-                    : 'text-fg-secondary'
-                }
+                className={isConnected ? 'text-success' : 'text-fg-secondary'}
               />
               {healthConnectionLabel}
             </div>
 
-            <div className="space-y-2 pl-2">
-              <h1 className="leading-tight tracking-tight text-fg-primary">
-                <span className="block text-base font-black">달려볼까요,</span>
-                <span className="block text-2xl font-black">
-                  {user?.nickname ?? 'Runner'}님
-                </span>
-              </h1>
-              <p className="max-w-[14rem] text-base leading-7 text-fg-secondary">
-                오늘도 목표를 향해 달려보세요!
-              </p>
+            <div className="flex justify-between">
+              <div className="space-y-2 pl-2">
+                <h1 className="leading-tight tracking-tight text-fg-primary">
+                  <span className="block text-base font-black">
+                    달려볼까요,
+                  </span>
+                  <span className="block text-2xl font-black">
+                    {user?.nickname ?? 'Runner'}님
+                  </span>
+                </h1>
+                <p className="max-w-[14rem] text-base leading-7 text-fg-secondary">
+                  오늘도 목표를 향해 달려보세요!
+                </p>
+              </div>
+              <div className="w-25 h-25 mr-5">
+                <RunCharactor />
+              </div>
             </div>
           </section>
 
@@ -471,9 +467,7 @@ export function HomeScreen() {
                     </h3>
                     <p className="text-3xl font-black text-primary-1">
                       {preferences.preferredDistanceKm.toFixed(1)}
-                      <span className="ml-1 text-lg text-fg-secondary">
-                        km
-                      </span>
+                      <span className="ml-1 text-lg text-fg-secondary">km</span>
                     </p>
                   </div>
                   <input

@@ -1,11 +1,22 @@
-import { useNavigate } from 'react-router-dom';
 import { Bookmark, User } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
 
-export default function TopNavigation() {
+import { cn } from '../../utils';
+
+export default function TopNavigation({
+  showBottomBorder = false,
+}: {
+  showBottomBorder?: boolean;
+}) {
   const navigate = useNavigate();
 
   return (
-    <header className="shrink-0 border-b border-border-default bg-surface-subtle px-5 py-3">
+    <header
+      className={cn(
+        'shrink-0 bg-surface-subtle px-5 py-3',
+        showBottomBorder && 'border-b border-border-default'
+      )}
+    >
       <div className="flex items-center justify-between">
         <button
           type="button"
