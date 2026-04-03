@@ -163,7 +163,7 @@ export function GhostRunScreen() {
           variant="outline"
           size="icon"
           onClick={() => navigate('/home')}
-          className="h-10 w-10 shrink-0 rounded-full border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-[var(--shadow-md)]"
+          className="h-10 w-10 shrink-0 rounded-full border-border-default bg-surface-default text-fg-primary shadow-md"
         >
           <Home size={18} />
         </Button>
@@ -178,7 +178,7 @@ export function GhostRunScreen() {
       <div className="absolute right-4 top-4 z-20">
         <button
           onClick={() => setShowFilterDrawer(true)}
-          className="flex h-10 w-10 items-center justify-center rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] shadow-[var(--shadow-md)]"
+          className="flex h-10 w-10 items-center justify-center rounded-full border border-border-default bg-surface-default text-fg-primary shadow-md"
         >
           <Filter size={18} />
         </button>
@@ -211,7 +211,7 @@ export function GhostRunScreen() {
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        className="absolute bottom-0 left-0 right-0 z-10 flex max-h-[60dvh] flex-col rounded-t-[var(--radius-2xl)] bg-[hsl(var(--surface-default))] shadow-[var(--shadow-soft-xl)]"
+        className="absolute bottom-0 left-0 right-0 z-10 flex max-h-[60dvh] flex-col rounded-t-2xl bg-surface-default shadow-soft-xl"
       >
         {/* 시트 헤더 */}
         <div
@@ -222,12 +222,12 @@ export function GhostRunScreen() {
         >
           {/* 드래그 바 */}
           <div className="flex justify-center pt-3 pb-2">
-            <div className="h-1 w-10 rounded-full bg-[hsl(var(--border-default))]" />
+            <div className="h-1 w-10 rounded-full bg-border-default" />
           </div>
 
           {/* 헤더 라벨 */}
           <div className="px-4 pb-3">
-            <span className="body-l-b text-[hsl(var(--text-primary))]">
+            <span className="body-l-b text-fg-primary">
               고스트런 코스
             </span>
           </div>
@@ -235,7 +235,7 @@ export function GhostRunScreen() {
 
         {/* 스크롤 가능한 코스 리스트 */}
         <div
-          className={`flex-1 overflow-y-auto px-(--space-5) py-(--space-4) ${isDragging ? 'pointer-events-none' : ''}`}
+          className={`flex-1 overflow-y-auto px-5 py-4 ${isDragging ? 'pointer-events-none' : ''}`}
           style={{ touchAction: 'pan-y', paddingBottom: 16 }}
         >
           {activeFilterChips.length > 0 && (
@@ -243,7 +243,7 @@ export function GhostRunScreen() {
               {activeFilterChips.map((chip) => (
                 <span
                   key={chip}
-                  className="rounded-full border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-muted))] px-3 py-1 text-xs text-[hsl(var(--text-secondary))]"
+                  className="rounded-full border border-border-default bg-surface-muted px-3 py-1 text-xs text-fg-secondary"
                 >
                   {chip}
                 </span>
@@ -252,21 +252,21 @@ export function GhostRunScreen() {
           )}
           {isLoading && courses.length === 0 ? (
             <div className="flex h-24 items-center justify-center">
-              <p className="body-r text-[hsl(var(--text-secondary))]">
+              <p className="body-r text-fg-secondary">
                 코스를 불러오는 중입니다...
               </p>
             </div>
           ) : courses.length === 0 ? (
-            <div className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border border-[hsl(var(--border-default))] px-(--space-5) py-4 text-center">
-              <p className="body-l-b text-[hsl(var(--text-primary))]">
+            <div className="flex min-h-24 flex-col items-center justify-center gap-2 rounded-xl border border-border-default px-5 py-4 text-center">
+              <p className="body-l-b text-fg-primary">
                 검색 결과가 없습니다
               </p>
-              <p className="body-r text-[hsl(var(--text-secondary))]">
+              <p className="body-r text-fg-secondary">
                 지도에서 탐색 범위를 넓혀보세요.
               </p>
             </div>
           ) : (
-            <div className="flex flex-col gap-(--space-4)">
+            <div className="flex flex-col gap-4">
               {courses.map((course) => (
                 <RunningCourseCard
                   key={course.courseId}
@@ -288,11 +288,11 @@ export function GhostRunScreen() {
           >
             {isLoading ? (
               <div className="flex items-center justify-center gap-2">
-                <div className="h-8 w-8 animate-pulse rounded-full bg-[hsl(var(--surface-subtle))]" />
-                <div className="h-8 w-8 animate-pulse rounded-full bg-[hsl(var(--surface-subtle))]" />
-                <div className="h-8 w-8 animate-pulse rounded-full bg-[hsl(var(--surface-subtle))]" />
-                <div className="h-8 w-8 animate-pulse rounded-full bg-[hsl(var(--surface-subtle))]" />
-                <div className="h-8 w-8 animate-pulse rounded-full bg-[hsl(var(--surface-subtle))]" />
+                <div className="h-8 w-8 animate-pulse rounded-full bg-surface-subtle" />
+                <div className="h-8 w-8 animate-pulse rounded-full bg-surface-subtle" />
+                <div className="h-8 w-8 animate-pulse rounded-full bg-surface-subtle" />
+                <div className="h-8 w-8 animate-pulse rounded-full bg-surface-subtle" />
+                <div className="h-8 w-8 animate-pulse rounded-full bg-surface-subtle" />
               </div>
             ) : (
               <CoursePageNav

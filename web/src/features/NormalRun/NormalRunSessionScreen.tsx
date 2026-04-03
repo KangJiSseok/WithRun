@@ -23,19 +23,19 @@ interface StatItemProps {
 function StatItem({ label, value, valueClassName, sub }: StatItemProps) {
   return (
     <div className="flex flex-col items-center gap-1">
-      <span className="body-r tracking-wide text-[hsl(var(--secondary-5))]">
+      <span className="body-r tracking-wide text-secondary-5">
         {label}
       </span>
       <span
         className={cn(
           'h2-b tabular-nums [text-shadow:0_2px_8px_hsl(var(--black)/0.35)]',
-          valueClassName ?? 'text-[hsl(var(--text-inverse))]'
+          valueClassName ?? 'text-fg-inverse'
         )}
       >
         {value}
       </span>
       {sub && (
-        <span className="body-r font-semibold text-[hsl(var(--secondary-5))]">
+        <span className="body-r font-semibold text-secondary-5">
           {sub}
         </span>
       )}
@@ -186,16 +186,16 @@ export function NormalRunSessionScreen({
   autoCompleteRef.current = handleAutoComplete;
 
   return (
-    <div className="absolute inset-0 flex flex-col overflow-hidden bg-[hsl(var(--surface-inverse))]">
-      <div className="shrink-0 border-b border-[hsl(var(--secondary-3))] px-6 py-4">
+    <div className="absolute inset-0 flex flex-col overflow-hidden bg-surface-inverse">
+      <div className="shrink-0 border-b border-secondary-3 px-6 py-4">
         <div className="grid grid-cols-4 gap-2">
           <StatItem label="거리" value={distance} sub="km" />
           <StatItem label="페이스" value={pace} />
           <StatItem
             label="칼로리"
             value={String(calories)}
-            valueClassName="text-[hsl(var(--primary-1))]"
-            sub={<span className="text-[hsl(var(--primary-1))]">🔥</span>}
+            valueClassName="text-primary-1"
+            sub={<span className="text-primary-1">🔥</span>}
           />
           <StatItem label="심박수" value={String(heartRate)} sub="bpm" />
         </div>
@@ -212,9 +212,9 @@ export function NormalRunSessionScreen({
         />
 
         {isStartupCountdown && (
-          <div className="absolute inset-0 z-modal flex items-center justify-center bg-[hsl(var(--black)/0.35)]">
-            <div className="flex h-36 w-36 items-center justify-center rounded-full bg-[hsl(var(--surface-inverse)/0.9)] shadow-[var(--shadow-soft-xl)]">
-              <span className="font-bold tabular-nums text-8xl text-[hsl(var(--text-inverse))]">
+          <div className="absolute inset-0 z-modal flex items-center justify-center bg-black/[0.35]">
+            <div className="flex h-36 w-36 items-center justify-center rounded-full bg-surface-inverse/[0.9] shadow-soft-xl">
+              <span className="font-bold tabular-nums text-8xl text-fg-inverse">
                 {startupCountdownSec}
               </span>
             </div>
@@ -223,7 +223,7 @@ export function NormalRunSessionScreen({
 
         {checkpoints.length > 0 && !allCheckpointsVisited && (
           <div className="absolute top-3 left-0 right-0 z-sticky flex justify-center">
-            <div className="rounded-full bg-[hsl(var(--surface-default)/0.88)] px-4 py-1.5 text-[hsl(var(--text-primary))] caption-b shadow-sm">
+            <div className="rounded-full bg-surface-default/[0.88] px-4 py-1.5 text-fg-primary caption-b shadow-sm">
               체크포인트 {visitedCount} / {checkpoints.length}
             </div>
           </div>
@@ -231,32 +231,32 @@ export function NormalRunSessionScreen({
 
         {isDeviating && !isPaused && (
           <div className="absolute top-14 left-0 right-0 z-sticky flex justify-center">
-            <div className="rounded-full bg-[hsl(var(--error))] px-4 py-2 text-[hsl(var(--text-inverse))] body-b">
+            <div className="rounded-full bg-error px-4 py-2 text-fg-inverse body-b">
               코스 이탈 중 · {deviationSec}s / 10s
             </div>
           </div>
         )}
       </div>
 
-      <div className="shrink-0 border-t border-[hsl(var(--secondary-3))] px-6 pb-8 pt-4">
+      <div className="shrink-0 border-t border-secondary-3 px-6 pb-8 pt-4">
         <div className="flex flex-col items-center gap-5">
           <div className="flex flex-col items-center gap-2">
             <span
               className={cn(
-                'font-bold leading-none tabular-nums text-[hsl(var(--text-inverse))]',
+                'font-bold leading-none tabular-nums text-fg-inverse',
                 time.length > 5 ? 'text-7xl' : 'text-8xl'
               )}
             >
               {time}
             </span>
-            <span className="caption-r tracking-[0.2em] text-[hsl(var(--secondary-5))] uppercase">
+            <span className="caption-r tracking-[0.2em] text-secondary-5 uppercase">
               Total Time
             </span>
           </div>
 
           <div className="flex flex-col items-center gap-2">
             {isPaused && !isWithinPauseAnchor && (
-              <span className="caption-r text-center text-[hsl(var(--secondary-5))]">
+              <span className="caption-r text-center text-secondary-5">
                 안정권으로 복귀 후 재개 가능
               </span>
             )}
@@ -265,7 +265,7 @@ export function NormalRunSessionScreen({
                 onClick={togglePause}
                 disabled={isPaused && !isWithinPauseAnchor}
                 className={cn(
-                  'z-10 flex h-20 w-20 items-center justify-center rounded-full bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-soft-lg)]',
+                  'z-10 flex h-20 w-20 items-center justify-center rounded-full bg-primary-1 text-fg-inverse shadow-soft-lg',
                   isPaused &&
                     !isWithinPauseAnchor &&
                     'opacity-40 cursor-not-allowed'
@@ -283,7 +283,7 @@ export function NormalRunSessionScreen({
                 onClick={handleStopRunning}
                 disabled={isEnding}
                 className={cn(
-                  'absolute flex h-14 w-14 items-center justify-center rounded-full border border-[hsl(var(--secondary-4))] bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))] shadow-[var(--shadow-md)] transition-all duration-300',
+                  'absolute flex h-14 w-14 items-center justify-center rounded-full border border-secondary-4 bg-secondary-3 text-fg-inverse shadow-md transition-all duration-300',
                   isPaused
                     ? 'translate-x-20 opacity-100'
                     : 'pointer-events-none translate-x-12.5 opacity-0'

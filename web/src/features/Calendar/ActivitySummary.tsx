@@ -16,12 +16,12 @@ interface StatCardProps {
 
 function StatCard({ value, unit, description }: StatCardProps) {
   return (
-    <div className="flex-1 flex flex-col items-center gap-[var(--space-1)] bg-[hsl(var(--surface-default))] border border-[hsl(var(--border-default))] rounded-[var(--radius-lg)] py-[var(--space-3)] px-[var(--space-2)]">
+    <div className="flex-1 flex flex-col items-center gap-1 bg-surface-default border border-border-default rounded-lg py-3 px-2">
       <div className="flex items-baseline gap-1">
-        <span className="h4-b text-[hsl(var(--text-primary))]">{value}</span>
-        <span className="caption-r text-[hsl(var(--text-secondary))]">{unit}</span>
+        <span className="h4-b text-fg-primary">{value}</span>
+        <span className="caption-r text-fg-secondary">{unit}</span>
       </div>
-      <span className="caption-r text-[hsl(var(--text-secondary))]">{description}</span>
+      <span className="caption-r text-fg-secondary">{description}</span>
     </div>
   );
 }
@@ -30,9 +30,9 @@ export function ActivitySummary({ label, runCount, distanceM, isLoading }: Activ
   const distanceKm = !isLoading && distanceM !== null ? (distanceM / 1000).toFixed(2) : '--';
 
   return (
-    <div className="flex flex-col gap-[var(--space-2)]">
-      <p className="body-b text-[hsl(var(--text-primary))]">{label}</p>
-      <div className="flex gap-[var(--space-3)]">
+    <div className="flex flex-col gap-2">
+      <p className="body-b text-fg-primary">{label}</p>
+      <div className="flex gap-3">
         <StatCard
           value={!isLoading && runCount !== null ? String(runCount) : '--'}
           unit="회"

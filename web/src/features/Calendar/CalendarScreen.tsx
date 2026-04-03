@@ -81,9 +81,9 @@ export function CalendarScreen() {
       : `${year}년 ${month}월 활동`;
 
   return (
-    <div ref={scrollRef} className="flex flex-col gap-[var(--space-4)] h-full overflow-y-auto pb-[var(--space-6)]">
+    <div ref={scrollRef} className="flex flex-col gap-4 h-full overflow-y-auto pb-6">
       {/* 화면 제목 */}
-      <p className="h3-b text-[hsl(var(--text-primary))]">활동 캘린더</p>
+      <p className="h3-b text-fg-primary">활동 캘린더</p>
 
       {/* 연속 러닝 기록 (스트릭) - summary API에서 받아온 데이터 */}
       <StreakCard
@@ -107,7 +107,7 @@ export function CalendarScreen() {
           // selectedDate 유지 -> 달력 다시 열면 이전 선택 날짜 & RunningHistoryList(일별) 복원
           setIsCalendarOpen((prev) => !prev);
         }}
-        className="w-full flex justify-between items-center p-[var(--space-3)] rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--surface-subtle))] transition-colors"
+        className="w-full flex justify-between items-center p-3 rounded-xl border border-border-default bg-surface-default text-fg-primary hover:bg-surface-subtle transition-colors"
       >
         <span className="body-b">{isCalendarOpen ? '달력 숨기기' : '달력 보기'}</span>
         <ChevronDown
@@ -124,7 +124,7 @@ export function CalendarScreen() {
         )}
       >
         <div className="overflow-hidden">
-          <div className="rounded-[var(--radius-xl)] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-[var(--space-4)] flex flex-col gap-[var(--space-3)]">
+          <div className="rounded-xl border border-border-default bg-surface-default p-4 flex flex-col gap-3">
             {/* < 20xx년 x월 > */}
             <CalendarHeader
               year={year}
@@ -138,7 +138,7 @@ export function CalendarScreen() {
             {/* 빈 캘린더가 잠깐 보이는 현상 방지 */}
             {isMonthlyLoading ? (
               <div className="flex justify-center py-8">
-                <span className="body-r text-[hsl(var(--text-secondary))]">로딩 중...</span>
+                <span className="body-r text-fg-secondary">로딩 중...</span>
               </div>
             ) : (
               <CalendarGrid

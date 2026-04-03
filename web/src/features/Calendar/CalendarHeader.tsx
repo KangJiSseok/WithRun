@@ -19,16 +19,16 @@ export function CalendarHeader({
   onNext,
 }: CalendarHeaderProps) {
   return (
-    <div className="flex items-center justify-between px-[var(--space-2)]">
+    <div className="flex items-center justify-between px-2">
       <button
         type="button"
         onClick={onPrev}
-        className="p-2 rounded-full hover:bg-[hsl(var(--surface-subtle))] text-[hsl(var(--text-primary))]"
+        className="p-2 rounded-full hover:bg-surface-subtle text-fg-primary"
       >
         <ChevronLeft size={20} />
       </button>
 
-      <h2 className="h3-b text-[hsl(var(--text-primary))]">
+      <h2 className="h3-b text-fg-primary">
         {year}년 {month}월
       </h2>
 
@@ -37,8 +37,8 @@ export function CalendarHeader({
         onClick={onNext}
         disabled={isCurrentMonth}
         className={cn(
-          'p-2 rounded-full text-[hsl(var(--text-primary))] hover:bg-[hsl(var(--surface-subtle))]',
-          isCurrentMonth && 'text-[hsl(var(--text-disabled))] cursor-not-allowed hover:bg-transparent',
+          'p-2 rounded-full text-fg-primary hover:bg-surface-subtle',
+          isCurrentMonth && 'text-fg-disabled cursor-not-allowed hover:bg-transparent',
         )}
       >
         <ChevronRight size={20} />

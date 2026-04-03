@@ -28,7 +28,7 @@ export function RunningCourseCard({
     <Card
       role={onClick ? 'button' : undefined}
       onClick={onClick}
-      className="overflow-hidden py-0 rounded-[var(--radius-xl)] border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] shadow-[var(--shadow-md)]"
+      className="overflow-hidden py-0 rounded-xl border-border-default bg-surface-default shadow-md"
     >
       <div className="relative h-44 overflow-hidden">
         <img
@@ -39,10 +39,10 @@ export function RunningCourseCard({
         />
 
         <div className="absolute left-5 top-5 z-raised">
-          <Badge className="rounded-full bg-[hsl(var(--surface-default))] px-[var(--space-3)] py-[var(--space-2)] text-[hsl(var(--text-primary))]">
+          <Badge className="rounded-full bg-surface-default px-3 py-2 text-fg-primary">
             <MapPin
               size={14}
-              className="mr-[var(--space-1)] text-[hsl(var(--primary-1))]"
+              className="mr-1 text-primary-1"
             />
             {(course.distanceM / 1000).toFixed(1)}km
           </Badge>
@@ -54,13 +54,13 @@ export function RunningCourseCard({
             variant="outline"
             size="icon"
             onClick={handleToggleSave}
-            className="h-11 w-11 rounded-full border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))]"
+            className="h-11 w-11 rounded-full border-border-default bg-surface-default text-fg-primary"
           >
             <Bookmark
               size={18}
               className={
                 isSaved
-                  ? 'fill-[hsl(var(--primary-1))] text-[hsl(var(--primary-1))]'
+                  ? 'fill-primary-1 text-primary-1'
                   : ''
               }
             />
@@ -68,13 +68,13 @@ export function RunningCourseCard({
         </div>
       </div>
 
-      <CardContent className="flex flex-col gap-[var(--space-4)] p-[var(--space-5)]">
-        <div className="flex items-start justify-between gap-[var(--space-4)]">
-          <h3 className="h3-b text-[hsl(var(--text-primary))]">
+      <CardContent className="flex flex-col gap-4 p-5">
+        <div className="flex items-start justify-between gap-4">
+          <h3 className="h3-b text-fg-primary">
             {course.title}
           </h3>
 
-          <div className="flex items-center gap-[var(--space-1)] text-[hsl(var(--primary-1))]">
+          <div className="flex items-center gap-1 text-primary-1">
             <Heart size={18} fill="currentColor" />
             <span className="body-l-b">
               {course.likeCount.toLocaleString()}
@@ -82,18 +82,18 @@ export function RunningCourseCard({
           </div>
         </div>
 
-        <div className="flex flex-wrap gap-[var(--space-2)]">
+        <div className="flex flex-wrap gap-2">
           {course.difficulty != null && (
             <Badge
               variant="outline"
-              className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+              className="rounded-full border-border-default bg-transparent px-3 py-1"
             >
               {course.difficulty.label}
             </Badge>
           )}
           <Badge
             variant="outline"
-            className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+            className="rounded-full border-border-default bg-transparent px-3 py-1"
           >
             고도 {course.elevationGainM}m
           </Badge>
@@ -101,7 +101,7 @@ export function RunningCourseCard({
             <Badge
               key={type.data}
               variant="outline"
-              className="rounded-full border-[hsl(var(--primary-1)/0.25)] bg-[hsl(var(--primary-1)/0.1)] px-[var(--space-3)] py-[var(--space-1)] text-[hsl(var(--primary-1))]"
+              className="rounded-full border-primary-1/[0.25] bg-primary-1/[0.1] px-3 py-1 text-primary-1"
             >
               {type.label}
             </Badge>

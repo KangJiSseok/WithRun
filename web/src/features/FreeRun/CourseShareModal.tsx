@@ -118,29 +118,29 @@ export function CourseShareModal({
 
   return (
     <Drawer open={isOpen} onOpenChange={(open: boolean) => !open && onClose()}>
-      <DrawerContent className="bg-[hsl(var(--secondary-2))] border-t border-[hsl(var(--secondary-3))] max-h-[90dvh]">
+      <DrawerContent className="bg-secondary-2 border-t border-secondary-3 max-h-[90dvh]">
         <DrawerHeader className="text-left px-6 pt-4 pb-0">
-          <DrawerTitle className="h3-b text-[hsl(var(--text-inverse))]">
+          <DrawerTitle className="h3-b text-fg-inverse">
             코스 등록
           </DrawerTitle>
         </DrawerHeader>
 
-        <div className="overflow-y-auto px-6 pb-8 pt-4 space-y-[var(--space-5)]">
+        <div className="overflow-y-auto px-6 pb-8 pt-4 space-y-5">
           {/* 코스 제목 */}
-          <div className="space-y-[var(--space-2)]">
-            <label className="caption-b text-[hsl(var(--text-inverse))]">
+          <div className="space-y-2">
+            <label className="caption-b text-fg-inverse">
               코스 제목
             </label>
             <input
               value={courseTitle}
               onChange={(e) => setCourseTitle(e.target.value)}
-              className="w-full px-4 py-3 rounded-xl bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))] body-r border border-[hsl(var(--secondary-4))] focus:outline-none focus:border-primary"
+              className="w-full px-4 py-3 rounded-xl bg-secondary-3 text-fg-inverse body-r border border-secondary-4 focus:outline-none focus:border-primary"
             />
           </div>
 
           {isLoading && (
             <div className="flex justify-center py-4">
-              <span className="body-r text-[hsl(var(--secondary-5))]">
+              <span className="body-r text-secondary-5">
                 로딩 중...
               </span>
             </div>
@@ -149,8 +149,8 @@ export function CourseShareModal({
           {!isLoading && surveyData && (
             <>
               {/* 저장 유형 */}
-              <div className="space-y-[var(--space-2)]">
-                <label className="caption-b text-[hsl(var(--text-inverse))]">
+              <div className="space-y-2">
+                <label className="caption-b text-fg-inverse">
                   저장 유형
                 </label>
                 <div className="flex gap-2">
@@ -163,8 +163,8 @@ export function CourseShareModal({
                       className={cn(
                         'flex-1 py-2 rounded-xl caption-m transition-colors border',
                         courseMode === data
-                          ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
-                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]'
+                          ? 'bg-primary text-fg-inverse border-transparent'
+                          : 'bg-secondary-3 text-secondary-5 border-secondary-4'
                       )}
                     >
                       {label}
@@ -174,8 +174,8 @@ export function CourseShareModal({
               </div>
 
               {/* 난이도 */}
-              <div className="space-y-[var(--space-2)]">
-                <label className="caption-b text-[hsl(var(--text-inverse))]">
+              <div className="space-y-2">
+                <label className="caption-b text-fg-inverse">
                   난이도
                 </label>
                 <div className="flex gap-2">
@@ -188,8 +188,8 @@ export function CourseShareModal({
                       className={cn(
                         'flex-1 py-2 rounded-xl caption-m transition-colors border',
                         difficulty === data
-                          ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
-                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]'
+                          ? 'bg-primary text-fg-inverse border-transparent'
+                          : 'bg-secondary-3 text-secondary-5 border-secondary-4'
                       )}
                     >
                       {label}
@@ -199,8 +199,8 @@ export function CourseShareModal({
               </div>
 
               {/* 경로 유형 */}
-              <div className="space-y-[var(--space-2)]">
-                <label className="caption-b text-[hsl(var(--text-inverse))]">
+              <div className="space-y-2">
+                <label className="caption-b text-fg-inverse">
                   경로 유형
                 </label>
                 <div className="flex gap-2">
@@ -211,8 +211,8 @@ export function CourseShareModal({
                       className={cn(
                         'flex-1 py-2 rounded-xl caption-m transition-colors border',
                         routeType === data
-                          ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
-                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]'
+                          ? 'bg-primary text-fg-inverse border-transparent'
+                          : 'bg-secondary-3 text-secondary-5 border-secondary-4'
                       )}
                     >
                       {label}
@@ -222,10 +222,10 @@ export function CourseShareModal({
               </div>
 
               {/* 코스 타입 */}
-              <div className="space-y-[var(--space-2)]">
-                <label className="caption-b text-[hsl(var(--text-inverse))]">
+              <div className="space-y-2">
+                <label className="caption-b text-fg-inverse">
                   코스 타입{' '}
-                  <span className="caption-r text-[hsl(var(--secondary-5))]">
+                  <span className="caption-r text-secondary-5">
                     (중복 가능)
                   </span>
                 </label>
@@ -237,8 +237,8 @@ export function CourseShareModal({
                       className={cn(
                         'px-3 py-2 rounded-xl caption-m transition-colors border',
                         courseTypes.includes(data as CourseType)
-                          ? 'bg-primary text-[hsl(var(--text-inverse))] border-transparent'
-                          : 'bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] border-[hsl(var(--secondary-4))]'
+                          ? 'bg-primary text-fg-inverse border-transparent'
+                          : 'bg-secondary-3 text-secondary-5 border-secondary-4'
                       )}
                     >
                       {label}
@@ -253,7 +253,7 @@ export function CourseShareModal({
           <Button
             onClick={handleSubmit}
             disabled={isSubmitting}
-            className="w-full py-4 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] body-b h-auto"
+            className="w-full py-4 rounded-2xl bg-primary text-fg-inverse body-b h-auto"
           >
             {isSubmitting
               ? '등록 중...'

@@ -119,13 +119,13 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
       <div ref={containerRef} className="h-full w-full" />
 
       {/* 상단 뒤로가기 버튼 */}
-      <div className="absolute left-[var(--space-4)] top-[var(--space-4)] z-raised">
+      <div className="absolute left-4 top-4 z-raised">
         <Button
           type="button"
           variant="outline"
           size="icon"
           onClick={() => navigate(-1)}
-          className="h-12 w-12 rounded-full border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] text-[hsl(var(--text-primary))]"
+          className="h-12 w-12 rounded-full border-border-default bg-surface-default text-fg-primary"
         >
           <ArrowLeft size={20} />
         </Button>
@@ -147,7 +147,7 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
         transition={{ type: 'spring', damping: 30, stiffness: 300 }}
         onDragStart={handleDragStart}
         onDragEnd={handleDragEnd}
-        className="absolute bottom-0 left-0 right-0 z-raised flex h-dvh flex-col overflow-hidden rounded-t-[var(--radius-2xl)] bg-[hsl(var(--surface-default))] shadow-[var(--shadow-lg)]"
+        className="absolute bottom-0 left-0 right-0 z-raised flex h-dvh flex-col overflow-hidden rounded-t-2xl bg-surface-default shadow-lg"
       >
         <div
           className="flex h-full flex-col"
@@ -160,29 +160,29 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
             onPointerDown={startDrag}
           >
             <div className="flex justify-center py-4">
-              <div className="h-1 w-10 rounded-full bg-[hsl(var(--border-default))]" />
+              <div className="h-1 w-10 rounded-full bg-border-default" />
             </div>
-            <div className="px-[var(--space-5)] pb-[var(--space-4)]">
-              <h2 className="h2-b text-[hsl(var(--text-primary))]">
+            <div className="px-5 pb-4">
+              <h2 className="h2-b text-fg-primary">
                 {course.title}
               </h2>
-              <div className="mt-[var(--space-4)] flex flex-wrap gap-[var(--space-2)]">
+              <div className="mt-4 flex flex-wrap gap-2">
                 <Badge
                   variant="outline"
-                  className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+                  className="rounded-full border-border-default bg-transparent px-3 py-1"
                 >
                   {(course.distanceM / 1000).toFixed(1)}km
                 </Badge>
                 <Badge
                   variant="outline"
-                  className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+                  className="rounded-full border-border-default bg-transparent px-3 py-1"
                 >
                   고도 {course.elevationGainM}m
                 </Badge>
                 {course.difficulty != null && (
                   <Badge
                     variant="outline"
-                    className="rounded-full border-[hsl(var(--border-default))] bg-transparent px-[var(--space-3)] py-[var(--space-1)]"
+                    className="rounded-full border-border-default bg-transparent px-3 py-1"
                   >
                     {DIFFICULTY_LABEL[course.difficulty.data]}
                   </Badge>
@@ -191,7 +191,7 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
                   <Badge
                     key={type.data}
                     variant="outline"
-                    className="rounded-full border-[hsl(var(--primary-1)/0.25)] bg-[hsl(var(--primary-1)/0.1)] px-[var(--space-3)] py-[var(--space-1)] text-[hsl(var(--primary-1))]"
+                    className="rounded-full border-primary-1/[0.25] bg-primary-1/[0.1] px-3 py-1 text-primary-1"
                   >
                     {COURSE_TYPE_LABEL[type.data]}
                   </Badge>
@@ -202,7 +202,7 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
 
           <div className="min-h-0 flex-1 overflow-hidden">
             <div
-              className={`h-full overflow-y-auto overscroll-contain px-[var(--space-5)] ${
+              className={`h-full overflow-y-auto overscroll-contain px-5 ${
                 isDragging ? 'pointer-events-none' : ''
               }`}
               onTouchStart={handleContentTouchStart}
@@ -214,15 +214,15 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
                 WebkitOverflowScrolling: 'touch',
               }}
             >
-              <div className="flex min-h-full flex-col pb-[var(--space-4)]" />
+              <div className="flex min-h-full flex-col pb-4" />
             </div>
           </div>
 
           <div
-            className="shrink-0 border-t border-[hsl(var(--border-default))] px-[var(--space-5)] pt-[var(--space-4)]"
+            className="shrink-0 border-t border-border-default px-5 pt-4"
             style={{ paddingBottom: BOTTOM_NAV_HEIGHT + 20 }}
           >
-            <WatchRunStatusNotice className="mb-[var(--space-3)]" />
+            <WatchRunStatusNotice className="mb-3" />
             {bridge.isWebViewBridgeAvailable ? (
               <Button
                 type="button"
@@ -233,7 +233,7 @@ export function NormalRunDetailScreen({ course }: NormalRunDetailScreenProps) {
                 {normalStartButtonLabel}
               </Button>
             ) : (
-              <p className="body-m py-(--space-3) text-center text-[hsl(var(--text-secondary))]">
+              <p className="body-m py-3 text-center text-fg-secondary">
                 모바일 앱에서 이용할 수 있는 서비스입니다.
               </p>
             )}

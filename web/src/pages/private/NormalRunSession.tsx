@@ -14,7 +14,7 @@ export function NormalRunSessionPage() {
   if (isLoading) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p className="body-l text-[hsl(var(--text-secondary))]">
+        <p className="body-l text-fg-secondary">
           코스 정보를 불러오는 중입니다...
         </p>
       </div>
@@ -24,7 +24,7 @@ export function NormalRunSessionPage() {
   if (error || !courseDetail) {
     return (
       <div className="flex h-screen items-center justify-center">
-        <p className="body-l text-[hsl(var(--text-secondary))]">
+        <p className="body-l text-fg-secondary">
           코스를 찾을 수 없습니다.
         </p>
       </div>

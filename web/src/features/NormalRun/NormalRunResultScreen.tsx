@@ -35,7 +35,7 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
 
   return (
     <>
-      <div className="absolute inset-0 bg-[hsl(var(--secondary-1))] overflow-y-auto">
+      <div className="absolute inset-0 bg-secondary-1 overflow-y-auto">
         {courseId !== null && (
           <CourseReviewModal
             isOpen={showReview}
@@ -45,7 +45,7 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
           />
         )}
         {toastVisible && (
-          <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-[hsl(var(--secondary-3))] text-[hsl(var(--text-inverse))] px-5 py-3 rounded-2xl body-r shadow-lg z-50 whitespace-nowrap">
+          <div className="fixed bottom-10 left-1/2 -translate-x-1/2 bg-secondary-3 text-fg-inverse px-5 py-3 rounded-2xl body-r shadow-lg z-50 whitespace-nowrap">
             참여해주셔서 감사합니다
           </div>
         )}
@@ -57,26 +57,26 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
               aria-label="즐겨찾기 추가 (준비 중)"
               disabled
             >
-              <Bookmark size={26} className="text-[hsl(var(--secondary-5))]" />
+              <Bookmark size={26} className="text-secondary-5" />
             </button>
             <div className="p-4 rounded-full bg-primary/20 border border-primary/30 mb-4">
               <Award size={40} className="text-primary" />
             </div>
-            <h1 className="h2-b text-[hsl(var(--text-inverse))] mb-1">
+            <h1 className="h2-b text-fg-inverse mb-1">
               러닝 완료!
             </h1>
-            <p className="body-r text-[hsl(var(--secondary-5))]">
+            <p className="body-r text-secondary-5">
               수고하셨습니다
             </p>
           </div>
 
           {/* 지도 영역 — GPS 샘플 2개 이상일 때 경로 표시 */}
-          <div className="h-40 rounded-2xl overflow-hidden border border-[hsl(var(--secondary-3))]">
+          <div className="h-40 rounded-2xl overflow-hidden border border-secondary-3">
             {result.gpsSamples.length >= 2 ? (
               <RunResultMap gpsSamples={result.gpsSamples} />
             ) : (
-              <div className="h-full bg-[hsl(var(--secondary-2))] flex items-center justify-center">
-                <div className="flex flex-col items-center gap-2 text-[hsl(var(--secondary-5))]">
+              <div className="h-full bg-secondary-2 flex items-center justify-center">
+                <div className="flex flex-col items-center gap-2 text-secondary-5">
                   <MapPin size={24} />
                   <span className="caption-r">GPS 데이터 없음</span>
                 </div>
@@ -85,31 +85,31 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
           </div>
 
           {/* 거리 */}
-          <div className="bg-[hsl(var(--secondary-2))] rounded-2xl p-6 flex flex-col items-center relative overflow-hidden">
+          <div className="bg-secondary-2 rounded-2xl p-6 flex flex-col items-center relative overflow-hidden">
             <div className="absolute top-0 right-0 w-24 h-24 bg-primary/10 rounded-full blur-2xl -mr-6 -mt-6" />
-            <span className="text-6xl font-bold text-[hsl(var(--text-inverse))] tabular-nums relative z-base">
+            <span className="text-6xl font-bold text-fg-inverse tabular-nums relative z-base">
               {(result.distanceM / 1000).toFixed(2)}
             </span>
-            <span className="caption-r text-[hsl(var(--secondary-5))] uppercase tracking-widest mt-1 relative z-base">
+            <span className="caption-r text-secondary-5 uppercase tracking-widest mt-1 relative z-base">
               킬로미터
             </span>
           </div>
 
           {/* 시간 + 평균 페이스 */}
           <div className="flex gap-3">
-            <div className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-2))] rounded-2xl py-4 px-2">
-              <span className="caption-r text-[hsl(var(--secondary-5))]">
+            <div className="flex-1 flex flex-col items-center gap-1 bg-secondary-2 rounded-2xl py-4 px-2">
+              <span className="caption-r text-secondary-5">
                 시간
               </span>
-              <span className="h3-b text-[hsl(var(--text-inverse))] tabular-nums">
+              <span className="h3-b text-fg-inverse tabular-nums">
                 {formatDuration(result.durationSec)}
               </span>
             </div>
-            <div className="flex-1 flex flex-col items-center gap-1 bg-[hsl(var(--secondary-2))] rounded-2xl py-4 px-2">
-              <span className="caption-r text-[hsl(var(--secondary-5))]">
+            <div className="flex-1 flex flex-col items-center gap-1 bg-secondary-2 rounded-2xl py-4 px-2">
+              <span className="caption-r text-secondary-5">
                 평균 페이스
               </span>
-              <span className="h3-b text-[hsl(var(--text-inverse))] tabular-nums">
+              <span className="h3-b text-fg-inverse tabular-nums">
                 {formatPace(result.avgPaceSecPerKm)}
               </span>
             </div>
@@ -125,14 +125,14 @@ export function NormalRunResultScreen({ result }: NormalRunResultScreenProps) {
           <div className="flex flex-col gap-3 pt-2">
             <button
               disabled
-              className="w-full py-4 rounded-2xl body-b flex items-center justify-center gap-2 bg-[hsl(var(--secondary-3))] text-[hsl(var(--secondary-5))] cursor-not-allowed"
+              className="w-full py-4 rounded-2xl body-b flex items-center justify-center gap-2 bg-secondary-3 text-secondary-5 cursor-not-allowed"
             >
               <Bookmark size={18} />
               즐겨찾기 추가
             </button>
             <button
               onClick={handleHome}
-              className="w-full py-4 rounded-2xl bg-primary text-[hsl(var(--text-inverse))] body-b flex items-center justify-center gap-2"
+              className="w-full py-4 rounded-2xl bg-primary text-fg-inverse body-b flex items-center justify-center gap-2"
             >
               <Home size={18} />홈
             </button>

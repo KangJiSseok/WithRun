@@ -53,8 +53,8 @@ export function RewardShowcase() {
 
   if (isLoading) {
     return (
-      <div className="flex h-32 items-center justify-center rounded-[1.5rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))]">
-        <span className="text-sm text-[hsl(var(--text-secondary))] animate-pulse">
+      <div className="flex h-32 items-center justify-center rounded-2xl border border-border-default bg-surface-default">
+        <span className="text-sm text-fg-secondary animate-pulse">
           쇼케이스 불러오는 중...
         </span>
       </div>
@@ -63,8 +63,8 @@ export function RewardShowcase() {
 
   if (isError || !data) {
     return (
-      <div className="flex h-32 items-center justify-center rounded-[1.5rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))]">
-        <span className="text-sm text-[hsl(var(--text-secondary))]">
+      <div className="flex h-32 items-center justify-center rounded-2xl border border-border-default bg-surface-default">
+        <span className="text-sm text-fg-secondary">
           쇼케이스를 불러오지 못했어요.
         </span>
       </div>
@@ -73,8 +73,8 @@ export function RewardShowcase() {
 
   if (data.items.length === 0) {
     return (
-      <div className="flex h-32 items-center justify-center rounded-[1.5rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))]">
-        <span className="text-sm text-[hsl(var(--text-secondary))]">
+      <div className="flex h-32 items-center justify-center rounded-2xl border border-border-default bg-surface-default">
+        <span className="text-sm text-fg-secondary">
           현재 전시 중인 리워드가 없습니다.
         </span>
       </div>
@@ -93,16 +93,16 @@ export function RewardShowcase() {
         {items.map((item) => (
           <div
             key={item.uniqueKey}
-            className="flex w-[140px] shrink-0 flex-col items-center gap-3 rounded-[1.5rem] border border-[hsl(var(--border-default))] bg-[hsl(var(--surface-default))] p-4 shadow-[var(--shadow-sm)]"
+            className="flex w-[140px] shrink-0 flex-col items-center gap-3 rounded-2xl border border-border-default bg-surface-default p-4 shadow-sm"
           >
-            <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-[hsl(var(--surface-subtle))]">
+            <div className="relative flex h-20 w-20 items-center justify-center overflow-hidden rounded-full bg-surface-subtle">
               <img
                 src={item.imageUrl}
                 alt={item.title}
                 className="h-full w-full object-cover"
               />
             </div>
-            <span className="text-center text-xs font-bold text-[hsl(var(--text-primary))] line-clamp-2">
+            <span className="text-center text-xs font-bold text-fg-primary line-clamp-2">
               {item.title}
             </span>
           </div>

@@ -55,7 +55,7 @@ export function RunningCourseFilterDrawer({
 }: RunningCourseFilterDrawerProps) {
   return (
     <Drawer open={isOpen} onOpenChange={(nextOpen) => !nextOpen && onClose()}>
-      <DrawerContent className="z-modal border-[hsl(var(--border-default)/0.1)] bg-[hsl(var(--surface-default))] px-6 pb-6">
+      <DrawerContent className="z-modal border-border-default/[0.1] bg-surface-default px-6 pb-6">
         <DrawerHeader className="gap-3 px-0 text-left">
           <div className="flex items-center justify-between">
             <DrawerTitle className="h3-b">상세 필터</DrawerTitle>
@@ -98,7 +98,7 @@ export function RunningCourseFilterDrawer({
                     onClick={() => onSortByChange(option.value)}
                     className={
                       values.sortBy === option.value
-                        ? 'rounded-full border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
+                        ? 'rounded-full border-primary-1 bg-primary-1 text-fg-inverse'
                         : 'rounded-full'
                     }
                   >
@@ -124,13 +124,13 @@ export function RunningCourseFilterDrawer({
                 }
                 minStepsBetweenThumbs={1}
               >
-                <Slider.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-[hsl(var(--border-default))]">
-                  <Slider.Range className="absolute h-full bg-[hsl(var(--primary-1))]" />
+                <Slider.Track className="relative h-1.5 w-full grow overflow-hidden rounded-full bg-border-default">
+                  <Slider.Range className="absolute h-full bg-primary-1" />
                 </Slider.Track>
-                <Slider.Thumb className="block h-5 w-5 rounded-full border-2 border-[hsl(var(--primary-1))] bg-white shadow-md focus-visible:outline-none" />
-                <Slider.Thumb className="block h-5 w-5 rounded-full border-2 border-[hsl(var(--primary-1))] bg-white shadow-md focus-visible:outline-none" />
+                <Slider.Thumb className="block h-5 w-5 rounded-full border-2 border-primary-1 bg-white shadow-md focus-visible:outline-none" />
+                <Slider.Thumb className="block h-5 w-5 rounded-full border-2 border-primary-1 bg-white shadow-md focus-visible:outline-none" />
               </Slider.Root>
-              <div className="flex justify-between text-sm text-[hsl(var(--text-secondary))]">
+              <div className="flex justify-between text-sm text-fg-secondary">
                 <span>{(values.distanceRange.min / 1000).toFixed(1)}km</span>
                 <span>{(values.distanceRange.max / 1000).toFixed(1)}km</span>
               </div>
@@ -159,7 +159,7 @@ export function RunningCourseFilterDrawer({
                       onClick={() => onChange(category.key, option.value)}
                       className={
                         isActive
-                          ? 'rounded-full border-[hsl(var(--primary-1))] bg-[hsl(var(--primary-1))] text-[hsl(var(--text-inverse))]'
+                          ? 'rounded-full border-primary-1 bg-primary-1 text-fg-inverse'
                           : 'rounded-full'
                       }
                     >

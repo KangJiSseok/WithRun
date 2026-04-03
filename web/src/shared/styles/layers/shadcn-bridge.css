@@ -13,27 +13,27 @@
 :root {
   /* 기본 배경색과 기본 글자색 */
   --background: var(--surface-default);
-  --foreground: var(--text-primary);
+  --foreground: var(--fg-primary);
 
   /* 카드 배경 */
   --card: var(--surface-default);
-  --card-foreground: var(--text-primary);
+  --card-foreground: var(--fg-primary);
 
   /* 팝오버, 드롭다운, 다이얼로그 배경 */
   --popover: var(--surface-default);
-  --popover-foreground: var(--text-primary);
+  --popover-foreground: var(--fg-primary);
 
   /* 주요 액션 */
   --primary: var(--primary-1);
-  --primary-foreground: var(--text-inverse);
+  --primary-foreground: var(--fg-inverse);
 
   /* 보조 액션 */
   --secondary: var(--surface-muted);
-  --secondary-foreground: var(--text-primary);
+  --secondary-foreground: var(--fg-primary);
 
   /* 약한 정보 영역 */
   --muted: var(--surface-muted);
-  --muted-foreground: var(--text-secondary);
+  --muted-foreground: var(--fg-secondary);
 
   /* hover, 선택, 약한 강조 배경 */
   --accent: var(--primary-5);
@@ -41,7 +41,7 @@
 
   /* 위험 액션 */
   --destructive: var(--error);
-  --destructive-foreground: var(--text-inverse);
+  --destructive-foreground: var(--fg-inverse);
 
   /* 테두리와 입력창, 포커스 링 */
   --border: var(--border-default);
