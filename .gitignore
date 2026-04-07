@@ -39,7 +39,17 @@ local.properties
 *.ipr
 
 # AI / Tooling
-.opencode/
+.opencode/*
+!.opencode/commands/
+!.opencode/commands/**
+!.opencode/skills/
+!.opencode/skills/**
+!.opencode/oh-my-openagent.jsonc
+.opencode/node_modules/
+.opencode/**/node_modules/
+.review-artifacts/
+__pycache__/
+*.py[cod]
 .sisyphus/
 .claude/
 _research/

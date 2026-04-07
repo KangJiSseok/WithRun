@@ -14,6 +14,7 @@ variables:
   PROD_DEPLOY_DIR: "/home/ubuntu/prod-app"
   WAS_IMAGE: "$DOCKERHUB_USERNAME/withrun-was"
   WEB_IMAGE: "$DOCKERHUB_USERNAME/withrun-web"
+  DEV_TEST_BRANCH: "refactor-infra/cicd"
   GRADLE_USER_HOME: "$CI_PROJECT_DIR/.gradle"
 
 workflow:
@@ -50,7 +51,7 @@ test_was:
 docker_push_dev:
   stage: image
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == $DEV_TEST_BRANCH)'
   script:
     - printf '%s\n' "$WEB_ENV_TEST" > web/.env.test
     - echo "$DOCKERHUB_TOKEN" | docker login -u "$DOCKERHUB_USERNAME" --password-stdin
@@ -78,7 +79,7 @@ docker_push_prod:
 deploy_test:
   stage: deploy
   rules:
-    - if: '$CI_PIPELINE_SOURCE == "push" && $CI_COMMIT_BRANCH == "dev"'
+    - if: '$CI_PIPELINE_SOURCE == "push" && ($CI_COMMIT_BRANCH == "dev" || $CI_COMMIT_BRANCH == $DEV_TEST_BRANCH)'
   environment:
     name: test
   script:
